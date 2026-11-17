@@ -28,7 +28,7 @@ import {
   Dna,
   Box,
 } from "lucide-react";
-import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, letteringStyles, compositionModes, backdropModes, microModes } from "../data";
+import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, letteringStyles, compositionModes, backdropModes, microModes, substanceModes } from "../data";
 import { Parameter, Range, Switch, Select, Section } from "./Controls";
 import { retroFonts, retroFontGroups, getRetroFont, ensureRetroFontLoaded } from "../retro-fonts";
 const icons = [
@@ -326,6 +326,25 @@ export function EffectsInspector({ history }) {
           Reseed texture only
         </button>
         <p className="control-note">Six moving material textures that ride your mathematical shapes: embroidery, granules, caustics, lace, glass hairlines and fluorescent cilia. Surprise Me changes the texture family and every setting. Set presence to zero to restore the original artwork.</p>
+      </Section>
+      <Section title="SAMPLE VAULT — SUBSTANCE LAB">
+        <Select label="Sample-derived substance family" value={history.state.substanceMode}
+          onChange={v=>history.change(s=>({...s,substanceMode:v}))}>
+          {substanceModes.map(mode=><option key={mode}>{mode}</option>)}
+        </Select>
+        <Parameter label="Substance strength" name="substanceAmount" history={history}/>
+        <Parameter label="Cells and structure scale" name="substanceScale" history={history}/>
+        <Parameter label="Independent living motion" name="substanceMotion" history={history}/>
+        <Parameter label="Pigment / film relief" name="substanceRelief" history={history}/>
+        <Parameter label="Border luminescence" name="substanceEdge" history={history}/>
+        <Parameter label="Palette phase shift" name="substanceHue" history={history}/>
+        <Parameter label="Substance variation" name="substanceVariation" history={history}/>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(s=>({...s,substanceVariation:
+            (s.substanceVariation+19+Math.random()*67)%100}))}>
+          Reseed substance only
+        </button>
+        <p className="control-note">Four living material architectures adapted from your shader samples: evolving CMY Bragg cells, blooming chromatophores, chitin interference and warped Voronoi soup. Every effect uses your palette. Surprise Me changes all controls; old recipes remain unchanged with strength 0.</p>
       </Section>
       <Section title="PRISMATIC TAPE DECK">
         <Parameter label="Thin-film interference" name="filmAmount" history={history} />

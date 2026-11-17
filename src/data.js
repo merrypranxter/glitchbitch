@@ -163,6 +163,10 @@ export const microModes = [
   "Living embroidery", "Opal granulation", "Gel caustics", "Point lace",
   "Glass filaments", "Crystalline cilia",
 ];
+export const substanceModes = [
+  "CMY lithogenesis", "Chromatophore reef",
+  "Chitin interference", "Conformal chromasoup",
+];
 export const chaosPhrases = ["ERROR ANGEL", "GLITCHBITCH", "LOVE.exe", "U R CUTE", "SOFT APOCALYPSE",
   "INFINITE TRASH", "COSMIC STATIC", "NEON FUNERAL", "NO SIGNAL", "DIVINE MALFUNCTION",
   "HYPERSPACE", "TOXIC DREAM", "BLESSED ERROR", "404 REALITY", "SWEET CORRUPTION"];
@@ -249,6 +253,13 @@ export const numericRanges = {
   microDensity: [0, 100],
   microHue: [0, 100],
   microVariation: [0, 100],
+  substanceAmount: [0, 100],
+  substanceScale: [0, 100],
+  substanceMotion: [0, 100],
+  substanceRelief: [0, 100],
+  substanceEdge: [0, 100],
+  substanceHue: [0, 100],
+  substanceVariation: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -360,6 +371,14 @@ export const initial = {
   microDensity: 57,
   microHue: 48,
   microVariation: 50,
+  substanceMode: "CMY lithogenesis",
+  substanceAmount: 0,
+  substanceScale: 54,
+  substanceMotion: 54,
+  substanceRelief: 62,
+  substanceEdge: 68,
+  substanceHue: 43,
+  substanceVariation: 41,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -434,6 +453,7 @@ export function validateRecipe(input) {
     compositionMode: compositionModes,
     backdropMode: backdropModes,
     microMode: microModes,
+    substanceMode: substanceModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -589,6 +609,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "backdropGlow","backdropHue","backdropVariation",
       "microAmount","microScale","microMotion","microRelief",
       "microDensity","microHue","microVariation",
+      "substanceAmount","substanceScale","substanceMotion",
+      "substanceRelief","substanceEdge","substanceHue","substanceVariation",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -712,6 +734,14 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.microDensity=20+random()*74;
   s.microHue=11+random()*87;
   s.microVariation=random()*100;
+  s.substanceMode=different(substanceModes,state.substanceMode,random);
+  s.substanceAmount=random()<.67 ? 45+random()*52 : 0;
+  s.substanceScale=20+random()*77;
+  s.substanceMotion=24+random()*74;
+  s.substanceRelief=27+random()*70;
+  s.substanceEdge=19+random()*79;
+  s.substanceHue=10+random()*88;
+  s.substanceVariation=random()*100;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;
@@ -1382,5 +1412,53 @@ export const looks = [
     note: "Animated iris with 360-degree color vortex and feedback",
     family: "Tunnel",
     state: {...initial,engine:5,palette:7,colors:palettes[7].colors,tunnelMode:"Living iris",secondaryEngine:14,blend:66,compositionMode:"Orbital archipelagos",compositionAmount:60,tunnelTwist:72,tunnelDepth:84,tunnelRidges:67,tunnelPulse:83,tunnelAperture:38,tunnelVariation:89,colorMode:"Phase vortex",colorAmount:75,afterimage:29,motionAmount:72,lightMotion:94,seed:648291},
+  },
+  {
+    name: "CMY Mutation Chamber",
+    note: "Morphing CMY Bragg-frequency cells illuminate a second mathematical membrane",
+    family: "Substance",
+    state: {...initial,engine:7,palette:1,colors:palettes[1].colors,substanceMode:"CMY lithogenesis",substanceAmount:96,substanceScale:72,substanceMotion:77,substanceRelief:77,substanceEdge:82,substanceHue:49,substanceVariation:19,motionAmount:56,lightMotion:88,seed:152978},
+  },
+  {
+    name: "Opal Ink Lithogenesis",
+    note: "Tectonic pigment separation and luminous interference along crystal boundaries",
+    family: "Substance",
+    state: {...initial,engine:11,palette:10,colors:palettes[10].colors,substanceMode:"CMY lithogenesis",substanceAmount:91,substanceScale:61,substanceMotion:55,substanceRelief:90,substanceEdge:95,substanceHue:78,substanceVariation:44,opalAmount:53,filmAmount:47,motionAmount:62,lightMotion:87,seed:744902},
+  },
+  {
+    name: "Phosphor Chromatophore Reef",
+    note: "Inflating color organelles breathe under neon electronic plant tissues",
+    family: "Substance",
+    state: {...initial,engine:15,palette:8,colors:palettes[8].colors,substanceMode:"Chromatophore reef",substanceAmount:93,substanceScale:80,substanceMotion:83,substanceRelief:64,substanceEdge:74,substanceHue:58,substanceVariation:81,bioAmount:53,bioSpeed:66,motionAmount:61,lightMotion:91,seed:473921},
+  },
+  {
+    name: "Blooming Codec Organelles",
+    note: "Hundreds of migratory pigment membranes drift across a synthetic analog ocean",
+    family: "Substance",
+    state: {...initial,engine:6,palette:6,colors:palettes[6].colors,substanceMode:"Chromatophore reef",substanceAmount:99,substanceScale:93,substanceMotion:88,substanceRelief:82,substanceEdge:96,substanceHue:63,substanceVariation:27,backdropMode:"Nebula veils",backdropAmount:58,motionAmount:74,lightMotion:91,seed:280413},
+  },
+  {
+    name: "Void Chitin Broadcast",
+    note: "Layered beetle-shell film phase shifts through a blacklight spectral landscape",
+    family: "Substance",
+    state: {...initial,engine:3,palette:15,colors:palettes[15].colors,substanceMode:"Chitin interference",substanceAmount:100,substanceScale:51,substanceMotion:79,substanceRelief:91,substanceEdge:83,substanceHue:73,substanceVariation:12,filmAmount:57,prismAmount:66,motionAmount:56,lightMotion:93,seed:710259},
+  },
+  {
+    name: "Holographic Cuticle Cathedral",
+    note: "Prismatic organic foil cascades over liquid marble with film-bright wrinkles",
+    family: "Substance",
+    state: {...initial,engine:6,palette:11,colors:palettes[11].colors,substanceMode:"Chitin interference",substanceAmount:94,substanceScale:72,substanceMotion:73,substanceRelief:87,substanceEdge:92,substanceHue:29,substanceVariation:58,opalAmount:71,motionAmount:85,lightMotion:89,seed:396205},
+  },
+  {
+    name: "Chromasoup Worm Palace",
+    note: "Log-warped cell mosaics and shimmering radial structures drift within living tape",
+    family: "Substance",
+    state: {...initial,engine:5,palette:7,colors:palettes[7].colors,substanceMode:"Conformal chromasoup",substanceAmount:95,substanceScale:65,substanceMotion:82,substanceRelief:75,substanceEdge:94,substanceHue:59,substanceVariation:92,tunnelMode:"Liquid vortex",tunnelPulse:64,motionAmount:77,lightMotion:95,seed:627019},
+  },
+  {
+    name: "Mosaic Reality Failure",
+    note: "Quasicrystal geometry and animated conformal stained-glass cells fight over the palette",
+    family: "Substance",
+    state: {...initial,engine:14,palette:1,colors:palettes[1].colors,substanceMode:"Conformal chromasoup",substanceAmount:97,substanceScale:85,substanceMotion:72,substanceRelief:80,substanceEdge:94,substanceHue:87,substanceVariation:45,microMode:"Glass filaments",microAmount:43,motionAmount:73,lightMotion:88,seed:803961},
   },
 ];

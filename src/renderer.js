@@ -11,6 +11,7 @@ import { ensureRetroFontLoaded, retroFontReady, retroFontRevision } from "./retr
 import { compositionGLSL } from "./composition.js";
 import { backdropGLSL } from "./backdrops.js";
 import { microGLSL } from "./microstructure.js";
+import { substanceGLSL } from "./substance.js";
 import { tunnelGLSL } from "./tunnels.js";
 
 const vertex = `attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
@@ -63,6 +64,7 @@ phase+=source;if(posterize)phase=floor(phase*7.)/7.;return phase;}
 /* COMPOSITION_MODULE */
 /* BACKDROP_MODULE */
 /* MICRO_MODULE */
+/* SUBSTANCE_MODULE */
 /* MATERIAL_MODULE */
 /* LETTERING_MODULE */
 ${appearanceGLSL}
@@ -91,6 +93,7 @@ float v=composed(p);vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*
 /* COMPOSITION_POST */
 /* STEREO_POST */
 /* MATERIAL_POST */
+/* SUBSTANCE_POST */
 /* MICRO_POST */
 col=animateLight(col,uv,v);
 col=stainWithBiology(col,uv,p);
@@ -120,18 +123,21 @@ export function createRenderer(canvas) {
   let active, fence = null, memory = null, memoryShader = null, memoryDisabled = false;
   let stereoUnavailable = false, materialUnavailable = false,
     typeShaderUnavailable = false, compositionUnavailable = false,
-    backdropUnavailable = false, microUnavailable = false;
+    backdropUnavailable = false, microUnavailable = false,
+    substanceUnavailable = false;
   function compatibleShaderState(s){
     const source = stereoUnavailable ? safe2DSelection(s) : s;
     if(!materialUnavailable && !typeShaderUnavailable &&
-       !compositionUnavailable && !backdropUnavailable && !microUnavailable)return source;
+       !compositionUnavailable && !backdropUnavailable &&
+       !microUnavailable && !substanceUnavailable)return source;
     return {
       ...source,
       ...(materialUnavailable ? {filmAmount:0,opalAmount:0,prismAmount:0,foilRelief:0}:{}),
       ...(typeShaderUnavailable ? {letteringAmount:0}:{}),
       ...(compositionUnavailable ? {compositionAmount:0}:{}),
       ...(backdropUnavailable ? {backdropAmount:0}:{}),
-      ...(microUnavailable ? {microAmount:0}:{})
+      ...(microUnavailable ? {microAmount:0}:{}),
+      ...(substanceUnavailable ? {substanceAmount:0}:{})
     };
   }
   let typeTexture=null, typeKey="", typeUnavailable=false;
@@ -394,8 +400,9 @@ export function createRenderer(canvas) {
       withComposition = blended && s.compositionAmount>0,
       withBackdrop = s.backdropAmount>0,
       withMicro = s.microAmount>0,
+      withSubstance = s.substanceAmount>0,
       withTunnel = s.engine===5 || (blended && s.secondaryEngine===5),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -420,6 +427,9 @@ export function createRenderer(canvas) {
          ${withComposition ? "if(engine!=16 && secondaryEngine==16) ghostOpacity*=territoryMask(uv)*compositionAmount;" : ""}
          col=mix(col,ghost.rgb,clamp(ghostOpacity*(.52+.48*ghost.a),0.,1.));`
       : "");
+    source=source.replace("/* SUBSTANCE_MODULE */",withSubstance?substanceGLSL:"");
+    source=source.replace("/* SUBSTANCE_POST */",
+      withSubstance?"col=livingSubstance(col,uv,p,v);":"");
     source=source.replace("/* MICRO_MODULE */",withMicro?microGLSL:"");
     source=source.replace("/* MICRO_POST */",withMicro?"col=movingMicrostructure(col,p,uv,v);":"");
     source=source.replace("/* BACKDROP_MODULE */",withBackdrop?backdropGLSL:"");
@@ -534,7 +544,7 @@ export function createRenderer(canvas) {
       // Progressive shader fallback: the newest optional effects are disabled
       // one at a time if the driver cannot compile them. Legacy fields stay visible.
       let lastCompileError = null;
-      for(let attempt=0;attempt<7;attempt++){
+      for(let attempt=0;attempt<8;attempt++){
         const candidate=compatibleShaderState(s);
         try {
           active=programFor(candidate);
@@ -545,6 +555,9 @@ export function createRenderer(canvas) {
           if(candidate.letteringAmount>0 && candidate.lettering.trim()){
             typeShaderUnavailable=true;
             console.warn("Kinetic lettering shader unavailable, preserving original art.",e);
+          }else if(candidate.substanceAmount>0){
+            substanceUnavailable=true;
+            console.warn("Sample-vault substance shader unsupported; preserving the original artwork.",e);
           }else if(candidate.microAmount>0){
             microUnavailable=true;
             console.warn("Living microtexture unsupported; continuing with the original artwork.",e);
@@ -647,6 +660,8 @@ export function createRenderer(canvas) {
         "backdropGlow","backdropHue","backdropVariation",
         "microAmount","microScale","microMotion","microRelief",
         "microDensity","microHue","microVariation",
+        "substanceAmount","substanceScale","substanceMotion",
+        "substanceRelief","substanceEdge","substanceHue","substanceVariation",
         "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
         "tunnelAperture","tunnelVariation",
       ])
@@ -670,6 +685,9 @@ export function createRenderer(canvas) {
       ].indexOf(s.tunnelMode));
       gl.uniform1i(loc("microMode"), ["Living embroidery","Opal granulation",
         "Gel caustics","Point lace","Glass filaments","Crystalline cilia"].indexOf(s.microMode));
+      gl.uniform1i(loc("substanceMode"), [
+        "CMY lithogenesis","Chromatophore reef",
+        "Chitin interference","Conformal chromasoup"].indexOf(s.substanceMode));
       gl.uniform1i(loc("backdropMode"), ["Nebula veils","Cosmic pollen",
         "Caustic undercurrent","Ghost architecture","Phosphor jacquard",
         "Opal cell fog"].indexOf(s.backdropMode));

@@ -119,8 +119,8 @@ test("appearance sliders round trip, reject invalid numbers and keep vintage rec
   for (const key of appearanceKeys) delete old[key];
   assert.deepEqual(appearanceKeys.map(key => parseDocument(old).state[key]), appearanceKeys.map(() => 0));
 });
-test("lookbook contains 92 valid distinct entries including six seamless tunnel species", () => {
-  assert.equal(looks.length, 92);
+test("lookbook contains 100 valid distinct entries including sample-derived living substances", () => {
+  assert.equal(looks.length, 100);
   assert.equal(new Set(looks.map(look => look.name)).size, looks.length);
   for (const look of looks) assert.deepEqual(parseDocument(look.state).state, look.state);
   assert.ok(looks.some(look => look.state.windowCascade > 0));
@@ -832,4 +832,50 @@ test("All four color actions live in the Color tab and stay undoable via history
     assert.match(ui,new RegExp("function "+handler+"\\(\\)\\s*\\{\\s*history\\.change\\("));
   assert.match(ui,/customPalettes\],s\.colors/);
   assert.match(ui,/colors:reverseColorStops\(s\.colors\)/);
+});
+
+test("Substance Lab modes migrate safely and all seven knobs save via recipes", async()=>{
+  const {substanceModes,numericRanges}=await import("../src/data.js");
+  assert.equal(substanceModes.length,4);
+  const keys=["substanceAmount","substanceScale","substanceMotion",
+    "substanceRelief","substanceEdge","substanceHue","substanceVariation"];
+  const old={...initial};delete old.substanceMode;
+  for(const key of keys)delete old[key];
+  const restored=parseDocument(old).state;
+  assert.equal(restored.substanceMode,"CMY lithogenesis");
+  assert.equal(restored.substanceAmount,0);
+  for(const key of keys){
+    assert.deepEqual(numericRanges[key],[0,100]);
+    const s={...initial,[key]:73};
+    assert.equal(parseDocument(recipeDocument(s,"Substance",{time:2,colorTime:4})).state[key],73);
+    assert.throws(()=>parseDocument({...s,[key]:101}));
+  }
+  assert.throws(()=>parseDocument({...initial,substanceMode:"Imaginary"}));
+  assert.equal(looks.filter(l=>l.family==="Substance").length,8);
+  assert.equal(new Set(looks.filter(l=>l.family==="Substance").map(l=>l.state.substanceMode)).size,4);
+  assert.ok(looks.filter(l=>l.family==="Substance").every(l=>!l.state.lettering));
+});
+test("Substance Lab changes species in Surprise Me but keeps manual quote empty",async()=>{
+  for(const v of [.1,.27,.49,.81,.99]){
+    const s=randomize({...initial,substanceMode:"CMY lithogenesis",lettering:"I OWN THE WORDS"},{},false,()=>v);
+    assert.notEqual(s.substanceMode,"CMY lithogenesis");
+    assert.ok(s.substanceScale>=20 && s.substanceMotion>=24);
+    assert.ok(Number.isFinite(s.substanceVariation));
+    assert.equal(s.lettering,"");
+  }
+  const m=randomize({...initial,substanceMode:"Chitin interference",substanceAmount:80},{},true,()=>.8);
+  assert.equal(m.substanceMode,"Chitin interference");
+  assert.notEqual(m.substanceAmount,80);
+});
+test("Substance shader is opt-in, palette-linked and uses safe mobile fallback",async()=>{
+  const {readFileSync}=await import("node:fs");
+  const code=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
+  const source=readFileSync(new URL("../src/substance.js",import.meta.url),"utf8");
+  assert.match(code,/withSubstance = s\.substanceAmount>0/);
+  assert.match(code,/livingSubstance\(col,uv,p,v\)/);
+  assert.match(code,/substanceUnavailable=true/);
+  assert.match(code,/substanceMode/);
+  assert.match(source,/Pigment organelles/);
+  assert.match(source,/float mink=mix\(length\(delta\)/);
+  assert.match(source,/vec3 pigment=palette\(gradient\)/);
 });

@@ -28,7 +28,7 @@ import {
   Dna,
   Box,
 } from "lucide-react";
-import { engineInfo, engines, touchModes, makeMark, motionModes, letteringStyles, compositionModes, backdropModes, microModes } from "../data";
+import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, letteringStyles, compositionModes, backdropModes, microModes } from "../data";
 import { Parameter, Range, Switch, Select, Section } from "./Controls";
 import { retroFonts, retroFontGroups, getRetroFont, ensureRetroFontLoaded } from "../retro-fonts";
 const icons = [
@@ -121,6 +121,26 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
         />
         <Switch label="Mirror dimension" name="mirror" history={history} />
       </Section>
+      {selected(5) && (
+        <Section title="TUNNEL MORPHOLOGY — SEAMLESS" defaultOpen>
+          <Select label="360° tunnel species" value={state.tunnelMode}
+            onChange={(v)=>history.change(s=>({...s,tunnelMode:v}))}>
+            {tunnelModes.map(mode=><option key={mode}>{mode}</option>)}
+          </Select>
+          <Parameter label="Spiral twist" name="tunnelTwist" history={history}/>
+          <Parameter label="Tunnel depth" name="tunnelDepth" history={history}/>
+          <Parameter label="Ridges and spiral arms" name="tunnelRidges" history={history}/>
+          <Parameter label="Pulse speed" name="tunnelPulse" history={history}/>
+          <Parameter label="Central aperture" name="tunnelAperture" history={history}/>
+          <Parameter label="Variation" name="tunnelVariation" history={history}/>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>({...s,tunnelVariation:
+              (s.tunnelVariation+13+Math.random()*71)%100}))}>
+            Reshape tunnel only
+          </button>
+          <p className="control-note">Six different 360-degree structures, including seam-free color spirals. Surprise Me changes all of these; the secondary engine works too.</p>
+        </Section>
+      )}
       {(selected(12) || selected(13) || selected(14) || selected(15) || selected(16)) && (
         <Section title="IMPOSSIBLE GEOMETRY">
           {selected(12) && <Parameter label="Hyperbolic fold depth" name="hyperbolicFold" history={history} />}

@@ -119,8 +119,8 @@ test("appearance sliders round trip, reject invalid numbers and keep vintage rec
   for (const key of appearanceKeys) delete old[key];
   assert.deepEqual(appearanceKeys.map(key => parseDocument(old).state[key]), appearanceKeys.map(() => 0));
 });
-test("lookbook contains 84 valid distinct entries including living microscopic textures", () => {
-  assert.equal(looks.length, 84);
+test("lookbook contains 92 valid distinct entries including six seamless tunnel species", () => {
+  assert.equal(looks.length, 92);
   assert.equal(new Set(looks.map(look => look.name)).size, looks.length);
   for (const look of looks) assert.deepEqual(parseDocument(look.state).state, look.state);
   assert.ok(looks.some(look => look.state.windowCascade > 0));
@@ -690,4 +690,89 @@ test("mobile studio keeps one canvas above resize divider and independent scroll
   assert.match(style,/flex:0 0 min\(var\(--canvas-pane-ratio,58%\),calc\(100% - 175px\)\)/);
   assert.match(controls,/aria-expanded=\{expanded\}/);
   assert.match(controls,/section-disclosure/);
+});
+
+test("Tunnel Vision and the global Phase vortex do not contain raw angular branch cuts", async () => {
+  const {readFileSync}=await import("node:fs");
+  const shader=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
+  const tunnels=readFileSync(new URL("../src/tunnels.js",import.meta.url),"utf8");
+  const composition=readFileSync(new URL("../src/composition.js",import.meta.url),"utf8");
+  assert.ok(shader.includes("else if(kind==5){f=seamlessTunnel(p);}"));
+  assert.ok(!shader.includes("atan(p.y,p.x)*(.7+complexity)"));
+  assert.ok(!shader.includes("atan(s.y,s.x)/TAU"));
+  assert.ok(!shader.includes("atan(z.y,z.x)*.1"));
+  assert.ok(shader.includes("sin(angle*2.+radial*3.1"));
+  assert.ok(shader.includes("float angle=atan(s.y,s.x)"));
+  assert.ok(shader.includes("withTunnel ? tunnelGLSL"));
+  assert.ok(shader.includes("tunnelGLSL"));
+  assert.ok(tunnels.includes("float seamlessTunnel(vec2 p)"));
+  assert.ok(tunnels.includes("floor(tunnelRidges*10.)"));
+  assert.ok(tunnels.includes("if(tunnelMode==4)"));
+  assert.ok(composition.includes("sin(angle*5.+radius"));
+});
+test("Tunnel morphology recipes, Surprise and Mutate cover all six modes and controls", async () => {
+  const {tunnelModes,numericRanges}=await import("../src/data.js");
+  assert.equal(tunnelModes.length,6);
+  const knobs=["tunnelTwist","tunnelDepth","tunnelRidges",
+    "tunnelPulse","tunnelAperture","tunnelVariation"];
+  const legacy={...initial};delete legacy.tunnelMode;
+  for(const key of knobs)delete legacy[key];
+  assert.equal(parseDocument(legacy).state.tunnelMode,"Infinite spiral");
+  for(const key of knobs){
+    assert.deepEqual(numericRanges[key],[0,100]);
+    const stored=recipeDocument({...initial,engine:5,[key]:72},"tunnel",{time:2,colorTime:3});
+    assert.equal(parseDocument(stored).state[key],72);
+    assert.throws(()=>parseDocument({...initial,[key]:103}));
+  }
+  assert.throws(()=>parseDocument({...initial,tunnelMode:"Unreal"}));
+  assert.equal(looks.filter(l=>l.family==="Tunnel").length,8);
+  assert.ok(looks.filter(l=>l.family==="Tunnel").every(l=>!l.state.lettering));
+  for(const v of [0,.09,.37,.63,.91,.99]){
+    const s=randomize({...initial,engine:5,tunnelMode:"Infinite spiral"},{},false,()=>v);
+    assert.ok(tunnelModes.includes(s.tunnelMode));
+    assert.notEqual(s.tunnelMode,"Infinite spiral");
+    assert.ok(s.tunnelPulse>=21&&s.tunnelTwist>=12);
+    assert.equal(s.lettering,"");
+  }
+  const mutation=randomize({...initial,engine:5,tunnelMode:"Moiré throat"},{},true,()=>.83);
+  assert.equal(mutation.tunnelMode,"Moiré throat");
+  assert.notEqual(mutation.tunnelTwist,initial.tunnelTwist);
+});
+test("all polar tunnel building blocks match at ±π for all permitted ridge counts",()=>{
+  const tau=2*Math.PI;
+  const angles=[-Math.PI,Math.PI];
+  for(let n=2;n<=12;n++){
+    for(const r of [.1,.7,1.8,4.3]){
+      for(const t of [0,.7,2.1,8.9]){
+        const tw=.63,depth=.74,phase=.41*tau;
+        const radial=Math.log(1+r*(.65+depth*3.2));
+        const values=angles.map(a=>{
+          const turn=a*n+radial*(3+tw*7)-t*.87+phase;
+          const counter=a*(n+2)-radial*(2.8+tw*5.2)+t*.62-phase*.7;
+          const shell=Math.sin(radial*(14+tw*10)+Math.sin(a*n-t*.57)*1.3-t*.43);
+          const scallop=.62+.38*Math.cos(a*n+t*.46);
+          return [
+            Math.sin(turn),
+            Math.cos(counter),
+            Math.sin(a*(n+1)+radial*5.4+t*.34),
+            shell,
+            Math.cos(a*n+radial*3.6+t*.41),
+            Math.sin(turn)*Math.cos(counter),
+            Math.sin((turn+counter)*.5),
+            Math.sin((turn-counter)*.5),
+            Math.sin(r*(8+tw*9)/scallop-t*.66+phase),
+            Math.cos(a*(n+2)-radial*3.9+t*.33),
+          ];
+        });
+        for(let j=0;j<values[0].length;j++){
+          assert.ok(Math.abs(values[0][j]-values[1][j])<1e-9,
+            "Polar branch discontinuity at ridge "+n+", harmonic "+j);
+        }
+      }
+    }
+  }
+  for(const r of [.3,1,3]){
+    const colorVoice=a=>.27*Math.sin(a*2+r*3.1-.9)+.22*Math.cos(a*3-r*2.2+.4);
+    assert.ok(Math.abs(colorVoice(-Math.PI)-colorVoice(Math.PI))<1e-9);
+  }
 });

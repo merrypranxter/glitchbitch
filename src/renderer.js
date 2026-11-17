@@ -11,6 +11,7 @@ import { ensureRetroFontLoaded, retroFontReady, retroFontRevision } from "./retr
 import { compositionGLSL } from "./composition.js";
 import { backdropGLSL } from "./backdrops.js";
 import { microGLSL } from "./microstructure.js";
+import { tunnelGLSL } from "./tunnels.js";
 
 const vertex = `attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
 const fragment = `precision highp float;
@@ -31,13 +32,14 @@ ${geometryGLSL}
 ${motionGLSL}
 ${bioGLSL}
 /* STEREO_MODULE */
+/* TUNNEL_MODULE */
 float field(vec2 p,int kind){float t=time*.3,f=0.;
 if(kind==0){for(int i=0;i<5;i++){float n=float(i)+1.;p+=warp*.32*vec2(sin(p.y*n+t/n),cos(p.x*n-t/n));f+=sin(p.x*n+cos(p.y*n+t))/n;}f=f*.25+length(p)*.12;}
 else if(kind==1){f=sin(length(p-vec2(sin(t),cos(t)))*12.)*sin(length(p+vec2(cos(t*.7),sin(t*.8)))*13.);f=f*.4+length(p)*.15;}
-else if(kind==2){vec2 z=p*.5;for(int i=0;i<7;i++){z=abs(z)/clamp(dot(z,z),.2,2.)-vec2(.8+warp*.5,.65+sin(t)*.12);}f=length(z)*.25+atan(z.y,z.x)*.1;}
+else if(kind==2){vec2 z=p*.5;for(int i=0;i<7;i++){z=abs(z)/clamp(dot(z,z),.2,2.)-vec2(.8+warp*.5,.65+sin(t)*.12);}f=length(z)*.25+.1*sin(atan(z.y,z.x)*2.+length(z)*2.3);}
 else if(kind==3){f=sin(p.x*(12.+complexity*20.)+t)*sin((p.x*cos(.4+t*.04)+p.y*sin(.4+t*.04))*20.)*.4+sin(length(p)*10.-t)*.2;}
 else if(kind==4){vec2 b=floor(p*(8.+complexity*30.));f=hash(b+floor(t*3.))*.7+sin(b.x*.2+b.y*.3+t)*.3;}
-else if(kind==5){float r=length(p);f=1./(r+.15)*.5+atan(p.y,p.x)*(.7+complexity)+sin(r*12.-t)*warp*.3;}
+else if(kind==5){f=seamlessTunnel(p);}
 else if(kind==6){vec2 q=vec2(fbm(p+t*.14),fbm(p+vec2(4.3,7.1)-t*.12));vec2 r=vec2(fbm(p+q*4.*warp+vec2(1.7,9.2)+t*.13),fbm(p+q*4.*warp+vec2(8.3,2.8)-t*.11));f=fbm(p+r*(2.+warp*4.));}
 else if(kind==7){vec2 z=p*(1.2+complexity*1.8),g=floor(z),q=fract(z);float first=8.,second=8.;for(int j=-1;j<=1;j++){for(int i=-1;i<=1;i++){vec2 o=vec2(float(i),float(j));vec2 h=vec2(hash(g+o),hash(g+o+19.));vec2 point=.5+.42*sin(TAU*h+t*(.3+warp));float d=length(o+point-q);if(d<first){second=first;first=d;}else second=min(second,d);}}f=(second-first)*.65+first*.35;}
 else if(kind==8){float r=length(p),a=atan(p.y,p.x);float petals=3.+floor(complexity*9.);f=sin(r*(5.+warp*8.)-t)*.18+cos(a*petals+t*.7)*exp(-r*.23)*.2+sin(r*3.+a*2.+t)*.16;}
@@ -53,7 +55,10 @@ else {f=0.;}
 return f;}
 float composed(vec2 p){float a=field(p,engine);if(blend<.001)return a;float b=field(rotate(.43)*p+vec2(.37,-.21),secondaryEngine);float c=b;if(blendMode==1)c=a*b*2.;if(blendMode==2)c=abs(a-b);return mix(a,c,blend);}
 float phaseOf(float value,vec2 uv,float source){float bands=(2.+complexity*5.)*pow(2.,(colorRepeat-.5)*2.);float phase=value*bands+seed*.001+seedHigh*.017+colorTime*.04+colorOffset;
-if(colorAmount>.0){float t=colorTime/12.;vec2 s=(uv-.5)*3.;float voice=0.;if(colorMode==0){voice=t+.55*s.x+.22*s.y+.2*sin(TAU*(t+s.y))+.1*sin(TAU*(2.*t+s.x));}else if(colorMode==1){voice=t+.25*s.x+.15*s.y+.24*sin(TAU*(t+.19*s.x+.17*s.y))+.12*sin(TAU*(2.*t+.38*s.x+.17*s.y)+1.7)+.07*sin(TAU*(3.*t+.57*s.x+.17*s.y)+3.4);}else{voice=t+atan(s.y,s.x)/TAU+.25*sin(length(s)*6.-t*TAU);}phase+=colorAmount*voice;}
+if(colorAmount>.0){float t=colorTime/12.;vec2 s=(uv-.5)*3.;float voice=0.;if(colorMode==0){voice=t+.55*s.x+.22*s.y+.2*sin(TAU*(t+s.y))+.1*sin(TAU*(2.*t+s.x));}else if(colorMode==1){voice=t+.25*s.x+.15*s.y+.24*sin(TAU*(t+.19*s.x+.17*s.y))+.12*sin(TAU*(2.*t+.38*s.x+.17*s.y)+1.7)+.07*sin(TAU*(3.*t+.57*s.x+.17*s.y)+3.4);}else{
+  float angle=atan(s.y,s.x),radial=length(s);
+  voice=t+.27*sin(angle*2.+radial*3.1-t*TAU)+.22*cos(angle*3.-radial*2.2+t*.6);
+}phase+=colorAmount*voice;}
 phase+=source;if(posterize)phase=floor(phase*7.)/7.;return phase;}
 /* COMPOSITION_MODULE */
 /* BACKDROP_MODULE */
@@ -389,6 +394,7 @@ export function createRenderer(canvas) {
       withComposition = blended && s.compositionAmount>0,
       withBackdrop = s.backdropAmount>0,
       withMicro = s.microAmount>0,
+      withTunnel = s.engine===5 || (blended && s.secondaryEngine===5),
       key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
@@ -405,6 +411,8 @@ export function createRenderer(canvas) {
     if (!blended)
       source = source.replace("if(blend<.001)return a;", "return a;");
     source = source.replace("/* STEREO_MODULE */", withStereo ? stereoGLSL : "");
+    source = source.replace("/* TUNNEL_MODULE */", withTunnel ? tunnelGLSL :
+      "float seamlessTunnel(vec2 p){return 0.;}");
     source = source.replace("/* STEREO_POST */", withStereo
       ? `vec4 ghost=ghostTrace(p,uv);
          float ghostOpacity=engine==16 ? max(.83,stereoAmount) :
@@ -639,6 +647,8 @@ export function createRenderer(canvas) {
         "backdropGlow","backdropHue","backdropVariation",
         "microAmount","microScale","microMotion","microRelief",
         "microDensity","microHue","microVariation",
+        "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
+        "tunnelAperture","tunnelVariation",
       ])
         gl.uniform1f(loc(k), s[k] / 100);
       gl.uniform1f(loc("rotation"), (s.rotation * Math.PI) / 180);
@@ -654,6 +664,10 @@ export function createRenderer(canvas) {
         ["Traveling wave", "Color canon", "Phase vortex"].indexOf(s.colorMode),
       );
       gl.uniform1i(loc("colorCount"), s.colors.length);
+      gl.uniform1i(loc("tunnelMode"), [
+        "Infinite spiral","Conch cathedral","Braided wormhole",
+        "Moiré throat","Living iris","Liquid vortex"
+      ].indexOf(s.tunnelMode));
       gl.uniform1i(loc("microMode"), ["Living embroidery","Opal granulation",
         "Gel caustics","Point lace","Glass filaments","Crystalline cilia"].indexOf(s.microMode));
       gl.uniform1i(loc("backdropMode"), ["Nebula veils","Cosmic pollen",

@@ -24,7 +24,7 @@ export const engineInfo = [
   ],
   [
     "Tunnel vision",
-    "A polar spiral falls through an infinite color tunnel.",
+    "Six seamless animated polar geometries: infinite spiral, conch, braid, moiré, iris and vortex.",
     "Radial",
   ],
   [
@@ -147,6 +147,7 @@ export const ratios = [
 ];
 export const touchModes = ["Warp", "Vortex", "Repel", "Chroma"];
 export const motionModes = ["Liquid flow", "Breathing", "Orbital", "Traveling waves", "Internal turbulence"];
+export const tunnelModes = ["Infinite spiral","Conch cathedral","Braided wormhole","Moiré throat","Living iris","Liquid vortex"];
 export const stereoShapes = ["Gyroid Cathedral", "Metaball Choir", "Opal Knot", "Crystal Lattice", "Ribbon Wormhole"];
 export const letteringStyles = ["Neon bling", "RGB split", "Chrome foil", "Void stencil"];
 export const compositionModes = [
@@ -196,6 +197,12 @@ export const numericRanges = {
   fractalZoom: [0, 100],
   juliaMix: [0, 100],
   quasiDensity: [0, 100],
+  tunnelTwist: [0, 100],
+  tunnelDepth: [0, 100],
+  tunnelRidges: [0, 100],
+  tunnelPulse: [0, 100],
+  tunnelAperture: [0, 100],
+  tunnelVariation: [0, 100],
   motionAmount: [0, 100],
   motionRate: [0, 100],
   lightMotion: [0, 100],
@@ -292,6 +299,13 @@ export const initial = {
   fractalZoom: 25,
   juliaMix: 0,
   quasiDensity: 50,
+  tunnelMode: "Infinite spiral",
+  tunnelTwist: 52,
+  tunnelDepth: 61,
+  tunnelRidges: 48,
+  tunnelPulse: 49,
+  tunnelAperture: 35,
+  tunnelVariation: 27,
   motionAmount: 0,
   motionRate: 50,
   lightMotion: 0,
@@ -412,6 +426,7 @@ export function validateRecipe(input) {
     blendMode: ["Mix", "Multiply", "Difference"],
     colorMode: ["Traveling wave", "Color canon", "Phase vortex"],
     motionMode: motionModes,
+    tunnelMode: tunnelModes,
     stereoShape: stereoShapes,
     letteringStyle: letteringStyles,
     letteringFont: retroFontIds,
@@ -569,6 +584,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "blend","block","pixel","vignette","phosphor","dither","riso","windowCascade",
       "glitter","broadcast","misregister","afterimage","datamosh","memoryDrift",
       "memoryDecay","hyperbolicFold","fractalZoom","juliaMix","quasiDensity",
+      "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
+      "tunnelAperture","tunnelVariation",
       "motionAmount","motionRate","lightMotion","bioAmount","bioFeed","bioKill",
       "bioSpeed","bioVeins","stereoAmount","stereoDepth","stereoParallax",
       "stereoMorph","stereoGlow","stereoWiggle","stereoQuality",
@@ -633,6 +650,13 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.afterimage=random()<.45?20+random()*62:0;
   s.datamosh=random()<.35?22+random()*64:0;
   s.memoryDrift=10+random()*76;s.memoryDecay=10+random()*60;
+  s.tunnelMode=different(tunnelModes,state.tunnelMode,random);
+  s.tunnelTwist=12+random()*87;
+  s.tunnelDepth=19+random()*79;
+  s.tunnelRidges=11+random()*88;
+  s.tunnelPulse=21+random()*77;
+  s.tunnelAperture=8+random()*90;
+  s.tunnelVariation=random()*100;
   s.hyperbolicFold=15+random()*85;s.fractalZoom=random()*90;
   s.juliaMix=random()*100;s.quasiDensity=12+random()*83;
   s.bioFeed=22+random()*55;s.bioKill=22+random()*57;
@@ -1309,5 +1333,53 @@ export const looks = [
     note: "Fractal boundary lenses nested inside swimming pearlescent ringlets",
     family: "Microtexture",
     state: {...initial,engine:13,palette:9,colors:palettes[9].colors,microMode:"Opal granulation",microAmount:86,microScale:67,microMotion:64,microRelief:88,microDensity:82,microHue:74,microVariation:58,fractalZoom:55,opalAmount:84,filmAmount:93,backdropAmount:63,motionAmount:64,lightMotion:95,seed:527174},
+  },
+  {
+    name: "Infinite Slinky Cathedral",
+    note: "A seamless radio-color vortex of animated spiraling ridges",
+    family: "Tunnel",
+    state: {...initial,engine:5,palette:1,colors:palettes[1].colors,tunnelMode:"Infinite spiral",tunnelTwist:79,tunnelDepth:92,tunnelRidges:62,tunnelPulse:81,tunnelAperture:21,tunnelVariation:16,motionAmount:33,motionRate:76,lightMotion:94,seed:361745},
+  },
+  {
+    name: "Conch Cathedral Signal",
+    note: "Opalescent shell ribs spiraling inward without tearing",
+    family: "Tunnel",
+    state: {...initial,engine:5,palette:10,colors:palettes[10].colors,tunnelMode:"Conch cathedral",tunnelTwist:66,tunnelDepth:75,tunnelRidges:44,tunnelPulse:72,tunnelAperture:37,tunnelVariation:44,filmAmount:75,opalAmount:65,motionAmount:41,lightMotion:83,seed:741630},
+  },
+  {
+    name: "Braided Wormhole Afterparty",
+    note: "Countertwisting fluorescent helices with animated afterimages",
+    family: "Tunnel",
+    state: {...initial,engine:5,palette:15,colors:palettes[15].colors,tunnelMode:"Braided wormhole",tunnelTwist:92,tunnelDepth:82,tunnelRidges:73,tunnelPulse:91,tunnelAperture:31,tunnelVariation:64,afterimage:31,memoryDrift:35,motionAmount:25,lightMotion:78,seed:520843},
+  },
+  {
+    name: "Moiré Throat Peacock",
+    note: "Polar standing-wave interference with iridescent ridges",
+    family: "Tunnel",
+    state: {...initial,engine:5,palette:8,colors:palettes[8].colors,tunnelMode:"Moiré throat",tunnelTwist:86,tunnelDepth:71,tunnelRidges:80,tunnelPulse:61,tunnelAperture:41,tunnelVariation:79,prismAmount:56,phosphor:36,motionAmount:49,lightMotion:88,seed:940173},
+  },
+  {
+    name: "Living Iris Reactor",
+    note: "Organism-like aperture contracting inside rotating petals",
+    family: "Tunnel",
+    state: {...initial,engine:5,palette:6,colors:palettes[6].colors,tunnelMode:"Living iris",tunnelTwist:51,tunnelDepth:89,tunnelRidges:28,tunnelPulse:86,tunnelAperture:16,tunnelVariation:38,bioAmount:39,bioSpeed:54,opalAmount:47,motionAmount:54,lightMotion:83,seed:395162},
+  },
+  {
+    name: "Liquid Vortex Witchery",
+    note: "Swirling mathematical liquid carrying thin-film colors",
+    family: "Tunnel",
+    state: {...initial,engine:5,palette:11,colors:palettes[11].colors,tunnelMode:"Liquid vortex",tunnelTwist:68,tunnelDepth:81,tunnelRidges:56,tunnelPulse:76,tunnelAperture:45,tunnelVariation:71,filmAmount:69,opalAmount:77,backdropAmount:54,motionAmount:83,lightMotion:90,seed:836024},
+  },
+  {
+    name: "Opal Tunnel Parasite",
+    note: "Spiral material and chemical organisms trade inside moving portals",
+    family: "Tunnel",
+    state: {...initial,engine:5,palette:3,colors:palettes[3].colors,tunnelMode:"Braided wormhole",secondaryEngine:15,blend:71,compositionMode:"Iris portals",compositionAmount:82,tunnelTwist:75,tunnelDepth:79,tunnelRidges:58,tunnelPulse:73,tunnelAperture:24,tunnelVariation:55,bioAmount:43,opalAmount:78,motionAmount:56,lightMotion:91,seed:570326},
+  },
+  {
+    name: "Chromatic Iris Feedback",
+    note: "Animated iris with 360-degree color vortex and feedback",
+    family: "Tunnel",
+    state: {...initial,engine:5,palette:7,colors:palettes[7].colors,tunnelMode:"Living iris",secondaryEngine:14,blend:66,compositionMode:"Orbital archipelagos",compositionAmount:60,tunnelTwist:72,tunnelDepth:84,tunnelRidges:67,tunnelPulse:83,tunnelAperture:38,tunnelVariation:89,colorMode:"Phase vortex",colorAmount:75,afterimage:29,motionAmount:72,lightMotion:94,seed:648291},
   },
 ];

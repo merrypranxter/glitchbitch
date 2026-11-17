@@ -148,6 +148,10 @@ export const touchModes = ["Warp", "Vortex", "Repel", "Chroma"];
 export const motionModes = ["Liquid flow", "Breathing", "Orbital", "Traveling waves", "Internal turbulence"];
 export const stereoShapes = ["Gyroid Cathedral", "Metaball Choir", "Opal Knot", "Crystal Lattice", "Ribbon Wormhole"];
 export const letteringStyles = ["Neon bling", "RGB split", "Chrome foil", "Void stencil"];
+export const compositionModes = [
+  "Iris portals", "Braided ribbons", "Cell colonies", "Patchwork",
+  "Orbital archipelagos", "Woven windows",
+];
 export const chaosPhrases = ["ERROR ANGEL", "GLITCHBITCH", "LOVE.exe", "U R CUTE", "SOFT APOCALYPSE",
   "INFINITE TRASH", "COSMIC STATIC", "NEON FUNERAL", "NO SIGNAL", "DIVINE MALFUNCTION",
   "HYPERSPACE", "TOXIC DREAM", "BLESSED ERROR", "404 REALITY", "SWEET CORRUPTION"];
@@ -208,6 +212,12 @@ export const numericRanges = {
   letteringScale: [0, 100],
   letteringWarp: [0, 100],
   letteringMotion: [0, 100],
+  compositionAmount: [0, 100],
+  compositionScale: [0, 100],
+  compositionFeather: [0, 100],
+  compositionMotion: [0, 100],
+  compositionColorShift: [0, 100],
+  compositionVariation: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -288,6 +298,13 @@ export const initial = {
   letteringScale: 48,
   letteringWarp: 40,
   letteringMotion: 55,
+  compositionMode: "Iris portals",
+  compositionAmount: 0,
+  compositionScale: 54,
+  compositionFeather: 38,
+  compositionMotion: 52,
+  compositionColorShift: 47,
+  compositionVariation: 50,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -357,6 +374,7 @@ export function validateRecipe(input) {
     motionMode: motionModes,
     stereoShape: stereoShapes,
     letteringStyle: letteringStyles,
+    compositionMode: compositionModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -512,6 +530,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "stereoMorph","stereoGlow","stereoWiggle","stereoQuality",
       "filmAmount","filmThickness","opalAmount","prismAmount","foilRelief","foilMotion",
       "letteringAmount","letteringScale","letteringWarp","letteringMotion",
+      "compositionAmount","compositionScale","compositionFeather",
+      "compositionMotion","compositionColorShift","compositionVariation",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -587,6 +607,15 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.letteringScale=22+random()*72;
   s.letteringWarp=12+random()*77;
   s.letteringMotion=24+random()*75;
+  // Composition is a separately randomized spatial design, not a palette shuffle.
+  s.compositionMode=different(compositionModes,state.compositionMode,random);
+  s.compositionAmount=random()<.84 ? 53+random()*46 : 0;
+  s.compositionScale=18+random()*78;
+  s.compositionFeather=12+random()*68;
+  s.compositionMotion=30+random()*70;
+  s.compositionColorShift=18+random()*77;
+  s.compositionVariation=random()*100;
+  if(s.compositionAmount>0 && s.blend<.2) s.blend=25+random()*65;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;
@@ -1013,5 +1042,85 @@ export const looks = [
     note: "Kinetic RGB typography inside an impossible prismatic camera",
     family: "Type",
     state: { ...initial, engine: 14, palette: 6, colors: palettes[6].colors, lettering: "COSMIC STATIC", letteringStyle: "RGB split", letteringAmount: 95, letteringScale: 71, letteringWarp: 76, letteringMotion: 94, prismAmount: 92, opalAmount: 47, filmAmount: 64, quasiDensity: 57, motionAmount: 79, lightMotion: 84, seed: 71691 },
+  },
+  {
+    name: "Iris Portal Surgery",
+    note: "Four breathing iris worlds reveal a different mathematical cosmos",
+    family: "Composition",
+    state: { ...initial, engine: 12, secondaryEngine: 3,
+      palette: 8, colors: palettes[8].colors,
+      compositionMode: "Iris portals", compositionAmount: 97, compositionScale: 44, compositionFeather: 34, compositionMotion: 74, compositionColorShift: 68, blend: 88, blendMode: "Difference", filmAmount: 42, opalAmount: 25, motionAmount: 60, lightMotion: 75, seed: 287114 },
+  },
+  {
+    name: "Braided Broadcast Coven",
+    note: "Multiple undulating signal ribbons cross over living cellular boundaries",
+    family: "Composition",
+    state: { ...initial, engine: 3, secondaryEngine: 7,
+      palette: 1, colors: palettes[1].colors,
+      compositionMode: "Braided ribbons", compositionAmount: 100, compositionScale: 53, compositionFeather: 30, compositionMotion: 86, compositionColorShift: 77, blend: 92, blendMode: "Mix", phosphor: 37, scan: 18, motionAmount: 79, lightMotion: 72, seed: 675123 },
+  },
+  {
+    name: "Petri Dish Cathedral",
+    note: "Cell colonies sprout a second hyperbolic universe inside the first",
+    family: "Composition",
+    state: { ...initial, engine: 15, secondaryEngine: 12,
+      palette: 11, colors: palettes[11].colors,
+      compositionMode: "Cell colonies", compositionAmount: 96, compositionScale: 71, compositionFeather: 49, compositionMotion: 65, compositionColorShift: 66, blend: 93, bioAmount: 43, bioSpeed: 74, filmAmount: 67, motionAmount: 35, lightMotion: 73, seed: 817354 },
+  },
+  {
+    name: "Patchwork Nervous Breakdown",
+    note: "A deliberately ragged collage of quiltlike mathematical print territories",
+    family: "Composition",
+    state: { ...initial, engine: 10, secondaryEngine: 11,
+      palette: 15, colors: palettes[15].colors,
+      compositionMode: "Patchwork", compositionAmount: 100, compositionScale: 68, compositionFeather: 12, compositionMotion: 52, compositionColorShift: 84, blend: 91, riso: 74, misregister: 34, motionAmount: 63, lightMotion: 84, seed: 702511 },
+  },
+  {
+    name: "Orbital Ghost Islands",
+    note: "An opalescent 3D apparition rises from moving orbit-shaped portals",
+    family: "Composition",
+    state: { ...initial, engine: 16, secondaryEngine: 6,
+      palette: 8, colors: palettes[8].colors,
+      compositionMode: "Orbital archipelagos", compositionAmount: 88, compositionScale: 39, compositionFeather: 29, compositionMotion: 81, compositionColorShift: 62, blend: 75, stereoShape: "Metaball Choir", stereoAmount: 76, opalAmount: 74, filmAmount: 69, motionAmount: 45, lightMotion: 83, seed: 246718 },
+  },
+  {
+    name: "Woven Window Malfunction",
+    note: "Rounded browser-like windows exchange mathematical fields on the beat",
+    family: "Composition",
+    state: { ...initial, engine: 4, secondaryEngine: 14,
+      palette: 1, colors: palettes[1].colors,
+      compositionMode: "Woven windows", compositionAmount: 100, compositionScale: 76, compositionFeather: 16, compositionMotion: 66, compositionColorShift: 75, blend: 100, windowCascade: 42, glitter: 47, dither: 52, motionAmount: 57, lightMotion: 69, seed: 503947 },
+  },
+  {
+    name: "Quasicrystal Retina Detachment",
+    note: "Aperiodic interference rosettes embedded in migrating circular apertures",
+    family: "Composition",
+    state: { ...initial, engine: 14, secondaryEngine: 13,
+      palette: 6, colors: palettes[6].colors,
+      compositionMode: "Iris portals", compositionAmount: 98, compositionScale: 82, compositionFeather: 43, compositionMotion: 93, compositionColorShift: 91, blend: 91, prismAmount: 87, foilMotion: 76, motionAmount: 67, lightMotion: 91, seed: 618273 },
+  },
+  {
+    name: "Candy Riot Channel Weave",
+    note: "Acid fractals flow in and out of braided color channels",
+    family: "Composition",
+    state: { ...initial, engine: 13, secondaryEngine: 0,
+      palette: 10, colors: palettes[10].colors,
+      compositionMode: "Braided ribbons", compositionAmount: 96, compositionScale: 61, compositionFeather: 46, compositionMotion: 86, compositionColorShift: 89, blend: 81, filmAmount: 95, lettering: "COSMIC STATIC", letteringAmount: 72, letteringMotion: 81, motionAmount: 86, lightMotion: 94, seed: 861420 },
+  },
+  {
+    name: "Cellular Newsprint Petri",
+    note: "A retro print experiment with drifting chemical territories",
+    family: "Composition",
+    state: { ...initial, engine: 9, secondaryEngine: 15,
+      palette: 15, colors: palettes[15].colors,
+      compositionMode: "Cell colonies", compositionAmount: 96, compositionScale: 86, compositionFeather: 24, compositionMotion: 73, compositionColorShift: 63, blend: 88, blendMode: "Multiply", riso: 90, dither: 53, bioAmount: 74, motionAmount: 59, lightMotion: 80, seed: 982245 },
+  },
+  {
+    name: "Impossible Lace Quilt",
+    note: "Orbit lace fragments and crystalline cutouts inside animated textile blocks",
+    family: "Composition",
+    state: { ...initial, engine: 8, secondaryEngine: 11,
+      palette: 7, colors: palettes[7].colors,
+      compositionMode: "Patchwork", compositionAmount: 99, compositionScale: 78, compositionFeather: 29, compositionMotion: 58, compositionColorShift: 79, blend: 91, foilRelief: 46, filmAmount: 44, motionAmount: 73, lightMotion: 78, seed: 120957 },
   },
 ];

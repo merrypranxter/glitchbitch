@@ -119,8 +119,8 @@ test("appearance sliders round trip, reject invalid numbers and keep vintage rec
   for (const key of appearanceKeys) delete old[key];
   assert.deepEqual(appearanceKeys.map(key => parseDocument(old).state[key]), appearanceKeys.map(() => 0));
 });
-test("lookbook contains 57 valid distinct entries including optical materials and kinetic typography", () => {
-  assert.equal(looks.length, 57);
+test("lookbook contains 67 valid distinct entries including animated mathematical compositions", () => {
+  assert.equal(looks.length, 67);
   assert.equal(new Set(looks.map(look => look.name)).size, looks.length);
   for (const look of looks) assert.deepEqual(parseDocument(look.state).state, look.state);
   assert.ok(looks.some(look => look.state.windowCascade > 0));
@@ -388,5 +388,60 @@ test("opt-in material or type compile failures progressively retain the old 2D a
   assert.match(renderer,/materialUnavailable=true/);
   assert.match(renderer,/typeShaderUnavailable=true/);
   assert.match(renderer,/compatibleShaderState\(s\)/);
-  assert.match(renderer,/for\(let attempt=0;attempt<4;attempt\+\+\)/);
+  assert.match(renderer,/for\(let attempt=0;attempt<5;attempt\+\+\)/);
+});
+
+test("composition regions are independently editable and migrate from legacy full-canvas blends", async () => {
+  const {compositionModes}=await import("../src/data.js");
+  assert.equal(compositionModes.length,6);
+  const keys=["compositionAmount","compositionScale","compositionFeather","compositionMotion","compositionColorShift","compositionVariation"];
+  for(const key of keys){
+    const recipe={...initial,[key]:79};
+    assert.equal(parseDocument(recipeDocument(recipe,"Territories",{time:2,colorTime:3})).state[key],79);
+    assert.throws(()=>parseDocument({...recipe,[key]:101}));
+  }
+  const legacy={...initial};
+  for(const key of keys)delete legacy[key];
+  delete legacy.compositionMode;
+  const restored=parseDocument(legacy).state;
+  assert.equal(restored.compositionAmount,0);
+  assert.equal(restored.compositionMode,"Iris portals");
+  assert.throws(()=>parseDocument({...initial,compositionMode:"Unreal mask"}));
+  const created=randomize({...initial,compositionMode:"Iris portals",engine:3},{},false,()=>.72);
+  assert.notEqual(created.compositionMode,"Iris portals");
+  assert.ok(created.compositionAmount>0 && created.blend>0);
+  assert.ok(looks.filter(l=>l.family==="Composition").length===10);
+  assert.ok(looks.every(l=>parseDocument(l.state).state.engine===l.state.engine));
+});
+test("composition GLSL uses distinct masked second-field color and only compiles when enabled", async () => {
+  const {readFileSync}=await import("node:fs");
+  const renderer=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
+  const composition=readFileSync(new URL("../src/composition.js",import.meta.url),"utf8");
+  assert.match(renderer,/withComposition = blended && s\.compositionAmount>0/);
+  assert.match(renderer,/territoryComposite\(col,p,uv,source\)/);
+  assert.match(renderer,/if\(withComposition\)source=source\.replace/);
+  assert.match(composition,/territoryMask\(vec2 uv\)/);
+  assert.match(composition,/field\(rotate\(\.43\)\*p/);
+  assert.match(composition,/palette\(phaseOf\(c,uv,touchSource\)/);
+});
+
+test("territory variation remains independent of the base seed; 3D secondary is spatially masked", async () => {
+  const {readFileSync}=await import("node:fs");
+  const composition=readFileSync(new URL("../src/composition.js",import.meta.url),"utf8");
+  const renderer=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
+  assert.match(composition,/compositionVariation/);
+  assert.match(composition,/variation\*1\.73/);
+  assert.match(renderer,/ghostOpacity\*=territoryMask\(uv\)\*compositionAmount/);
+  const varied={...initial,compositionVariation:91,seed:initial.seed};
+  assert.equal(parseDocument(varied).state.seed,initial.seed);
+  assert.equal(parseDocument(varied).state.compositionVariation,91);
+});
+
+test("unsupported spatial composition recompiles using legacy full-canvas blend", async () => {
+  const {readFileSync}=await import("node:fs");
+  const renderer=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
+  const composition=readFileSync(new URL("../src/composition.js",import.meta.url),"utf8");
+  assert.match(renderer,/compositionUnavailable=true/);
+  assert.match(renderer,/compositionUnavailable \? \{compositionAmount:0\}/);
+  assert.match(composition,/export const compositionGLSL/);
 });

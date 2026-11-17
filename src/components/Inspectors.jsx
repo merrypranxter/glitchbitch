@@ -28,7 +28,7 @@ import {
   Dna,
   Box,
 } from "lucide-react";
-import { engineInfo, engines, touchModes, makeMark, motionModes, letteringStyles } from "../data";
+import { engineInfo, engines, touchModes, makeMark, motionModes, letteringStyles, compositionModes } from "../data";
 import { Parameter, Range, Switch, Select, Section } from "./Controls";
 const icons = [
   Waves,
@@ -332,11 +332,42 @@ export function LayersInspector({ history }) {
             : "Disable the second field"}
         </button>
       </Section>
+      <Section title="SPATIAL COMPOSITION — DIFFERENT WORLDS">
+        <Select label="Territory arrangement" value={s.compositionMode}
+          onChange={(v) => history.change((x) => ({...x, compositionMode:v}))}>
+          {compositionModes.map((mode) => <option key={mode}>{mode}</option>)}
+        </Select>
+        <Parameter label="Composition strength" name="compositionAmount" history={history} />
+        <Parameter label="Territory size / density" name="compositionScale" history={history} />
+        <Parameter label="Softness of boundaries" name="compositionFeather" history={history} />
+        <Parameter label="Territory movement" name="compositionMotion" history={history} />
+        <Parameter label="Second world's palette shift" name="compositionColorShift" history={history} />
+        <Parameter label="Territory variation" name="compositionVariation" history={history} />
+        <div className="layer-actions" style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          <button type="button" className="button secondary"
+            onClick={() => history.change((x) => ({...x,compositionVariation:
+              (x.compositionVariation+17+Math.random()*61)%100}))}>
+            Shuffle territory layout
+          </button>
+          <button type="button" className="button secondary"
+            onClick={() => history.change((x) =>
+              ({...x,engine:x.secondaryEngine,secondaryEngine:x.engine}))}>
+            Swap mathematical worlds
+          </button>
+        </div>
+        <p className="control-note">
+          The second mathematical engine occupies independently animated shapes:
+          portals, ribbons, cells, quilt pieces, orbital islands or woven windows.
+          Each territory reveals a different structure and a shifted phase of the
+          shared palette. Set strength to 0%
+          for the original full-canvas blend. Turn on the second field above to see them.
+        </p>
+      </Section>
       <Section title="WHAT GETS SHARED">
         <p className="control-note">
-          Both fields share your scale, warp, complexity, touch sources, and
-          clock. The combined structure flows through one color palette and
-          effect chain.
+          Both fields still share your palette, scale, touches and clocks. Spatial
+          composition adds separate color-phase territories without discarding
+          your original mathematical blend modes.
         </p>
       </Section>
     </>

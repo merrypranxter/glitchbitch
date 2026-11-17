@@ -93,3 +93,25 @@ export function drawLetteringDecoration(ctx,glyph,size,x,y,stroke=0){
  if(glyph.format.underline)ctx.fillRect?.(x-w/2,y+size*.45,w,h);
  if(glyph.format.strike)ctx.fillRect?.(x-w/2,y-size*.015,w,h);
 }
+
+/** Continuous word-wide underline/strike runs on static text bitmaps. */
+export function drawLineDecorations(ctx,glyphs,size) {
+ for(const key of ["underline","strike"]){
+   let group=null;
+   const flush=()=>{
+     if(!group)return;
+     const thickness=Math.max(1,size*.055);
+     const yy=key==="underline"?group.y+size*.45:group.y-size*.015;
+     ctx.fillRect?.(group.left,yy,Math.max(1,group.right-group.left),thickness);
+     group=null;
+   };
+   for(const glyph of glyphs){
+     if(!glyph.format[key]){flush();continue;}
+     const left=glyph.x-glyph.raw/2,right=glyph.x+glyph.raw/2;
+     const adjacent=group && group.line===glyph.line && group.lastEnd===glyph.index;
+     if(!adjacent){flush();group={left,right,y:glyph.y,line:glyph.line,lastEnd:glyph.index+glyph.char.length};}
+     else{group.right=right;group.lastEnd=glyph.index+glyph.char.length;}
+   }
+   flush();
+ }
+}

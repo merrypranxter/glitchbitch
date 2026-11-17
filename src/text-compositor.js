@@ -7,6 +7,9 @@ import { glyphCanvas } from "./kinetic-type.js";
 import { ensureRetroFontLoaded, retroFontRevision } from "./retro-fonts.js";
 import { letteringMaterial, textMotion } from "./lettering-materials.js";
 import { getLetteringBlendRecipe, letteringBlendPulse } from "./lettering-blends.js";
+import { createLetteringSprites } from "./lettering-sprites.js";
+import { letteringMotionAt, letteringLiquidAt, letteringComposeGlyph,
+  letteringMotionIsPerLetter } from "./lettering-motion.js";
 
 const glyphCache = new Map();
 const LIMIT = 8;
@@ -59,7 +62,7 @@ function glyphFor(layer, aspect, artworkPalette) {
       glints.restore();
     }
   }
-  const entry = {image,material,tints:new Map()};
+  const entry = {image,material,style,tints:new Map(),sprites:null,spriteTints:new Map()};
   glyphCache.set(key,entry);
   while(glyphCache.size>LIMIT)glyphCache.delete(glyphCache.keys().next().value);
   return entry;
@@ -77,107 +80,137 @@ function tint(entry,color) {
   entry.tints.set(color,image);
   return image;
 }
-function drawLiquidImage(ctx,image,width,height,curve,warp,motion,seconds,dx=0,dy=0) {
-  if(warp < .001 && motion < .001 && Math.abs(curve) < .001) {
-    ctx.drawImage(image,-width/2+dx,-height/2+dy,width,height);
-    return;
-  }
-  // Distortion scales with the canvas, not with a tiny fixed .009 UV offset.
-  // At 100%, letters visibly deform by multiple tens of pixels at phone size.
-  const bands=32;
-  for(let i=0;i<bands;i++) {
-    const y0=Math.round(image.height*i/bands);
-    const y1=Math.round(image.height*(i+1)/bands);
-    if(y1<=y0)continue;
-    const fy=(i+.5)/bands, cy=fy-.5;
-    const bend=curve*.18*(cy*cy-.065)*width;
-    const wave=warp*.064*width*Math.sin(fy*15.3+seconds*3.1);
-    const eddy=warp*.021*width*Math.cos(fy*27.1-seconds*1.7);
-    const local=motion*.018*width*Math.sin(fy*8.2+seconds*2.4);
-    ctx.drawImage(image,0,y0,image.width,y1-y0,
-      -width/2+dx+bend+wave+eddy+local,
-      -height/2+dy+height*y0/image.height,
-      width,height*(y1-y0)/image.height+.8);
-  }
+function tintedSpriteImages(entry,color) {
+ if(entry.spriteTints.has(color))return entry.spriteTints.get(color);
+ const tinted=(entry.sprites?.sprites||[]).map(item=>{
+   const canvas=document.createElement("canvas");
+   canvas.width=item.image.width;canvas.height=item.image.height;
+   const ctx=canvas.getContext("2d");
+   if(!ctx)return item.image;
+   ctx.drawImage(item.image,0,0);
+   ctx.globalCompositeOperation="source-in";
+   ctx.fillStyle=color;ctx.fillRect(0,0,canvas.width,canvas.height);
+   return canvas;
+ });
+ entry.spriteTints.set(color,tinted);
+ return tinted;
 }
-/** Paint at a specific deterministic timeline step; no growing frame history. */
-export function paintLettering(ctx,state,timeline,width,height,clear=false) {
-  if(!ctx||width<1||height<1)return;
-  ctx.save();
-  ctx.setTransform(1,0,0,1,0,0);
-  if(clear)ctx.clearRect(0,0,width,height);
-  if(!hasVisibleLettering(state)) { ctx.restore();return; }
-  // Renderer time advances at speed / 30 per wall second.
-  const seconds=(Number(timeline?.time)||0)*30;
-  for(const layer of layersOf(state)) {
-    if(!active(layer))continue;
-    const {image,material,tints}=glyphFor(layer,width/height,state.colors||[]);
-    const {motion,warp:sliderWarp}=textMotion(layer);
-    const warp=Math.max(sliderWarp,material.preset==="Heatwave" ? .23 : 0);
-    const opacity=Math.max(0,Math.min(1,Number(layer.letteringAmount)/100));
-    const zoom=Math.max(0,Math.min(1,Number(layer.letteringScale??48)/100));
-    const scale=.63+.34*zoom;
-    const stretchX=Math.max(.25,Number(layer.letteringStretchX??100)/100);
-    const stretchY=Math.max(.25,Number(layer.letteringStretchY??100)/100);
-    const positionX=(Number(layer.letteringX??50)/100)*width;
-    const positionY=(1-Number(layer.letteringY??50)/100)*height;
-    const moveX=motion*.089*width*Math.sin(seconds*2.4);
-    const moveY=motion*.051*height*Math.cos(seconds*2.1);
-    const angle=(Number(layer.letteringRotation??0)+motion*11*Math.sin(seconds*1.75))*Math.PI/180;
-    const curve=Number(layer.letteringCurve||0)/100;
+/**
+ * The same closed-loop paths are used in the DOM preview and exports.
+ * Every letter is drawn whole; no horizontal clipping, strips, or seams.
+ */
+export function paintLettering(ctx,state,timeline,width,height,clear=false){
+ if(!ctx||width<1||height<1)return;
+ ctx.save();
+ ctx.setTransform(1,0,0,1,0,0);
+ if(clear)ctx.clearRect(0,0,width,height);
+ if(!hasVisibleLettering(state)){ctx.restore();return;}
+ const seconds=Number.isFinite(Number(timeline?.textTime)) ? Number(timeline.textTime)
+   : (Number(timeline?.time)||0)*30;
+ for(const layer of layersOf(state)){
+   if(!active(layer))continue;
+   const entry=glyphFor(layer,width/height,state.colors||[]);
+   const {image,material,tints}=entry;
+   const opacity=Math.max(0,Math.min(1,Number(layer.letteringAmount)/100));
+   const zoom=Math.max(0,Math.min(1,Number(layer.letteringScale??48)/100));
+   const scale=.63+.34*zoom;
+   const stretchX=Math.max(.25,Number(layer.letteringStretchX??100)/100);
+   const stretchY=Math.max(.25,Number(layer.letteringStretchY??100)/100);
+   const factorX=Math.max(.05,scale*stretchX),factorY=Math.max(.05,scale*stretchY);
+   const positionX=(Number(layer.letteringX??50)/100)*width;
+   const positionY=(1-Number(layer.letteringY??50)/100)*height;
+   const curve=(Number(layer.letteringCurve)||0)/100;
+   const warp=Math.max(Number(layer.letteringWarp)||0,material.preset==="Heatwave"?23:0);
+   const liquidLayer=warp===Number(layer.letteringWarp)?layer:{...layer,letteringWarp:warp};
+   const glyphMode=warp>.01 || letteringMotionIsPerLetter(layer.letteringMotionPath);
+   if(glyphMode && entry.sprites===null){
+     entry.sprites=createLetteringSprites(layer.text,width/height,layer.letteringFont||"original",entry.style);
+   }
+   const spriteScene=glyphMode?entry.sprites:null;
+   const em=spriteScene ? spriteScene.fontSize*width/spriteScene.width*factorX
+     : Math.min(width,height)*.24*scale;
+   const whole=letteringMotionAt(layer,seconds,width,height,-1,1,em);
+   const blend=getLetteringBlendRecipe(layer.letteringBlendMode,layer.letteringBlendStrength);
+   const intensity=blend.mode==="Normal"?0:blend.strength;
 
-    const blend=getLetteringBlendRecipe(layer.letteringBlendMode,layer.letteringBlendStrength);
-    const intensity=blend.mode==="Normal" ? 0 : blend.strength;
-    ctx.save();
-    ctx.translate(positionX+moveX,positionY+moveY);
-    ctx.rotate(angle);
-    ctx.scale(scale*stretchX,scale*stretchY);
-
-    function pass(recipe,weight,options={}) {
-      if(weight<=0)return;
-      ctx.save();
-      const mode=recipe.canvasBlend||"source-over";
-      ctx.globalCompositeOperation=mode;
-      ctx.globalAlpha=opacity*weight*letteringBlendPulse(recipe.animation,seconds);
-      const source=recipe.whiteInk ? tint({image,tints},"#ffffff")
-        : options.tint ? tint({image,tints},options.tint) : image;
-      if(recipe.filter && recipe.filter!=="none" && typeof ctx.filter==="string")
-        ctx.filter=recipe.filter;
-      if(!recipe.whiteInk && !options.extra && !options.tint) {
-        for(const echo of material.echoes){
-          ctx.save();
-          ctx.globalAlpha*=echo.alpha;
-          drawLiquidImage(ctx,tint({image,tints},echo.color),width,height,curve,warp,motion,seconds,
-            echo.x*(width/430),echo.y*(height/430));
-          ctx.restore();
-        }
-        if(material.preset==="Soft shadow"){
-          ctx.shadowColor="#0a051b";
-          ctx.shadowBlur=Math.min(50,12*width/430);
-          ctx.shadowOffsetX=7*width/430;
-          ctx.shadowOffsetY=9*height/430;
-        }else if(material.glow!=="none"){
-          ctx.shadowColor=material.stops?.[1]||"#00eeff";
-          ctx.shadowBlur=Math.min(48,14*width/430);
-        }
-        if(material.hueAnimation && typeof ctx.filter==="string")
-          ctx.filter=(recipe.filter && recipe.filter!=="none" ? recipe.filter+" ":"")+
-            `hue-rotate(${(28*Math.sin(seconds*2.1)).toFixed(1)}deg) saturate(1.35)`;
-      }
-      const offsetX=Number(options.offsetX||0)*width/430;
-      const offsetY=Number(options.offsetY||0)*height/430;
-      drawLiquidImage(ctx,source,width,height,curve,warp,motion,seconds,offsetX,offsetY);
-      ctx.restore();
-    }
-
-    // Strength = 0 is ordinary text, not invisible text.
-    if(intensity<1)pass({canvasBlend:"source-over"},1-intensity);
-    if(intensity>0){
-      pass(blend,intensity);
-      for(const extra of blend.passes)
-        pass(extra,intensity*(extra.alpha??1),{...extra,extra:true});
-    }
-    ctx.restore();
-  }
-  ctx.restore();
+   ctx.save();
+   ctx.translate(positionX+whole.dx,positionY+whole.dy);
+   ctx.rotate((Number(layer.letteringRotation||0)+whole.rotation)*Math.PI/180);
+   ctx.scale(factorX*whole.scaleX,factorY*whole.scaleY);
+   if(Math.abs(curve)>.001)ctx.transform(1,0,curve*.11,1,0,0);
+   function paintShape(options={}){
+     if(spriteScene && spriteScene.sprites.length){
+       const colored=options.tint?tintedSpriteImages(entry,options.tint):null;
+       const ratioX=width/spriteScene.width,ratioY=height/spriteScene.height;
+       const baseOpacity=ctx.globalAlpha;
+       for(let i=0;i<spriteScene.sprites.length;i++){
+         const item=spriteScene.sprites[i];
+         const moving=letteringMotionAt(layer,seconds,width,height,item.index,item.total,em);
+         const liquid=letteringLiquidAt(liquidLayer,seconds,item.index,item.total,em);
+         const pose=letteringComposeGlyph(moving,liquid);
+         ctx.save();
+         ctx.globalAlpha=baseOpacity*(pose.alpha??1);
+         ctx.translate(
+           (item.x/spriteScene.width-.5)*width+(pose.dx/(factorX*whole.scaleX)),
+           (item.y/spriteScene.height-.5)*height+(pose.dy/(factorY*whole.scaleY))
+         );
+         ctx.rotate(pose.rotation*Math.PI/180);
+         if(pose.skewX)ctx.transform(1,0,Math.tan(pose.skewX*Math.PI/180),1,0,0);
+         ctx.scale(pose.scaleX,pose.scaleY);
+         const sprite=colored?.[i]||item.image;
+         const sw=sprite.width*ratioX*item.widthScale,sh=sprite.height*ratioY;
+         ctx.drawImage(sprite,-sw/2,-sh/2,sw,sh);
+         ctx.restore();
+       }
+     }else{
+       // Long quotes use one smooth whole-word transform (memory-safe fallback).
+       ctx.save();
+       if(warp>.01){
+         const wobble=Math.sin(seconds*2.1)*warp/100;
+         ctx.transform(1,0,.13*wobble,1,0,0);
+         ctx.rotate(.045*wobble);
+       }
+       const source=options.tint?tint(entry,options.tint):image;
+       ctx.drawImage(source,-width/2+(options.dx||0),-height/2+(options.dy||0),width,height);
+       ctx.restore();
+     }
+   }
+   function pass(recipe,amount,opts={}){
+     if(amount<=0)return;
+     ctx.save();
+     ctx.globalCompositeOperation=recipe.canvasBlend||"source-over";
+     ctx.globalAlpha=opacity*amount*letteringBlendPulse(recipe.animation,seconds);
+     if(recipe.filter && recipe.filter!=="none"&&typeof ctx.filter==="string")
+       ctx.filter=recipe.filter;
+     if(!recipe.whiteInk && !opts.extra && !opts.tint){
+       for(const echo of material.echoes){
+         ctx.save();ctx.globalAlpha*=echo.alpha;
+         paintShape({tint:echo.color,dx:echo.x*width/430,dy:echo.y*height/430});
+         ctx.restore();
+       }
+       if(material.preset==="Soft shadow"){
+         ctx.shadowColor="#0a051b";ctx.shadowBlur=Math.min(50,12*width/430);
+         ctx.shadowOffsetX=7*width/430;ctx.shadowOffsetY=9*height/430;
+       }else if(material.glow!=="none"){
+         ctx.shadowColor=material.stops?.[1]||"#00eeff";
+         ctx.shadowBlur=Math.min(48,14*width/430);
+       }
+       if(material.hueAnimation&&typeof ctx.filter==="string")
+         ctx.filter=(recipe.filter&&recipe.filter!=="none"?recipe.filter+" ":"")+
+           "hue-rotate("+(28*Math.sin(seconds*2.1)).toFixed(1)+"deg) saturate(1.35)";
+     }
+     const shiftX=Number(opts.offsetX||0)*width/430;
+     const shiftY=Number(opts.offsetY||0)*height/430;
+     ctx.translate(shiftX/Math.max(.05,factorX*whole.scaleX),shiftY/Math.max(.05,factorY*whole.scaleY));
+     paintShape({tint:recipe.whiteInk?"#ffffff":opts.tint});
+     ctx.restore();
+   }
+   if(intensity<1)pass({canvasBlend:"source-over"},1-intensity);
+   if(intensity>0){
+     pass(blend,intensity);
+     for(const p of blend.passes)pass(p,intensity*(p.alpha??1),{...p,extra:true});
+   }
+   ctx.restore();
+ }
+ ctx.restore();
 }

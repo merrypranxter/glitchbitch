@@ -55,6 +55,9 @@ export const engineInfo = [
     "Angular distance fields cut a prismatic kaleidoscope.",
     "Radial",
   ],
+  ["Hyperbolic CRT", "Poincaré-disk inversions crowd the geometry toward impossible edges.", "Non-Euclidean"],
+  ["Candy fractal portal", "Actual Mandelbrot/Julia orbit traps and deep complex-plane boundaries.", "Fractal"],
+  ["Fivefold diffraction", "Aperiodic five-direction wave interference with irrational overtones.", "Quasicrystal"],
 ].map(([name, description, family], id) => ({ id, name, description, family }));
 export const engines = engineInfo.map((e) => e.name);
 export const palettes = [
@@ -131,6 +134,7 @@ export const ratios = [
   { id: "4:3", value: 4 / 3 },
 ];
 export const touchModes = ["Warp", "Vortex", "Repel", "Chroma"];
+export const motionModes = ["Liquid flow", "Breathing", "Orbital", "Traveling waves", "Internal turbulence"];
 export const numericRanges = {
   complexity: [0, 100],
   scale: [0, 100],
@@ -159,6 +163,13 @@ export const numericRanges = {
   datamosh: [0, 100],
   memoryDrift: [0, 100],
   memoryDecay: [0, 100],
+  hyperbolicFold: [0, 100],
+  fractalZoom: [0, 100],
+  juliaMix: [0, 100],
+  quasiDensity: [0, 100],
+  motionAmount: [0, 100],
+  motionRate: [0, 100],
+  lightMotion: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -206,6 +217,14 @@ export const initial = {
   datamosh: 0,
   memoryDrift: 20,
   memoryDecay: 28,
+  hyperbolicFold: 70,
+  fractalZoom: 25,
+  juliaMix: 0,
+  quasiDensity: 50,
+  motionAmount: 0,
+  motionRate: 50,
+  lightMotion: 0,
+  motionMode: "Liquid flow",
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -272,6 +291,7 @@ export function validateRecipe(input) {
     ratio: ratios.map((r) => r.id),
     blendMode: ["Mix", "Multiply", "Difference"],
     colorMode: ["Traveling wave", "Color canon", "Phase vortex"],
+    motionMode: motionModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -464,6 +484,21 @@ export function randomize(
     next.datamosh = random() < .32 ? 25 + random() * 60 : 0;
     next.memoryDrift = 8 + random() * 70;
     next.memoryDecay = 12 + random() * 48;
+    next.afterimage = random() < .38 ? 28 + random() * 56 : 0;
+    next.datamosh = random() < .32 ? 25 + random() * 60 : 0;
+    next.memoryDrift = 8 + random() * 70;
+    next.memoryDecay = 12 + random() * 48;
+  }
+  for (const key of ["hyperbolicFold","fractalZoom","juliaMix","quasiDensity"])
+    next[key] = mutate ? clamp(state[key]+(random()-.5)*22) : 10+random()*85;
+  if(mutate){
+    for(const key of ["motionAmount","motionRate","lightMotion"])
+      next[key]=clamp(state[key]+(random()-.5)*20);
+  }else{
+    next.motionMode=motionModes[Math.floor(random()*motionModes.length)];
+    next.motionAmount=35+random()*57;
+    next.motionRate=32+random()*53;
+    next.lightMotion=30+random()*67;
   }
   if (!mutate) {
     next.secondaryEngine = Math.floor(random() * engines.length);
@@ -664,5 +699,95 @@ export const looks = [
     note: "Crystal geometry liquefied into lingering fractured frames",
     family: "Memory",
     state: { ...initial, engine: 11, palette: 15, colors: palettes[15].colors, afterimage: 43, datamosh: 96, memoryDrift: 83, memoryDecay: 9, riso: 18, complexity: 80, symmetry: 6, scale: 24, seed: 87231 },
+  },
+  {
+    name: "Poincaré Phosphor Cathedral",
+    note: "A living hyperbolic chapel of glowing subpixel geometry",
+    family: "Non-Euclidean",
+    state: { ...initial, engine: 12, palette: 11, colors: palettes[11].colors, hyperbolicFold: 92, phosphor: 65, scale: 18, complexity: 62, glitch: 3, motionMode: "Orbital", motionAmount: 67, motionRate: 61, lightMotion: 81, seed: 80127 },
+  },
+  {
+    name: "Sevenfold Signal Chapel",
+    note: "Hyperbolic edges breathing through analog ghost light",
+    family: "Non-Euclidean",
+    state: { ...initial, engine: 12, palette: 13, colors: palettes[13].colors, hyperbolicFold: 85, phosphor: 89, afterimage: 23, scale: 13, motionMode: "Breathing", motionAmount: 56, motionRate: 47, lightMotion: 74, seed: 74129 },
+  },
+  {
+    name: "Impossible Wallpaper",
+    note: "Non-Euclidean tiles crossed with hostile moiré",
+    family: "Non-Euclidean",
+    state: { ...initial, engine: 12, palette: 15, colors: palettes[15].colors, hyperbolicFold: 74, secondaryEngine: 3, blend: 49, blendMode: "Difference", riso: 43, scale: 12, glitch: 0, motionMode: "Traveling waves", motionAmount: 64, motionRate: 54, lightMotion: 69, seed: 61124 },
+  },
+  {
+    name: "Candy Seahorse Portal",
+    note: "Mandelbrot filaments slowly folding into luminous candy rivers",
+    family: "Fractal",
+    state: { ...initial, engine: 13, palette: 1, colors: palettes[1].colors, fractalZoom: 64, juliaMix: 0, complexity: 93, scale: 30, motionMode: "Internal turbulence", motionAmount: 29, motionRate: 38, lightMotion: 88, seed: 70215 },
+  },
+  {
+    name: "Julia Meltdown",
+    note: "Complex Julia geometry dragged through actual codec memory",
+    family: "Fractal",
+    state: { ...initial, engine: 13, palette: 15, colors: palettes[15].colors, fractalZoom: 21, juliaMix: 100, complexity: 86, datamosh: 47, afterimage: 35, motionMode: "Orbital", motionAmount: 57, motionRate: 49, lightMotion: 71, seed: 78364 },
+  },
+  {
+    name: "Orbit Trap Candy Glass",
+    note: "Pink and cyan fractal boundary gloss crawling over geometric glass",
+    family: "Fractal",
+    state: { ...initial, engine: 13, palette: 10, colors: palettes[10].colors, fractalZoom: 47, juliaMix: 42, complexity: 93, phosphor: 32, motionMode: "Breathing", motionAmount: 28, motionRate: 42, lightMotion: 96, seed: 34511 },
+  },
+  {
+    name: "Fivefold Laser Garden",
+    note: "A nonrepeating diffraction jungle with pulsing neon pigment",
+    family: "Quasicrystal",
+    state: { ...initial, engine: 14, palette: 1, colors: palettes[1].colors, quasiDensity: 54, complexity: 75, scale: 33, motionMode: "Liquid flow", motionAmount: 67, motionRate: 62, lightMotion: 76, seed: 87154 },
+  },
+  {
+    name: "Riso Aperiodic Witchcraft",
+    note: "Fivefold wave geometry quantized into faulty CMY printing",
+    family: "Quasicrystal",
+    state: { ...initial, engine: 14, palette: 15, colors: palettes[15].colors, quasiDensity: 77, dither: 76, riso: 81, misregister: 43, scale: 19, motionMode: "Traveling waves", motionAmount: 74, motionRate: 68, lightMotion: 51, seed: 41638 },
+  },
+  {
+    name: "Diffraction Memory Cathedral",
+    note: "Irrational interference leaving illuminated temporal fingerprints",
+    family: "Quasicrystal",
+    state: { ...initial, engine: 14, palette: 8, colors: palettes[8].colors, quasiDensity: 36, phosphor: 58, afterimage: 61, memoryDrift: 32, motionMode: "Orbital", motionAmount: 46, motionRate: 39, lightMotion: 86, seed: 91834 },
+  },
+  {
+    name: "Psychedelic Breathing Room",
+    note: "Soft organic contours gently inflating and changing illumination",
+    family: "Motion",
+    state: { ...initial, engine: 9, palette: 8, colors: palettes[8].colors, scale: 32, warp: 35, motionMode: "Breathing", motionAmount: 73, motionRate: 46, lightMotion: 83, glitch: 0, seed: 98107 },
+  },
+  {
+    name: "Liquid Circuit Migration",
+    note: "Woven neon electrical pathways flowing without losing their structure",
+    family: "Motion",
+    state: { ...initial, engine: 10, palette: 1, colors: palettes[1].colors, scale: 19, warp: 57, motionMode: "Liquid flow", motionAmount: 87, motionRate: 67, lightMotion: 72, seed: 67120 },
+  },
+  {
+    name: "Orbital Jelly Dream",
+    note: "Color membranes with nonrigid orbital motion and drifting highlights",
+    family: "Motion",
+    state: { ...initial, engine: 7, palette: 9, colors: palettes[9].colors, scale: 27, complexity: 77, motionMode: "Orbital", motionAmount: 80, motionRate: 55, lightMotion: 67, seed: 11782 },
+  },
+  {
+    name: "Interference Ballet",
+    note: "Multiple wavefronts traveling through a mathematical moiré field",
+    family: "Motion",
+    state: { ...initial, engine: 3, palette: 15, colors: palettes[15].colors, scale: 21, complexity: 67, motionMode: "Traveling waves", motionAmount: 85, motionRate: 73, lightMotion: 81, seed: 91525 },
+  },
+  {
+    name: "Feral Velvet Current",
+    note: "Fine rotating harmonic lace filled with internal light movement",
+    family: "Motion",
+    state: { ...initial, engine: 8, palette: 11, colors: palettes[11].colors, scale: 25, symmetry: 5, motionMode: "Internal turbulence", motionAmount: 76, motionRate: 51, lightMotion: 93, seed: 22867 },
+  },
+  {
+    name: "Glowing Haunted Marble",
+    note: "Marble contours that stay composed but never stop stirring",
+    family: "Motion",
+    state: { ...initial, engine: 6, palette: 10, colors: palettes[10].colors, scale: 33, warp: 79, afterimage: 35, motionMode: "Liquid flow", motionAmount: 59, motionRate: 35, lightMotion: 90, seed: 50732 },
   },
 ];

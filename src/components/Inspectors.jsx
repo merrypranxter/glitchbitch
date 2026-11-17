@@ -26,7 +26,7 @@ import {
   ArrowDown,
   ArrowUpRight,
 } from "lucide-react";
-import { engineInfo, engines, touchModes, makeMark } from "../data";
+import { engineInfo, engines, touchModes, makeMark, motionModes } from "../data";
 import { Parameter, Range, Switch, Select, Section } from "./Controls";
 const icons = [
   Waves,
@@ -41,9 +41,14 @@ const icons = [
   Mountain,
   Grid3X3,
   Gem,
+  Orbit,
+  Snowflake,
+  Grid3X3,
 ];
 export function MathInspector({ history, locked, onLock, onLookbook }) {
   const state = history.state;
+  const selected = (id) => state.engine === id ||
+    (state.blend > 0 && state.secondaryEngine === id);
   return (
     <>
       <Section
@@ -111,6 +116,19 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
         />
         <Switch label="Mirror dimension" name="mirror" history={history} />
       </Section>
+      {(selected(12) || selected(13) || selected(14)) && (
+        <Section title="IMPOSSIBLE GEOMETRY">
+          {selected(12) && <Parameter label="Hyperbolic fold depth" name="hyperbolicFold" history={history} />}
+          {selected(13) && (
+            <>
+              <Parameter label="Fractal deep zoom" name="fractalZoom" history={history} />
+              <Parameter label="Mandelbrot ↔ Julia" name="juliaMix" history={history} />
+            </>
+          )}
+          {selected(14) && <Parameter label="Diffraction density" name="quasiDensity" history={history} />}
+          <p className="control-note">These engines can be combined with every original engine, palette, and touch force.</p>
+        </Section>
+      )}
       <Section title="GEOMETRY IN MOTION">
         <Parameter
           label="Animation speed"
@@ -118,6 +136,17 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
           history={history}
           format={(v) => `${(v / 30).toFixed(1)}×`}
         />
+        <Select
+          label="Ambient motion style"
+          value={state.motionMode}
+          onChange={(v) => history.change((s) => ({...s, motionMode: v}))}
+        >
+          {motionModes.map((mode) => <option key={mode}>{mode}</option>)}
+        </Select>
+        <Parameter label="Structure movement" name="motionAmount" history={history} />
+        <Parameter label="Motion pace" name="motionRate" history={history} />
+        <Parameter label="Living light / shimmer" name="lightMotion" history={history} />
+        <p className="control-note">Surprise Me sets all three. Structure motion animates the shape; living light animates the highlights independently, so stable geometry can still feel alive. Pausing stops both.</p>
         <Switch
           label="Freeze geometry clock"
           name="freezeGeometry"

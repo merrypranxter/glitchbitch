@@ -44,7 +44,7 @@ test("invalid seed, clock, color and source data cannot enter the renderer", () 
     { ...initial, seed: -1 },
     { ...initial, colors: ["#abc", "javascript:bad"] },
     { ...initial, marks: [{ ...makeMark(initial), radius: 8 }] },
-    { ...initial, engine: 12 },
+    { ...initial, engine: 15 },
     { ...initial, blend: NaN },
   ])
     assert.throws(() => parseDocument(bad));
@@ -119,8 +119,8 @@ test("appearance sliders round trip, reject invalid numbers and keep vintage rec
   for (const key of appearanceKeys) delete old[key];
   assert.deepEqual(appearanceKeys.map(key => parseDocument(old).state[key]), appearanceKeys.map(() => 0));
 });
-test("lookbook contains 22 valid distinct entries covering new materials and memory", () => {
-  assert.equal(looks.length, 22);
+test("lookbook contains 37 valid distinct entries across original, math, motion and memory", () => {
+  assert.equal(looks.length, 37);
   assert.equal(new Set(looks.map(look => look.name)).size, looks.length);
   for (const look of looks) assert.deepEqual(parseDocument(look.state).state, look.state);
   assert.ok(looks.some(look => look.state.windowCascade > 0));
@@ -159,4 +159,38 @@ test("memory renderer only activates when explicitly enabled", async () => {
   assert.match(shader, /gl.copyTexSubImage2D/);
   assert.match(shader, /resetFeedback\(\)/);
   assert.match(memory, /uniform sampler2D sceneTex, historyTex/);
+});
+
+test("new math and ambient movement preserve valid recipe and clock semantics", async () => {
+  const {engines, motionModes} = await import("../src/data.js");
+  assert.equal(engines.length, 15);
+  assert.deepEqual(engines.slice(12), ["Hyperbolic CRT", "Candy fractal portal", "Fivefold diffraction"]);
+  assert.equal(motionModes.length, 5);
+  for(const name of ["hyperbolicFold","fractalZoom","juliaMix","quasiDensity","motionAmount","motionRate","lightMotion"]){
+    const value=73, s={...initial,[name]:value};
+    assert.equal(parseDocument(recipeDocument(s,"Motion",{time:2,colorTime:3})).state[name],value);
+    assert.throws(()=>parseDocument({...s,[name]:101}));
+  }
+  assert.throws(()=>parseDocument({...initial,motionMode:"Bogus"}));
+  const legacy={...initial};
+  delete legacy.motionAmount;delete legacy.lightMotion;delete legacy.motionRate;delete legacy.motionMode;
+  assert.equal(parseDocument(legacy).state.motionAmount,0);
+  assert.equal(parseDocument(legacy).state.lightMotion,0);
+  assert.ok(looks.some(l=>l.family==="Motion" && l.state.motionAmount>0 && l.state.lightMotion>0));
+  const surprised=randomize({...initial,motionAmount:0,lightMotion:0},{},false,()=>.51);
+  assert.ok(surprised.motionAmount>0 && surprised.lightMotion>0);
+});
+test("math and motion shader modules wire the original render and secondary composition", async () => {
+  const {readFileSync}=await import("node:fs");
+  const shader=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
+  const geom=readFileSync(new URL("../src/geometry.js",import.meta.url),"utf8");
+  const motion=readFileSync(new URL("../src/motion.js",import.meta.url),"utf8");
+  for(const id of [12,13,14])assert.match(shader,new RegExp("kind=="+id));
+  assert.match(geom,/hyperbolicCRT/);
+  assert.match(geom,/candyFractalPortal/);
+  assert.match(geom,/fivefoldDiffraction/);
+  assert.match(motion,/animateCoordinates/);
+  assert.match(motion,/animateLight/);
+  assert.match(shader,/p=animateCoordinates\(p\)/);
+  assert.match(shader,/col=animateLight\(col,uv,v\)/);
 });

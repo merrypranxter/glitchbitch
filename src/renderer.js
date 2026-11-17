@@ -1,4 +1,6 @@
 import { appearanceGLSL } from "./appearance.js";
+import { geometryGLSL } from "./geometry.js";
+import { motionGLSL } from "./motion.js";
 import { feedbackVertex, feedbackFragment } from "./feedback.js";
 
 const vertex = `attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
@@ -16,6 +18,8 @@ float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(ha
 float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*noise(p);p=mat2(.8,-.6,.6,.8)*p*2.03+3.4;a*=.5;}return v;}
 mat2 rotate(float a){return mat2(cos(a),-sin(a),sin(a),cos(a));}
 vec3 palette(float t){float q=fract(t)*float(colorCount);int a=int(floor(q));vec3 c=colors[0],d=colors[0];for(int i=0;i<8;i++){if(i==a)c=colors[i];if(i==a+1)d=colors[i];}if(a==colorCount-1)d=colors[0];return mix(c,d,smoothstep(0.,1.,fract(q)));}
+${geometryGLSL}
+${motionGLSL}
 float field(vec2 p,int kind){float t=time*.3,f=0.;
 if(kind==0){for(int i=0;i<5;i++){float n=float(i)+1.;p+=warp*.32*vec2(sin(p.y*n+t/n),cos(p.x*n-t/n));f+=sin(p.x*n+cos(p.y*n+t))/n;}f=f*.25+length(p)*.12;}
 else if(kind==1){f=sin(length(p-vec2(sin(t),cos(t)))*12.)*sin(length(p+vec2(cos(t*.7),sin(t*.8)))*13.);f=f*.4+length(p)*.15;}
@@ -28,7 +32,11 @@ else if(kind==7){vec2 z=p*(1.2+complexity*1.8),g=floor(z),q=fract(z);float first
 else if(kind==8){float r=length(p),a=atan(p.y,p.x);float petals=3.+floor(complexity*9.);f=sin(r*(5.+warp*8.)-t)*.18+cos(a*petals+t*.7)*exp(-r*.23)*.2+sin(r*3.+a*2.+t)*.16;}
 else if(kind==9){vec2 flow=p+warp*vec2(sin(p.y*.8+t*.4),cos(p.x*.6-t*.3));f=fbm(flow*.8+vec2(t*.12,-t*.08));f+=sin(p.x*.5+p.y*.3+t*.15)*.14;}
 else if(kind==10){vec2 z=p+warp*.3*vec2(sin(p.y*3.+t),cos(p.x*3.-t));float x=sin(z.x*(8.+complexity*15.)+t),y=sin(z.y*(8.+complexity*15.)-t);f=mix(x*.17+y*.17,abs(x)-abs(y),.22)+step(0.,x*y)*.09;}
-else {float a=atan(p.y,p.x),r=length(p);float n=3.+floor(complexity*7.);float wedge=cos(floor(.5+a/(TAU/n))*(TAU/n)-a)*r;f=sin(wedge*(5.+warp*9.)-t)*.18+sin(r*7.+t)*.12+floor(r*2.5)*.07;}
+else if(kind==11){float a=atan(p.y,p.x),r=length(p);float n=3.+floor(complexity*7.);float wedge=cos(floor(.5+a/(TAU/n))*(TAU/n)-a)*r;f=sin(wedge*(5.+warp*9.)-t)*.18+sin(r*7.+t)*.12+floor(r*2.5)*.07;}
+else if(kind==12){f=hyperbolicCRT(p);}
+else if(kind==13){f=candyFractalPortal(p);}
+else if(kind==14){f=fivefoldDiffraction(p);}
+else {f=0.;}
 return f;}
 float composed(vec2 p){float a=field(p,engine);if(blend<.001)return a;float b=field(rotate(.43)*p+vec2(.37,-.21),secondaryEngine);float c=b;if(blendMode==1)c=a*b*2.;if(blendMode==2)c=abs(a-b);return mix(a,c,blend);}
 float phaseOf(float value,vec2 uv,float source){float bands=(2.+complexity*5.)*pow(2.,(colorRepeat-.5)*2.);float phase=value*bands+seed*.001+seedHigh*.017+colorTime*.04+colorOffset;
@@ -38,6 +46,7 @@ ${appearanceGLSL}
 void main(){vec2 uv=gl_FragCoord.xy/res;vec2 aspect=vec2(res.x/res.y,1.);vec2 sampleUV=uv;
 if(pixel>.001){float cells=mix(600.,24.,pow(pixel,.65));sampleUV=(floor(uv*vec2(cells*aspect.x,cells))+.5)/vec2(cells*aspect.x,cells);}
 vec2 p=(sampleUV-.5)*aspect*(2.+scale*5.);p=rotate(rotation)*p;
+p=animateCoordinates(p);
 if(mirror)p.x=abs(p.x);if(symmetry>1.5){float wedge=TAU/floor(symmetry);float angle=mod(atan(p.y,p.x)+wedge*.5,wedge)-wedge*.5;p=length(p)*vec2(cos(angle),sin(angle));}
 // Continuous analog signal drift. Neighboring bands blend smoothly, with no horizontal UV jumps.
 float bandPos=uv.y*25.+time*.17;
@@ -55,6 +64,7 @@ float source=0.;for(int i=0;i<32;i++){if(i<count){vec2 d=(uv-marks[i].xy)*aspect
 if(marks[i].w<.5)p+=rotate(a)*vec2(sin(local.y*15.+time),cos(local.x*15.-time))*force;
 else if(marks[i].w<1.5)p+=vec2(-d.y,d.x)*force*8.;else if(marks[i].w<2.5)p+=d*force*8.;else source+=force*(.5+.5*sin(2.*atan(d.y,d.x)+colorTime*.5+a));}}
 float v=composed(p);vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*sin(v*(2.+complexity*5.)*TAU),18.);col*=.72+edge*.5;if(bloom)col+=edge*col*.24;
+col=animateLight(col,uv,v);
 if(split>.001){col.r=mix(col.r,palette(phaseOf(composed(p+vec2(split*.09,0.)),uv,source)).r,split);col.b=mix(col.b,palette(phaseOf(composed(p-vec2(split*.09,0.)),uv,source)).b,split);}
 col*=1.-scan*(.5+.5*sin(uv.y*900.))*.55;col+=(hash(floor(uv*1000.)+fract(time))-.5)*grain*.3;col=mix(col,col.brg,tear*.65);col=mix(col,col.gbr,blocks*block*.6);
 float luma=dot(col,vec3(.2126,.7152,.0722));col=mix(vec3(luma),col,saturation*2.);col=(col-.5)*(.5+contrast)+.5;col*=.5+brightness;col*=1.-vignette*smoothstep(.15,.8,length((uv-.5)*aspect));if(invert)col=1.-col;
@@ -371,6 +381,13 @@ export function createRenderer(canvas) {
         "colorOffset",
         "colorRepeat",
         "colorAmount",
+        "hyperbolicFold",
+        "fractalZoom",
+        "juliaMix",
+        "quasiDensity",
+        "motionAmount",
+        "motionRate",
+        "lightMotion",
       ])
         gl.uniform1f(loc(k), s[k] / 100);
       gl.uniform1f(loc("rotation"), (s.rotation * Math.PI) / 180);
@@ -386,6 +403,7 @@ export function createRenderer(canvas) {
         ["Traveling wave", "Color canon", "Phase vortex"].indexOf(s.colorMode),
       );
       gl.uniform1i(loc("colorCount"), s.colors.length);
+      gl.uniform1i(loc("motionMode"), ["Liquid flow", "Breathing", "Orbital", "Traveling waves", "Internal turbulence"].indexOf(s.motionMode));
       const key = s.colors.join("");
       if (key !== active.paletteKey) {
         active.paletteKey = key;

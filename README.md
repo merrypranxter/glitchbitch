@@ -18,7 +18,7 @@ The production output is `dist/`. Serve it with a static web server. WebGL and h
 
 ## Make something strange
 
-**12 engines:** Plasma flow, Acid bloom, Fractal melt, Moiré field, Pixel rot, Tunnel vision, Liquid marble, Cellular dream, Orbit lace, Contour planet, Chroma weave, Crystal shards. These implement different analytic/procedural mechanisms, not just palette swaps. The 22-entry lookbook offers editable source recipes, including four true frame-memory looks.
+**15 engines:** The original 12 mathematical fields, plus Hyperbolic CRT (Poincaré-style disk inversion), Candy fractal portal (Mandelbrot/Julia orbit-trap escape-time), and Fivefold diffraction (aperiodic plane-wave interference). All retain the original palette / touch / layering pipeline. The Lookbook has **37 editable recipes** including 15 new math-and-motion looks.
 
 **Layers:** Mix, multiply, or take the absolute difference of two scalar fields. The fields share structure controls, local touch sources, and a geometry clock. Blend at zero bypasses the second engine completely.
 
@@ -79,3 +79,7 @@ New parameterized shaders use direct WebGL without Three.js. These are artist's 
 `npm test` exercises recipe migration/validation, exact document round trips, palette parsing, locked randomization, actual pinch/source semantics, move/erase, and export dimensions. Browser verification uses installed Chromium through Playwright because no Browser plugin is exposed. Local browser checks cover all engine and layer modes, touch edits and cancellation, palette import/locking, collection workflows, full-resolution PNGs, context recovery, and responsive controls. FFprobe/FFmpeg verified a two-second 720px WebM with 40 distinct decoded frames and exact 20 fps timing. Physical iPhone Safari, thermal behavior, and on-device video encoding remain unverified.
 
 Creative Plugin Ringmaster continues to coordinate this project. Gesture Witch informed touch transactions; Chromatic Choreographer informed independent analytic color phases; Rendering Survivalist informed preview/export separation and context recovery; Frontend App Builder and Frontend Testing Debugging informed interface and visual/browser QA. These were skill-readable guidance, not remotely executed specialist services. Development uses local previews; hosting is configured separately. Reconsider the crew for seamless encoding, additional simulations, or measured device performance work.
+
+
+## Motion is part of the artwork (Wave 3)
+Surprise Me now always gives the design independently adjustable **Structure movement**, **Motion pace**, **Living light/shimmer**, and one of five movement styles: Liquid flow, Breathing, Orbital, Traveling waves, or Internal turbulence. This adds continuous animation even to mathematical structures that otherwise look visually stationary. Older saved recipes default to motion off, preserving their legacy appearance. The existing independent geometry and color clocks still govern animation; Pause freezes both, while Freeze geometry permits light to continue with the color clock. All controls are part of undo/redo, saved recipes, PNG capture and video exports. The shader motion is smooth in space, with no hard horizontal seam bands.

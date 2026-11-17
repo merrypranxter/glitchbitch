@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import { createRenderer, previewDimensions } from "./renderer";
+import { retroFontRevision } from "./retro-fonts";
 import { TouchSession } from "./gestures";
 import { ratios, touchModes } from "./data";
 
@@ -58,7 +59,8 @@ export default function ArtCanvas({
       lastW = 0,
       lastH = 0,
       lastTime = -1,
-      lastColorTime = -1;
+      lastColorTime = -1,
+      lastFontRevision = -1;
     let intervals = [],
       previewScale = 1,
       lastAdjust = 0;
@@ -103,6 +105,7 @@ export default function ArtCanvas({
         renderer.ready() &&
         ((animated && now - lastDraw >= 1000 / 30 - 1) ||
           lastState !== state ||
+          lastFontRevision !== retroFontRevision() ||
           lastW !== dims.width ||
           lastH !== dims.height ||
           seeked)
@@ -111,6 +114,7 @@ export default function ArtCanvas({
         try {
           renderer.draw(state, timelineRef.current, dims.width, dims.height);
           lastState = state;
+          lastFontRevision = retroFontRevision();
           lastW = dims.width;
           lastH = dims.height;
           lastDraw = now;

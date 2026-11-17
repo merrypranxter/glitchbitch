@@ -575,3 +575,96 @@ test("opt-in microstructure can be disabled on unsupported devices without blank
   assert.match(renderer,/microUnavailable=true/);
   assert.match(micro,/microMode==5/);
 });
+
+
+test("retro MySpace font closet is licensed, self-hosted, and has 39 distinct styles", async () => {
+  const {retroFonts,retroFontIds,retroFontGroups,getRetroFont,quoteFontCSS}=
+    await import("../src/retro-fonts.js");
+  const {readFileSync,statSync} = await import("node:fs");
+  assert.equal(retroFonts.length,39);
+  assert.equal(new Set(retroFontIds).size,retroFonts.length);
+  assert.equal(retroFontGroups.length,5);
+  assert.ok(retroFonts.some(f=>f.label.includes("Comic Sans")));
+  assert.ok(retroFonts.some(f=>f.label.includes("Papyrus")));
+  assert.ok(retroFonts.some(f=>f.label.includes("Impact")));
+  assert.ok(retroFonts.some(f=>f.label.includes("Courier")));
+  assert.match(quoteFontCSS("pressstart2p",32),/Retro Press Start 2P/);
+  assert.equal(getRetroFont("bogus id").id,"original");
+  const css=readFileSync(new URL("../src/retro-fonts.css",import.meta.url),"utf8");
+  const embedded=[...new Set(retroFonts.filter(f=>f.bundle).map(f=>f.bundle))];
+  assert.equal(embedded.length,20);
+  for(const font of embedded){
+    assert.ok(css.includes('retro-'+font+'.ttf'),"CSS missing "+font);
+    const size=statSync(new URL("../public/fonts/retro-"+font+".ttf",import.meta.url)).size;
+    assert.ok(size>10000,"Invalid binary font "+font);
+  }
+  for(const file of ["licenses-pixel.txt","licenses-gothic.txt",
+    "licenses-classic.txt","licenses-script.txt"]){
+    assert.ok(statSync(new URL("../public/fonts/"+file,import.meta.url)).size>2000);
+  }
+});
+test("font choice is saved with the quote but Surprise Me never invents words", async () => {
+  const {retroFontIds}=await import("../src/retro-fonts.js");
+  const legacy={...initial};delete legacy.letteringFont;
+  assert.equal(parseDocument(legacy).state.letteringFont,"original");
+  assert.throws(()=>parseDocument({...initial,letteringFont:"url(javascript:bad)"}));
+  for(const fontId of ["comicneue","vt323","rubikglitch","unifrakturcook","times"]){
+    const saved={...initial,lettering:"My words.\nMy rules.",letteringFont:fontId,letteringAmount:64};
+    assert.equal(parseDocument(recipeDocument(saved,"MySpace",{time:2,colorTime:3})).state.letteringFont,fontId);
+  }
+  for(const v of [0,.15,.25,.43,.68,.98]){
+    const next=randomize({...initial,lettering:"ME, NOT RANDOM",letteringAmount:92,
+      letteringFont:"original"},{},false,()=>v);
+    assert.ok(retroFontIds.includes(next.letteringFont));
+    assert.notEqual(next.letteringFont,"original");
+    assert.equal(next.lettering,"");
+    assert.equal(next.letteringAmount,0);
+  }
+  assert.ok(looks.every(l=>!l.state.lettering));
+});
+test("font selections are measured and fitted without clipping across ratios", async () => {
+  const {glyphCanvas}=await import("../src/kinetic-type.js");
+  const originalDocument=globalThis.document;
+  const draw=[];
+  let face="";
+  const ctx={
+    set font(v){face=v;},get font(){return face;},
+    measureText(s){return {width:s.length*Number(face.match(/(\d+)px/)?.[1]||16)*.61};},
+    clearRect(){},strokeText(){},fillText(s,x,y,maxWidth){draw.push({s,x,y,maxWidth});}
+  };
+  globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>ctx})};
+  try{
+    const sample="The internet is my neon spellbook.\nAnd I write my own goddamn quotes.";
+    for(const [ratio,font] of [[9/16,"pressstart2p"],[1,"rubikglitch"],[16/9,"sacramento"]]){
+      draw.length=0;
+      const canvas=glyphCanvas(sample,ratio,font);
+      assert.ok(draw.length>=2);
+      assert.ok(draw.every(d=>d.x>=0&&d.x<=canvas.width));
+      assert.ok(draw.every(d=>d.maxWidth<=canvas.width*.76+1));
+      assert.ok(draw.every(d=>d.y>=0&&d.y<=canvas.height));
+    }
+  }finally{if(originalDocument===undefined)delete globalThis.document;
+    else globalThis.document=originalDocument;}
+});
+test("fonts load lazily once, and still frames refresh when fonts arrive", async () => {
+  const {ensureRetroFontLoaded,retroFontRevision}=await import("../src/retro-fonts.js");
+  const originalDocument=globalThis.document;let calls=0;
+  globalThis.document={fonts:{load:async()=>{calls++;return [{}];}}};
+  try{
+    const before=retroFontRevision();
+    await Promise.all([ensureRetroFontLoaded("nosifer"),ensureRetroFontLoaded("nosifer")]);
+    assert.equal(calls,1);
+    assert.equal(retroFontRevision(),before+1);
+    await ensureRetroFontLoaded("nosifer");
+    assert.equal(calls,1);
+  }finally{if(originalDocument===undefined)delete globalThis.document;
+    else globalThis.document=originalDocument;}
+  const {readFileSync}=await import("node:fs");
+  const canvas=readFileSync(new URL("../src/ArtCanvas.jsx",import.meta.url),"utf8");
+  const renderer=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
+  const exporter=readFileSync(new URL("../src/export.js",import.meta.url),"utf8");
+  assert.match(canvas,/lastFontRevision !== retroFontRevision\(\)/);
+  assert.match(renderer,/glyphCanvas\(s\.lettering,aspect,fontId\)/);
+  assert.match(renderer,/retroFontRevision\(\)/);
+  assert.match(exporter,/await ensureRetroFontLoaded\(state\.letteringFont\)/);
+});

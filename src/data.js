@@ -1,4 +1,5 @@
 import { PALETTE_VAULT } from "./palette-vault.js";
+import { retroFontIds } from "./retro-fonts.js";
 export const engineInfo = [
   ["Plasma flow", "Liquid sine fields folded into neon ribbons.", "Fluid"],
   [
@@ -316,6 +317,7 @@ export const initial = {
   foilMotion: 47,
   lettering: "",
   letteringStyle: "Neon bling",
+  letteringFont: "original",
   letteringAmount: 0,
   letteringScale: 48,
   letteringWarp: 40,
@@ -412,6 +414,7 @@ export function validateRecipe(input) {
     motionMode: motionModes,
     stereoShape: stereoShapes,
     letteringStyle: letteringStyles,
+    letteringFont: retroFontIds,
     compositionMode: compositionModes,
     backdropMode: backdropModes,
     microMode: microModes,
@@ -653,6 +656,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.foilMotion=31+random()*67;
   // Surprise Me NEVER generates a slogan. Words belong to the artist.
   s.letteringStyle=different(letteringStyles,state.letteringStyle,random);
+  s.letteringFont=different(retroFontIds,state.letteringFont,random);
   s.lettering="";
   s.letteringAmount=0;
   s.letteringScale=20+random()*54;

@@ -1,4 +1,5 @@
 @import "./fonts.css";
+@import "./retro-fonts.css";
 :root {
   font-family: "DM Sans", sans-serif;
   color: #ededf0;
@@ -2861,3 +2862,8 @@ footer > span:last-child svg {
 /* Artist-owned quotes: usable on mobile without cramped horizontal input. */
 .kinetic-type-field textarea { width:100%;min-width:0;min-height:96px;box-sizing:border-box;resize:vertical;border:1px solid var(--line,#34343d);border-radius:7px;padding:11px;background:#111018;color:#f7f6fd;font:inherit;font-size:14px;line-height:1.45; }
 .kinetic-type-field textarea:focus-visible { outline:2px solid #e3ff57;outline-offset:2px; }
+
+/* Compact live text previews; preserves precious iPhone canvas space. */
+.retro-type-preview{display:block;min-height:46px;padding:12px;border-radius:8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:center;background:#111018;color:#d6ff62;border:1px solid var(--line,#303035);font-size:22px;line-height:1.3}
+.retro-type-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.retro-type-actions .button{font-size:12px}

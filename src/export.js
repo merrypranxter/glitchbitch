@@ -1,5 +1,6 @@
 import { createRenderer } from "./renderer.js";
 import { ratios } from "./data.js";
+import { ensureRetroFontLoaded } from "./retro-fonts.js";
 
 export function dimensions(ratio, longEdge) {
   const r = ratios.find((x) => x.id === ratio)?.value || 1;
@@ -35,6 +36,7 @@ function clockAt(state, timeline, seconds) {
   };
 }
 export async function renderImage(state, timeline, longEdge = 2160, type = "image/png") {
+  if(state.letteringAmount>0 && state.lettering.trim()) await ensureRetroFontLoaded(state.letteringFont);
   const canvas = document.createElement("canvas");
   let renderer;
   try {
@@ -233,6 +235,11 @@ export async function recordClip(state, timeline, {
     throw Error("GIF is limited to 1080px and 10 seconds to protect mobile memory. Use MP4 for larger clips.");
   const size=format==="mp4"?videoDimensions(state.ratio,longEdge):dimensions(state.ratio,longEdge);
   const opts={fps,duration,bitrate,size,onProgress,signal};
+  checkExport(signal);
+  // Export must NOT silently rasterize a fallback font while the chosen face
+  // is still loading. This also applies to iPhone-native MP4 recording.
+  if(state.letteringAmount>0 && state.lettering.trim())
+    await ensureRetroFontLoaded(state.letteringFont);
   checkExport(signal);
   if(format==="gif")return encodeGif(state,timeline,opts);
   let firstError;

@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { engineInfo, engines, touchModes, makeMark, motionModes, letteringStyles, compositionModes, backdropModes, microModes } from "../data";
 import { Parameter, Range, Switch, Select, Section } from "./Controls";
+import { retroFonts, retroFontGroups, getRetroFont, ensureRetroFontLoaded } from "../retro-fonts";
 const icons = [
   Waves,
   Flower,
@@ -166,6 +167,15 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
   );
 }
 export function EffectsInspector({ history }) {
+  const [fontError,setFontError]=React.useState("");
+  const selectedFont=getRetroFont(history.state.letteringFont);
+  React.useEffect(()=>{
+    if(!history.state.lettering.trim())return;
+    let live=true;
+    ensureRetroFontLoaded(history.state.letteringFont)
+      .then(()=>{if(live)setFontError("");},e=>{if(live)setFontError(e.message);});
+    return ()=>{live=false;};
+  },[history.state.letteringFont,history.state.lettering]);
   return (
     <>
       <p className="inspector-intro">
@@ -265,6 +275,30 @@ export function EffectsInspector({ history }) {
           onClick={() => history.change((s) => ({...s,lettering:"",letteringAmount:0}))}>
           Remove words from artwork
         </button>
+        <Select label="Choose your retro typeface" value={history.state.letteringFont}
+          onChange={(value)=>history.change(s=>({...s,letteringFont:value}))}>
+          {retroFontGroups.map(group=>
+            <optgroup key={group} label={group}>
+              {retroFonts.filter(f=>f.group===group)
+                .map(font=><option key={font.id} value={font.id}>{font.label}</option>)}
+            </optgroup>
+          )}
+        </Select>
+        <div className="retro-type-preview"
+          style={{fontFamily:selectedFont.family,fontWeight:selectedFont.weight}}>
+          {history.state.lettering.trim().split("\n")[0].slice(0,46) || "YOUR WORDS. YOUR RULES."}
+        </div>
+        <div className="retro-type-actions">
+          <small>{retroFonts.length} fonts · classic, pixel, goth, Y2K, script</small>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>{
+              const list=retroFonts.filter(f=>f.id!==s.letteringFont);
+              return {...s,letteringFont:list[Math.floor(Math.random()*list.length)].id};
+            })}>
+            Shuffle font (keep your words)
+          </button>
+        </div>
+        {fontError && <p className="field-error" role="alert">Font did not load: {fontError}. Check your connection or choose another font.</p>}
         <Select label="Lettering material" value={history.state.letteringStyle}
           onChange={(v) => history.change((s) => ({ ...s, letteringStyle: v }))}>
           {letteringStyles.map((v) => <option key={v}>{v}</option>)}
@@ -273,7 +307,7 @@ export function EffectsInspector({ history }) {
         <Parameter label="Letter size" name="letteringScale" history={history} />
         <Parameter label="Liquid text warping" name="letteringWarp" history={history} />
         <Parameter label="Kinetic text motion" name="letteringMotion" history={history} />
-        <p className="control-note">No random slogans: you decide every word. Quotes wrap to fit every artwork aspect ratio and appear in PNG, GIF and MP4 exports. Surprise Me clears all text.</p>
+        <p className="control-note">No random slogans: you decide every word. The font picker includes classic MySpace fonts and locally bundled retro styles. Saved quotes retain their font, and PNG, GIF and MP4 wait for it to load before export. Surprise Me still clears all text.</p>
       </Section>
       <Section title="BIOLOGICAL SIGNAL ROT">
         <Parameter label="Growing organism overlay" name="bioAmount" history={history} />

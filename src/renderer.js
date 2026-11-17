@@ -7,6 +7,7 @@ import { bioGLSL } from "./bio-shader.js";
 import { stereoGLSL } from "./stereo.js";
 import { materialGLSL } from "./materials.js";
 import { kineticGLSL, glyphCanvas } from "./kinetic-type.js";
+import { ensureRetroFontLoaded, retroFontReady, retroFontRevision } from "./retro-fonts.js";
 import { compositionGLSL } from "./composition.js";
 import { backdropGLSL } from "./backdrops.js";
 import { microGLSL } from "./microstructure.js";
@@ -129,12 +130,22 @@ export function createRenderer(canvas) {
     };
   }
   let typeTexture=null, typeKey="", typeUnavailable=false;
+  const pendingFontLoads=new Set(), failedFontLoads=new Set();
   function releaseLettering(){
     if(typeTexture)gl.deleteTexture(typeTexture);
     typeTexture=null;typeKey="";
   }
   function updateLettering(s,width,height){
     if(typeUnavailable || typeShaderUnavailable || !s.letteringAmount || !s.lettering.trim())return false;
+    const fontId=s.letteringFont||"original";
+    if(!retroFontReady(fontId) && !pendingFontLoads.has(fontId) && !failedFontLoads.has(fontId)){
+      pendingFontLoads.add(fontId);
+      ensureRetroFontLoaded(fontId).then(
+        ()=>{pendingFontLoads.delete(fontId);typeKey="";},
+        err=>{failedFontLoads.add(fontId);pendingFontLoads.delete(fontId);
+          console.warn("Typeface unavailable: displaying a fallback.",err);}
+      );
+    }
     try{
       if(!typeTexture) {
         typeTexture=gl.createTexture();
@@ -146,9 +157,9 @@ export function createRenderer(canvas) {
         gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
       }
       const aspect=width/Math.max(1,height);
-      const key=s.lettering+"|"+aspect.toFixed(4);
+      const key=s.lettering+"|"+aspect.toFixed(4)+"|"+fontId+"|"+retroFontRevision();
       if(key!==typeKey){
-        const glyphs=glyphCanvas(s.lettering,aspect);
+        const glyphs=glyphCanvas(s.lettering,aspect,fontId);
         gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,typeTexture);
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
         try{gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,glyphs);}

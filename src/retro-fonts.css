@@ -1,0 +1,159 @@
+@font-face {
+  font-family: "Retro Silkscreen";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/retro-silkscreen.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro Press Start 2P";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/retro-pressstart2p.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro VT323";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/retro-vt323.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro Pixelify Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/retro-pixelifysans.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro Bungee";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/retro-bungee.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro Monoton";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/retro-monoton.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro Audiowide";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/retro-audiowide.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro Orbitron";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/retro-orbitron.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro Rubik Glitch";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/retro-rubikglitch.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro Creepster";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/retro-creepster.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro Nosifer";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/retro-nosifer.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro UnifrakturCook";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/retro-unifrakturcook.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro Pirata One";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/retro-pirataone.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro Metal Mania";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/retro-metalmania.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro Comic Neue";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/retro-comicneue.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro Permanent Marker";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/retro-permanentmarker.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro Special Elite";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/retro-specialelite.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro Indie Flower";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/retro-indieflower.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro Sacramento";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/retro-sacramento.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Retro Pacifico";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/retro-pacifico.ttf") format("truetype");
+}

@@ -302,6 +302,13 @@ export function TextInspector({ history }) {
                   {group.paths.map(path=><option key={path}>{path}</option>)}
                 </optgroup>)}
               </Select>
+              <Select label="Stack a second path" value={layer.letteringMotionPath2 ?? "None"}
+                onChange={v=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringMotionPath2:v}:x)}))}>
+                <option>None</option>
+                {letteringMotionGroups.map(group=><optgroup key={group.label} label={group.label}>
+                  {group.paths.map(path=><option key={path}>{path}</option>)}
+                </optgroup>)}
+              </Select>
               <Select label="Letter motion direction" value={layer.letteringMotionDirection ?? "Forward"}
                 onChange={v=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringMotionDirection:v}:x)}))}>
                 <option>Forward</option><option>Reverse</option>
@@ -327,7 +334,7 @@ export function TextInspector({ history }) {
                   onChange={e=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringGradient:x.letteringGradient.map((c,n)=>n===j?e.target.value:c)}:x)}))}/>)}
               {["letteringX","letteringY","letteringRotation","letteringStretchX","letteringStretchY",
                 "letteringCurve","letteringScale","letteringAmount","letteringWarp","letteringMotion",
-                "letteringMotionStagger","letteringMotionSpeed"].map(key=>{
+                "letteringMotionStagger","letteringMotionSpeed","letteringMotionMix"].map(key=>{
                 const bounds=key==="letteringRotation"?[-180,180]:
                   key==="letteringCurve"?[-100,100]:
                   key==="letteringMotionSpeed"?[1,4]:
@@ -348,7 +355,7 @@ export function TextInspector({ history }) {
               letteringStyle:"Custom ink",letteringAmount:85,letteringScale:48,
               letteringBlendMode:s.letteringBlendMode ?? "Normal",letteringBlendStrength:100,
               letteringWarp:0,letteringMotion:0,letteringX:50,letteringY:50,
-              letteringMotionPath:"Classic drift",letteringMotionSpeed:1,
+              letteringMotionPath:"Classic drift",letteringMotionPath2:"None",letteringMotionMix:65,letteringMotionSpeed:1,
               letteringMotionStagger:10,letteringMotionDirection:"Forward",
               letteringRotation:0,letteringStretchX:100,letteringStretchY:100,
               letteringCurve:0,letteringFillMode:"Solid",letteringFill:"#ff2fbf",
@@ -428,6 +435,14 @@ export function TextInspector({ history }) {
               {group.paths.map(path=><option key={path}>{path}</option>)}
             </optgroup>)}
           </Select>
+          <Select label="Second motion (optional stack)" value={history.state.letteringMotionPath2 ?? "None"}
+            onChange={v=>history.change(s=>({...s,letteringMotionPath2:v}))}>
+            <option>None</option>
+            {letteringMotionGroups.map(group=><optgroup key={group.label} label={group.label}>
+              {group.paths.map(path=><option key={path}>{path}</option>)}
+            </optgroup>)}
+          </Select>
+          <Parameter label="Second path mixing" name="letteringMotionMix" history={history}/>
           <Parameter label="Movement amount" name="letteringMotion" history={history}/>
           <Parameter label="Path speed / loops per cycle" name="letteringMotionSpeed" history={history} format={v=>`${Math.round(v)} loops`}/>
           <Parameter label="Per-letter stagger" name="letteringMotionStagger" history={history}/>

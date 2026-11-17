@@ -174,5 +174,13 @@ export function mutateTextChoreography(layer,rng=Math.random){
  if(rng()<.21)changed.letteringBlendMode=other(letteringBlendModes,layer.letteringBlendMode,rng);
  if(rng()<.18)changed.letteringStyle=other(letteringStyles,layer.letteringStyle,rng);
  if(rng()<.15)changed.letteringMotionSpeed=integer(1,4,rng);
+ // Always produce a visible state change, even for oddly aligned RNG values.
+ const fx=["letteringMotion","letteringMotionMix","letteringMotionStagger","letteringWarp",
+   "letteringBlendStrength","letteringMotionPath","letteringBlendMode","letteringStyle",
+   "letteringMotionSpeed"];
+ if(fx.every(key=>changed[key]===layer[key])){
+   const current=Number(layer.letteringMotion??55);
+   changed.letteringMotion=current>50?Math.max(0,current-8):Math.min(100,current+8);
+ }
  return changed;
 }

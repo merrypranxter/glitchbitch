@@ -155,6 +155,10 @@ export const numericRanges = {
   glitter: [0, 100],
   broadcast: [0, 100],
   misregister: [0, 100],
+  afterimage: [0, 100],
+  datamosh: [0, 100],
+  memoryDrift: [0, 100],
+  memoryDecay: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -198,6 +202,10 @@ export const initial = {
   glitter: 0,
   broadcast: 0,
   misregister: 0,
+  afterimage: 0,
+  datamosh: 0,
+  memoryDrift: 20,
+  memoryDecay: 28,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -442,7 +450,8 @@ export function randomize(
   // Choose a few compatible appearances rather than maxing out every overlay.
   const appearances = ["phosphor", "dither", "riso", "windowCascade", "glitter", "broadcast", "misregister"];
   if (mutate) {
-    for (const key of appearances) next[key] = clamp(state[key] + (random() - .5) * 24);
+    for (const key of [...appearances, "afterimage", "datamosh", "memoryDrift", "memoryDecay"])
+      next[key] = clamp(state[key] + (random() - .5) * 24);
   } else {
     for (const key of appearances) next[key] = 0;
     const count = 1 + Math.floor(random() * 3);
@@ -451,6 +460,10 @@ export function randomize(
       next[key] = 35 + random() * 60;
     }
     if (next.riso > 0) next.misregister = random() * 70;
+    next.afterimage = random() < .38 ? 28 + random() * 56 : 0;
+    next.datamosh = random() < .32 ? 25 + random() * 60 : 0;
+    next.memoryDrift = 8 + random() * 70;
+    next.memoryDecay = 12 + random() * 48;
   }
   if (!mutate) {
     next.secondaryEngine = Math.floor(random() * engines.length);

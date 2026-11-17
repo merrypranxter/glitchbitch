@@ -1,4 +1,5 @@
 import { appearanceGLSL } from "./appearance.js";
+import { feedbackVertex, feedbackFragment } from "./feedback.js";
 
 const vertex = `attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
 const fragment = `precision highp float;
@@ -76,8 +77,118 @@ export function createRenderer(canvas) {
       "WebGL is unavailable. Enable hardware acceleration to use the studio.",
     );
   const programs = new Map();
-  let active,
-    fence = null;
+  let active, fence = null, memory = null, memoryShader = null, memoryDisabled = false;
+  let memoryIdentity = "", lastMemoryTime = -Infinity, lastMemoryColorTime = -Infinity;
+  function releaseMemory() {
+    if (memory) {
+      gl.deleteTexture(memory.scene);
+      gl.deleteTexture(memory.history);
+      gl.deleteFramebuffer(memory.fbo);
+      memory = null;
+    }
+    memoryIdentity = "";
+    lastMemoryTime = lastMemoryColorTime = -Infinity;
+  }
+  function createMemoryTexture(w, h) {
+    const tex = gl.createTexture();
+    if (!tex) throw Error("GPU texture allocation failed.");
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    return tex;
+  }
+  function memoryProgram() {
+    if (memoryShader) return memoryShader;
+    const vs = gl2 ? "#version 300 es\n" +
+      feedbackVertex.replace("attribute vec2", "in vec2").replace("varying vec2", "out vec2") : feedbackVertex;
+    const fs = gl2 ? "#version 300 es\n" +
+      feedbackFragment.replace("precision highp float;", "precision highp float;\nout vec4 fragColor;")
+        .replace("varying vec2", "in vec2").replaceAll("texture2D(", "texture(")
+        .replaceAll("gl_FragColor", "fragColor") : feedbackFragment;
+    let vert, frag, program;
+    try {
+      vert = compile(gl.VERTEX_SHADER, vs);
+      frag = compile(gl.FRAGMENT_SHADER, fs);
+      program = gl.createProgram();
+      gl.attachShader(program, vert);
+      gl.attachShader(program, frag);
+      gl.bindAttribLocation(program, 0, "position");
+      gl.linkProgram(program);
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS))
+        throw Error(gl.getProgramInfoLog(program));
+      memoryShader = {
+        program,
+        uniforms: new Map(),
+      };
+      return memoryShader;
+    } catch (e) {
+      if (program) gl.deleteProgram(program);
+      throw e;
+    } finally {
+      if (vert) gl.deleteShader(vert);
+      if (frag) gl.deleteShader(frag);
+    }
+  }
+  function prepareMemory(w, h) {
+    const shader = memoryProgram();
+    if (memory && memory.width === w && memory.height === h) return { shader, memory };
+    releaseMemory();
+    let scene, history, fbo;
+    try {
+      gl.activeTexture(gl.TEXTURE0);
+      scene = createMemoryTexture(w, h);
+      history = createMemoryTexture(w, h);
+      fbo = gl.createFramebuffer();
+      if (!fbo) throw Error("GPU framebuffer allocation failed.");
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, scene, 0);
+      if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE)
+        throw Error("Previous-frame buffer unsupported by this device.");
+      memory = { scene, history, fbo, width: w, height: h, valid: false };
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      return { shader, memory };
+    } catch (e) {
+      if (scene) gl.deleteTexture(scene);
+      if (history) gl.deleteTexture(history);
+      if (fbo) gl.deleteFramebuffer(fbo);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      throw e;
+    }
+  }
+  function compositeFeedback(s, timeline, w, h) {
+    const shader = memoryShader;
+    const uniform = (name) => {
+      if (!shader.uniforms.has(name))
+        shader.uniforms.set(name, gl.getUniformLocation(shader.program, name));
+      return shader.uniforms.get(name);
+    };
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, w, h);
+    gl.useProgram(shader.program);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, memory.scene);
+    gl.uniform1i(uniform("sceneTex"), 0);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, memory.history);
+    gl.uniform1i(uniform("historyTex"), 1);
+    gl.uniform2f(uniform("resolution"), w, h);
+    gl.uniform1f(uniform("time"), timeline.time + timeline.colorTime * .17);
+    gl.uniform1f(uniform("seed"), s.seed);
+    for (const k of ["afterimage", "datamosh", "memoryDrift", "memoryDecay"])
+      gl.uniform1f(uniform(k), s[k] / 100);
+    gl.uniform1f(uniform("hasMemory"), memory.valid ? 1 : 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    // Copy the displayed, fully composited frame into the previous-frame texture.
+    // No CPU readback or accumulating frame array: memory use stays bounded.
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, memory.history);
+    gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 0, 0, w, h);
+    gl.activeTexture(gl.TEXTURE0);
+    memory.valid = true;
+  }
   function compile(type, source) {
     const shader = gl.createShader(type);
     gl.shaderSource(shader, source);
@@ -205,6 +316,27 @@ export function createRenderer(canvas) {
         canvas.height = height;
       }
       active = programFor(s);
+      const hasMemoryEffects = (s.afterimage > 0 || s.datamosh > 0) && !memoryDisabled;
+      let drawWithMemory = false;
+      if (hasMemoryEffects) {
+        try {
+          prepareMemory(width, height);
+          const identity = [s.seed, s.engine, s.secondaryEngine, s.ratio, s.colors.join(":")].join("/");
+          if (memoryIdentity !== identity ||
+              timeline.time < lastMemoryTime - .0001 ||
+              timeline.colorTime < lastMemoryColorTime - .0001) memory.valid = false;
+          memoryIdentity = identity;
+          drawWithMemory = true;
+        } catch (e) {
+          // A device with inadequate texture/FBO support must retain the original artwork.
+          memoryDisabled = true;
+          releaseMemory();
+          console.warn("Frame-memory effects disabled; using original art renderer.", e);
+        }
+      } else if (memory) {
+        memory.valid = false;
+      }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, drawWithMemory ? memory.fbo : null);
       gl.viewport(0, 0, width, height);
       gl.useProgram(active.program);
       gl.uniform2f(loc("res"), width, height);
@@ -274,6 +406,11 @@ export function createRenderer(canvas) {
       gl.uniform2fv(loc("markShape[0]"), shapeBuffer);
       gl.uniform1i(loc("count"), s.marks.length);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
+      if (drawWithMemory) {
+        compositeFeedback(s, timeline, width, height);
+        lastMemoryTime = timeline.time;
+        lastMemoryColorTime = timeline.colorTime;
+      }
       if (gl2) {
         if (fence) gl.deleteSync(fence);
         fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
@@ -281,8 +418,16 @@ export function createRenderer(canvas) {
       }
       return true;
     },
+    resetFeedback() {
+      if (memory) memory.valid = false;
+      memoryIdentity = "";
+      lastMemoryTime = lastMemoryColorTime = -Infinity;
+    },
     destroy(release = false) {
       if (fence) gl.deleteSync(fence);
+      releaseMemory();
+      if (memoryShader) gl.deleteProgram(memoryShader.program);
+      memoryShader = null;
       programs.forEach((p) => gl.deleteProgram(p.program));
       programs.clear();
       gl.deleteBuffer(buffer);

@@ -134,3 +134,27 @@ test("signal drift stays free of hard band discontinuities", async () => {
   assert.match(shader, /smoothstep\(0\.,1\.,fract\(bandPos\)\)/);
   assert.doesNotMatch(shader, /float band=floor\(uv\.y\*90\.\)/);
 });
+
+test("frame memory remains opt-in and survives round-trip with validation", () => {
+  for (const key of ["afterimage", "datamosh", "memoryDrift", "memoryDecay"]) {
+    assert.ok(initial[key] >= 0 && initial[key] <= 100);
+    const input = { ...initial, [key]: 73 };
+    assert.equal(parseDocument(recipeDocument(input, "Memory", {time:2,colorTime:3})).state[key], 73);
+    assert.throws(() => parseDocument({ ...input, [key]: -2 }));
+    assert.throws(() => parseDocument({ ...input, [key]: NaN }));
+  }
+  const old = { ...initial };
+  for (const key of ["afterimage", "datamosh", "memoryDrift", "memoryDecay"]) delete old[key];
+  const restored = parseDocument(old).state;
+  assert.equal(restored.afterimage, 0);
+  assert.equal(restored.datamosh, 0);
+});
+test("memory renderer only activates when explicitly enabled", async () => {
+  const { readFileSync } = await import("node:fs");
+  const shader = readFileSync(new URL("../src/renderer.js", import.meta.url), "utf8");
+  const memory = readFileSync(new URL("../src/feedback.js", import.meta.url), "utf8");
+  assert.match(shader, /s.afterimage > 0 \|\| s.datamosh > 0/);
+  assert.match(shader, /gl.copyTexSubImage2D/);
+  assert.match(shader, /resetFeedback\(\)/);
+  assert.match(memory, /uniform sampler2D sceneTex, historyTex/);
+});

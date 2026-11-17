@@ -27,6 +27,22 @@ export async function renderImage(
   try {
     renderer = createRenderer(canvas);
     const { width, height } = dimensions(state.ratio, longEdge);
+    if (state.afterimage > 0 || state.datamosh > 0) {
+      // Deterministic short pre-roll makes still exports include actual frame history.
+      // Independent of preview's prior animation and frame count.
+      for (let i = 5; i >= 1; i--) {
+        const dt = i / 20;
+        renderer.draw(
+          state,
+          {
+            time: Math.max(0, timeline.time - (state.freezeGeometry ? 0 : dt * state.speed / 30)),
+            colorTime: Math.max(0, timeline.colorTime - (state.freezeColor ? 0 : dt * state.colorSpeed / 30)),
+          },
+          width,
+          height,
+        );
+      }
+    }
     renderer.draw(state, timeline, width, height);
     const blob = await new Promise((resolve, reject) =>
       canvas.toBlob(

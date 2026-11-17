@@ -147,6 +147,13 @@ export function EffectsInspector({ history }) {
         <Parameter label="Film grain" name="grain" history={history} />
         <Parameter label="Vignette" name="vignette" history={history} />
       </Section>
+      <Section title="FRAME MEMORY — ACTUAL FEEDBACK">
+        <Parameter label="Afterimage persistence" name="afterimage" history={history} />
+        <Parameter label="Temporal datamosh" name="datamosh" history={history} />
+        <Parameter label="Memory drift" name="memoryDrift" history={history} />
+        <Parameter label="Memory decay" name="memoryDecay" history={history} />
+        <p className="control-note">These treatments reuse the previously rendered frame. Watch them build while the artwork moves; they work together, with no hard horizontal tracking seams.</p>
+      </Section>
       <Section title="SCREEN PHYSICS">
         <Parameter label="CRT phosphor subpixels" name="phosphor" history={history} />
         <Parameter label="Broadcast bars" name="broadcast" history={history} />

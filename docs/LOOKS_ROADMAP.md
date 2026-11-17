@@ -42,3 +42,6 @@ Separate controls for Structure / Material / Damage / Ornaments / Motion, with p
 - Manually verify legacy recipe import, new recipe save/reimport, undo, palette change, touch interaction, PNG/video export, and fullscreen.
 - With all new sliders at 0, output must be identical to the pre-expansion renderer.
 - UI must not blank on a shader compilation error. Test fallback and recovery before merging any future stateful engine.
+
+## Wave 2 — first stateful implementation
+The optional previous-frame framebuffer renderer is now available under Effects / Frame Memory. Afterimage, Temporal Datamosh, Memory Drift and Memory Decay are recipe fields (0..100). Old recipes have memory off. The preview uses bounded GPU textures, and video export advances actual feedback from frame to frame. Still-image export uses five deterministic pre-roll frames. A device unable to allocate the memory framebuffer falls back to the original art path. High resolution + feedback increases GPU memory pressure; verify actual iPhone Safari performance at the selected export resolution. This is the first feedback engine, not yet the full biological simulation system.

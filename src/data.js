@@ -147,6 +147,10 @@ export const ratios = [
 export const touchModes = ["Warp", "Vortex", "Repel", "Chroma"];
 export const motionModes = ["Liquid flow", "Breathing", "Orbital", "Traveling waves", "Internal turbulence"];
 export const stereoShapes = ["Gyroid Cathedral", "Metaball Choir", "Opal Knot", "Crystal Lattice", "Ribbon Wormhole"];
+export const letteringStyles = ["Neon bling", "RGB split", "Chrome foil", "Void stencil"];
+export const chaosPhrases = ["ERROR ANGEL", "GLITCHBITCH", "LOVE.exe", "U R CUTE", "SOFT APOCALYPSE",
+  "INFINITE TRASH", "COSMIC STATIC", "NEON FUNERAL", "NO SIGNAL", "DIVINE MALFUNCTION",
+  "HYPERSPACE", "TOXIC DREAM", "BLESSED ERROR", "404 REALITY", "SWEET CORRUPTION"];
 export const numericRanges = {
   complexity: [0, 100],
   scale: [0, 100],
@@ -194,6 +198,16 @@ export const numericRanges = {
   stereoGlow: [0, 100],
   stereoWiggle: [0, 100],
   stereoQuality: [0, 100],
+  filmAmount: [0, 100],
+  filmThickness: [0, 100],
+  opalAmount: [0, 100],
+  prismAmount: [0, 100],
+  foilRelief: [0, 100],
+  foilMotion: [0, 100],
+  letteringAmount: [0, 100],
+  letteringScale: [0, 100],
+  letteringWarp: [0, 100],
+  letteringMotion: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -262,6 +276,18 @@ export const initial = {
   stereoWiggle: 38,
   stereoQuality: 45,
   stereoShape: "Gyroid Cathedral",
+  filmAmount: 0,
+  filmThickness: 54,
+  opalAmount: 0,
+  prismAmount: 0,
+  foilRelief: 0,
+  foilMotion: 47,
+  lettering: "",
+  letteringStyle: "Neon bling",
+  letteringAmount: 0,
+  letteringScale: 48,
+  letteringWarp: 40,
+  letteringMotion: 55,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -330,11 +356,17 @@ export function validateRecipe(input) {
     colorMode: ["Traveling wave", "Color canon", "Phase vortex"],
     motionMode: motionModes,
     stereoShape: stereoShapes,
+    letteringStyle: letteringStyles,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
       s[key] = x[key];
     }
+  }
+  if(x.lettering !== undefined) {
+    if(typeof x.lettering !== "string" || x.lettering.length>56 ||
+       /[\x00-\x08\x0e-\x1f]/.test(x.lettering)) throw Error("Lettering must be 56 printable characters or fewer.");
+    s.lettering=x.lettering;
   }
   if (x.marks !== undefined) {
     if (!Array.isArray(x.marks) || x.marks.length > 32)
@@ -478,6 +510,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "motionAmount","motionRate","lightMotion","bioAmount","bioFeed","bioKill",
       "bioSpeed","bioVeins","stereoAmount","stereoDepth","stereoParallax",
       "stereoMorph","stereoGlow","stereoWiggle","stereoQuality",
+      "filmAmount","filmThickness","opalAmount","prismAmount","foilRelief","foilMotion",
+      "letteringAmount","letteringScale","letteringWarp","letteringMotion",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -541,6 +575,18 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.stereoGlow=37+random()*62;
   s.stereoWiggle=22+random()*75;
   s.stereoQuality=24+random()*55;
+  s.filmAmount=random()<.65 ? 32+random()*67:0;
+  s.filmThickness=10+random()*90;
+  s.opalAmount=random()<.47 ? 24+random()*72:0;
+  s.prismAmount=random()<.49 ? 24+random()*75:0;
+  s.foilRelief=random()<.55 ? 20+random()*70:0;
+  s.foilMotion=31+random()*67;
+  s.letteringStyle=different(letteringStyles,state.letteringStyle,random);
+  s.lettering=random()<.43 ? sample(chaosPhrases,random) : "";
+  s.letteringAmount=s.lettering ? 43+random()*56 : 0;
+  s.letteringScale=22+random()*72;
+  s.letteringWarp=12+random()*77;
+  s.letteringMotion=24+random()*75;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;
@@ -919,5 +965,53 @@ export const looks = [
     note: "Fivefold 2D interference invaded by a parallax-shifting opal structure",
     family: "Spatial",
     state: { ...initial, engine: 14, palette: 10, colors: palettes[10].colors, stereoShape: "Opal Knot", stereoAmount: 73, stereoDepth: 71, stereoMorph: 58, stereoGlow: 96, stereoParallax: 67, stereoWiggle: 39, stereoQuality: 54, quasiDensity: 76, motionMode: "Liquid flow", motionAmount: 43, motionRate: 58, lightMotion: 89, seed: 81935 },
+  },
+  {
+    name: "Prismatic Tape Oracle",
+    note: "Living thin-film iridescence and deep holographic diffraction over crossed signals",
+    family: "Materials",
+    state: { ...initial, engine: 10, palette: 1, colors: palettes[1].colors, filmAmount: 96, filmThickness: 76, opalAmount: 63, prismAmount: 88, foilRelief: 53, foilMotion: 77, scale: 23, motionMode: "Traveling waves", motionAmount: 63, motionRate: 59, lightMotion: 84, seed: 71634 },
+  },
+  {
+    name: "Beetle Chrome Communion",
+    note: "Chitin-like spectral glints over soft mathematical membranes",
+    family: "Materials",
+    state: { ...initial, engine: 7, palette: 8, colors: palettes[8].colors, filmAmount: 85, filmThickness: 64, opalAmount: 77, prismAmount: 43, foilRelief: 89, foilMotion: 61, scale: 26, motionMode: "Breathing", motionAmount: 66, lightMotion: 91, seed: 25881 },
+  },
+  {
+    name: "Oil Slick Underworld",
+    note: "Oil-film colors sliding through amorphous liquid marble",
+    family: "Materials",
+    state: { ...initial, engine: 6, palette: 11, colors: palettes[11].colors, filmAmount: 100, filmThickness: 89, opalAmount: 54, prismAmount: 77, foilRelief: 50, foilMotion: 91, scale: 35, motionMode: "Liquid flow", motionAmount: 88, lightMotion: 82, seed: 19171 },
+  },
+  {
+    name: "Dichroic Ghost Cathedral",
+    note: "3D gyroid sculpture drenched in animated spectral foil",
+    family: "Materials",
+    state: { ...initial, engine: 16, palette: 10, colors: palettes[10].colors, stereoShape: "Gyroid Cathedral", stereoAmount: 92, filmAmount: 79, filmThickness: 78, opalAmount: 85, prismAmount: 74, foilRelief: 31, foilMotion: 55, lightMotion: 80, seed: 74117 },
+  },
+  {
+    name: "LOVE.exe.exe",
+    note: "Animated neon old-web type inhabiting a corrupted signal field",
+    family: "Type",
+    state: { ...initial, engine: 3, palette: 1, colors: palettes[1].colors, lettering: "LOVE.exe", letteringStyle: "Neon bling", letteringAmount: 98, letteringScale: 74, letteringWarp: 54, letteringMotion: 91, windowCascade: 41, glitter: 75, filmAmount: 35, motionAmount: 60, lightMotion: 75, seed: 33171 },
+  },
+  {
+    name: "DIVINE MALFUNCTION",
+    note: "Loud chrome typography over oil-slick fractal boundaries",
+    family: "Type",
+    state: { ...initial, engine: 13, palette: 15, colors: palettes[15].colors, lettering: "DIVINE MALFUNCTION", letteringStyle: "Chrome foil", letteringAmount: 94, letteringScale: 61, letteringWarp: 39, letteringMotion: 69, filmAmount: 81, opalAmount: 76, fractalZoom: 48, motionAmount: 47, lightMotion: 87, seed: 51839 },
+  },
+  {
+    name: "BLESS THIS ERROR",
+    note: "Void-stencil glyphs punched through a late-night CRT",
+    family: "Type",
+    state: { ...initial, engine: 4, palette: 7, colors: palettes[7].colors, lettering: "BLESS THIS ERROR", letteringStyle: "Void stencil", letteringAmount: 96, letteringScale: 79, letteringWarp: 62, letteringMotion: 70, phosphor: 75, broadcast: 34, afterimage: 19, lightMotion: 81, seed: 67491 },
+  },
+  {
+    name: "COSMIC STATIC",
+    note: "Kinetic RGB typography inside an impossible prismatic camera",
+    family: "Type",
+    state: { ...initial, engine: 14, palette: 6, colors: palettes[6].colors, lettering: "COSMIC STATIC", letteringStyle: "RGB split", letteringAmount: 95, letteringScale: 71, letteringWarp: 76, letteringMotion: 94, prismAmount: 92, opalAmount: 47, filmAmount: 64, quasiDensity: 57, motionAmount: 79, lightMotion: 84, seed: 71691 },
   },
 ];

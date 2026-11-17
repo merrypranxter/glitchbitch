@@ -119,8 +119,8 @@ test("appearance sliders round trip, reject invalid numbers and keep vintage rec
   for (const key of appearanceKeys) delete old[key];
   assert.deepEqual(appearanceKeys.map(key => parseDocument(old).state[key]), appearanceKeys.map(() => 0));
 });
-test("lookbook contains 49 valid distinct entries including stereoscopic depth", () => {
-  assert.equal(looks.length, 49);
+test("lookbook contains 57 valid distinct entries including optical materials and kinetic typography", () => {
+  assert.equal(looks.length, 57);
   assert.equal(new Set(looks.map(look => look.name)).size, looks.length);
   for (const look of looks) assert.deepEqual(parseDocument(look.state).state, look.state);
   assert.ok(looks.some(look => look.state.windowCascade > 0));
@@ -344,4 +344,49 @@ test("unsupported 3D compilation falls back to the existing 2D renderer", async 
   assert.match(shader,/stereoUnavailable = true/);
   assert.match(shader,/safe2DSelection\(s\)/);
   assert.match(shader,/engine: s.engine === 16 \? 6/);
+});
+
+test("prismatic materials and live text validate, survive recipe round trip and leave legacy off", async () => {
+  const {letteringStyles,chaosPhrases}=await import("../src/data.js");
+  const keys=["filmAmount","filmThickness","opalAmount","prismAmount","foilRelief",
+   "foilMotion","letteringAmount","letteringScale","letteringWarp","letteringMotion"];
+  for(const key of keys){
+    const art={...initial,[key]:73};
+    assert.equal(parseDocument(recipeDocument(art,"Type",{time:2,colorTime:3})).state[key],73);
+    assert.throws(()=>parseDocument({...art,[key]:105}));
+  }
+  const old={...initial};
+  for(const key of keys)delete old[key];
+  delete old.lettering;delete old.letteringStyle;
+  const restored=parseDocument(old).state;
+  assert.equal(restored.filmAmount,0);assert.equal(restored.letteringAmount,0);
+  assert.equal(restored.lettering,"");
+  assert.equal(letteringStyles.length,4);assert.ok(chaosPhrases.length>=10);
+  assert.throws(()=>parseDocument({...initial,lettering:"a".repeat(57)}));
+  assert.throws(()=>parseDocument({...initial,letteringStyle:"Not real"}));
+  const type=looks.find(x=>x.name==="DIVINE MALFUNCTION");
+  assert.equal(type.state.lettering,"DIVINE MALFUNCTION");
+  const born=randomize({...initial,lettering:"OLD WORDS"},{},false,()=>.7);
+  assert.notEqual(born.lettering,"OLD WORDS");
+});
+test("material and lettering GL shaders are opt-in, but complete in normal render and exports", async () => {
+  const {readFileSync}=await import("node:fs");
+  const shader=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
+  const material=readFileSync(new URL("../src/materials.js",import.meta.url),"utf8");
+  const kinetic=readFileSync(new URL("../src/kinetic-type.js",import.meta.url),"utf8");
+  assert.match(shader,/withMaterial/);assert.match(shader,/withLettering/);
+  assert.match(shader,/prismaticTape\(col,uv,p,v\)/);
+  assert.match(shader,/drawKineticLetters\(col,uv\)/);
+  assert.match(material,/wavelengths/);
+  assert.match(kinetic,/glyphCanvas/);
+  assert.match(shader,/texImage2D\(gl\.TEXTURE_2D,0,gl\.RGBA,gl\.RGBA,gl\.UNSIGNED_BYTE,glyphs\)/);
+});
+
+test("opt-in material or type compile failures progressively retain the old 2D art", async () => {
+  const {readFileSync}=await import("node:fs");
+  const renderer=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
+  assert.match(renderer,/materialUnavailable=true/);
+  assert.match(renderer,/typeShaderUnavailable=true/);
+  assert.match(renderer,/compatibleShaderState\(s\)/);
+  assert.match(renderer,/for\(let attempt=0;attempt<4;attempt\+\+\)/);
 });

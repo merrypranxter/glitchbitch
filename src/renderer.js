@@ -5,6 +5,8 @@ import { feedbackVertex, feedbackFragment } from "./feedback.js";
 import { createBiology, BIO_SIZE } from "./biology.js";
 import { bioGLSL } from "./bio-shader.js";
 import { stereoGLSL } from "./stereo.js";
+import { materialGLSL } from "./materials.js";
+import { kineticGLSL, glyphCanvas } from "./kinetic-type.js";
 
 const vertex = `attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
 const fragment = `precision highp float;
@@ -49,6 +51,8 @@ float composed(vec2 p){float a=field(p,engine);if(blend<.001)return a;float b=fi
 float phaseOf(float value,vec2 uv,float source){float bands=(2.+complexity*5.)*pow(2.,(colorRepeat-.5)*2.);float phase=value*bands+seed*.001+seedHigh*.017+colorTime*.04+colorOffset;
 if(colorAmount>.0){float t=colorTime/12.;vec2 s=(uv-.5)*3.;float voice=0.;if(colorMode==0){voice=t+.55*s.x+.22*s.y+.2*sin(TAU*(t+s.y))+.1*sin(TAU*(2.*t+s.x));}else if(colorMode==1){voice=t+.25*s.x+.15*s.y+.24*sin(TAU*(t+.19*s.x+.17*s.y))+.12*sin(TAU*(2.*t+.38*s.x+.17*s.y)+1.7)+.07*sin(TAU*(3.*t+.57*s.x+.17*s.y)+3.4);}else{voice=t+atan(s.y,s.x)/TAU+.25*sin(length(s)*6.-t*TAU);}phase+=colorAmount*voice;}
 phase+=source;if(posterize)phase=floor(phase*7.)/7.;return phase;}
+/* MATERIAL_MODULE */
+/* LETTERING_MODULE */
 ${appearanceGLSL}
 void main(){vec2 uv=gl_FragCoord.xy/res;vec2 aspect=vec2(res.x/res.y,1.);vec2 sampleUV=uv;
 if(pixel>.001){float cells=mix(600.,24.,pow(pixel,.65));sampleUV=(floor(uv*vec2(cells*aspect.x,cells))+.5)/vec2(cells*aspect.x,cells);}
@@ -72,8 +76,10 @@ if(marks[i].w<.5)p+=rotate(a)*vec2(sin(local.y*15.+time),cos(local.x*15.-time))*
 else if(marks[i].w<1.5)p+=vec2(-d.y,d.x)*force*8.;else if(marks[i].w<2.5)p+=d*force*8.;else source+=force*(.5+.5*sin(2.*atan(d.y,d.x)+colorTime*.5+a));}}
 float v=composed(p);vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*sin(v*(2.+complexity*5.)*TAU),18.);col*=.72+edge*.5;if(bloom)col+=edge*col*.24;
 /* STEREO_POST */
+/* MATERIAL_POST */
 col=animateLight(col,uv,v);
 col=stainWithBiology(col,uv,p);
+/* LETTERING_POST */
 if(split>.001){col.r=mix(col.r,palette(phaseOf(composed(p+vec2(split*.09,0.)),uv,source)).r,split);col.b=mix(col.b,palette(phaseOf(composed(p-vec2(split*.09,0.)),uv,source)).b,split);}
 col*=1.-scan*(.5+.5*sin(uv.y*900.))*.55;col+=(hash(floor(uv*1000.)+fract(time))-.5)*grain*.3;col=mix(col,col.brg,tear*.65);col=mix(col,col.gbr,blocks*block*.6);
 float luma=dot(col,vec3(.2126,.7152,.0722));col=mix(vec3(luma),col,saturation*2.);col=(col-.5)*(.5+contrast)+.5;col*=.5+brightness;col*=1.-vignette*smoothstep(.15,.8,length((uv-.5)*aspect));if(invert)col=1.-col;
@@ -97,7 +103,50 @@ export function createRenderer(canvas) {
     );
   const programs = new Map();
   let active, fence = null, memory = null, memoryShader = null, memoryDisabled = false;
-  let stereoUnavailable = false;
+  let stereoUnavailable = false, materialUnavailable = false, typeShaderUnavailable = false;
+  function compatibleShaderState(s){
+    const source = stereoUnavailable ? safe2DSelection(s) : s;
+    if(!materialUnavailable && !typeShaderUnavailable)return source;
+    return {
+      ...source,
+      ...(materialUnavailable ? {filmAmount:0,opalAmount:0,prismAmount:0,foilRelief:0}:{}),
+      ...(typeShaderUnavailable ? {letteringAmount:0}:{})
+    };
+  }
+  let typeTexture=null, typeKey="", typeUnavailable=false;
+  function releaseLettering(){
+    if(typeTexture)gl.deleteTexture(typeTexture);
+    typeTexture=null;typeKey="";
+  }
+  function updateLettering(s){
+    if(typeUnavailable || typeShaderUnavailable || !s.letteringAmount || !s.lettering.trim())return false;
+    try{
+      if(!typeTexture) {
+        typeTexture=gl.createTexture();
+        if(!typeTexture)throw Error("Could not allocate a lettering texture.");
+        gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,typeTexture);
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+      }
+      const key=s.lettering;
+      if(key!==typeKey){
+        const glyphs=glyphCanvas(s.lettering);
+        gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,typeTexture);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+        try{gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,glyphs);}
+        finally{gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);}
+        typeKey=key;
+      }
+      gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,typeTexture);
+      gl.activeTexture(gl.TEXTURE0);return true;
+    }catch(error){
+      typeUnavailable=true;releaseLettering();gl.activeTexture(gl.TEXTURE0);
+      console.warn("Kinetic lettering unavailable, original artwork preserved.",error);
+      return false;
+    }
+  }
   // Do not let an unsupported high-cost 3D shader blank out existing artwork.
   const safe2DSelection = (s) => ({
     ...s,
@@ -308,7 +357,9 @@ export function createRenderer(canvas) {
   function programFor(s) {
     const blended = s.blend > 0,
       withStereo = s.engine === 16 || (blended && s.secondaryEngine === 16) || s.stereoAmount > 0,
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}`;
+      withMaterial = s.filmAmount>0 || s.opalAmount>0 || s.prismAmount>0 || s.foilRelief>0,
+      withLettering = s.letteringAmount>0 && !!s.lettering.trim(),
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -330,6 +381,10 @@ export function createRenderer(canvas) {
            (secondaryEngine==16 && blend>.001 ? max(stereoAmount,blend*.78) : stereoAmount);
          col=mix(col,ghost.rgb,clamp(ghostOpacity*(.52+.48*ghost.a),0.,1.));`
       : "");
+    source=source.replace("/* MATERIAL_MODULE */",withMaterial?materialGLSL:"");
+    source=source.replace("/* MATERIAL_POST */",withMaterial?"col=prismaticTape(col,uv,p,v);":"");
+    source=source.replace("/* LETTERING_MODULE */",withLettering?kineticGLSL:"");
+    source=source.replace("/* LETTERING_POST */",withLettering?"col=drawKineticLetters(col,uv);":"");
     if (s.split <= 0.1) source = source.replace("if(split>.001)", "if(false)");
     const vs = gl2
       ? "#version 300 es\n" + vertex.replace("attribute vec2", "in vec2")
@@ -429,17 +484,35 @@ export function createRenderer(canvas) {
         canvas.width = width;
         canvas.height = height;
       }
-      const wantsStereo = s.engine === 16 ||
-        (s.blend > 0 && s.secondaryEngine === 16) || s.stereoAmount > 0;
-      try {
-        active = programFor(stereoUnavailable ? safe2DSelection(s) : s);
-      } catch (e) {
-        if (!wantsStereo || stereoUnavailable) throw e;
-        stereoUnavailable = true;
-        active = programFor(safe2DSelection(s));
-        console.warn("3D shader unsupported on this device: showing 2D fallback, no artwork lost.", e);
+      // Progressive shader fallback: the newest optional effects are disabled
+      // one at a time if the driver cannot compile them. Legacy fields stay visible.
+      let lastCompileError = null;
+      for(let attempt=0;attempt<4;attempt++){
+        const candidate=compatibleShaderState(s);
+        try {
+          active=programFor(candidate);
+          lastCompileError=null;
+          break;
+        }catch(e){
+          lastCompileError=e;
+          if(candidate.letteringAmount>0 && candidate.lettering.trim()){
+            typeShaderUnavailable=true;
+            console.warn("Kinetic lettering shader unavailable, preserving original art.",e);
+          }else if(candidate.filmAmount>0 || candidate.opalAmount>0 ||
+            candidate.prismAmount>0 || candidate.foilRelief>0){
+            materialUnavailable=true;
+            console.warn("Prismatic material shader unavailable, preserving original art.",e);
+          }else if(candidate.engine===16 ||
+             (candidate.blend>0 && candidate.secondaryEngine===16) ||
+             candidate.stereoAmount>0){
+            stereoUnavailable=true;
+            console.warn("3D shader unsupported on this device: showing 2D fallback, no artwork lost.",e);
+          }else{ throw e; }
+        }
       }
+      if(lastCompileError)throw lastCompileError;
       const hasBiology = updateBiology(s, timeline);
+      const hasLettering = updateLettering(s);
       const hasMemoryEffects = (s.afterimage > 0 || s.datamosh > 0) && !memoryDisabled;
       let drawWithMemory = false;
       if (hasMemoryEffects) {
@@ -509,6 +582,9 @@ export function createRenderer(canvas) {
         "stereoGlow",
         "stereoWiggle",
         "stereoQuality",
+        "filmAmount", "filmThickness", "opalAmount", "prismAmount",
+        "foilRelief", "foilMotion", "letteringAmount", "letteringScale",
+        "letteringWarp", "letteringMotion",
       ])
         gl.uniform1f(loc(k), s[k] / 100);
       gl.uniform1f(loc("rotation"), (s.rotation * Math.PI) / 180);
@@ -524,6 +600,9 @@ export function createRenderer(canvas) {
         ["Traveling wave", "Color canon", "Phase vortex"].indexOf(s.colorMode),
       );
       gl.uniform1i(loc("colorCount"), s.colors.length);
+      gl.uniform1i(loc("letteringStyle"), ["Neon bling","RGB split","Chrome foil","Void stencil"].indexOf(s.letteringStyle));
+      gl.uniform1i(loc("letteringAvailable"), hasLettering ? 1 : 0);
+      gl.uniform1i(loc("letteringTex"), 3);
       gl.uniform1i(loc("stereoShape"), ["Gyroid Cathedral", "Metaball Choir", "Opal Knot",
         "Crystal Lattice", "Ribbon Wormhole"].indexOf(s.stereoShape));
       gl.uniform1i(loc("motionMode"), ["Liquid flow", "Breathing", "Orbital", "Traveling waves", "Internal turbulence"].indexOf(s.motionMode));
@@ -594,6 +673,7 @@ export function createRenderer(canvas) {
       if (fence) gl.deleteSync(fence);
       releaseMemory();
       releaseBiology();
+      releaseLettering();
       gl.deleteTexture(emptyBioTexture);
       if (memoryShader) gl.deleteProgram(memoryShader.program);
       memoryShader = null;

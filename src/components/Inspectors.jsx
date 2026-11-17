@@ -28,7 +28,7 @@ import {
   Dna,
   Box,
 } from "lucide-react";
-import { engineInfo, engines, touchModes, makeMark, motionModes } from "../data";
+import { engineInfo, engines, touchModes, makeMark, motionModes, letteringStyles } from "../data";
 import { Parameter, Range, Switch, Select, Section } from "./Controls";
 const icons = [
   Waves,
@@ -196,6 +196,35 @@ export function EffectsInspector({ history }) {
         <Parameter label="Camera wiggle speed" name="stereoWiggle" history={history} />
         <Parameter label="Raymarch detail / GPU load" name="stereoQuality" history={history} />
         <p className="control-note">The 3D engine always shows its raymarched form; on other engines, raise 3D overlay to add moving depth. Higher raymarch detail costs more GPU on iPhone.</p>
+      </Section>
+      <Section title="PRISMATIC TAPE DECK">
+        <Parameter label="Thin-film interference" name="filmAmount" history={history} />
+        <Parameter label="Optical film thickness" name="filmThickness" history={history} />
+        <Parameter label="Opal cell flashes" name="opalAmount" history={history} />
+        <Parameter label="Dichroic prism shift" name="prismAmount" history={history} />
+        <Parameter label="Micro-relief highlights" name="foilRelief" history={history} />
+        <Parameter label="Material animation" name="foilMotion" history={history} />
+        <p className="control-note">Animated spectral-film colors, opalescent cells and shape-reactive foil. Works on every math, biological and 3D engine; leave everything at zero for the old appearance.</p>
+      </Section>
+      <Section title="KINETIC TYPE STORM">
+        <label className="select-field kinetic-type-field">
+          <span>YOUR WORDS — EDIT LIVE</span>
+          <input type="text" maxLength={56} autoComplete="off" spellCheck={false}
+            placeholder="LOVE.exe / DIVINE MALFUNCTION / YOUR WORDS"
+            value={history.state.lettering}
+            onFocus={history.begin}
+            onChange={(e) => history.preview((s) => ({ ...s, lettering: e.target.value }))}
+            onBlur={history.end} />
+        </label>
+        <Select label="Lettering material" value={history.state.letteringStyle}
+          onChange={(v) => history.change((s) => ({ ...s, letteringStyle: v }))}>
+          {letteringStyles.map((v) => <option key={v}>{v}</option>)}
+        </Select>
+        <Parameter label="Lettering opacity" name="letteringAmount" history={history} />
+        <Parameter label="Letter size" name="letteringScale" history={history} />
+        <Parameter label="Liquid text warping" name="letteringWarp" history={history} />
+        <Parameter label="Kinetic text motion" name="letteringMotion" history={history} />
+        <p className="control-note">Real editable text, not random fake glyphs. It animates in the artwork and renders into PNG, GIF and MP4. Clear the text or set opacity to zero to remove it.</p>
       </Section>
       <Section title="BIOLOGICAL SIGNAL ROT">
         <Parameter label="Growing organism overlay" name="bioAmount" history={history} />

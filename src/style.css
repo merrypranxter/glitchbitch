@@ -2838,3 +2838,22 @@ footer > span:last-child svg {
   outline: 2px solid #ffffff;
   outline-offset: 2px;
 }
+
+/* Wave 4: compact phone-friendly editable type. */
+.kinetic-type-field input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--line, #34343d);
+  border-radius: 7px;
+  padding: 10px 11px;
+  background: #111018;
+  color: #f7f6fd;
+  font: inherit;
+  font-size: 14px;
+  letter-spacing: .02em;
+}
+.kinetic-type-field input:focus-visible {
+  outline: 2px solid #e3ff57;
+  outline-offset: 2px;
+}

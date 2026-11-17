@@ -172,9 +172,9 @@ export function createRenderer(canvas) {
         gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
       }
       const aspect=width/Math.max(1,height);
-      const key=s.lettering+"|"+aspect.toFixed(4)+"|"+fontId+"|"+retroFontRevision();
+      const key=s.lettering+"|"+aspect.toFixed(4)+"|"+fontId+"|"+retroFontRevision()+"|"+JSON.stringify([s.letteringFillMode,s.letteringFill,s.letteringGradient,s.letteringGradientAngle,s.letteringStrokes]);
       if(key!==typeKey){
-        const glyphs=glyphCanvas(s.lettering,aspect,fontId);
+        const glyphs=glyphCanvas(s.lettering,aspect,fontId,s);
         gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,typeTexture);
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
         try{gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,glyphs);}
@@ -705,7 +705,7 @@ export function createRenderer(canvas) {
       gl.uniform1i(loc("compositionMode"), [
         "Iris portals","Braided ribbons","Cell colonies","Patchwork",
         "Orbital archipelagos","Woven windows"].indexOf(s.compositionMode));
-      gl.uniform1i(loc("letteringStyle"), ["Neon bling","RGB split","Chrome foil","Void stencil"].indexOf(s.letteringStyle));
+      gl.uniform1i(loc("letteringStyle"), ["Neon bling","RGB split","Chrome foil","Void stencil","Custom ink","Holographic","Electric glow","Liquid candy","Ghost echo","Chromatic shimmer","Heatwave","Glitter ink","Prism pulse","Soft shadow"].indexOf(s.letteringStyle));
       gl.uniform1i(loc("letteringAvailable"), hasLettering ? 1 : 0);
       gl.uniform1i(loc("letteringTex"), 3);
       gl.uniform1i(loc("wiggleMode"), ["Flipbook", "Smooth orbit", "Hold left", "Hold right"].indexOf(s.wiggleMode));

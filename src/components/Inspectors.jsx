@@ -244,6 +244,52 @@ export function TextInspector({ history }) {
           onChange={(v) => history.change((s) => ({ ...s, letteringStyle: v }))}>
           {letteringStyles.map((v) => <option key={v}>{v}</option>)}
         </Select>
+        <Section title="TEXT FILL — SOLID OR GRADIENT">
+          <Select label="Fill type" value={history.state.letteringFillMode}
+            onChange={v=>history.change(s=>({...s,letteringFillMode:v}))}>
+            {["Solid","Linear gradient","Radial gradient"].map(v=><option key={v}>{v}</option>)}
+          </Select>
+          <label className="select-field"><span>Font fill color</span>
+            <input type="color" value={history.state.letteringFill}
+              onChange={e=>history.change(s=>({...s,letteringFill:e.target.value}))}/>
+          </label>
+          {history.state.letteringFillMode!=="Solid"&&<>
+            <Parameter label="Gradient angle" name="letteringGradientAngle" history={history}/>
+            {history.state.letteringGradient.map((color,index)=>
+              <label className="select-field" key={index}><span>Gradient stop {index+1}</span>
+                <input type="color" value={color}
+                  onChange={e=>history.change(s=>({...s,letteringGradient:s.letteringGradient.map((c,i)=>i===index?e.target.value:c)}))}/>
+                <button type="button" className="button secondary"
+                  disabled={history.state.letteringGradient.length<=2}
+                  onClick={()=>history.change(s=>({...s,letteringGradient:s.letteringGradient.filter((_,i)=>i!==index)}))}>Remove stop</button>
+              </label>)}
+            <button type="button" className="button secondary"
+              disabled={history.state.letteringGradient.length>=8}
+              onClick={()=>history.change(s=>({...s,letteringGradient:[...s.letteringGradient,"#ffffff"]}))}>Add gradient stop</button>
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(s=>({...s,letteringGradient:[...s.letteringGradient].reverse()}))}>Reverse gradient</button>
+          </>}
+        </Section>
+        <Section title="STACKED OUTSIDE STROKES">
+          <p className="control-note">Up to five outer outlines. The first is closest to the letters. Each stroke grows outward, keeping the fill visible.</p>
+          {history.state.letteringStrokes.map((stroke,index)=>
+            <div className="retro-type-actions" key={index}>
+              <label>Stroke {index+1} <input type="checkbox" checked={stroke.enabled}
+                onChange={e=>history.change(s=>({...s,letteringStrokes:s.letteringStrokes.map((x,i)=>i===index?{...x,enabled:e.target.checked}:x)}))}/></label>
+              <input type="color" value={stroke.color}
+                aria-label={"Stroke "+(index+1)+" color"}
+                onChange={e=>history.change(s=>({...s,letteringStrokes:s.letteringStrokes.map((x,i)=>i===index?{...x,color:e.target.value}:x)}))}/>
+              <label>Outside width: {stroke.width}px
+                <input type="range" min="0" max="40" step="1" value={stroke.width}
+                  onChange={e=>history.change(s=>({...s,letteringStrokes:s.letteringStrokes.map((x,i)=>i===index?{...x,width:Number(e.target.value)}:x)}))}/>
+              </label>
+              <button type="button" className="button secondary"
+                onClick={()=>history.change(s=>({...s,letteringStrokes:s.letteringStrokes.filter((_,i)=>i!==index)}))}>Remove stroke</button>
+            </div>)}
+          <button type="button" className="button secondary"
+            disabled={history.state.letteringStrokes.length>=5}
+            onClick={()=>history.change(s=>({...s,letteringStrokes:[...s.letteringStrokes,{color:"#ff00cc",width:4,enabled:true}]}))}>+ Add outer stroke</button>
+        </Section>
         <Parameter label="Lettering opacity" name="letteringAmount" history={history} />
         <Parameter label="Letter size" name="letteringScale" history={history} />
         <Parameter label="Liquid text warping" name="letteringWarp" history={history} />

@@ -151,7 +151,7 @@ export const motionModes = ["Liquid flow", "Breathing", "Orbital", "Traveling wa
 export const tunnelModes = ["Infinite spiral","Conch cathedral","Braided wormhole","Moiré throat","Living iris","Liquid vortex"];
 export const stereoShapes = ["Gyroid Cathedral", "Metaball Choir", "Opal Knot", "Crystal Lattice", "Ribbon Wormhole"];
 export const wiggleModes = ["Flipbook", "Smooth orbit", "Hold left", "Hold right"];
-export const letteringStyles = ["Neon bling", "RGB split", "Chrome foil", "Void stencil"];
+export const letteringStyles = ["Neon bling","RGB split","Chrome foil","Void stencil","Custom ink","Holographic","Electric glow","Liquid candy","Ghost echo","Chromatic shimmer","Heatwave","Glitter ink","Prism pulse","Soft shadow"];
 export const compositionModes = [
   "Iris portals", "Braided ribbons", "Cell colonies", "Patchwork",
   "Orbital archipelagos", "Woven windows",
@@ -238,6 +238,7 @@ export const numericRanges = {
   letteringScale: [0, 100],
   letteringWarp: [0, 100],
   letteringMotion: [0, 100],
+  letteringGradientAngle: [0, 360],
   compositionAmount: [0, 100],
   compositionScale: [0, 100],
   compositionFeather: [0, 100],
@@ -358,6 +359,11 @@ export const initial = {
   letteringScale: 48,
   letteringWarp: 40,
   letteringMotion: 55,
+  letteringFillMode: "Solid",
+  letteringFill: "#ffffff",
+  letteringGradient: ["#ff2fbf","#00f5ff","#fff36a"],
+  letteringGradientAngle: 0,
+  letteringStrokes: [],
   compositionMode: "Iris portals",
   compositionAmount: 0,
   compositionScale: 54,
@@ -461,6 +467,7 @@ export function validateRecipe(input) {
     wiggleMode: wiggleModes,
     letteringStyle: letteringStyles,
     letteringFont: retroFontIds,
+    letteringFillMode: ["Solid","Linear gradient","Radial gradient"],
     compositionMode: compositionModes,
     backdropMode: backdropModes,
     microMode: microModes,
@@ -470,6 +477,24 @@ export function validateRecipe(input) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
       s[key] = x[key];
     }
+  }
+  if(x.letteringFill !== undefined){
+    if(typeof x.letteringFill!=="string"||!colorRE.test(x.letteringFill))throw Error("Invalid text fill color.");
+    s.letteringFill=x.letteringFill.toLowerCase();
+  }
+  if(x.letteringGradient !== undefined){
+    if(!Array.isArray(x.letteringGradient)||x.letteringGradient.length<2||x.letteringGradient.length>8||
+       !x.letteringGradient.every(c=>typeof c==="string"&&colorRE.test(c)))throw Error("Invalid text gradient.");
+    s.letteringGradient=x.letteringGradient.map(c=>c.toLowerCase());
+  }
+  if(x.letteringStrokes !== undefined){
+    if(!Array.isArray(x.letteringStrokes)||x.letteringStrokes.length>5)throw Error("Too many outlines.");
+    s.letteringStrokes=x.letteringStrokes.map(layer=>{
+      if(!layer||typeof layer.color!=="string"||!colorRE.test(layer.color)||
+         !Number.isFinite(layer.width)||layer.width<0||layer.width>40||
+         typeof layer.enabled!=="boolean")throw Error("Invalid text outline.");
+      return {color:layer.color.toLowerCase(),width:layer.width,enabled:layer.enabled};
+    });
   }
   if(x.lettering !== undefined) {
     if(typeof x.lettering !== "string" || x.lettering.length>280 ||

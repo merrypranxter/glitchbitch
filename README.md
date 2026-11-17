@@ -168,3 +168,6 @@ and the shared full-quality PNG/GIF/MP4 rendering pipeline. Unsupported
 shaders fall back to unchanged artwork, with no added textures or framebuffers.
 No deployment service is needed. iPhone Safari GPU/render tests remain to be
 performed on-device.
+
+## Text Lab — expanded materials, color and strokes
+Text includes 14 appearance modes, independent solid or linear/radial gradient fill (2–8 stops), gradient angle, and up to five individually enabled, colored, sized outer strokes. Outlines are composited behind the glyph fill to preserve legibility. Legacy recipes default to white with no outline; all new settings round-trip in recipe JSON and share the same PNG/GIF/MP4 renderer. On-device Safari verification is still required.

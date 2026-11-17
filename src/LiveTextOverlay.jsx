@@ -95,7 +95,11 @@ function TextLayer({ layer, palette, width, height, playing, index }) {
         position:"relative", width:"100%",
         "--motion-x": `${Math.round(39*motion)}px`,
         "--motion-y": `${Math.round(22*motion)}px`,
+        "--motion-back-x": `${Math.round(-34*motion)}px`,
+        "--motion-back-y": `${Math.round(-19*motion)}px`,
+        "--motion-half-x": `${Math.round(16*motion)}px`,
         "--motion-rotation":`${(11*motion).toFixed(2)}deg`,
+        "--motion-back-rotation":`${(-12*motion).toFixed(2)}deg`,
         animationName: motion > .01 ? "live-type-kinetic" : "none",
         animationDuration:`${(5 - 3.1*motion).toFixed(2)}s`,
         animationTimingFunction:"ease-in-out", animationIterationCount:"infinite",
@@ -140,7 +144,7 @@ export default function LiveTextOverlay({state, width, height, playing=true}) {
     ...(state.letteringLayers || []).slice(0,2)
   ];
   return (
-    <div className="live-type-root" aria-hidden="true"
+    <div className="live-type-root" aria-hidden="true" data-playing={playing ? "true" : "false"}
       style={{position:"absolute", inset:0, pointerEvents:"none", zIndex:3, overflow:"hidden"}}>
       {layers.map((layer,i) =>
         <TextLayer key={layer.id || i} layer={layer} index={i}

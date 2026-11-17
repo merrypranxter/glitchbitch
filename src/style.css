@@ -2935,3 +2935,22 @@ footer > span:last-child svg {
 .palette-action-grid .button{display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:40px;padding:9px 8px;text-align:center;white-space:normal;line-height:1.25;font-size:12px}
 .palette-action-grid .button svg{flex-shrink:0}
 @media(max-width:480px){.palette-action-grid{gap:6px}.palette-action-grid .button{font-size:11px;padding:8px 5px;gap:4px}}
+
+/* Native DOM type layer: separate from WebGL/canvas so words are always visible. */
+@keyframes live-type-drift {
+  0% { translate: -2px 1px; }
+  50% { translate: 2px -2px; }
+  100% { translate: -1px 2px; }
+}
+.text-engine-status {
+  margin: 6px 0 8px;
+  color: var(--lime, #d6ff62);
+  font-family: var(--mono, monospace);
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: .035em;
+}
+.live-type-root, .live-type-layer {
+  isolation: isolate;
+  contain: layout style;
+}

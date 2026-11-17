@@ -127,3 +127,10 @@ test("lookbook contains 18 valid distinct entries covering new materials", () =>
   assert.ok(looks.some(look => look.state.riso > 0));
   assert.ok(looks.some(look => look.state.phosphor > 0));
 });
+
+test("signal drift stays free of hard band discontinuities", async () => {
+  const { readFileSync } = await import("node:fs");
+  const shader = readFileSync(new URL("../src/renderer.js", import.meta.url), "utf8");
+  assert.match(shader, /smoothstep\(0\.,1\.,fract\(bandPos\)\)/);
+  assert.doesNotMatch(shader, /float band=floor\(uv\.y\*90\.\)/);
+});

@@ -38,7 +38,17 @@ void main(){vec2 uv=gl_FragCoord.xy/res;vec2 aspect=vec2(res.x/res.y,1.);vec2 sa
 if(pixel>.001){float cells=mix(600.,24.,pow(pixel,.65));sampleUV=(floor(uv*vec2(cells*aspect.x,cells))+.5)/vec2(cells*aspect.x,cells);}
 vec2 p=(sampleUV-.5)*aspect*(2.+scale*5.);p=rotate(rotation)*p;
 if(mirror)p.x=abs(p.x);if(symmetry>1.5){float wedge=TAU/floor(symmetry);float angle=mod(atan(p.y,p.x)+wedge*.5,wedge)-wedge*.5;p=length(p)*vec2(cos(angle),sin(angle));}
-float band=floor(uv.y*90.);float tear=step(1.-glitch*.13,hash(vec2(band,floor(time*5.))));p.x+=tear*(hash(vec2(band,2.))-.5)*glitch*2.;
+// Continuous analog signal drift. Neighboring bands blend smoothly, with no horizontal UV jumps.
+float bandPos=uv.y*25.+time*.17;
+float bandId=floor(bandPos);
+float bandFade=smoothstep(0.,1.,fract(bandPos));
+float v0=hash(vec2(bandId,floor(time*1.6)+4.));
+float v1=hash(vec2(bandId+1.,floor(time*1.6)+4.));
+float w0=(v0-.5)*smoothstep(.72,.92,v0);
+float w1=(v1-.5)*smoothstep(.72,.92,v1);
+float drift=mix(w0,w1,bandFade);
+float tear=clamp(abs(drift)*glitch*2.5,0.,1.);
+p.x+=drift*glitch*.72;
 float blocks=step(1.-block*.32,hash(floor(uv*vec2(17.,24.))+floor(time*2.)));p+=blocks*block*vec2(hash(floor(uv*16.))-.5,hash(floor(uv*14.)+2.)-.5)*2.;
 float source=0.;for(int i=0;i<32;i++){if(i<count){vec2 d=(uv-marks[i].xy)*aspect;float radius=max(markShape[i].x,.05);float influence=exp(-dot(d,d)/(radius*radius));float force=marks[i].z*influence;float a=markShape[i].y;vec2 local=rotate(a)*d;
 if(marks[i].w<.5)p+=rotate(a)*vec2(sin(local.y*15.+time),cos(local.x*15.-time))*force;

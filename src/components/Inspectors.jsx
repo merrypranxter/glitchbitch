@@ -138,7 +138,7 @@ export function EffectsInspector({ history }) {
       </p>
       <Section title="BREAK THE SIGNAL">
         <Parameter label="Chromatic split" name="split" history={history} />
-        <Parameter label="Tracking tears" name="glitch" history={history} />
+        <Parameter label="Smooth signal drift" name="glitch" history={history} />
         <Parameter label="Block corruption" name="block" history={history} />
         <Parameter label="Pixelation" name="pixel" history={history} />
       </Section>

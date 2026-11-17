@@ -433,7 +433,7 @@ export function randomize(
                 warp: 70,
                 scan: 30,
                 grain: 25,
-                glitch: 70,
+                glitch: 38,
                 split: 45,
                 blend: 50,
                 block: 35,

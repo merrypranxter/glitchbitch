@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { createRenderer, previewDimensions } from "./renderer";
 import { retroFontRevision } from "./retro-fonts";
-import { paintLettering } from "./text-compositor.js";
+import LiveTextOverlay from "./LiveTextOverlay.jsx";
 import { TouchSession } from "./gestures";
 import { ratios, touchModes } from "./data";
 
@@ -18,7 +18,6 @@ export default function ArtCanvas({
   selected,
   onSelect,
 }) {
-  const textCanvasRef = useRef(null);
   const stageRef = useRef(null),
     session = useRef(null),
     runtime = useRef({ playing, quality, tool }),
@@ -116,14 +115,6 @@ export default function ArtCanvas({
         const drawInterval = now - lastDraw;
         try {
           renderer.draw(state, timelineRef.current, dims.width, dims.height);
-          // Independent 2D text layer: Safari/AI Studio shader failures cannot hide words.
-          const textCanvas = textCanvasRef.current;
-          if (textCanvas) {
-            if (textCanvas.width !== dims.width) textCanvas.width = dims.width;
-            if (textCanvas.height !== dims.height) textCanvas.height = dims.height;
-            paintLettering(textCanvas.getContext("2d"), state, timelineRef.current,
-              dims.width, dims.height, true);
-          }
           lastState = state;
           lastFontRevision = retroFontRevision();
           lastW = dims.width;
@@ -313,8 +304,7 @@ export default function ArtCanvas({
           ref={canvasRef}
           aria-label="Animated artwork. Drag to paint; pinch and twist to resize and rotate a force."
         />
-        <canvas ref={textCanvasRef} aria-hidden="true" className="lettering-preview-canvas"
-          style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1 }} />
+        <LiveTextOverlay state={history.state} width={size.width} height={size.height} />
         {handles &&
           history.state.marks.map((m, i) => (
             <button

@@ -254,7 +254,7 @@ export function TextInspector({ history }) {
             letteringFormats:toggleTextFormat(s.lettering,s.letteringFormats,
               textSelection.current.start,textSelection.current.end,key)
           }))}/>
-        <p className="control-note">Highlight a word or phrase, then tap B, I, U, S or AA. Without a highlight, the word under your cursor changes. Tap again to remove the style. AA changes appearance without rewriting the original words.</p>
+        <p className="control-note">Highlight a word or phrase, then tap B, I, U, S or AA. Without a highlight, the word under your cursor changes. Tap again to remove the style. AA changes appearance without rewriting the original words. The typing box remains plain text; styling appears on the artwork and in exports.</p>
         <Parameter label="Letter spacing (tracking)" name="letteringTracking" history={history}
           format={v=>`${v>0?"+":""}${Math.round(v)}%`}/>
         <Parameter label="Line spacing (leading)" name="letteringLineSpacing" history={history}/>

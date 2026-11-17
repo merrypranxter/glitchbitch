@@ -98,7 +98,7 @@ function TextLayer({ layer, palette, width, height, playing, index }) {
     fontFamily:font.family, fontWeight:font.weight, fontSize:size,
     lineHeight:1.18, letterSpacing:0
   };
-  const dynamicGlyphs=warp>.001 || letteringMotionNeedsGlyphs(layer);
+  const dynamicGlyphs=(warp>.001 || letteringMotionNeedsGlyphs(layer)) && Array.from(text).length<=120;
   const face = <TextFace text={text} material={material} fontStyle={fontStyle}
     strokes={strokes} dynamicGlyphs={dynamicGlyphs}/>;
   const activity = playing ? "running" : "paused";
@@ -182,15 +182,23 @@ export default function LiveTextOverlay({state, width, height, playing=true, tim
         for(const group of groups) {
           const layer=layers[group.layerIndex];
           if(!layer)continue;
-          const whole=letteringMotionCombinedAt(layer,seconds,width,height,-1,1,group.em);
+          const liquidLayer=layer.letteringStyle==="Heatwave"
+            ? {...layer,letteringWarp:Math.max(23,Number(layer.letteringWarp)||0)}
+            : layer;
+          // Long quotes stay fast on iPhone: whole-word deformation is the
+          // fallback rather than thousands of animated character nodes.
+          const longGlyphFallback=group.glyphs.length===0 &&
+            (letteringMotionNeedsGlyphs(layer)||Number(liquidLayer.letteringWarp)>0);
+          const wholeLayer=longGlyphFallback && letteringMotionNeedsGlyphs(layer)
+            ? {...layer,letteringMotionPath:"Classic drift",letteringMotionPath2:"None"} : layer;
+          let whole=letteringMotionCombinedAt(wholeLayer,seconds,width,height,-1,1,group.em);
+          if(longGlyphFallback)
+            whole=letteringComposeGlyph(whole,letteringLiquidAt(liquidLayer,seconds,0,1,group.em));
           group.node.style.transform=letteringMotionCss(whole);
           group.node.style.opacity=String(whole.alpha);
           for(const glyph of group.glyphs){
             const i=Number(glyph.dataset.index),count=Number(glyph.dataset.total)||1;
             const motion=letteringMotionCombinedAt(layer,seconds,width,height,i,count,group.em);
-            const liquidLayer=layer.letteringStyle==="Heatwave"
-              ? {...layer,letteringWarp:Math.max(23,Number(layer.letteringWarp)||0)}
-              : layer;
             const liquid=letteringLiquidAt(liquidLayer,seconds,i,count,group.em);
             const final=letteringComposeGlyph(motion,liquid);
             glyph.style.transform=letteringMotionCss(final);

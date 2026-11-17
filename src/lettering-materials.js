@@ -90,10 +90,13 @@ export function letteringMaterial(layer = {}, artworkColors = []) {
       : `linear-gradient(${gradientAngle + 90}deg, ${stops.join(", ")})`
     : null;
   const previewShadow = [shadow, glow].filter(s => s && s !== "none").join(", ") || "none";
+  const glitterGradient = preset === "Glitter ink" && gradient
+    ? `radial-gradient(circle, #ffffff 0px, #ffffff 1.35px, transparent 2px), radial-gradient(circle, #fff7ab 0px, #fff7ab .9px, transparent 1.6px), ${gradient}`
+    : gradient;
   return {
-    preset, ink, stops, gradient, gradientType, gradientAngle, glow,
+    preset, ink, stops, gradient:glitterGradient, gradientType, gradientAngle, glow,
     previewShadow, echoes, softBlur,
-    hueAnimation: ["Holographic","Chromatic shimmer","Glitter ink","Prism pulse"].includes(preset),
+    hueAnimation: ["Chrome foil","Holographic","Chromatic shimmer","Glitter ink","Prism pulse"].includes(preset),
     pulseAnimation: ["Neon bling","Electric glow","Prism pulse","Heatwave"].includes(preset)
   };
 }

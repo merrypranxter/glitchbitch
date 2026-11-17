@@ -304,7 +304,7 @@ export default function ArtCanvas({
           ref={canvasRef}
           aria-label="Animated artwork. Drag to paint; pinch and twist to resize and rotate a force."
         />
-        <LiveTextOverlay state={history.state} width={size.width} height={size.height} />
+        <LiveTextOverlay state={history.state} width={size.width} height={size.height} playing={playing} />
         {handles &&
           history.state.marks.map((m, i) => (
             <button

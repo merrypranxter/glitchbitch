@@ -588,8 +588,8 @@ function App() {
                 className="icon-button restart"
                 title="Restart animation clocks"
                 onClick={() => {
-                  timelineRef.current = { time: 0, colorTime: 0 };
-                  setTimeline({ time: 0, colorTime: 0 });
+                  timelineRef.current = { time: 0, colorTime: 0, textTime: 0 };
+                  setTimeline({ time: 0, colorTime: 0, textTime: 0 });
                 }}
               >
                 <RotateCcw size={14} />

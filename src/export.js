@@ -1,6 +1,6 @@
 import { createRenderer } from "./renderer.js";
 import { ratios } from "./data.js";
-import { ensureRetroFontLoaded } from "./retro-fonts.js";
+import { hasVisibleLettering, paintLettering, waitForLetteringFonts } from "./text-compositor.js";
 
 export function dimensions(ratio, longEdge) {
   const r = ratios.find((x) => x.id === ratio)?.value || 1;
@@ -36,7 +36,7 @@ function clockAt(state, timeline, seconds) {
   };
 }
 export async function renderImage(state, timeline, longEdge = 2160, type = "image/png") {
-  if(state.letteringAmount>0 && state.lettering.trim()) await ensureRetroFontLoaded(state.letteringFont);
+  await waitForLetteringFonts(state);
   const canvas = document.createElement("canvas");
   let renderer;
   try {
@@ -46,8 +46,22 @@ export async function renderImage(state, timeline, longEdge = 2160, type = "imag
       for (let i = 5; i >= 1; i--)
         renderer.draw(state, clockAt(state, timeline, -i / 20), width, height);
     renderer.draw(state, timeline, width, height);
+    // Rasterize the same type overlay used by the live preview onto exports.
+    // The original WebGL pixels remain untouched when the recipe has no words.
+    let output = canvas;
+    if (hasVisibleLettering(state)) {
+      const composite = document.createElement("canvas");
+      composite.width = width;
+      composite.height = height;
+      const ctx = composite.getContext("2d", { alpha: false });
+      if (!ctx) throw Error("Canvas 2D is unavailable for lettering export.");
+      ctx.drawImage(canvas, 0, 0);
+      paintLettering(ctx, state, timeline, width, height);
+      output = composite;
+    }
     const blob = await new Promise((resolve, reject) =>
-      canvas.toBlob(b => b ? resolve(b) : reject(Error("Image encoding failed.")), type, 0.9));
+      output.toBlob(b => b ? resolve(b) : reject(Error("Image encoding failed.")), type, 0.9));
+    if (output !== canvas) output.width = output.height = 1;
     return blob;
   } finally {
     renderer?.destroy(true);
@@ -94,9 +108,11 @@ function createFrameWorkspace(state, timeline, size, signal) {
   const frame = ctx.createImageData(size.width, size.height);
   const bytes = new Uint8Array(size.width * size.height * 4);
   const stride = size.width * 4;
-  async function render(seconds) {
+  const lettered = hasVisibleLettering(state);
+  async function render(seconds, includePixels = false) {
     checkExport(signal);
-    renderer.draw(state, clockAt(state, timeline, seconds), size.width, size.height);
+    const frameClock = clockAt(state, timeline, seconds);
+    renderer.draw(state, frameClock, size.width, size.height);
     const deadline = performance.now() + 30000;
     while (!renderer.ready()) {
       checkExport(signal);
@@ -107,7 +123,8 @@ function createFrameWorkspace(state, timeline, size, signal) {
     for(let y=0;y<size.height;y++)
       frame.data.set(bytes.subarray((size.height-1-y)*stride,(size.height-y)*stride), y*stride);
     ctx.putImageData(frame,0,0);
-    return frame.data;
+    if (lettered) paintLettering(ctx, state, frameClock, size.width, size.height);
+    return lettered && includePixels ? ctx.getImageData(0,0,size.width,size.height).data : frame.data;
   }
   function destroy() {
     renderer.destroy(true);
@@ -209,7 +226,7 @@ async function encodeGif(state, timeline, opts) {
   const count=Math.round(duration*fps);
   try {
     for(let i=0;i<count;i++) {
-      const rgba=await work.render(i/fps);
+      const rgba=await work.render(i/fps, true);
       const palette=quantize(rgba,256,{format:"rgb565"});
       const indexed=applyPalette(rgba,palette,"rgb565");
       gif.writeFrame(indexed,size.width,size.height,{palette,delay:Math.round(1000/fps),repeat:0});
@@ -238,8 +255,7 @@ export async function recordClip(state, timeline, {
   checkExport(signal);
   // Export must NOT silently rasterize a fallback font while the chosen face
   // is still loading. This also applies to iPhone-native MP4 recording.
-  if(state.letteringAmount>0 && state.lettering.trim())
-    await ensureRetroFontLoaded(state.letteringFont);
+  await waitForLetteringFonts(state);
   checkExport(signal);
   if(format==="gif")return encodeGif(state,timeline,opts);
   let firstError;

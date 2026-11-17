@@ -2964,12 +2964,6 @@ footer > span:last-child svg {
   76%  { transform: translate(var(--motion-half-x),var(--motion-back-y)) rotate(var(--motion-rotation)) scale(1.02,.98); }
   100% { transform: translate(0,0) rotate(0deg) scale(1); }
 }
-@keyframes live-type-liquid-slice {
-  0%   { transform: translateX(var(--slice-neg-x)) skewX(var(--slice-skew)); }
-  33%  { transform: translateX(var(--slice-x)) skewX(0deg); }
-  66%  { transform: translateX(var(--slice-neg-x)) skewX(var(--slice-skew)); }
-  100% { transform: translateX(var(--slice-x)) skewX(0deg); }
-}
 @keyframes live-type-spectral-shift {
   0% { background-position:0% 45%; filter:brightness(1) saturate(1.2); }
   50% { background-position:95% 55%; filter:brightness(1.36) saturate(1.7); }
@@ -2981,9 +2975,7 @@ footer > span:last-child svg {
   100% { filter:brightness(1.08) saturate(1.3); }
 }
 .live-type-ink { will-change: background-position,filter; }
-.live-type-slice { will-change:transform; }
 .live-type-root[data-playing="false"] .live-type-ink,
-.live-type-root[data-playing="false"] .live-type-slice,
 .live-type-root[data-playing="false"] .live-type-kinetic { animation-play-state:paused!important; }
 
 /* Text-blend galaxy v5: lightweight native blend and experimental pulse FX.

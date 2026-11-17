@@ -119,7 +119,7 @@ function TextLayer({ layer, palette, width, height, playing, index }) {
           style={{
             position:"absolute", zIndex:index*5+(pass.extra?4:pass.id==="effect"?3:2),
             left:`${x}%`,top:`${100-y}%`,width:"70%",
-            transform:`translate(-50%,-50%) rotate(${angle}deg) scale(${sx},${sy}) skewX(${curve*8}deg)`,
+            transform:`translate(calc(-50% + ${offsetX}px),calc(-50% + ${offsetY}px)) rotate(${angle}deg) scale(${sx},${sy}) skewX(${curve*8}deg)`,
             transformOrigin:"center center",opacity:passOpacity,
             mixBlendMode:pass.cssBlend || "normal",
             filter:pass.filter && pass.filter!=="none" ? pass.filter : undefined,
@@ -127,11 +127,11 @@ function TextLayer({ layer, palette, width, height, playing, index }) {
           }}>
           <div className="live-type-kinetic" style={{
             position:"relative",width:"100%",
-            "--motion-x":`${Math.round(39*motion)+offsetX}px`,
-            "--motion-y":`${Math.round(22*motion)+offsetY}px`,
-            "--motion-back-x":`${Math.round(-34*motion)+offsetX}px`,
-            "--motion-back-y":`${Math.round(-19*motion)+offsetY}px`,
-            "--motion-half-x":`${Math.round(16*motion)+offsetX}px`,
+            "--motion-x":`${Math.round(39*motion)}px`,
+            "--motion-y":`${Math.round(22*motion)}px`,
+            "--motion-back-x":`${Math.round(-34*motion)}px`,
+            "--motion-back-y":`${Math.round(-19*motion)}px`,
+            "--motion-half-x":`${Math.round(16*motion)}px`,
             "--motion-rotation":`${(11*motion).toFixed(2)}deg`,
             "--motion-back-rotation":`${(-12*motion).toFixed(2)}deg`,
             animationName:motion>.01 ? "live-type-kinetic":"none",

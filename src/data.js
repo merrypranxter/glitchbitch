@@ -499,6 +499,12 @@ export function randomize(
     next.motionAmount=35+random()*57;
     next.motionRate=32+random()*53;
     next.lightMotion=30+random()*67;
+    // A new Surprise should never inherit zero-speed or frozen clocks from a prior design.
+    // Deliberate user pause still wins: the transport play button is unchanged.
+    next.speed=22+random()*65;
+    next.colorSpeed=20+random()*67;
+    next.freezeGeometry=false;
+    next.freezeColor=false;
   }
   if (!mutate) {
     next.secondaryEngine = Math.floor(random() * engines.length);

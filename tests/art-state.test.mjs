@@ -194,3 +194,15 @@ test("math and motion shader modules wire the original render and secondary comp
   assert.match(shader,/p=animateCoordinates\(p\)/);
   assert.match(shader,/col=animateLight\(col,uv,v\)/);
 });
+
+test("Surprise Me brings animation clocks back from zero and leaves paused transport alone", () => {
+  const immobile = {...initial,speed:0,colorSpeed:0,freezeGeometry:true,freezeColor:true,motionAmount:0,lightMotion:0};
+  const next = randomize(immobile,{},false,()=>.5);
+  assert.ok(next.speed>0 && next.colorSpeed>0);
+  assert.ok(next.motionAmount>0 && next.lightMotion>0);
+  assert.equal(next.freezeGeometry,false);
+  assert.equal(next.freezeColor,false);
+  const mutated = randomize(immobile,{},true,()=>.5);
+  assert.equal(mutated.freezeGeometry,true);
+  assert.equal(mutated.freezeColor,true);
+});

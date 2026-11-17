@@ -213,7 +213,7 @@ export function TextInspector({ history }) {
             onBlur={history.end} />
         </label>
         <div className="text-engine-status" role="status">
-          TEXT ENGINE: DOM v3 · {history.state.lettering.trim().length} characters ·
+          TEXT ENGINE: DOM v4 · 14 MATERIAL FX · {history.state.lettering.trim().length} characters ·
           opacity {history.state.letteringAmount ?? 0}%
         </div>
         <button type="button" className="button secondary"
@@ -380,6 +380,7 @@ export function TextInspector({ history }) {
         <Parameter label="Letter size" name="letteringScale" history={history} />
         <Parameter label="Liquid text warping" name="letteringWarp" history={history} />
         <Parameter label="Kinetic text motion" name="letteringMotion" history={history} />
+        <p className="control-note">Text effects are live again: all 14 lettering materials use their own appearance. At 100%, Kinetic text motion travels across the canvas, while Liquid text warping shifts independently animated ribbons of letterforms. Playback pauses with the studio.</p>
         <p className="control-note">No random slogans: you decide every word. The font picker includes classic MySpace fonts and locally bundled retro styles. Saved quotes retain their font, and PNG, GIF and MP4 wait for it to load before export. Surprise Me still clears all text.</p>
       </Section>
     </>

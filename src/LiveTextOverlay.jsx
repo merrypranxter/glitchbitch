@@ -142,7 +142,7 @@ function TextLayer({ layer, palette, width, height, playing, index }) {
       const passFace=pass.id==="normal" || pass.id==="effect" ? face
         : <TextFace text={text} material={look} fontStyle={fontStyle} strokes={strokes} dynamicGlyphs={dynamicGlyphs} formats={layer.letteringFormats} trackingPx={trackingPx}/>;
       const showFace=pass.whiteInk
-        ? <TextFace text={text} material={look} fontStyle={fontStyle} strokes={strokes}/>
+        ? <TextFace text={text} material={look} fontStyle={fontStyle} strokes={strokes} dynamicGlyphs={dynamicGlyphs} formats={layer.letteringFormats} trackingPx={trackingPx}/>
         : passFace;
       const passOpacity=Math.min(1,Math.max(0,opacity*pass.alpha));
       const offsetX=(pass.offsetX||0)*minEdge/430;

@@ -32,7 +32,8 @@ function glyphFor(layer, aspect, artworkPalette) {
   const key = JSON.stringify([
     layer.text, aspect.toFixed(4), layer.letteringFont || "original",
     retroFontRevision(), material.preset, material.ink, material.stops,
-    material.gradientType, material.gradientAngle, layer.letteringStrokes
+    material.gradientType, material.gradientAngle, layer.letteringStrokes,
+    layer.letteringFormats,layer.letteringTracking,layer.letteringLineSpacing
   ]);
   if (glyphCache.has(key)) return glyphCache.get(key);
   const style = {...layer,
@@ -122,7 +123,10 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
    const curve=(Number(layer.letteringCurve)||0)/100;
    const warp=Math.max(Number(layer.letteringWarp)||0,material.preset==="Heatwave"?23:0);
    const liquidLayer=warp===Number(layer.letteringWarp)?layer:{...layer,letteringWarp:warp};
-   const glyphMode=warp>.01 || letteringMotionNeedsGlyphs(layer);
+   const glyphMode=warp>.01 || letteringMotionNeedsGlyphs(layer) ||
+     (Array.isArray(layer.letteringFormats)&&layer.letteringFormats.length>0) ||
+     Number(layer.letteringTracking||0)!==0 ||
+     Number(layer.letteringLineSpacing??118)!==118;
    if(glyphMode && entry.sprites===undefined){
      entry.sprites=createLetteringSprites(layer.text,width/height,layer.letteringFont||"original",entry.style);
    }

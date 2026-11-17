@@ -2,8 +2,8 @@ import React, { useEffect, useRef } from "react";
 import { getRetroFont } from "./retro-fonts.js";
 import { letteringMaterial, textMotion } from "./lettering-materials.js";
 import { getLetteringBlendRecipe } from "./lettering-blends.js";
-import { letteringMotionAt, letteringLiquidAt, letteringComposeGlyph,
-  letteringMotionCss, letteringMotionIsPerLetter } from "./lettering-motion.js";
+import { letteringMotionCombinedAt, letteringLiquidAt, letteringComposeGlyph,
+  letteringMotionCss, letteringMotionNeedsGlyphs } from "./lettering-motion.js";
 
 const asPercent = (value, fallback=50) => Math.max(0, Math.min(100, Number(value ?? fallback)));
 const inkText = (style, text, key) => <span key={key} style={style}>{text}</span>;
@@ -98,7 +98,7 @@ function TextLayer({ layer, palette, width, height, playing, index }) {
     fontFamily:font.family, fontWeight:font.weight, fontSize:size,
     lineHeight:1.18, letterSpacing:0
   };
-  const dynamicGlyphs=warp>.001 || letteringMotionIsPerLetter(layer.letteringMotionPath);
+  const dynamicGlyphs=warp>.001 || letteringMotionNeedsGlyphs(layer);
   const face = <TextFace text={text} material={material} fontStyle={fontStyle}
     strokes={strokes} dynamicGlyphs={dynamicGlyphs}/>;
   const activity = playing ? "running" : "paused";
@@ -182,13 +182,16 @@ export default function LiveTextOverlay({state, width, height, playing=true, tim
         for(const group of groups) {
           const layer=layers[group.layerIndex];
           if(!layer)continue;
-          const whole=letteringMotionAt(layer,seconds,width,height,-1,1,group.em);
+          const whole=letteringMotionCombinedAt(layer,seconds,width,height,-1,1,group.em);
           group.node.style.transform=letteringMotionCss(whole);
           group.node.style.opacity=String(whole.alpha);
           for(const glyph of group.glyphs){
             const i=Number(glyph.dataset.index),count=Number(glyph.dataset.total)||1;
-            const motion=letteringMotionAt(layer,seconds,width,height,i,count,group.em);
-            const liquid=letteringLiquidAt(layer,seconds,i,count,group.em);
+            const motion=letteringMotionCombinedAt(layer,seconds,width,height,i,count,group.em);
+            const liquidLayer=layer.letteringStyle==="Heatwave"
+              ? {...layer,letteringWarp:Math.max(23,Number(layer.letteringWarp)||0)}
+              : layer;
+            const liquid=letteringLiquidAt(liquidLayer,seconds,i,count,group.em);
             const final=letteringComposeGlyph(motion,liquid);
             glyph.style.transform=letteringMotionCss(final);
             glyph.style.opacity=String(final.alpha);

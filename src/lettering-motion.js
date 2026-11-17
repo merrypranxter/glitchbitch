@@ -33,6 +33,9 @@ export function letteringMotionAt(layer,seconds,width=430,height=430,index=-1,to
  const intensity=clamp(layer.letteringMotion,0,100)/100;
  const zero={dx:0,dy:0,rotation:0,scaleX:1,scaleY:1,alpha:1};
  if(path==="Still"||intensity<.001)return zero;
+ // Whole-word and individual-glyph choreography are separate transform levels.
+ if(letteringMotionIsPerLetter(path) && index<0)return zero;
+ if(!letteringMotionIsPerLetter(path) && index>=0)return zero;
  const stagger=clamp(layer.letteringMotionStagger??10,0,100)/100*.35;
  const speed=clamp(layer.letteringMotionSpeed??1,1,4);
  const dir=layer.letteringMotionDirection==="Reverse"?-1:1;
@@ -59,7 +62,7 @@ export function letteringMotionAt(layer,seconds,width=430,height=430,index=-1,to
  case "Slalom":return {...zero,dx:amp*.28*sin(t),dy:amp*.11*sin(t*3),rotation:9*intensity*cos(t)};
  case "Heartbeat":return {...zero,scaleX:1+intensity*.21*Math.pow(Math.max(0,sin(t)),5),scaleY:1+intensity*.25*Math.pow(Math.max(0,sin(t)),5)};
  case "Spin clockwise":
- case "Spin counterclockwise":return {...zero,rotation:(path==="Spin clockwise"?1:-1)*360*speed*phase};
+ case "Spin counterclockwise":return {...zero,rotation:(path==="Spin clockwise"?1:-1)*360*phase};
  case "Breathing":return {...zero,scaleX:1+intensity*.26*sin(t),scaleY:1+intensity*.26*sin(t)};
  case "Rubber bounce": {
    const lift=Math.abs(sin(t));
@@ -80,7 +83,7 @@ export function letteringMotionAt(layer,seconds,width=430,height=430,index=-1,to
  case "Letter rubber":return {...zero,dy:-amp*.18*sin(t),scaleX:1-.27*intensity*sin(t),scaleY:1+.42*intensity*sin(t)};
  case "Letter sway":return {...zero,dx:amp*.16*sin(t),rotation:32*intensity*sin(t)};
  case "Letter spin clockwise":
- case "Letter spin counterclockwise":return {...zero,rotation:(path==="Letter spin clockwise"?1:-1)*360*speed*phase};
+ case "Letter spin counterclockwise":return {...zero,rotation:(path==="Letter spin clockwise"?1:-1)*360*phase};
  case "Letter drift":return {...zero,dx:amp*.33*cos(t),dy:amp*.24*sin(t)};
  case "Letter fade":return {...zero,alpha:1-intensity*(.5+.5*sin(t))};
  case "Letter twinkle":return {...zero,alpha:1-intensity*Math.pow(.5+.5*sin(t+ip*1.618),6)};

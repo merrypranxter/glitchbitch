@@ -429,7 +429,7 @@ export function TextInspector({ history }) {
             </optgroup>)}
           </Select>
           <Parameter label="Movement amount" name="letteringMotion" history={history}/>
-          <Parameter label="Path speed / loops per cycle" name="letteringMotionSpeed" history={history}/>
+          <Parameter label="Path speed / loops per cycle" name="letteringMotionSpeed" history={history} format={v=>`${Math.round(v)} loops`}/>
           <Parameter label="Per-letter stagger" name="letteringMotionStagger" history={history}/>
           <Select label="Path direction" value={history.state.letteringMotionDirection ?? "Forward"}
             onChange={v=>history.change(s=>({...s,letteringMotionDirection:v}))}>

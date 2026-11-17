@@ -10,6 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { palettes, parsePalette, paletteName } from "../data";
+import { parsePaletteLibrary, paletteLibraryDocument } from "../palette-io";
 import { Parameter, Section, Select, Switch } from "./Controls";
 export function Swatches({ colors }) {
   return (
@@ -25,6 +26,7 @@ export default function ColorLab({
   customPalettes,
   onSavePalette,
   onDeletePalette,
+  onImportPaletteLibrary,
 }) {
   const state = history.state,
     [selected, setSelected] = useState(0),
@@ -45,6 +47,24 @@ export default function ColorLab({
       setError(err.message);
     }
   }
+  async function importPaletteFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      if(file.size > 2e6)throw Error("Palette file must be under 2 MB.");
+      const imported=parsePaletteLibrary(await file.text());
+      onImportPaletteLibrary(imported);
+      setError("");
+    } catch(err) {setError(err.message);}
+    finally {e.target.value="";}
+  }
+  function exportPalettes() {
+    const blob=new Blob([JSON.stringify(paletteLibraryDocument([...palettes,...customPalettes]),null,2)],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");a.href=url;a.download="glitchbitch-palettes.json";
+    document.body.append(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),10000);
+  }
   return (
     <>
       <Section
@@ -59,6 +79,17 @@ export default function ColorLab({
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
+        <div className="palette-transfer">
+          <button className="button secondary" type="button" onClick={exportPalettes}>
+            Export palette library
+          </button>
+          <label className="button secondary" style={{cursor:"pointer"}}>
+            Import palette JSON
+            <input type="file" accept=".json,application/json" onChange={importPaletteFile} style={{display:"none"}}/>
+          </label>
+        </div>
+        {error && <p className="field-error" role="alert">{error}</p>}
+        <p className="control-note">Full 12-stop originals from the shared artist vault. Export and import compatible JSON between studio apps.</p>
         <div className="palette-list">
           {[...palettes, ...customPalettes]
             .map((p, i) => ({ ...p, index: i }))
@@ -119,7 +150,7 @@ export default function ColorLab({
           <button
             className="add-stop"
             title="Add color stop"
-            disabled={state.colors.length >= 8}
+            disabled={state.colors.length >= 12}
             onClick={() => {
               pick([...state.colors, "#d6ff62"]);
               setSelected(state.colors.length);
@@ -197,7 +228,7 @@ export default function ColorLab({
           <form onSubmit={importColors}>
             <textarea
               aria-label="Palette hex colors"
-              placeholder="#ff32b8 #e6ff45 #65ffd2… or a Coolors URL"
+              placeholder="#ff32b8 #e6ff45 #65ffd2… up to 12 stops, or a Coolors URL"
               value={text}
               onChange={(e) => setText(e.target.value)}
             />

@@ -50,6 +50,7 @@ import {
   loadCustomPalettes,
 } from "./storage";
 import { thumbnail } from "./export";
+import { mergePalettes } from "./palette-io";
 import "./style.css";
 const formatTime = (t) => {
   const seconds = Math.max(0, Math.floor(t));
@@ -183,7 +184,7 @@ function App() {
     toast(
       mutate
         ? "A small mutation. A new direction."
-        : "Fresh chaos. Every setting is still yours.",
+        : "Complete rebirth. New math, colors, strokes and motion. Undo takes you back.",
     );
   }
   async function saveWork() {
@@ -276,9 +277,19 @@ function App() {
       e.target.value = "";
     }
   }
+  function importPaletteLibrary(incoming) {
+    try {
+      const result = mergePalettes(customPalettes, incoming, 128);
+      localStorage.setItem("glitch-palettes", JSON.stringify(result.palettes));
+      setCustomPalettes(result.palettes);
+      toast(`${result.added.length} palettes imported; ${result.skipped.length} duplicates or over-limit skipped.`);
+    } catch (e) {
+      toast(`Palette import failed: ${e.message}`);
+    }
+  }
   function savePalette(p) {
-    if (customPalettes.length >= 32) {
-      toast("You have 32 custom palettes. Remove one to add another.");
+    if (customPalettes.length >= 128) {
+      toast("You have 128 custom palettes. Remove one to add another.");
       return;
     }
     try {
@@ -396,6 +407,7 @@ function App() {
                   customPalettes={customPalettes}
                   onSavePalette={savePalette}
                   onDeletePalette={deletePalette}
+                  onImportPaletteLibrary={importPaletteLibrary}
                 />
               )}
             </div>
@@ -773,7 +785,7 @@ function App() {
               <p>
                 Each stroke, pinch, slider gesture, or mutation is a single undo
                 step. Escape or an interrupted touch cancels the active gesture.
-                Surprise me respects your palette and engine locks.
+                Surprise Me replaces everything but the aspect ratio; Mutate keeps and nudges your current design.
               </p>
             </div>
           </div>

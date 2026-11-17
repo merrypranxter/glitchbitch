@@ -14,12 +14,12 @@ uniform float time,colorTime,seed,seedHigh,complexity,scale,warp,split,scan,grai
 uniform float saturation,contrast,brightness,colorOffset,colorRepeat,colorAmount;
 uniform int engine,secondaryEngine,blendMode,count,colorCount,colorMode;
 uniform bool bloom,posterize,mirror,invert;
-uniform vec3 colors[8];uniform vec4 marks[32];uniform vec2 markShape[32];
+uniform vec3 colors[12];uniform vec4 marks[32];uniform vec2 markShape[32];
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7))+seed+seedHigh*7.83)*43758.5453);}
 float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+1.),f.x),f.y);}
 float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*noise(p);p=mat2(.8,-.6,.6,.8)*p*2.03+3.4;a*=.5;}return v;}
 mat2 rotate(float a){return mat2(cos(a),-sin(a),sin(a),cos(a));}
-vec3 palette(float t){float q=fract(t)*float(colorCount);int a=int(floor(q));vec3 c=colors[0],d=colors[0];for(int i=0;i<8;i++){if(i==a)c=colors[i];if(i==a+1)d=colors[i];}if(a==colorCount-1)d=colors[0];return mix(c,d,smoothstep(0.,1.,fract(q)));}
+vec3 palette(float t){float q=fract(t)*float(colorCount);int a=int(floor(q));vec3 c=colors[0],d=colors[0];for(int i=0;i<12;i++){if(i==a)c=colors[i];if(i==a+1)d=colors[i];}if(a==colorCount-1)d=colors[0];return mix(c,d,smoothstep(0.,1.,fract(q)));}
 ${geometryGLSL}
 ${motionGLSL}
 ${bioGLSL}
@@ -367,7 +367,7 @@ export function createRenderer(canvas) {
       active.locations.set(key, gl.getUniformLocation(active.program, key));
     return active.locations.get(key);
   };
-  const colorBuffer = new Float32Array(24),
+  const colorBuffer = new Float32Array(36),
     marksBuffer = new Float32Array(128),
     shapeBuffer = new Float32Array(64);
   const maxSize = Math.min(
@@ -497,7 +497,7 @@ export function createRenderer(canvas) {
       const key = s.colors.join("");
       if (key !== active.paletteKey) {
         active.paletteKey = key;
-        for (let i = 0; i < 8; i++)
+        for (let i = 0; i < 12; i++)
           for (let j = 0; j < 3; j++)
             colorBuffer[i * 3 + j] =
               parseInt(

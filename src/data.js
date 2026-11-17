@@ -1,3 +1,4 @@
+import { PALETTE_VAULT } from "./palette-vault.js";
 export const engineInfo = [
   ["Plasma flow", "Liquid sine fields folded into neon ribbons.", "Fluid"],
   [
@@ -61,7 +62,7 @@ export const engineInfo = [
   ["Chromatic infection", "Persistent Gray–Scott coral, labyrinth and spore growth, with palette-mapped chemistry.", "Biological"],
 ].map(([name, description, family], id) => ({ id, name, description, family }));
 export const engines = engineInfo.map((e) => e.name);
-export const palettes = [
+export const originalPalettes = [
   {
     name: "Toxic candy",
     colors: ["#140827", "#6b21f0", "#ff32b8", "#ff826d", "#e6ff45", "#65ffd2"],
@@ -126,6 +127,14 @@ export const palettes = [
     name: "Printer tantrum",
     colors: ["#080811", "#fa19ac", "#03e7ef", "#f6ff2e", "#fbf6ef"],
   },
+];
+/** Shared studio vault: full original stop orders (including all 12-stop sets). */
+export const palettes = [
+  ...originalPalettes,
+  ...PALETTE_VAULT.map(p => ({
+    id: p.id, name: p.name, group: p.group, source: p.source,
+    colors: [...p.colors],
+  })),
 ];
 export const ratios = [
   { id: "1:1", value: 1 },
@@ -281,10 +290,10 @@ export function validateRecipe(input) {
   if (
     !Array.isArray(x.colors) ||
     x.colors.length < 2 ||
-    x.colors.length > 8 ||
+    x.colors.length > 12 ||
     !x.colors.every((c) => typeof c === "string" && colorRE.test(c))
   )
-    throw Error("A palette needs 2–8 valid hex colors.");
+    throw Error("A palette needs 2–12 valid hex colors.");
   s.seed = x.seed;
   s.colors = x.colors.map((c) => c.toLowerCase());
   s.palette =
@@ -394,11 +403,11 @@ export function parsePalette(text) {
     .map((c) => (c.startsWith("#") ? c : `#${c}`));
   if (
     colors.length < 2 ||
-    colors.length > 8 ||
+    colors.length > 12 ||
     !colors.every((c) => colorRE.test(c))
   )
     throw Error(
-      "Paste 2–8 six-digit hex colors, separated by spaces or commas.",
+      "Paste 2–12 six-digit hex colors, separated by spaces or commas.",
     );
   return colors.map((c) => c.toLowerCase());
 }
@@ -427,106 +436,104 @@ export function makeMark(state, x = 0.5, y = 0.5) {
   };
 }
 const clamp = (n, min = 0, max = 100) => Math.max(min, Math.min(max, n));
-export function randomize(
-  state,
-  locks = {},
-  mutate = false,
-  random = Math.random,
-) {
-  const next = { ...state };
-  if (!mutate && !locks.engine)
-    next.engine = Math.floor(random() * engines.length);
-  if (!mutate && !locks.color) {
-    next.palette = Math.floor(random() * palettes.length);
-    next.colors = palettes[next.palette].colors;
+const sample = (a, random) => a[Math.min(a.length-1, Math.floor(random()*a.length))];
+const shuffledColors = (a, random) => {
+  const b = [...a];
+  for(let i=b.length-1; i>0; i--){
+    const j=Math.min(i,Math.floor(random()*(i+1)));
+    [b[i],b[j]]=[b[j],b[i]];
   }
-  if (!mutate) next.seed = Math.floor(random() * 999999999);
-  for (const key of [
-    "complexity",
-    "scale",
-    "warp",
-    "split",
-    "scan",
-    "grain",
-    "glitch",
-    "rotation",
-    "blend",
-    "block",
-  ]) {
-    const [min, max] = numericRanges[key];
-    if (mutate)
-      next[key] = clamp(
-        state[key] + (random() - 0.5) * (max - min) * 0.22,
-        min,
-        max,
-      );
-    else
-      next[key] =
-        key === "rotation"
-          ? random() * 360
-          : ({ complexity: 35, scale: 15, warp: 25 }[key] || 0) +
-            random() *
-              ({
-                complexity: 55,
-                scale: 60,
-                warp: 70,
-                scan: 30,
-                grain: 25,
-                glitch: 38,
-                split: 45,
-                blend: 50,
-                block: 35,
-              }[key] || 50);
-  }
-  // Choose a few compatible appearances rather than maxing out every overlay.
-  const appearances = ["phosphor", "dither", "riso", "windowCascade", "glitter", "broadcast", "misregister"];
+  if(b.length>1 && b.every((x,i)=>x===a[i])) b.push(b.shift());
+  return b;
+};
+const different = (list, current, random) =>
+  sample(list.filter(x => x !== current),random) ?? current;
+
+export function randomize(state, locks={}, mutate=false, random=Math.random) {
   if (mutate) {
-    for (const key of [...appearances, "afterimage", "datamosh", "memoryDrift", "memoryDecay"])
-      next[key] = clamp(state[key] + (random() - .5) * 24);
-  } else {
-    for (const key of appearances) next[key] = 0;
-    const count = 1 + Math.floor(random() * 3);
-    for (let i = 0; i < count; i++) {
-      const key = appearances[Math.floor(random() * (appearances.length - 1))];
-      next[key] = 35 + random() * 60;
+    // Mutate is a nudge. Preserve brushwork, palette, geometry and lock intentions.
+    const s={...state};
+    const nudges=["complexity","scale","warp","split","scan","grain","glitch","rotation",
+      "blend","block","pixel","vignette","phosphor","dither","riso","windowCascade",
+      "glitter","broadcast","misregister","afterimage","datamosh","memoryDrift",
+      "memoryDecay","hyperbolicFold","fractalZoom","juliaMix","quasiDensity",
+      "motionAmount","motionRate","lightMotion","bioAmount","bioFeed","bioKill",
+      "bioSpeed","bioVeins","saturation","contrast","brightness","colorOffset",
+      "colorRepeat","colorAmount","speed","colorSpeed"];
+    for(const key of nudges){
+      const [lo,hi]=numericRanges[key];
+      s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
-    if (next.riso > 0) next.misregister = random() * 70;
-    next.afterimage = random() < .38 ? 28 + random() * 56 : 0;
-    next.datamosh = random() < .32 ? 25 + random() * 60 : 0;
-    next.memoryDrift = 8 + random() * 70;
-    next.memoryDecay = 12 + random() * 48;
-    next.afterimage = random() < .38 ? 28 + random() * 56 : 0;
-    next.datamosh = random() < .32 ? 25 + random() * 60 : 0;
-    next.memoryDrift = 8 + random() * 70;
-    next.memoryDecay = 12 + random() * 48;
+    return s;
   }
-  for (const key of ["bioFeed","bioKill","bioSpeed","bioVeins"])
-    next[key] = mutate ? clamp(state[key]+(random()-.5)*16) : 17+random()*72;
-  next.bioAmount = mutate ? clamp(state.bioAmount+(random()-.5)*28) :
-    (next.engine===15 || next.secondaryEngine===15 && next.blend>0 ? 35+random()*60 :
-      random()<.36 ? 25+random()*55 : 0);
-  for (const key of ["hyperbolicFold","fractalZoom","juliaMix","quasiDensity"])
-    next[key] = mutate ? clamp(state[key]+(random()-.5)*22) : 10+random()*85;
-  if(mutate){
-    for(const key of ["motionAmount","motionRate","lightMotion"])
-      next[key]=clamp(state[key]+(random()-.5)*20);
-  }else{
-    next.motionMode=motionModes[Math.floor(random()*motionModes.length)];
-    next.motionAmount=35+random()*57;
-    next.motionRate=32+random()*53;
-    next.lightMotion=30+random()*67;
-    // A new Surprise should never inherit zero-speed or frozen clocks from a prior design.
-    // Deliberate user pause still wins: the transport play button is unchanged.
-    next.speed=22+random()*65;
-    next.colorSpeed=20+random()*67;
-    next.freezeGeometry=false;
-    next.freezeColor=false;
+  // A full Surprise is a replacement, not a mutation. Ratio is the sole
+  // retained visual constraint. Paused transport lives outside recipe state.
+  const s={...initial,ratio:state.ratio};
+  // Rotate to a different mathematical FAMILY, even with a fixed RNG test stub.
+  const family=engineInfo[state.engine]?.family;
+  const otherFamilies=engineInfo.filter(e=>e.id!==state.engine && e.family!==family);
+  s.engine=sample(otherFamilies.length?otherFamilies:engineInfo.filter(e=>e.id!==state.engine),random).id;
+  s.secondaryEngine=sample(engineInfo.filter(e=>e.id!==s.engine && e.id!==state.secondaryEngine),random).id;
+  s.seed=Math.floor(random()*1000000000);
+  if(s.seed===state.seed)s.seed=(s.seed+1)%1000000000;
+  const paletteChoices=palettes.map((p,i)=>i).filter(i=>i!==state.palette);
+  s.palette=sample(paletteChoices,random);
+  s.colors=random()<.4?shuffledColors(palettes[s.palette].colors,random):[...palettes[s.palette].colors];
+  if(s.colors.some((c,i)=>c!==palettes[s.palette].colors[i])) s.palette=-1;
+  s.blendMode=sample(["Mix","Multiply","Difference"],random);
+  s.blend=random()<.18?0:22+random()*70;
+  s.complexity=20+random()*80; s.scale=8+random()*80; s.warp=12+random()*88;
+  s.rotation=random()*360;
+  s.symmetry=sample([1,1,2,3,4,5,6,8,10,12],random);
+  s.mirror=random()<.43;s.bloom=random()<.8;s.posterize=random()<.27;s.invert=random()<.12;
+  s.split=random()<.65?random()*60:0;
+  s.scan=random()<.5?random()*40:0;
+  s.grain=random()<.6?random()*32:0;
+  s.glitch=random()<.53?random()*48:0;
+  s.block=random()<.42?random()*65:0;
+  s.pixel=random()<.3?random()*58:0;
+  s.vignette=random()<.5?random()*32:0;
+  const ornaments=["phosphor","dither","riso","windowCascade","glitter","broadcast"];
+  for(const key of ornaments)s[key]=0;
+  const available=[...ornaments];
+  const count=1+Math.floor(random()*3);
+  for(let i=0;i<count;i++){
+    const index=Math.min(available.length-1,Math.floor(random()*available.length));
+    const key=available.splice(index,1)[0];
+    s[key]=25+random()*70;
   }
-  if (!mutate) {
-    next.secondaryEngine = Math.floor(random() * engines.length);
-    next.symmetry = [1, 1, 1, 3, 5, 6][Math.floor(random() * 6)];
-  }
-  return next;
+  s.misregister=s.riso>0?random()*70:0;
+  s.afterimage=random()<.45?20+random()*62:0;
+  s.datamosh=random()<.35?22+random()*64:0;
+  s.memoryDrift=10+random()*76;s.memoryDecay=10+random()*60;
+  s.hyperbolicFold=15+random()*85;s.fractalZoom=random()*90;
+  s.juliaMix=random()*100;s.quasiDensity=12+random()*83;
+  s.bioFeed=22+random()*55;s.bioKill=22+random()*57;
+  s.bioSpeed=25+random()*75;s.bioVeins=random()*100;
+  s.bioAmount=(s.engine===15||s.secondaryEngine===15&&s.blend>0||random()<.35)
+    ? 30+random()*69:0;
+  s.motionMode=different(motionModes,state.motionMode,random);
+  s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
+  s.lightMotion=38+random()*62;
+  s.speed=25+random()*70;s.colorSpeed=22+random()*75;
+  s.freezeGeometry=false;s.freezeColor=false;
+  s.colorMode=sample(["Traveling wave","Color canon","Phase vortex"],random);
+  s.colorAmount=15+random()*85;s.colorRepeat=12+random()*88;
+  s.colorOffset=random()*100;s.saturation=34+random()*66;
+  s.contrast=28+random()*72;s.brightness=30+random()*70;
+  s.touchMode=sample(touchModes,random);
+  s.strength=18+random()*78;s.radius=8+random()*47;
+  // No old strokes may survive. Some surprises spawn entirely new touch forces.
+  const markCount=random()<.30?0:1+Math.floor(random()*4);
+  s.marks=Array.from({length:markCount},(_,i)=>({
+    id:`surprise-${s.seed}-${i}`,
+    x:.1+random()*.8,y:.1+random()*.8,
+    power:(.25+random()*.72)*(random()<.14?-1:1),
+    mode:Math.floor(random()*4),
+    radius:.06+random()*.38,
+    angle:random()*Math.PI*2,
+  }));
+  return s;
 }
 export const looks = [
   {

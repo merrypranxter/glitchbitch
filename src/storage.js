@@ -49,7 +49,7 @@ export function loadCustomPalettes() {
         typeof p.name === "string" &&
         Array.isArray(p.colors) &&
         p.colors.length >= 2 &&
-        p.colors.length <= 8 &&
+        p.colors.length <= 12 &&
         p.colors.every((c) => /^#[a-f\d]{6}$/i.test(c)),
     );
   } catch {

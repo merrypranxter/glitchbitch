@@ -67,12 +67,12 @@ test("palette import accepts hex lists and Coolors, preserves order, rejects ext
 });
 test("randomization respects locks and preserves touch work and composition", () => {
   const source = { ...initial, marks: [makeMark(initial)], ratio: "9:16" },
-    next = randomize(source, { engine: true, color: true }, false, () => 0.7);
+    next = randomize(source, { engine: true, color: true }, true, () => 0.7);
   assert.equal(next.engine, source.engine);
   assert.deepEqual(next.colors, source.colors);
   assert.equal(next.marks, source.marks);
   assert.equal(next.ratio, source.ratio);
-  assert.notEqual(next.seed, source.seed);
+  assert.equal(next.seed, source.seed);
 });
 test("pinch enlarges and twists a real source; releasing one finger never paints a stray stroke", () => {
   const start = { ...initial, marks: [] },
@@ -252,4 +252,37 @@ test("biology shader is available as primary or secondary with a fallback", asyn
   assert.match(shader,/gl\.texSubImage2D/);
   assert.match(bio,/stainWithBiology/);
   assert.match(bio,/biologicalField/);
+});
+
+test("full Surprise is a visual rebirth, with new marks and a different math family", async () => {
+  const { engineInfo }=await import("../src/data.js");
+  const old = {...initial,engine:10,palette:2,ratio:"9:16",marks:[makeMark(initial)],speed:0,colorSpeed:0,freezeGeometry:true,freezeColor:true};
+  const fresh=randomize(old,{engine:true,color:true},false,()=>.7);
+  assert.notEqual(fresh.engine,old.engine);
+  assert.notEqual(engineInfo[fresh.engine].family,engineInfo[old.engine].family);
+  assert.notEqual(fresh.palette,old.palette);
+  assert.notEqual(fresh.seed,old.seed);
+  assert.equal(fresh.ratio,old.ratio);
+  assert.ok(fresh.marks.every(m=>m.id!==old.marks[0].id));
+  assert.equal(fresh.freezeGeometry,false);
+  assert.ok(fresh.motionAmount>0 && fresh.lightMotion>0 && fresh.speed>0);
+  assert.deepEqual(parseDocument(fresh).state,fresh);
+  const tweak=randomize(old,{},true,()=>.7);
+  assert.deepEqual(tweak.marks,old.marks);
+  assert.equal(tweak.engine,old.engine);
+});
+
+test("shared palette vault keeps every 12-stop set and imports/exports portable palette files", async () => {
+  const { palettes }=await import("../src/data.js");
+  const {parsePaletteLibrary,paletteLibraryDocument,mergePalettes}=await import("../src/palette-io.js");
+  assert.ok(palettes.length>=192);
+  assert.ok(palettes.some(p=>p.colors.length===12));
+  const original=palettes.find(p=>p.colors.length===12);
+  assert.equal(parseDocument({...initial,colors:original.colors}).state.colors.length,12);
+  const serial=JSON.stringify(paletteLibraryDocument(palettes));
+  const parsed=parsePaletteLibrary(serial);
+  assert.ok(parsed.length>100);
+  const imported=mergePalettes([],parsed,128);
+  assert.equal(imported.palettes.length,128);
+  assert.throws(()=>parsePaletteLibrary('[{"name":"bad","colors":["#xyz"]}]'));
 });

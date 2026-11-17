@@ -912,7 +912,8 @@ export function createRenderer(canvas) {
           console.warn("GPU frame-memory pass failed; using original renderer.", e);
         }
       }
-      overlayText(s,timeline,width,height);
+      // Text is painted in the independent Canvas2D compositing layer, not WebGL.
+      // This keeps Safari and AI Studio shader quirks from swallowing user's words.
       if (gl2) {
         if (fence) gl.deleteSync(fence);
         fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);

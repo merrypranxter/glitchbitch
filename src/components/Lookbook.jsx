@@ -4,6 +4,8 @@ import Modal from "./Modal";
 import { looks, paletteName } from "../data";
 import { createRenderer } from "../renderer";
 export default function Lookbook({ onClose, onApply }) {
+  const [category, setCategory] = useState("All");
+  const categories = ["All", ...new Set(looks.map((look) => look.family || "Original"))];
   const [thumbs, setThumbs] = useState({}),
     [error, setError] = useState("");
   useEffect(() => {
@@ -44,8 +46,21 @@ export default function Lookbook({ onClose, onApply }) {
       subtitle={`${looks.length} starting points. Every setting is still yours to change.`}
       onClose={onClose}
     >
+      <div className="look-families" role="group" aria-label="Filter looks by visual family">
+        {categories.map((family) => (
+          <button
+            type="button"
+            key={family}
+            className={category === family ? "selected" : ""}
+            aria-pressed={category === family}
+            onClick={() => setCategory(family)}
+          >
+            {family}
+          </button>
+        ))}
+      </div>
       <div className="look-grid">
-        {looks.map((look, i) => (
+        {looks.map((look, i) => ({ look, i })).filter(({ look }) => category === "All" || (look.family || "Original") === category).map(({ look, i }) => (
           <button
             className="look"
             key={look.name}
@@ -68,7 +83,7 @@ export default function Lookbook({ onClose, onApply }) {
               <ArrowUpRight size={16} />
             </div>
             <p>{look.note}</p>
-            <small>{paletteName(look.state)}</small>
+            <small>{look.family || "Original"} · {paletteName(look.state)}</small>
           </button>
         ))}
       </div>

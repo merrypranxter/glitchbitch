@@ -24,6 +24,7 @@ import {
   SlidersHorizontal,
   Palette,
   Layers,
+  Type,
   ChevronDown,
   LoaderCircle,
   X,
@@ -33,6 +34,7 @@ import ColorLab from "./components/ColorLab";
 import {
   MathInspector,
   EffectsInspector,
+  TextInspector,
   LayersInspector,
   TouchInspector,
 } from "./components/Inspectors";
@@ -70,7 +72,7 @@ function App() {
   const [leftTab, setLeftTab] = useState("Math"),
     [rightTab, setRightTab] = useState("Effects"),
     [page, setPage] = useState("Studio"),
-    [mobilePanel, setMobilePanel] = useState(""),
+    [mobilePanel, setMobilePanel] = useState("Math"),
     [focus, setFocus] = useState(false),
     [modal, setModal] = useState(null);
   const [tool, setTool] = useState("Paint"),
@@ -81,6 +83,48 @@ function App() {
     [customPalettes, setCustomPalettes] = useState(loadCustomPalettes),
     [saving, setSaving] = useState(false),
     [notice, setNotice] = useState(null);
+  const [canvasPaneRatio,setCanvasPaneRatio] = useState(()=>{
+    try {
+      const n=Number(localStorage.getItem("glitch-studio-pane-v1"));
+      return n>=.30&&n<=.78?n:.58;
+    }catch{return .58;}
+  });
+  const studioMainRef=useRef(null),dragDividerRef=useRef(null);
+  const clampPane=n=>{
+    const height=studioMainRef.current?.getBoundingClientRect().height||0;
+    const upper=height>0 ? Math.min(.78,Math.max(.30,1-175/height)) : .78;
+    return Math.max(.30,Math.min(upper,n));
+  };
+  function resizeDividerDown(e) {
+    if(e.pointerType==="mouse" && e.button!==0)return;
+    dragDividerRef.current=e.pointerId;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  }
+  function resizeDividerMove(e) {
+    if(dragDividerRef.current!==e.pointerId)return;
+    const rect=studioMainRef.current?.getBoundingClientRect();
+    if(!rect||rect.height<1)return;
+    setCanvasPaneRatio(clampPane((e.clientY-rect.top)/rect.height));
+  }
+  function resizeDividerEnd(e) {
+    if(dragDividerRef.current!==e.pointerId)return;
+    dragDividerRef.current=null;
+    try{localStorage.setItem("glitch-studio-pane-v1",String(canvasPaneRatio));}
+    catch{/* Private mode still allows resizing during this session. */}
+  }
+  function resizeDividerKey(e) {
+    let next=null;
+    if(e.key==="ArrowDown")next=canvasPaneRatio+.04;
+    if(e.key==="ArrowUp")next=canvasPaneRatio-.04;
+    if(e.key==="Home")next=.30;
+    if(e.key==="End")next=.78;
+    if(next!==null){
+      e.preventDefault();
+      setCanvasPaneRatio(clampPane(next));
+      try{localStorage.setItem("glitch-studio-pane-v1",String(clampPane(next)));}catch{}
+    }
+  }
   const canvasRef = useRef(null),
     timelineRef = useRef({ ...draft.timeline }),
     fileRef = useRef(null),
@@ -135,7 +179,7 @@ function App() {
   }, []);
   function showMobile(name) {
     setFocus(false);
-    setMobilePanel((old) => (old === name ? "" : name));
+    setMobilePanel(name);
     if (["Math", "Color"].includes(name)) setLeftTab(name);
     else setRightTab(name);
   }
@@ -320,7 +364,7 @@ function App() {
       ? `${engines[state.engine]} × ${engines[state.secondaryEngine]}`
       : engines[state.engine];
   return (
-    <div className={"app " + (focus ? "focus-mode" : "")}>
+    <div className={"app " + (focus ? "focus-mode " : "") + (page==="Studio" ? "studio-page" : "")}>
       <header>
         <button
           className="brand"
@@ -371,7 +415,8 @@ function App() {
         </div>
       </header>
       {page === "Studio" ? (
-        <main>
+        <main className="studio-main" ref={studioMainRef}
+          style={{"--canvas-pane-ratio": `${Math.round(canvasPaneRatio*100)}%`}}>
           <aside
             className={
               "left-panel inspector " +
@@ -620,11 +665,31 @@ function App() {
               </div>
             </div>
           </div>
+          <div className="studio-splitter" role="separator" aria-orientation="horizontal"
+            aria-label="Resize artwork and controls" aria-valuemin={30}
+            aria-valuemax={78} aria-valuenow={Math.round(canvasPaneRatio*100)}
+            tabIndex={0}
+            onPointerDown={resizeDividerDown}
+            onPointerMove={resizeDividerMove}
+            onPointerUp={resizeDividerEnd}
+            onPointerCancel={resizeDividerEnd}
+            onLostPointerCapture={resizeDividerEnd}
+            onKeyDown={resizeDividerKey}
+            onDoubleClick={()=>{
+              setCanvasPaneRatio(.58);
+              try{localStorage.setItem("glitch-studio-pane-v1",".58");}catch{}
+            }}
+            title="Drag to resize artwork and editor. Double-tap to reset."
+          >
+            <span className="splitter-grip"><i/><i/><i/></span>
+            <span className="splitter-label">DRAG TO RESIZE</span>
+          </div>
           <div className="mobile-controls" aria-label="Studio controls">
             {[
               ["Math", SlidersHorizontal],
               ["Color", Palette],
               ["Effects", Sparkles],
+              ["Text", Type],
               ["Touch", Hand],
               ["Layers", Layers],
             ].map(([t, Icon]) => (
@@ -642,13 +707,13 @@ function App() {
           <aside
             className={
               "right-panel inspector " +
-              (["Effects", "Touch", "Layers"].includes(mobilePanel)
+              (["Effects", "Text", "Touch", "Layers"].includes(mobilePanel)
                 ? "mobile-open"
                 : "")
             }
           >
             <div className="inspector-tabs">
-              {["Effects", "Touch", "Layers"].map((t) => (
+              {["Effects", "Text", "Touch", "Layers"].map((t) => (
                 <button
                   className={rightTab === t ? "active" : ""}
                   onClick={() => setRightTab(t)}
@@ -661,6 +726,8 @@ function App() {
             <div className="inspector-scroll">
               {rightTab === "Effects" ? (
                 <EffectsInspector history={history} />
+              ) : rightTab === "Text" ? (
+                <TextInspector history={history} />
               ) : rightTab === "Layers" ? (
                 <LayersInspector history={history} />
               ) : (

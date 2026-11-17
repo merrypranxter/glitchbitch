@@ -668,3 +668,26 @@ test("fonts load lazily once, and still frames refresh when fonts arrive", async
   assert.match(renderer,/retroFontRevision\(\)/);
   assert.match(exporter,/await ensureRetroFontLoaded\(state\.letteringFont\)/);
 });
+
+test("mobile studio keeps one canvas above resize divider and independent scrollable editor", async () => {
+  const {readFileSync}=await import("node:fs");
+  const main=readFileSync(new URL("../src/main.jsx",import.meta.url),"utf8");
+  const style=readFileSync(new URL("../src/style.css",import.meta.url),"utf8");
+  const controls=readFileSync(new URL("../src/components/Controls.jsx",import.meta.url),"utf8");
+  const inspectors=readFileSync(new URL("../src/components/Inspectors.jsx",import.meta.url),"utf8");
+  assert.equal(main.split("<ArtCanvas").length-1,1,"Only one live artwork canvas");
+  assert.match(main,/className="studio-splitter"/);
+  assert.match(main,/role="separator"/);
+  assert.match(main,/setPointerCapture\(e\.pointerId\)/);
+  assert.match(main,/onPointerMove=\{resizeDividerMove\}/);
+  assert.match(main,/onKeyDown=\{resizeDividerKey\}/);
+  assert.match(main,/localStorage\.setItem\("glitch-studio-pane-v1"/);
+  assert.match(main,/\["Text", Type\]/);
+  assert.match(main,/<TextInspector history=\{history\}/);
+  assert.equal(inspectors.split('title="YOUR WORDS — OPTIONAL QUOTES"').length-1,1);
+  assert.match(inspectors,/export function TextInspector/);
+  assert.match(style,/\.studio-page \.inspector-scroll\{flex:1 1 auto;min-height:0;max-height:none;overflow-y:auto/);
+  assert.match(style,/flex:0 0 min\(var\(--canvas-pane-ratio,58%\),calc\(100% - 175px\)\)/);
+  assert.match(controls,/aria-expanded=\{expanded\}/);
+  assert.match(controls,/section-disclosure/);
+});

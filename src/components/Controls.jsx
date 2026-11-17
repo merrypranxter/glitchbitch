@@ -1,4 +1,5 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { numericRanges } from "../data";
 export function Range({
   label,
@@ -113,14 +114,26 @@ export function Select({ label, value, onChange, children }) {
     </label>
   );
 }
-export function Section({ title, aside, children }) {
+export function Section({ title, aside, children, defaultOpen }) {
+  // In the phone editor only the primary section starts expanded.
+  const [expanded,setExpanded]=useState(()=>
+    defaultOpen ?? (
+      typeof window==="undefined" ||
+      !window.matchMedia("(max-width: 980px)").matches ||
+      /THE ENGINE|PALETTE VAULT|BREAK THE SIGNAL|YOUR WORDS|PRIMARY FIELD|YOUR HAND/.test(title)
+    )
+  );
   return (
-    <section className="control-section">
+    <section className={"control-section " + (expanded?"":"is-collapsed")}>
       <div className="section-heading">
-        <span>{title}</span>
+        <button type="button" className="section-disclosure"
+          aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>
+          <span>{title}</span>
+          <ChevronDown size={15} className={expanded?"expanded":""}/>
+        </button>
         {aside}
       </div>
-      {children}
+      {expanded&&<div className="section-body">{children}</div>}
     </section>
   );
 }

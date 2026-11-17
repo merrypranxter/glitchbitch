@@ -152,6 +152,10 @@ export const compositionModes = [
   "Iris portals", "Braided ribbons", "Cell colonies", "Patchwork",
   "Orbital archipelagos", "Woven windows",
 ];
+export const backdropModes = [
+  "Nebula veils", "Cosmic pollen", "Caustic undercurrent", "Ghost architecture",
+  "Phosphor jacquard", "Opal cell fog",
+];
 export const chaosPhrases = ["ERROR ANGEL", "GLITCHBITCH", "LOVE.exe", "U R CUTE", "SOFT APOCALYPSE",
   "INFINITE TRASH", "COSMIC STATIC", "NEON FUNERAL", "NO SIGNAL", "DIVINE MALFUNCTION",
   "HYPERSPACE", "TOXIC DREAM", "BLESSED ERROR", "404 REALITY", "SWEET CORRUPTION"];
@@ -218,6 +222,13 @@ export const numericRanges = {
   compositionMotion: [0, 100],
   compositionColorShift: [0, 100],
   compositionVariation: [0, 100],
+  backdropAmount: [0, 100],
+  backdropDepth: [0, 100],
+  backdropDensity: [0, 100],
+  backdropMotion: [0, 100],
+  backdropGlow: [0, 100],
+  backdropHue: [0, 100],
+  backdropVariation: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -305,6 +316,14 @@ export const initial = {
   compositionMotion: 52,
   compositionColorShift: 47,
   compositionVariation: 50,
+  backdropMode: "Nebula veils",
+  backdropAmount: 0,
+  backdropDepth: 65,
+  backdropDensity: 55,
+  backdropMotion: 58,
+  backdropGlow: 72,
+  backdropHue: 47,
+  backdropVariation: 50,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -375,6 +394,7 @@ export function validateRecipe(input) {
     stereoShape: stereoShapes,
     letteringStyle: letteringStyles,
     compositionMode: compositionModes,
+    backdropMode: backdropModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -532,6 +552,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "letteringAmount","letteringScale","letteringWarp","letteringMotion",
       "compositionAmount","compositionScale","compositionFeather",
       "compositionMotion","compositionColorShift","compositionVariation",
+      "backdropAmount","backdropDepth","backdropDensity","backdropMotion",
+      "backdropGlow","backdropHue","backdropVariation",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -542,7 +564,12 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   }
   // A full Surprise is a replacement, not a mutation. Ratio is the sole
   // retained visual constraint. Paused transport lives outside recipe state.
-  const s={...initial,ratio:state.ratio};
+  // Instrument explicit assignments, then randomize any new numeric sliders
+  // automatically. No future feature gets accidentally left out of Surprise Me.
+  const randomizedKeys = new Set();
+  const s = new Proxy({...initial, ratio:state.ratio}, {
+    set(target,key,value) { randomizedKeys.add(key); target[key]=value; return true; }
+  });
   // Rotate to a different mathematical FAMILY, even with a fixed RNG test stub.
   const family=engineInfo[state.engine]?.family;
   const otherFamilies=engineInfo.filter(e=>e.id!==state.engine && e.family!==family);
@@ -554,7 +581,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.palette=sample(paletteChoices,random);
   s.colors=random()<.4?shuffledColors(palettes[s.palette].colors,random):[...palettes[s.palette].colors];
   if(s.colors.some((c,i)=>c!==palettes[s.palette].colors[i])) s.palette=-1;
-  s.blendMode=sample(["Mix","Multiply","Difference"],random);
+  s.blendMode=different(["Mix","Multiply","Difference"],state.blendMode,random);
   s.blend=random()<.18?0:22+random()*70;
   s.complexity=20+random()*80; s.scale=8+random()*80; s.warp=12+random()*88;
   s.rotation=random()*360;
@@ -616,16 +643,24 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.compositionColorShift=18+random()*77;
   s.compositionVariation=random()*100;
   if(s.compositionAmount>0 && s.blend<.2) s.blend=25+random()*65;
+  s.backdropMode=different(backdropModes,state.backdropMode,random);
+  s.backdropAmount=42+random()*57;
+  s.backdropDepth=24+random()*74;
+  s.backdropDensity=15+random()*81;
+  s.backdropMotion=32+random()*67;
+  s.backdropGlow=35+random()*64;
+  s.backdropHue=12+random()*86;
+  s.backdropVariation=random()*100;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;
   s.speed=25+random()*70;s.colorSpeed=22+random()*75;
   s.freezeGeometry=false;s.freezeColor=false;
-  s.colorMode=sample(["Traveling wave","Color canon","Phase vortex"],random);
+  s.colorMode=different(["Traveling wave","Color canon","Phase vortex"],state.colorMode,random);
   s.colorAmount=15+random()*85;s.colorRepeat=12+random()*88;
   s.colorOffset=random()*100;s.saturation=34+random()*66;
   s.contrast=28+random()*72;s.brightness=30+random()*70;
-  s.touchMode=sample(touchModes,random);
+  s.touchMode=different(touchModes,state.touchMode,random);
   s.strength=18+random()*78;s.radius=8+random()*47;
   // No old strokes may survive. Some surprises spawn entirely new touch forces.
   const markCount=random()<.30?0:1+Math.floor(random()*4);
@@ -637,7 +672,12 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
     radius:.06+random()*.38,
     angle:random()*Math.PI*2,
   }));
-  return s;
+  // General-purpose coverage contract: every numeric setting that exists in
+  // numericRanges MUST get a fresh value. Purpose-built distributions above
+  // win; any newly added numeric field gets a safe, editable fallback.
+  for (const [key,[min,max]] of Object.entries(numericRanges))
+    if(!randomizedKeys.has(key))s[key]=min+random()*(max-min);
+  return {...s};
 }
 export const looks = [
   {
@@ -1122,5 +1162,68 @@ export const looks = [
     state: { ...initial, engine: 8, secondaryEngine: 11,
       palette: 7, colors: palettes[7].colors,
       compositionMode: "Patchwork", compositionAmount: 99, compositionScale: 78, compositionFeather: 29, compositionMotion: 58, compositionColorShift: 79, blend: 91, foilRelief: 46, filmAmount: 44, motionAmount: 73, lightMotion: 78, seed: 120957 },
+  },
+  {
+    name: "Nebula Underworld",
+    note: "Distant luminous fog drifts through negative space while liquid math breathes",
+    family: "Backdrop",
+    state: { ...initial, engine: 6, palette: 8, colors: palettes[8].colors,
+      backdropMode: "Nebula veils", backdropAmount: 93, backdropDepth: 83, backdropDensity: 39, backdropMotion: 75, backdropGlow: 93, backdropHue: 76, backdropVariation: 32, motionMode: "Liquid flow", motionAmount: 71, lightMotion: 86, scale: 27, warp: 77, seed: 315687 },
+  },
+  {
+    name: "Cosmic Pollen Static",
+    note: "A shallow CRT world suspended before drifting microscopic star swarms",
+    family: "Backdrop",
+    state: { ...initial, engine: 3, palette: 1, colors: palettes[1].colors,
+      backdropMode: "Cosmic pollen", backdropAmount: 100, backdropDepth: 89, backdropDensity: 80, backdropMotion: 85, backdropGlow: 100, backdropHue: 68, backdropVariation: 73, phosphor: 61, glitter: 37, scale: 25, motionMode: "Orbital", motionAmount: 42, lightMotion: 80, seed: 552831 },
+  },
+  {
+    name: "Caustic Drowned Palace",
+    note: "Moving waves of refracted-looking light underneath crystalline architecture",
+    family: "Backdrop",
+    state: { ...initial, engine: 11, palette: 10, colors: palettes[10].colors,
+      backdropMode: "Caustic undercurrent", backdropAmount: 97, backdropDepth: 77, backdropDensity: 73, backdropMotion: 82, backdropGlow: 95, backdropHue: 84, backdropVariation: 29, filmAmount: 66, prismAmount: 77, motionAmount: 65, lightMotion: 82, seed: 831952 },
+  },
+  {
+    name: "Ghost Wallpaper Colony",
+    note: "Soft translucent architectural shadows emerging behind living Voronoi membranes",
+    family: "Backdrop",
+    state: { ...initial, engine: 7, palette: 11, colors: palettes[11].colors,
+      backdropMode: "Ghost architecture", backdropAmount: 94, backdropDepth: 80, backdropDensity: 47, backdropMotion: 79, backdropGlow: 87, backdropHue: 51, backdropVariation: 93, bioAmount: 32, motionMode: "Breathing", motionAmount: 74, lightMotion: 88, seed: 119375 },
+  },
+  {
+    name: "Phosphor Velvet Brocade",
+    note: "Woven luminous microthreads drift under a fivefold interference field",
+    family: "Backdrop",
+    state: { ...initial, engine: 14, palette: 15, colors: palettes[15].colors,
+      backdropMode: "Phosphor jacquard", backdropAmount: 98, backdropDepth: 75, backdropDensity: 75, backdropMotion: 62, backdropGlow: 100, backdropHue: 53, backdropVariation: 14, phosphor: 35, foilRelief: 47, filmAmount: 32, motionAmount: 63, lightMotion: 93, seed: 240175 },
+  },
+  {
+    name: "Opal Cell Cathedral",
+    note: "Shimmering cellular membranes and moving fog under 3D opal torus rings",
+    family: "Backdrop",
+    state: { ...initial, engine: 16, palette: 6, colors: palettes[6].colors,
+      backdropMode: "Opal cell fog", backdropAmount: 93, backdropDepth: 74, backdropDensity: 55, backdropMotion: 78, backdropGlow: 89, backdropHue: 90, backdropVariation: 41, stereoAmount: 92, stereoShape: "Opal Knot", opalAmount: 86, filmAmount: 58, motionAmount: 40, lightMotion: 92, seed: 706314 },
+  },
+  {
+    name: "Petri Nebula Mutation",
+    note: "A growing chemical organism against two drifting luminous gas layers",
+    family: "Backdrop",
+    state: { ...initial, engine: 15, palette: 9, colors: palettes[9].colors,
+      backdropMode: "Nebula veils", backdropAmount: 99, backdropDepth: 91, backdropDensity: 59, backdropMotion: 67, backdropGlow: 100, backdropHue: 21, backdropVariation: 63, bioAmount: 71, bioSpeed: 76, afterimage: 22, motionAmount: 57, lightMotion: 78, seed: 913048 },
+  },
+  {
+    name: "Radioactive Weaver's Dream",
+    note: "Braided math territories on top of radioactive moving luminous textile",
+    family: "Backdrop",
+    state: { ...initial, engine: 10, palette: 1, colors: palettes[1].colors,
+      secondaryEngine: 13, blend: 87, compositionMode: "Braided ribbons", compositionAmount: 96, compositionScale: 61, backdropMode: "Phosphor jacquard", backdropAmount: 95, backdropDepth: 64, backdropDensity: 79, backdropMotion: 88, backdropGlow: 92, backdropHue: 66, backdropVariation: 88, motionAmount: 84, lightMotion: 86, seed: 481296 },
+  },
+  {
+    name: "The Haunted Interface",
+    note: "Kinetic text and old-web damage with distant digital starlight",
+    family: "Backdrop",
+    state: { ...initial, engine: 4, palette: 8, colors: palettes[8].colors,
+      lettering: "SOFT APOCALYPSE", letteringAmount: 92, letteringStyle: "Neon bling", windowCascade: 62, glitter: 43, backdropMode: "Cosmic pollen", backdropAmount: 100, backdropDepth: 95, backdropDensity: 77, backdropMotion: 82, backdropGlow: 100, backdropHue: 71, backdropVariation: 47, motionAmount: 63, lightMotion: 81, seed: 592702 },
   },
 ];

@@ -8,6 +8,7 @@ import { stereoGLSL } from "./stereo.js";
 import { materialGLSL } from "./materials.js";
 import { kineticGLSL, glyphCanvas } from "./kinetic-type.js";
 import { compositionGLSL } from "./composition.js";
+import { backdropGLSL } from "./backdrops.js";
 
 const vertex = `attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
 const fragment = `precision highp float;
@@ -53,6 +54,7 @@ float phaseOf(float value,vec2 uv,float source){float bands=(2.+complexity*5.)*p
 if(colorAmount>.0){float t=colorTime/12.;vec2 s=(uv-.5)*3.;float voice=0.;if(colorMode==0){voice=t+.55*s.x+.22*s.y+.2*sin(TAU*(t+s.y))+.1*sin(TAU*(2.*t+s.x));}else if(colorMode==1){voice=t+.25*s.x+.15*s.y+.24*sin(TAU*(t+.19*s.x+.17*s.y))+.12*sin(TAU*(2.*t+.38*s.x+.17*s.y)+1.7)+.07*sin(TAU*(3.*t+.57*s.x+.17*s.y)+3.4);}else{voice=t+atan(s.y,s.x)/TAU+.25*sin(length(s)*6.-t*TAU);}phase+=colorAmount*voice;}
 phase+=source;if(posterize)phase=floor(phase*7.)/7.;return phase;}
 /* COMPOSITION_MODULE */
+/* BACKDROP_MODULE */
 /* MATERIAL_MODULE */
 /* LETTERING_MODULE */
 ${appearanceGLSL}
@@ -77,6 +79,7 @@ float source=0.;for(int i=0;i<32;i++){if(i<count){vec2 d=(uv-marks[i].xy)*aspect
 if(marks[i].w<.5)p+=rotate(a)*vec2(sin(local.y*15.+time),cos(local.x*15.-time))*force;
 else if(marks[i].w<1.5)p+=vec2(-d.y,d.x)*force*8.;else if(marks[i].w<2.5)p+=d*force*8.;else source+=force*(.5+.5*sin(2.*atan(d.y,d.x)+colorTime*.5+a));}}
 float v=composed(p);vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*sin(v*(2.+complexity*5.)*TAU),18.);col*=.72+edge*.5;if(bloom)col+=edge*col*.24;
+/* BACKDROP_POST */
 /* COMPOSITION_POST */
 /* STEREO_POST */
 /* MATERIAL_POST */
@@ -107,15 +110,18 @@ export function createRenderer(canvas) {
   const programs = new Map();
   let active, fence = null, memory = null, memoryShader = null, memoryDisabled = false;
   let stereoUnavailable = false, materialUnavailable = false,
-    typeShaderUnavailable = false, compositionUnavailable = false;
+    typeShaderUnavailable = false, compositionUnavailable = false,
+    backdropUnavailable = false;
   function compatibleShaderState(s){
     const source = stereoUnavailable ? safe2DSelection(s) : s;
-    if(!materialUnavailable && !typeShaderUnavailable && !compositionUnavailable)return source;
+    if(!materialUnavailable && !typeShaderUnavailable &&
+       !compositionUnavailable && !backdropUnavailable)return source;
     return {
       ...source,
       ...(materialUnavailable ? {filmAmount:0,opalAmount:0,prismAmount:0,foilRelief:0}:{}),
       ...(typeShaderUnavailable ? {letteringAmount:0}:{}),
-      ...(compositionUnavailable ? {compositionAmount:0}:{})
+      ...(compositionUnavailable ? {compositionAmount:0}:{}),
+      ...(backdropUnavailable ? {backdropAmount:0}:{})
     };
   }
   let typeTexture=null, typeKey="", typeUnavailable=false;
@@ -365,7 +371,8 @@ export function createRenderer(canvas) {
       withMaterial = s.filmAmount>0 || s.opalAmount>0 || s.prismAmount>0 || s.foilRelief>0,
       withLettering = s.letteringAmount>0 && !!s.lettering.trim(),
       withComposition = blended && s.compositionAmount>0,
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}`;
+      withBackdrop = s.backdropAmount>0,
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -388,6 +395,8 @@ export function createRenderer(canvas) {
          ${withComposition ? "if(engine!=16 && secondaryEngine==16) ghostOpacity*=territoryMask(uv)*compositionAmount;" : ""}
          col=mix(col,ghost.rgb,clamp(ghostOpacity*(.52+.48*ghost.a),0.,1.));`
       : "");
+    source=source.replace("/* BACKDROP_MODULE */",withBackdrop?backdropGLSL:"");
+    source=source.replace("/* BACKDROP_POST */",withBackdrop?"col=livingBackdrop(col,uv,v);":"");
     source=source.replace("/* COMPOSITION_MODULE */",withComposition?compositionGLSL:"");
     source=source.replace("/* COMPOSITION_POST */",
       withComposition?"col=territoryComposite(col,p,uv,source);":"");
@@ -498,7 +507,7 @@ export function createRenderer(canvas) {
       // Progressive shader fallback: the newest optional effects are disabled
       // one at a time if the driver cannot compile them. Legacy fields stay visible.
       let lastCompileError = null;
-      for(let attempt=0;attempt<5;attempt++){
+      for(let attempt=0;attempt<6;attempt++){
         const candidate=compatibleShaderState(s);
         try {
           active=programFor(candidate);
@@ -509,6 +518,9 @@ export function createRenderer(canvas) {
           if(candidate.letteringAmount>0 && candidate.lettering.trim()){
             typeShaderUnavailable=true;
             console.warn("Kinetic lettering shader unavailable, preserving original art.",e);
+          }else if(candidate.backdropAmount>0){
+            backdropUnavailable=true;
+            console.warn("Living backdrop unsupported; keeping the original artwork.",e);
           }else if(candidate.compositionAmount>0 && candidate.blend>0){
             compositionUnavailable=true;
             console.warn("Spatial composition unsupported; using the original full-canvas blend.",e);
@@ -601,6 +613,8 @@ export function createRenderer(canvas) {
         "letteringWarp", "letteringMotion",
         "compositionAmount","compositionScale","compositionFeather",
         "compositionMotion","compositionColorShift","compositionVariation",
+        "backdropAmount","backdropDepth","backdropDensity","backdropMotion",
+        "backdropGlow","backdropHue","backdropVariation",
       ])
         gl.uniform1f(loc(k), s[k] / 100);
       gl.uniform1f(loc("rotation"), (s.rotation * Math.PI) / 180);
@@ -616,6 +630,9 @@ export function createRenderer(canvas) {
         ["Traveling wave", "Color canon", "Phase vortex"].indexOf(s.colorMode),
       );
       gl.uniform1i(loc("colorCount"), s.colors.length);
+      gl.uniform1i(loc("backdropMode"), ["Nebula veils","Cosmic pollen",
+        "Caustic undercurrent","Ghost architecture","Phosphor jacquard",
+        "Opal cell fog"].indexOf(s.backdropMode));
       gl.uniform1i(loc("compositionMode"), [
         "Iris portals","Braided ribbons","Cell colonies","Patchwork",
         "Orbital archipelagos","Woven windows"].indexOf(s.compositionMode));

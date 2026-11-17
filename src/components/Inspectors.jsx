@@ -28,7 +28,7 @@ import {
   Dna,
   Box,
 } from "lucide-react";
-import { engineInfo, engines, touchModes, makeMark, motionModes, letteringStyles, compositionModes } from "../data";
+import { engineInfo, engines, touchModes, makeMark, motionModes, letteringStyles, compositionModes, backdropModes } from "../data";
 import { Parameter, Range, Switch, Select, Section } from "./Controls";
 const icons = [
   Waves,
@@ -181,6 +181,29 @@ export function EffectsInspector({ history }) {
         <Parameter label="Scanlines" name="scan" history={history} />
         <Parameter label="Film grain" name="grain" history={history} />
         <Parameter label="Vignette" name="vignette" history={history} />
+      </Section>
+      <Section title="LIVING BACKDROPS — NO DEAD SPACE">
+        <Select label="Animated background species" value={history.state.backdropMode}
+          onChange={(v) => history.change((s) => ({...s, backdropMode:v}))}>
+          {backdropModes.map((mode) => <option key={mode}>{mode}</option>)}
+        </Select>
+        <Parameter label="Background presence" name="backdropAmount" history={history} />
+        <Parameter label="Far / near parallax depth" name="backdropDepth" history={history} />
+        <Parameter label="Texture density" name="backdropDensity" history={history} />
+        <Parameter label="Background movement" name="backdropMotion" history={history} />
+        <Parameter label="Luminous pigment" name="backdropGlow" history={history} />
+        <Parameter label="Palette shift" name="backdropHue" history={history} />
+        <Parameter label="Background variation" name="backdropVariation" history={history} />
+        <button type="button" className="button secondary full"
+          onClick={() => history.change((s) => ({...s,backdropVariation:
+            (s.backdropVariation+19+Math.random()*62)%100}))}>
+          Shuffle background without changing the math
+        </button>
+        <p className="control-note">
+          Six animated negative-space underpaintings that live behind the main mathematics.
+          They move even when the primary structure holds its shape. Surprise Me changes
+          the entire background species, its motion, density, depth and colors.
+        </p>
       </Section>
       <Section title="STEREO GHOST MACHINE — 3D DEPTH">
         <Select label="3D shape family" value={history.state.stereoShape}

@@ -119,8 +119,8 @@ test("appearance sliders round trip, reject invalid numbers and keep vintage rec
   for (const key of appearanceKeys) delete old[key];
   assert.deepEqual(appearanceKeys.map(key => parseDocument(old).state[key]), appearanceKeys.map(() => 0));
 });
-test("lookbook contains 67 valid distinct entries including animated mathematical compositions", () => {
-  assert.equal(looks.length, 67);
+test("lookbook contains 76 valid distinct entries including living-background worlds", () => {
+  assert.equal(looks.length, 76);
   assert.equal(new Set(looks.map(look => look.name)).size, looks.length);
   for (const look of looks) assert.deepEqual(parseDocument(look.state).state, look.state);
   assert.ok(looks.some(look => look.state.windowCascade > 0));
@@ -444,4 +444,57 @@ test("unsupported spatial composition recompiles using legacy full-canvas blend"
   assert.match(renderer,/compositionUnavailable=true/);
   assert.match(renderer,/compositionUnavailable \? \{compositionAmount:0\}/);
   assert.match(composition,/export const compositionGLSL/);
+});
+
+test("living backdrops are opt-in, use six species, migrate safely and save in recipes", async () => {
+  const {backdropModes,numericRanges}=await import("../src/data.js");
+  assert.equal(backdropModes.length,6);
+  const old={...initial};
+  const knobs=["backdropAmount","backdropDepth","backdropDensity","backdropMotion",
+    "backdropGlow","backdropHue","backdropVariation"];
+  for(const key of knobs)delete old[key];
+  delete old.backdropMode;
+  assert.equal(parseDocument(old).state.backdropAmount,0);
+  for(const key of knobs){
+    assert.ok(numericRanges[key]);
+    const a={...initial,[key]:76};
+    assert.equal(parseDocument(recipeDocument(a,"Backdrop",{time:2,colorTime:3})).state[key],76);
+    assert.throws(()=>parseDocument({...a,[key]:110}));
+  }
+  assert.throws(()=>parseDocument({...initial,backdropMode:"Fake"}));
+  assert.ok(looks.filter(l=>l.family==="Backdrop").length===9);
+  assert.ok(looks.some(l=>l.family==="Backdrop" && l.state.letteringAmount>0));
+  const s=randomize({...initial,backdropMode:"Nebula veils",backdropAmount:0},{},false,()=>.67);
+  assert.notEqual(s.backdropMode,"Nebula veils");
+  assert.ok(s.backdropAmount>=42 && s.backdropAmount<=99);
+  assert.ok(s.backdropMotion>0 && s.backdropGlow>0);
+});
+test("Surprise Me covers present AND future numeric sliders automatically", async () => {
+  const {numericRanges}=await import("../src/data.js");
+  numericRanges.__testSurpriseCoverage=[0,100];
+  try{
+    const state=randomize(initial,{},false,()=>.73);
+    assert.equal(state.__testSurpriseCoverage,73);
+    for(const [key,[lo,hi]] of Object.entries(numericRanges)){
+      assert.ok(Number.isFinite(state[key]),key+" missing from Surprise Me");
+      assert.ok(state[key]>=lo && state[key]<=hi,key+" out of bounds");
+    }
+    assert.notEqual(state.engine,initial.engine);
+    assert.notEqual(state.backdropMode,initial.backdropMode);
+    assert.notEqual(state.compositionMode,initial.compositionMode);
+    assert.notEqual(state.motionMode,initial.motionMode);
+    assert.notEqual(state.blendMode,initial.blendMode);
+    assert.notEqual(state.colorMode,initial.colorMode);
+    assert.notEqual(state.touchMode,initial.touchMode);
+  }finally{delete numericRanges.__testSurpriseCoverage;}
+});
+test("negative-space shader is only compiled when enabled and has a mobile fallback", async () => {
+  const {readFileSync}=await import("node:fs");
+  const renderer=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
+  const backdrop=readFileSync(new URL("../src/backdrops.js",import.meta.url),"utf8");
+  assert.match(renderer,/withBackdrop = s\.backdropAmount>0/);
+  assert.match(renderer,/livingBackdrop\(col,uv,v\)/);
+  assert.match(renderer,/backdropUnavailable=true/);
+  assert.match(backdrop,/backdropMode==4/);
+  assert.match(backdrop,/vec3 livingBackdrop/);
 });

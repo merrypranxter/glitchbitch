@@ -290,6 +290,24 @@ export function TextInspector({ history }) {
             disabled={history.state.letteringStrokes.length>=5}
             onClick={()=>history.change(s=>({...s,letteringStrokes:[...s.letteringStrokes,{color:"#ff00cc",width:4,enabled:true}]}))}>+ Add outer stroke</button>
         </Section>
+        <Section title="POSITION & TRANSFORM — MOVE YOUR WORDS">
+          <p className="control-note">Move the lettering without moving the artwork. Turn on drag mode to reposition directly on the canvas; turn it off to paint normally.</p>
+          <label className="select-field"><span>Drag lettering on canvas</span>
+            <input type="checkbox" checked={history.state.letteringDrag||false}
+              onChange={e=>history.change(s=>({...s,letteringDrag:e.target.checked}))}/>
+          </label>
+          <Parameter label="Horizontal position" name="letteringX" history={history}/>
+          <Parameter label="Vertical position" name="letteringY" history={history}/>
+          <Parameter label="Rotate lettering" name="letteringRotation" history={history}/>
+          <Parameter label="Stretch horizontally" name="letteringStretchX" history={history}/>
+          <Parameter label="Stretch vertically" name="letteringStretchY" history={history}/>
+          <Parameter label="Curve / bend text" name="letteringCurve" history={history}/>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>({...s,letteringX:50,letteringY:50,
+              letteringRotation:0,letteringStretchX:100,letteringStretchY:100,letteringCurve:0}))}>
+            Reset text placement only
+          </button>
+        </Section>
         <Parameter label="Lettering opacity" name="letteringAmount" history={history} />
         <Parameter label="Letter size" name="letteringScale" history={history} />
         <Parameter label="Liquid text warping" name="letteringWarp" history={history} />

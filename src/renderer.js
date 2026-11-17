@@ -705,6 +705,12 @@ export function createRenderer(canvas) {
       gl.uniform1i(loc("compositionMode"), [
         "Iris portals","Braided ribbons","Cell colonies","Patchwork",
         "Orbital archipelagos","Woven windows"].indexOf(s.compositionMode));
+      gl.uniform1f(loc("letteringX"),s.letteringX/100);
+      gl.uniform1f(loc("letteringY"),s.letteringY/100);
+      gl.uniform1f(loc("letteringRotation"),s.letteringRotation);
+      gl.uniform1f(loc("letteringStretchX"),s.letteringStretchX/100);
+      gl.uniform1f(loc("letteringStretchY"),s.letteringStretchY/100);
+      gl.uniform1f(loc("letteringCurve"),s.letteringCurve/100);
       gl.uniform1i(loc("letteringStyle"), ["Neon bling","RGB split","Chrome foil","Void stencil","Custom ink","Holographic","Electric glow","Liquid candy","Ghost echo","Chromatic shimmer","Heatwave","Glitter ink","Prism pulse","Soft shadow"].indexOf(s.letteringStyle));
       gl.uniform1i(loc("letteringAvailable"), hasLettering ? 1 : 0);
       gl.uniform1i(loc("letteringTex"), 3);

@@ -29,6 +29,7 @@ export default function ArtCanvas({
   actions.current = history;
   const ratio = ratios.find((r) => r.id === history.state.ratio)?.value || 1;
   const cancel = () => {
+    if(textDrag.current){textDrag.current=null;actions.current.cancel();}
     if (session.current) {
       session.current = null;
       actions.current.cancel();
@@ -220,8 +221,18 @@ export default function ArtCanvas({
     history.preview(s.draft);
     if (s.target >= 0) onSelect(s.draft.marks[s.target]?.id || null);
   }
+  const textDrag = useRef(null);
   function down(e) {
     if (e.button !== 0) return;
+    if(history.state.letteringDrag && history.state.lettering.trim()){
+      e.preventDefault();
+      e.currentTarget.setPointerCapture(e.pointerId);
+      history.begin();
+      const origin=point(e);
+      textDrag.current={id:e.pointerId,x:origin.x,y:origin.y,
+        startX:history.state.letteringX,startY:history.state.letteringY};
+      return;
+    }
     e.preventDefault();
     const p = point(e),
       surface = e.currentTarget;
@@ -252,12 +263,22 @@ export default function ArtCanvas({
     preview();
   }
   function move(e) {
+    if(textDrag.current && e.pointerId===textDrag.current.id){
+      const start=textDrag.current,now=point(e);
+      history.preview(s=>({...s,
+        letteringX:Math.max(0,Math.min(100,start.startX+(now.x-start.x)*100)),
+        letteringY:Math.max(0,Math.min(100,start.startY+(now.y-start.y)*100))}));
+      return;
+    }
     if (session.current) {
       session.current.move(point(e));
       preview();
     }
   }
   function up(e) {
+    if(textDrag.current && e.pointerId===textDrag.current.id){
+      textDrag.current=null;history.end();return;
+    }
     if (!session.current) return;
     if (session.current.release(e.pointerId)) {
       session.current = null;
@@ -275,7 +296,7 @@ export default function ArtCanvas({
         onPointerUp={up}
         onPointerCancel={cancel}
         onLostPointerCapture={(e) => {
-          if (session.current?.pointers.has(e.pointerId)) cancel();
+          if (textDrag.current?.id===e.pointerId || session.current?.pointers.has(e.pointerId)) cancel();
         }}
       >
         <canvas

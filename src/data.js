@@ -239,6 +239,12 @@ export const numericRanges = {
   letteringWarp: [0, 100],
   letteringMotion: [0, 100],
   letteringGradientAngle: [0, 360],
+  letteringX: [0, 100],
+  letteringY: [0, 100],
+  letteringRotation: [-180, 180],
+  letteringStretchX: [25, 250],
+  letteringStretchY: [25, 250],
+  letteringCurve: [-100, 100],
   compositionAmount: [0, 100],
   compositionScale: [0, 100],
   compositionFeather: [0, 100],
@@ -364,6 +370,13 @@ export const initial = {
   letteringGradient: ["#ff2fbf","#00f5ff","#fff36a"],
   letteringGradientAngle: 0,
   letteringStrokes: [],
+  letteringX: 50,
+  letteringY: 50,
+  letteringRotation: 0,
+  letteringStretchX: 100,
+  letteringStretchY: 100,
+  letteringCurve: 0,
+  letteringDrag: false,
   compositionMode: "Iris portals",
   compositionAmount: 0,
   compositionScale: 54,
@@ -477,6 +490,10 @@ export function validateRecipe(input) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
       s[key] = x[key];
     }
+  }
+  if(x.letteringDrag!==undefined){
+    if(typeof x.letteringDrag!=="boolean")throw Error("Invalid lettering drag setting.");
+    s.letteringDrag=x.letteringDrag;
   }
   if(x.letteringFill !== undefined){
     if(typeof x.letteringFill!=="string"||!colorRE.test(x.letteringFill))throw Error("Invalid text fill color.");

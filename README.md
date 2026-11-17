@@ -171,3 +171,6 @@ performed on-device.
 
 ## Text Lab — expanded materials, color and strokes
 Text includes 14 appearance modes, independent solid or linear/radial gradient fill (2–8 stops), gradient angle, and up to five individually enabled, colored, sized outer strokes. Outlines are composited behind the glyph fill to preserve legibility. Legacy recipes default to white with no outline; all new settings round-trip in recipe JSON and share the same PNG/GIF/MP4 renderer. On-device Safari verification is still required.
+
+## Text placement and transformation
+Text tab has drag-on-canvas mode, horizontal/vertical placement, rotation, independent X/Y stretching, curve bending and placement-only reset. Drag mode temporarily replaces force painting until switched off. All transform values are validated and saved in recipes; PNG/GIF/MP4 share the shader. Text still belongs entirely to the artist. Physical Safari verification is pending.

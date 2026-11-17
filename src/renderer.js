@@ -156,7 +156,7 @@ export function createRenderer(canvas) {
     typeTexture=null;typeKey="";
   }
   function updateLettering(s,width,height){
-    if(typeUnavailable || typeShaderUnavailable || !s.letteringAmount || !s.lettering.trim())return false;
+    if(typeUnavailable || !s.letteringAmount || !s.lettering.trim())return false;
     const fontId=s.letteringFont||"original";
     if(!retroFontReady(fontId) && !pendingFontLoads.has(fontId) && !failedFontLoads.has(fontId)){
       pendingFontLoads.add(fontId);
@@ -227,6 +227,94 @@ export function createRenderer(canvas) {
       }catch(e){console.warn("Extra text layer skipped",e);extraTypeKeys[i]="";}
     }
     gl.activeTexture(gl.TEXTURE0);
+  }
+
+  // Text is composited AFTER the artwork and feedback passes. The main art
+  // shader never depends on typography, so an unsupported font effect cannot
+  // disable the canvas or silently swallow all words.
+  let textOverlayProgram=null, textOverlayFailed=false;
+  function overlayText(s,timeline,width,height){
+    const layers=[{
+      text:s.lettering,visible:true,letteringAmount:s.letteringAmount,
+      letteringX:s.letteringX,letteringY:s.letteringY,
+      letteringRotation:s.letteringRotation,letteringScale:s.letteringScale,
+      letteringStretchX:s.letteringStretchX,letteringStretchY:s.letteringStretchY,
+      letteringCurve:s.letteringCurve,letteringWarp:s.letteringWarp,
+      letteringMotion:s.letteringMotion
+    },...(s.letteringLayers||[]).slice(0,2)];
+    if(!layers.some(l=>l.visible!==false&&l.text?.trim()&&l.letteringAmount>0))return;
+    if(textOverlayFailed)return;
+    try{
+      if(!textOverlayProgram){
+        const vs=gl2
+          ? "#version 300 es\nin vec2 position;void main(){gl_Position=vec4(position,0.,1.);}"
+          : "attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}";
+        const fs=(gl2?"#version 300 es\n":"")+`precision mediump float;
+          ${gl2?"out vec4 fragColor;":""}
+          uniform sampler2D ink;
+          uniform vec2 resolution,pivot,stretch;
+          uniform float angle,zoom,curve,warp,motion,time,opacity;
+          void main(){
+            vec2 uv=gl_FragCoord.xy/resolution;
+            vec2 q=uv-pivot;
+            float a=-angle*0.01745329252;
+            q=mat2(cos(a),-sin(a),sin(a),cos(a))*q;
+            q/=max(stretch,vec2(.25));
+            q/=mix(.63,.97,zoom);
+            q.x-=curve*.18*(q.y*q.y-.065);
+            q+=.5;
+            float t=time*(.22+motion*.95);
+            q+=motion*.009*vec2(sin(q.y*8.+t*.61),cos(q.x*7.-t*.48));
+            q+=warp*.009*vec2(sin(q.y*13.+t*.81),cos(q.x*11.-t*.67));
+            vec2 inside=step(vec2(0.),q)*step(q,vec2(1.));
+            vec4 c=${gl2?"texture":"texture2D"}(ink,clamp(q,0.,1.));
+            c.a*=inside.x*inside.y*opacity;
+            ${gl2?"fragColor":"gl_FragColor"}=c;
+          }`;
+        const v=compile(gl.VERTEX_SHADER,vs),f=compile(gl.FRAGMENT_SHADER,fs);
+        const program=gl.createProgram();
+        try{
+          gl.attachShader(program,v);gl.attachShader(program,f);
+          gl.bindAttribLocation(program,0,"position");
+          gl.linkProgram(program);
+          if(!gl.getProgramParameter(program,gl.LINK_STATUS))
+            throw Error(gl.getProgramInfoLog(program));
+          textOverlayProgram=program;
+        }finally{gl.deleteShader(v);gl.deleteShader(f);if(!textOverlayProgram)gl.deleteProgram(program);}
+      }
+      gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+      gl.viewport(0,0,width,height);
+      gl.useProgram(textOverlayProgram);
+      gl.enable(gl.BLEND);
+      gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+      const u=(name)=>gl.getUniformLocation(textOverlayProgram,name);
+      gl.uniform2f(u("resolution"),width,height);
+      gl.uniform1f(u("time"),timeline.time);
+      for(let i=0;i<layers.length;i++){
+        const l=layers[i],texture=i===0?typeTexture:extraTypeTextures[i-1];
+        const ready=i===0?!!typeKey:!!extraTypeKeys[i-1];
+        if(!l||l.visible===false||!l.text?.trim()||!l.letteringAmount||!texture||!ready)continue;
+        const unit=i===0?3:3+i;
+        gl.activeTexture(gl.TEXTURE0+unit);
+        gl.bindTexture(gl.TEXTURE_2D,texture);
+        gl.uniform1i(u("ink"),unit);
+        gl.uniform2f(u("pivot"),(l.letteringX??50)/100,(l.letteringY??50)/100);
+        gl.uniform2f(u("stretch"),(l.letteringStretchX??100)/100,(l.letteringStretchY??100)/100);
+        gl.uniform1f(u("angle"),l.letteringRotation??0);
+        gl.uniform1f(u("zoom"),(l.letteringScale??48)/100);
+        gl.uniform1f(u("curve"),(l.letteringCurve??0)/100);
+        gl.uniform1f(u("warp"),(l.letteringWarp??0)/100);
+        gl.uniform1f(u("motion"),(l.letteringMotion??0)/100);
+        gl.uniform1f(u("opacity"),(l.letteringAmount??0)/100);
+        gl.drawArrays(gl.TRIANGLES,0,6);
+      }
+    }catch(e){
+      textOverlayFailed=true;
+      console.warn("Independent text overlay unavailable; artwork remains safe.",e);
+    }finally{
+      gl.disable(gl.BLEND);
+      gl.activeTexture(gl.TEXTURE0);
+    }
   }
   // Do not let an unsupported high-cost 3D shader blank out existing artwork.
   const safe2DSelection = (s) => ({
@@ -440,7 +528,7 @@ export function createRenderer(canvas) {
       withStereo = s.engine === 16 || (blended && s.secondaryEngine === 16) || s.stereoAmount > 0,
       withWiggle = s.wiggleAmount > 0,
       withMaterial = s.filmAmount>0 || s.opalAmount>0 || s.prismAmount>0 || s.foilRelief>0,
-      withLettering = s.letteringAmount>0 && !!s.lettering.trim(),
+      withLettering = false, // Lettering is a separate, fail-safe GPU compositing pass.
       withComposition = blended && s.compositionAmount>0,
       withBackdrop = s.backdropAmount>0,
       withMicro = s.microAmount>0,
@@ -824,6 +912,7 @@ export function createRenderer(canvas) {
           console.warn("GPU frame-memory pass failed; using original renderer.", e);
         }
       }
+      overlayText(s,timeline,width,height);
       if (gl2) {
         if (fence) gl.deleteSync(fence);
         fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
@@ -849,6 +938,7 @@ export function createRenderer(canvas) {
       releaseMemory();
       releaseBiology();
       releaseLettering();
+      if(textOverlayProgram)gl.deleteProgram(textOverlayProgram);
       gl.deleteTexture(emptyBioTexture);
       if (memoryShader) gl.deleteProgram(memoryShader.program);
       memoryShader = null;

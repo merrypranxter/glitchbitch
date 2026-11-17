@@ -1,52 +1,5 @@
 import { quoteFontCSS } from "./retro-fonts.js";
-export const kineticGLSL = "\nuniform sampler2D letteringTex;\nuniform bool letteringAvailable;\nuniform float letteringAmount,letteringScale,letteringWarp,letteringMotion;\nuniform int letteringStyle;
-uniform sampler2D letteringTexExtra0,letteringTexExtra1;
-uniform int letteringExtraCount;
-uniform vec4 letteringExtraTransform[2];
-uniform vec4 letteringExtraShape[2];
-uniform vec2 letteringExtraFX[2];
-uniform int letteringExtraStyle[2];
-uniform float letteringExtraVisible[2];
-uniform float letteringX,letteringY,letteringRotation,letteringStretchX,letteringStretchY,letteringCurve;\nvec3 drawKineticLetters(vec3 col,vec2 uv){\n bool baseActive=letteringAvailable&&letteringAmount>=.001;\n float zoom=mix(.63,.97,letteringScale);\n vec2 pivot=vec2(letteringX,letteringY);
- vec2 q=uv-pivot;
- float angle=-letteringRotation*3.14159265/180.;
- q=mat2(cos(angle),-sin(angle),sin(angle),cos(angle))*q;
- q/=vec2(max(.25,letteringStretchX),max(.25,letteringStretchY));
- q/=zoom;
- q.x-=letteringCurve*.18*(q.y*q.y-.065);
- q+=.5;\n float t=time*(.22+letteringMotion*.95);\n q+=letteringMotion*.009*vec2(sin(q.y*8.+t*.61),cos(q.x*7.-t*.48));\n q+=letteringWarp*.009*vec2(sin(q.y*13.+t*.81)+.3*cos(q.x*9.-t*.27),\n cos(q.x*11.-t*.67)+.3*sin(q.y*7.+t*.48));\n vec2 insideRange=step(vec2(0.),q)*step(q,vec2(1.));\n float inside=insideRange.x*insideRange.y;\n vec4 sampleInk=texture2D(letteringTex,clamp(q,0.,1.));\n float mask=baseActive?sampleInk.a*inside:0.;\n vec3 ink=sampleInk.rgb;\n vec2 offset=vec2(.004+.004*letteringWarp,0.);\n float left=texture2D(letteringTex,clamp(q-offset,0.,1.)).a*inside;\n float right=texture2D(letteringTex,clamp(q+offset,0.,1.)).a*inside;\n float rim=clamp(max(left,right)-mask,0.,1.);\n vec3 primary=palette(fract(q.x*.62+q.y*.28+colorTime*.021));\n vec3 secondary=palette(fract(.44+q.y*.45-colorTime*.013));\n float wave=.5+.5*sin(q.x*18.+q.y*9.+colorTime*1.5);\n vec3 themed=ink;\n if(letteringStyle==0)themed=ink+primary*.38+secondary*rim*.35;\n else if(letteringStyle==1)themed=ink+vec3(left-mask,0.,right-mask)*.4;\n else if(letteringStyle==2)themed=mix(ink,vec3(.72,.9,1.),.25)+pow(wave,6.)*secondary*.65;\n else if(letteringStyle==3)themed=ink*.35+secondary*.2;\n else if(letteringStyle==5)themed=mix(ink,primary,.45*wave);\n else if(letteringStyle==6)themed=ink+primary*wave*.65;\n else if(letteringStyle==7)themed=mix(ink,secondary,.35*wave);\n else if(letteringStyle==8)themed=mix(ink,vec3(.75,.85,1.),.45);\n else if(letteringStyle==9)themed=mix(ink,primary,.48*wave);\n else if(letteringStyle==10)themed=mix(ink,secondary,.28*wave);\n else if(letteringStyle==11)themed=ink+vec3(wave*.32);\n else if(letteringStyle==12)themed=mix(ink,primary,.6*wave);\n else if(letteringStyle==13)themed=ink*.72;\n col=mix(col,themed,clamp(mask*letteringAmount,0.,1.));
- // Two optional independent glyph layers; same shader, same frame, same export.
- for(int i=0;i<2;i++){
-   if(i>=letteringExtraCount)break;
-   if(letteringExtraVisible[i]<.5)continue;
-   vec4 transform=letteringExtraTransform[i];
-   vec4 shape=letteringExtraShape[i];
-   vec2 fx=letteringExtraFX[i];
-   vec2 v=uv-transform.xy;
-   float angle=-transform.z*3.14159265/180.;
-   v=mat2(cos(angle),-sin(angle),sin(angle),cos(angle))*v;
-   v/=max(vec2(.25),shape.xy);
-   v/=mix(.63,.97,transform.w);
-   v.x-=shape.z*.18*(v.y*v.y-.065);
-   v+=.5;
-   float lt=time*(.22+fx.y*.95);
-   v+=fx.y*.009*vec2(sin(v.y*8.+lt*.61),cos(v.x*7.-lt*.48));
-   v+=fx.x*.009*vec2(sin(v.y*13.+lt*.81),cos(v.x*11.-lt*.67));
-   vec2 range=step(vec2(0.),v)*step(v,vec2(1.));
-   vec4 texel=i==0?texture2D(letteringTexExtra0,clamp(v,0.,1.)):
-                     texture2D(letteringTexExtra1,clamp(v,0.,1.));
-   float alpha=texel.a*range.x*range.y*shape.w;
-   vec3 pigment=texel.rgb;
-   float shimmer=.5+.5*sin(v.x*18.+v.y*9.+colorTime*1.5);
-   int mode=letteringExtraStyle[i];
-   if(mode==5||mode==9||mode==12)pigment=mix(pigment,primary,shimmer*.45);
-   if(mode==6||mode==11)pigment+=primary*shimmer*.3;
-   if(mode==2)pigment=mix(pigment,vec3(.8,.92,1.),.25);
-   if(mode==3)pigment*=.35;
-   if(mode==13)pigment*=.72;
-   col=mix(col,pigment,clamp(alpha,0.,1.));
- }
- return col;\n}\n";
+export const kineticGLSL = "\nuniform sampler2D letteringTex;\nuniform bool letteringAvailable;\nuniform float letteringAmount,letteringScale,letteringWarp,letteringMotion;\nuniform int letteringStyle;\nuniform float letteringX,letteringY,letteringRotation,letteringStretchX,letteringStretchY,letteringCurve;\nvec3 drawKineticLetters(vec3 col,vec2 uv){\n if(!letteringAvailable||letteringAmount<.001)return col;\n float zoom=mix(.63,.97,letteringScale);\n vec2 pivot=vec2(letteringX,letteringY);\n vec2 q=uv-pivot;\n float angle=-letteringRotation*3.14159265/180.;\n q=mat2(cos(angle),-sin(angle),sin(angle),cos(angle))*q;\n q/=vec2(max(.25,letteringStretchX),max(.25,letteringStretchY));\n q/=zoom;\n q.x-=letteringCurve*.18*(q.y*q.y-.065);\n q+=.5;\n float t=time*(.22+letteringMotion*.95);\n q+=letteringMotion*.009*vec2(sin(q.y*8.+t*.61),cos(q.x*7.-t*.48));\n q+=letteringWarp*.009*vec2(sin(q.y*13.+t*.81)+.3*cos(q.x*9.-t*.27),\n cos(q.x*11.-t*.67)+.3*sin(q.y*7.+t*.48));\n vec2 insideRange=step(vec2(0.),q)*step(q,vec2(1.));\n float inside=insideRange.x*insideRange.y;\n vec4 sampleInk=texture2D(letteringTex,clamp(q,0.,1.));\n float mask=sampleInk.a*inside;\n vec3 ink=sampleInk.rgb;\n vec2 offset=vec2(.004+.004*letteringWarp,0.);\n float left=texture2D(letteringTex,clamp(q-offset,0.,1.)).a*inside;\n float right=texture2D(letteringTex,clamp(q+offset,0.,1.)).a*inside;\n float rim=clamp(max(left,right)-mask,0.,1.);\n vec3 primary=palette(fract(q.x*.62+q.y*.28+colorTime*.021));\n vec3 secondary=palette(fract(.44+q.y*.45-colorTime*.013));\n float wave=.5+.5*sin(q.x*18.+q.y*9.+colorTime*1.5);\n vec3 themed=ink;\n if(letteringStyle==0)themed=ink+primary*.38+secondary*rim*.35;\n else if(letteringStyle==1)themed=ink+vec3(left-mask,0.,right-mask)*.4;\n else if(letteringStyle==2)themed=mix(ink,vec3(.72,.9,1.),.25)+pow(wave,6.)*secondary*.65;\n else if(letteringStyle==3)themed=ink*.35+secondary*.2;\n else if(letteringStyle==5)themed=mix(ink,primary,.45*wave);\n else if(letteringStyle==6)themed=ink+primary*wave*.65;\n else if(letteringStyle==7)themed=mix(ink,secondary,.35*wave);\n else if(letteringStyle==8)themed=mix(ink,vec3(.75,.85,1.),.45);\n else if(letteringStyle==9)themed=mix(ink,primary,.48*wave);\n else if(letteringStyle==10)themed=mix(ink,secondary,.28*wave);\n else if(letteringStyle==11)themed=ink+vec3(wave*.32);\n else if(letteringStyle==12)themed=mix(ink,primary,.6*wave);\n else if(letteringStyle==13)themed=ink*.72;\n return mix(col,themed,clamp(mask*letteringAmount,0.,1.));\n}\n";
 
 // Author-owned type only: auto Surprise Me never generates words.
 export function wrapQuote(text,maxWidth,measure) {

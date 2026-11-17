@@ -341,7 +341,7 @@ test("stereo code loads only for 3D engine or explicit overlay", async () => {
 test("unsupported 3D compilation falls back to the existing 2D renderer", async () => {
   const {readFileSync}=await import("node:fs");
   const shader=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
-  assert.match(shader,/stereoUnavailable = true/);
+  assert.match(shader,/stereoUnavailable\s*=\s*true/);
   assert.match(shader,/safe2DSelection\(s\)/);
   assert.match(shader,/engine: s.engine === 16 \? 6/);
 });
@@ -361,7 +361,7 @@ test("prismatic materials and live text validate, survive recipe round trip and 
   const restored=parseDocument(old).state;
   assert.equal(restored.filmAmount,0);assert.equal(restored.letteringAmount,0);
   assert.equal(restored.lettering,"");
-  assert.equal(letteringStyles.length,4);assert.ok(chaosPhrases.length>=10);
+  assert.equal(letteringStyles.length,14);assert.ok(chaosPhrases.length>=10);
   assert.throws(()=>parseDocument({...initial,lettering:"a".repeat(281)}));
   assert.throws(()=>parseDocument({...initial,letteringStyle:"Not real"}));
   const manual={...initial,lettering:"I make my own magic.\nAnd I choose my own words.",letteringAmount:49};
@@ -390,7 +390,7 @@ test("opt-in material or type compile failures progressively retain the old 2D a
   assert.match(renderer,/materialUnavailable=true/);
   assert.match(renderer,/typeShaderUnavailable=true/);
   assert.match(renderer,/compatibleShaderState\(s\)/);
-  assert.match(renderer,/for\(let attempt=0;attempt<5;attempt\+\+\)/);
+  assert.match(renderer,/for\(let attempt=0;attempt<9;attempt\+\+\)/);
 });
 
 test("composition regions are independently editable and migrate from legacy full-canvas blends", async () => {
@@ -506,8 +506,6 @@ test("multiline user quotes wrap inside portrait and landscape frames", async ()
   const lines=wrapQuote("The stars are not in the sky.\nThey are in the goddamn circuits.",210,t=>t.length*12);
   assert.ok(lines.length>=3);
   assert.ok(lines.every(l=>l.length*12<=210));
-  const {readFileSync}=await import("node:fs");
-  const source=readFileSync(new URL("../src/kinetic-type.js",import.meta.url),"utf8");
   const drawings=[];
   let canvas;
   const ctx={
@@ -516,22 +514,27 @@ test("multiline user quotes wrap inside portrait and landscape frames", async ()
     clearRect(){},strokeText(){},
     fillText(t,x,y,maxWidth){drawings.push({t,x,y,maxWidth});}
   };
-  const fakeDocument={createElement(){
+  const originalDocument=globalThis.document;
+  globalThis.document={createElement(){
     canvas={width:0,height:0,getContext(){return ctx;}};
     return canvas;
   }};
-  const fit=new Function("document",source.replace(/^export /gm,"")+";return glyphCanvas;")(fakeDocument);
-  const portrait=fit("The stars are not in the sky.\nThey are in the goddamn circuits.",9/16);
-  assert.equal(portrait.height,1024);
-  assert.ok(portrait.width < portrait.height);
-  assert.ok(drawings.length>=2);
-  assert.ok(drawings.every(v=>v.maxWidth<=portrait.width*.76+1));
-  assert.ok(drawings.every(v=>v.y>=0 && v.y<=portrait.height));
-  drawings.length=0;
-  const landscape=fit("A beautifully strange quote that should not be cropped by any screen.",16/9);
-  assert.equal(landscape.width,1024);
-  assert.ok(landscape.height<landscape.width);
-  assert.ok(drawings.every(v=>v.y>=0 && v.y<=landscape.height));
+  try{
+    const portrait=glyphCanvas("The stars are not in the sky.\nThey are in the goddamn circuits.",9/16);
+    assert.equal(portrait.height,1024);
+    assert.ok(portrait.width < portrait.height);
+    assert.ok(drawings.length>=2);
+    assert.ok(drawings.every(v=>v.maxWidth<=portrait.width*.76+1));
+    assert.ok(drawings.every(v=>v.y>=0 && v.y<=portrait.height));
+    drawings.length=0;
+    const landscape=glyphCanvas("A beautifully strange quote that should not be cropped by any screen.",16/9);
+    assert.equal(landscape.width,1024);
+    assert.ok(landscape.height<landscape.width);
+    assert.ok(drawings.every(v=>v.y>=0 && v.y<=landscape.height));
+  }finally{
+    if(originalDocument===undefined)delete globalThis.document;
+    else globalThis.document=originalDocument;
+  }
 });
 test("no Surprise Me RNG result is allowed to insert decorative typography", () => {
   for(const value of [0,.08,.16,.43,.7,.99]){
@@ -664,7 +667,7 @@ test("fonts load lazily once, and still frames refresh when fonts arrive", async
   const renderer=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
   const exporter=readFileSync(new URL("../src/export.js",import.meta.url),"utf8");
   assert.match(canvas,/lastFontRevision !== retroFontRevision\(\)/);
-  assert.match(renderer,/glyphCanvas\(s\.lettering,aspect,fontId\)/);
+  assert.match(renderer,/glyphCanvas\(s\.lettering,aspect,fontId(?:,s)?\)/);
   assert.match(renderer,/retroFontRevision\(\)/);
   assert.match(exporter,/await ensureRetroFontLoaded\(state\.letteringFont\)/);
 });

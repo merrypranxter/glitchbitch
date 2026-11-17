@@ -6,6 +6,7 @@
 import { glyphCanvas } from "./kinetic-type.js";
 import { ensureRetroFontLoaded, retroFontRevision } from "./retro-fonts.js";
 import { letteringMaterial, textMotion } from "./lettering-materials.js";
+import { getLetteringBlendRecipe, letteringBlendPulse } from "./lettering-blends.js";
 
 const glyphCache = new Map();
 const LIMIT = 8;
@@ -125,30 +126,57 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false) {
     const angle=(Number(layer.letteringRotation??0)+motion*11*Math.sin(seconds*1.75))*Math.PI/180;
     const curve=Number(layer.letteringCurve||0)/100;
 
+    const blend=getLetteringBlendRecipe(layer.letteringBlendMode,layer.letteringBlendStrength);
+    const intensity=blend.mode==="Normal" ? 0 : blend.strength;
     ctx.save();
     ctx.translate(positionX+moveX,positionY+moveY);
     ctx.rotate(angle);
     ctx.scale(scale*stretchX,scale*stretchY);
-    for(const echo of material.echoes) {
+
+    function pass(recipe,weight,options={}) {
+      if(weight<=0)return;
       ctx.save();
-      ctx.globalAlpha=opacity*echo.alpha;
-      drawLiquidImage(ctx,tint({image,tints},echo.color),width,height,curve,warp,motion,seconds,
-        echo.x*(width/430),echo.y*(height/430));
+      const mode=recipe.canvasBlend||"source-over";
+      ctx.globalCompositeOperation=mode;
+      ctx.globalAlpha=opacity*weight*letteringBlendPulse(recipe.animation,seconds);
+      const source=recipe.whiteInk ? tint({image,tints},"#ffffff")
+        : options.tint ? tint({image,tints},options.tint) : image;
+      if(recipe.filter && recipe.filter!=="none" && typeof ctx.filter==="string")
+        ctx.filter=recipe.filter;
+      if(!recipe.whiteInk && !options.extra && !options.tint) {
+        for(const echo of material.echoes){
+          ctx.save();
+          ctx.globalAlpha*=echo.alpha;
+          drawLiquidImage(ctx,tint({image,tints},echo.color),width,height,curve,warp,motion,seconds,
+            echo.x*(width/430),echo.y*(height/430));
+          ctx.restore();
+        }
+        if(material.preset==="Soft shadow"){
+          ctx.shadowColor="#0a051b";
+          ctx.shadowBlur=Math.min(50,12*width/430);
+          ctx.shadowOffsetX=7*width/430;
+          ctx.shadowOffsetY=9*height/430;
+        }else if(material.glow!=="none"){
+          ctx.shadowColor=material.stops?.[1]||"#00eeff";
+          ctx.shadowBlur=Math.min(48,14*width/430);
+        }
+        if(material.hueAnimation && typeof ctx.filter==="string")
+          ctx.filter=(recipe.filter && recipe.filter!=="none" ? recipe.filter+" ":"")+
+            `hue-rotate(${(28*Math.sin(seconds*2.1)).toFixed(1)}deg) saturate(1.35)`;
+      }
+      const offsetX=Number(options.offsetX||0)*width/430;
+      const offsetY=Number(options.offsetY||0)*height/430;
+      drawLiquidImage(ctx,source,width,height,curve,warp,motion,seconds,offsetX,offsetY);
       ctx.restore();
     }
-    ctx.globalAlpha=opacity;
-    if(material.preset==="Soft shadow") {
-      ctx.shadowColor="#0a051b";
-      ctx.shadowBlur=Math.min(50,12*width/430);
-      ctx.shadowOffsetX=7*width/430;
-      ctx.shadowOffsetY=9*height/430;
-    } else if(material.glow!=="none") {
-      ctx.shadowColor=material.stops?.[1] || "#00eeff";
-      ctx.shadowBlur=Math.min(48,14*width/430);
+
+    // Strength = 0 is ordinary text, not invisible text.
+    if(intensity<1)pass({canvasBlend:"source-over"},1-intensity);
+    if(intensity>0){
+      pass(blend,intensity);
+      for(const extra of blend.passes)
+        pass(extra,intensity*(extra.alpha??1),{...extra,extra:true});
     }
-    if(material.hueAnimation && typeof ctx.filter === "string")
-      ctx.filter=`hue-rotate(${(28*Math.sin(seconds*2.1)).toFixed(1)}deg) saturate(1.35)`;
-    drawLiquidImage(ctx,image,width,height,curve,warp,motion,seconds);
     ctx.restore();
   }
   ctx.restore();

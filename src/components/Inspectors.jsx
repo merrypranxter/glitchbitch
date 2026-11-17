@@ -212,6 +212,21 @@ export function TextInspector({ history }) {
             }))}
             onBlur={history.end} />
         </label>
+        <div className="text-engine-status" role="status">
+          TEXT ENGINE: DOM v3 · {history.state.lettering.trim().length} characters ·
+          opacity {history.state.letteringAmount ?? 0}%
+        </div>
+        <button type="button" className="button secondary"
+          onClick={() => history.change(s => ({
+            ...s, letteringAmount:100, letteringX:50, letteringY:50,
+            letteringScale:65, letteringRotation:0,
+            letteringStretchX:100, letteringStretchY:100, letteringCurve:0,
+            letteringWarp:0, letteringMotion:0,
+            letteringFillMode:"Solid", letteringFill:"#ffffff",
+            letteringStrokes:[{ color:"#000000", width:6, enabled:true }]
+          }))}>
+          MAKE WORDS VISIBLE — center + high contrast
+        </button>
         <button type="button" className="button secondary"
           onClick={() => history.change((s) => ({...s,lettering:"",letteringAmount:0}))}>
           Remove words from artwork

@@ -44,7 +44,7 @@ test("invalid seed, clock, color and source data cannot enter the renderer", () 
     { ...initial, seed: -1 },
     { ...initial, colors: ["#abc", "javascript:bad"] },
     { ...initial, marks: [{ ...makeMark(initial), radius: 8 }] },
-    { ...initial, engine: 16 },
+    { ...initial, engine: 17 },
     { ...initial, blend: NaN },
   ])
     assert.throws(() => parseDocument(bad));
@@ -119,8 +119,8 @@ test("appearance sliders round trip, reject invalid numbers and keep vintage rec
   for (const key of appearanceKeys) delete old[key];
   assert.deepEqual(appearanceKeys.map(key => parseDocument(old).state[key]), appearanceKeys.map(() => 0));
 });
-test("lookbook contains 43 valid distinct entries across original, math, motion and biology", () => {
-  assert.equal(looks.length, 43);
+test("lookbook contains 49 valid distinct entries including stereoscopic depth", () => {
+  assert.equal(looks.length, 49);
   assert.equal(new Set(looks.map(look => look.name)).size, looks.length);
   for (const look of looks) assert.deepEqual(parseDocument(look.state).state, look.state);
   assert.ok(looks.some(look => look.state.windowCascade > 0));
@@ -163,9 +163,10 @@ test("memory renderer only activates when explicitly enabled", async () => {
 
 test("new math and ambient movement preserve valid recipe and clock semantics", async () => {
   const {engines, motionModes} = await import("../src/data.js");
-  assert.equal(engines.length, 16);
+  assert.equal(engines.length, 17);
   assert.deepEqual(engines.slice(12,15), ["Hyperbolic CRT", "Candy fractal portal", "Fivefold diffraction"]);
   assert.equal(engines[15], "Chromatic infection");
+  assert.equal(engines[16], "Stereo Ghost Machine");
   assert.equal(motionModes.length, 5);
   for(const name of ["hyperbolicFold","fractalZoom","juliaMix","quasiDensity","motionAmount","motionRate","lightMotion"]){
     const value=73, s={...initial,[name]:value};
@@ -300,4 +301,47 @@ test("MP4 exports use even-sized H.264 frames and never silently produce WebM", 
   assert.match(exporter,/codec: "avc"/);
   assert.doesNotMatch(exporter,/WebMOutputFormat/);
   assert.match(exporter,/GIFEncoder/);
+});
+
+test("Stereo Ghost Machine validates five 3D forms and preserves old recipes", async () => {
+  const {stereoShapes}=await import("../src/data.js");
+  assert.equal(stereoShapes.length,5);
+  const props=["stereoAmount","stereoDepth","stereoParallax","stereoMorph","stereoGlow","stereoWiggle","stereoQuality"];
+  for(const key of props){
+    const s={...initial,[key]:82};
+    assert.equal(parseDocument(recipeDocument(s,"Ghost",{time:1,colorTime:3})).state[key],82);
+    assert.throws(()=>parseDocument({...s,[key]:103}));
+  }
+  assert.throws(()=>parseDocument({...initial,stereoShape:"Not a real shape"}));
+  const old={...initial};
+  for(const key of props)delete old[key];
+  delete old.stereoShape;
+  assert.equal(parseDocument(old).state.stereoAmount,0);
+  const scene=looks.find(x=>x.name==="Opal Knot Apparition");
+  assert.equal(scene.state.engine,16);
+  assert.ok(scene.state.stereoParallax>0 && scene.state.lightMotion>0);
+  assert.ok(looks.some(x=>x.state.engine!==16 && x.state.stereoAmount>0));
+  const born=randomize({...initial,engine:16,stereoAmount:0},{},false,()=>.61);
+  assert.notEqual(born.engine,16);
+  assert.ok(stereoShapes.includes(born.stereoShape));
+});
+test("stereo code loads only for 3D engine or explicit overlay", async () => {
+  const {readFileSync}=await import("node:fs");
+  const shader=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
+  const spatial=readFileSync(new URL("../src/stereo.js",import.meta.url),"utf8");
+  assert.match(shader,/kind==16/);
+  assert.match(shader,/withStereo/);
+  assert.match(shader,/source = source\.replace\("\/\* STEREO_MODULE \*\//);
+  assert.match(shader,/ghostTrace\(p,uv\)/);
+  assert.match(spatial,/ghostMap\(/);
+  assert.match(spatial,/ghostNormal\(/);
+  assert.match(spatial,/float budget=20\./);
+});
+
+test("unsupported 3D compilation falls back to the existing 2D renderer", async () => {
+  const {readFileSync}=await import("node:fs");
+  const shader=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
+  assert.match(shader,/stereoUnavailable = true/);
+  assert.match(shader,/safe2DSelection\(s\)/);
+  assert.match(shader,/engine: s.engine === 16 \? 6/);
 });

@@ -4,6 +4,7 @@ import { motionGLSL } from "./motion.js";
 import { feedbackVertex, feedbackFragment } from "./feedback.js";
 import { createBiology, BIO_SIZE } from "./biology.js";
 import { bioGLSL } from "./bio-shader.js";
+import { stereoGLSL } from "./stereo.js";
 
 const vertex = `attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
 const fragment = `precision highp float;
@@ -23,6 +24,7 @@ vec3 palette(float t){float q=fract(t)*float(colorCount);int a=int(floor(q));vec
 ${geometryGLSL}
 ${motionGLSL}
 ${bioGLSL}
+/* STEREO_MODULE */
 float field(vec2 p,int kind){float t=time*.3,f=0.;
 if(kind==0){for(int i=0;i<5;i++){float n=float(i)+1.;p+=warp*.32*vec2(sin(p.y*n+t/n),cos(p.x*n-t/n));f+=sin(p.x*n+cos(p.y*n+t))/n;}f=f*.25+length(p)*.12;}
 else if(kind==1){f=sin(length(p-vec2(sin(t),cos(t)))*12.)*sin(length(p+vec2(cos(t*.7),sin(t*.8)))*13.);f=f*.4+length(p)*.15;}
@@ -40,6 +42,7 @@ else if(kind==12){f=hyperbolicCRT(p);}
 else if(kind==13){f=candyFractalPortal(p);}
 else if(kind==14){f=fivefoldDiffraction(p);}
 else if(kind==15){f=biologicalField(p);}
+else if(kind==16){f=.18*sin(length(p)*3.+time*.47)+.12*cos(atan(p.y,p.x)*5.-time*.22);}
 else {f=0.;}
 return f;}
 float composed(vec2 p){float a=field(p,engine);if(blend<.001)return a;float b=field(rotate(.43)*p+vec2(.37,-.21),secondaryEngine);float c=b;if(blendMode==1)c=a*b*2.;if(blendMode==2)c=abs(a-b);return mix(a,c,blend);}
@@ -68,6 +71,7 @@ float source=0.;for(int i=0;i<32;i++){if(i<count){vec2 d=(uv-marks[i].xy)*aspect
 if(marks[i].w<.5)p+=rotate(a)*vec2(sin(local.y*15.+time),cos(local.x*15.-time))*force;
 else if(marks[i].w<1.5)p+=vec2(-d.y,d.x)*force*8.;else if(marks[i].w<2.5)p+=d*force*8.;else source+=force*(.5+.5*sin(2.*atan(d.y,d.x)+colorTime*.5+a));}}
 float v=composed(p);vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*sin(v*(2.+complexity*5.)*TAU),18.);col*=.72+edge*.5;if(bloom)col+=edge*col*.24;
+/* STEREO_POST */
 col=animateLight(col,uv,v);
 col=stainWithBiology(col,uv,p);
 if(split>.001){col.r=mix(col.r,palette(phaseOf(composed(p+vec2(split*.09,0.)),uv,source)).r,split);col.b=mix(col.b,palette(phaseOf(composed(p-vec2(split*.09,0.)),uv,source)).b,split);}
@@ -93,6 +97,14 @@ export function createRenderer(canvas) {
     );
   const programs = new Map();
   let active, fence = null, memory = null, memoryShader = null, memoryDisabled = false;
+  let stereoUnavailable = false;
+  // Do not let an unsupported high-cost 3D shader blank out existing artwork.
+  const safe2DSelection = (s) => ({
+    ...s,
+    engine: s.engine === 16 ? 6 : s.engine,
+    secondaryEngine: s.secondaryEngine === 16 ? 6 : s.secondaryEngine,
+    stereoAmount: 0,
+  });
   let memoryIdentity = "", lastMemoryTime = -Infinity, lastMemoryColorTime = -Infinity;
   let biology = null, biologySeed = null, biologyTexture = null;
   let biologyLastTime = null, biologyFraction = 0, biologyDisabled = false;
@@ -295,7 +307,8 @@ export function createRenderer(canvas) {
   }
   function programFor(s) {
     const blended = s.blend > 0,
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}`;
+      withStereo = s.engine === 16 || (blended && s.secondaryEngine === 16) || s.stereoAmount > 0,
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -310,6 +323,13 @@ export function createRenderer(canvas) {
     );
     if (!blended)
       source = source.replace("if(blend<.001)return a;", "return a;");
+    source = source.replace("/* STEREO_MODULE */", withStereo ? stereoGLSL : "");
+    source = source.replace("/* STEREO_POST */", withStereo
+      ? `vec4 ghost=ghostTrace(p,uv);
+         float ghostOpacity=engine==16 ? max(.83,stereoAmount) :
+           (secondaryEngine==16 && blend>.001 ? max(stereoAmount,blend*.78) : stereoAmount);
+         col=mix(col,ghost.rgb,clamp(ghostOpacity*(.52+.48*ghost.a),0.,1.));`
+      : "");
     if (s.split <= 0.1) source = source.replace("if(split>.001)", "if(false)");
     const vs = gl2
       ? "#version 300 es\n" + vertex.replace("attribute vec2", "in vec2")
@@ -409,7 +429,16 @@ export function createRenderer(canvas) {
         canvas.width = width;
         canvas.height = height;
       }
-      active = programFor(s);
+      const wantsStereo = s.engine === 16 ||
+        (s.blend > 0 && s.secondaryEngine === 16) || s.stereoAmount > 0;
+      try {
+        active = programFor(stereoUnavailable ? safe2DSelection(s) : s);
+      } catch (e) {
+        if (!wantsStereo || stereoUnavailable) throw e;
+        stereoUnavailable = true;
+        active = programFor(safe2DSelection(s));
+        console.warn("3D shader unsupported on this device: showing 2D fallback, no artwork lost.", e);
+      }
       const hasBiology = updateBiology(s, timeline);
       const hasMemoryEffects = (s.afterimage > 0 || s.datamosh > 0) && !memoryDisabled;
       let drawWithMemory = false;
@@ -473,6 +502,13 @@ export function createRenderer(canvas) {
         "lightMotion",
         "bioAmount",
         "bioVeins",
+        "stereoAmount",
+        "stereoDepth",
+        "stereoParallax",
+        "stereoMorph",
+        "stereoGlow",
+        "stereoWiggle",
+        "stereoQuality",
       ])
         gl.uniform1f(loc(k), s[k] / 100);
       gl.uniform1f(loc("rotation"), (s.rotation * Math.PI) / 180);
@@ -488,6 +524,8 @@ export function createRenderer(canvas) {
         ["Traveling wave", "Color canon", "Phase vortex"].indexOf(s.colorMode),
       );
       gl.uniform1i(loc("colorCount"), s.colors.length);
+      gl.uniform1i(loc("stereoShape"), ["Gyroid Cathedral", "Metaball Choir", "Opal Knot",
+        "Crystal Lattice", "Ribbon Wormhole"].indexOf(s.stereoShape));
       gl.uniform1i(loc("motionMode"), ["Liquid flow", "Breathing", "Orbital", "Traveling waves", "Internal turbulence"].indexOf(s.motionMode));
       gl.activeTexture(gl.TEXTURE2);
       gl.bindTexture(gl.TEXTURE_2D, hasBiology ? biologyTexture : emptyBioTexture);

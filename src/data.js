@@ -60,6 +60,7 @@ export const engineInfo = [
   ["Candy fractal portal", "Actual Mandelbrot/Julia orbit traps and deep complex-plane boundaries.", "Fractal"],
   ["Fivefold diffraction", "Aperiodic five-direction wave interference with irrational overtones.", "Quasicrystal"],
   ["Chromatic infection", "Persistent Gray–Scott coral, labyrinth and spore growth, with palette-mapped chemistry.", "Biological"],
+  ["Stereo Ghost Machine", "Raymarched gyroid, metaballs, opal rings, crystals and floating ribbons with true depth.", "Spatial"],
 ].map(([name, description, family], id) => ({ id, name, description, family }));
 export const engines = engineInfo.map((e) => e.name);
 export const originalPalettes = [
@@ -145,6 +146,7 @@ export const ratios = [
 ];
 export const touchModes = ["Warp", "Vortex", "Repel", "Chroma"];
 export const motionModes = ["Liquid flow", "Breathing", "Orbital", "Traveling waves", "Internal turbulence"];
+export const stereoShapes = ["Gyroid Cathedral", "Metaball Choir", "Opal Knot", "Crystal Lattice", "Ribbon Wormhole"];
 export const numericRanges = {
   complexity: [0, 100],
   scale: [0, 100],
@@ -185,6 +187,13 @@ export const numericRanges = {
   bioKill: [0, 100],
   bioSpeed: [0, 100],
   bioVeins: [0, 100],
+  stereoAmount: [0, 100],
+  stereoDepth: [0, 100],
+  stereoParallax: [0, 100],
+  stereoMorph: [0, 100],
+  stereoGlow: [0, 100],
+  stereoWiggle: [0, 100],
+  stereoQuality: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -245,6 +254,14 @@ export const initial = {
   bioKill: 42,
   bioSpeed: 53,
   bioVeins: 54,
+  stereoAmount: 0,
+  stereoDepth: 55,
+  stereoParallax: 28,
+  stereoMorph: 44,
+  stereoGlow: 62,
+  stereoWiggle: 38,
+  stereoQuality: 45,
+  stereoShape: "Gyroid Cathedral",
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -312,6 +329,7 @@ export function validateRecipe(input) {
     blendMode: ["Mix", "Multiply", "Difference"],
     colorMode: ["Traveling wave", "Color canon", "Phase vortex"],
     motionMode: motionModes,
+    stereoShape: stereoShapes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -458,7 +476,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "glitter","broadcast","misregister","afterimage","datamosh","memoryDrift",
       "memoryDecay","hyperbolicFold","fractalZoom","juliaMix","quasiDensity",
       "motionAmount","motionRate","lightMotion","bioAmount","bioFeed","bioKill",
-      "bioSpeed","bioVeins","saturation","contrast","brightness","colorOffset",
+      "bioSpeed","bioVeins","stereoAmount","stereoDepth","stereoParallax",
+      "stereoMorph","stereoGlow","stereoWiggle","stereoQuality",
+      "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
       const [lo,hi]=numericRanges[key];
@@ -512,6 +532,15 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.bioSpeed=25+random()*75;s.bioVeins=random()*100;
   s.bioAmount=(s.engine===15||s.secondaryEngine===15&&s.blend>0||random()<.35)
     ? 30+random()*69:0;
+  s.stereoShape=different(stereoShapes,state.stereoShape,random);
+  s.stereoAmount=(s.engine===16 || s.secondaryEngine===16 && s.blend>0 || random()<.27)
+    ? 32+random()*65 : 0;
+  s.stereoDepth=28+random()*70;
+  s.stereoParallax=18+random()*66;
+  s.stereoMorph=10+random()*89;
+  s.stereoGlow=37+random()*62;
+  s.stereoWiggle=22+random()*75;
+  s.stereoQuality=24+random()*55;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;
@@ -854,5 +883,41 @@ export const looks = [
     note: "Digital blocks consumed by an organism with a persistent chemical history",
     family: "Biology",
     state: { ...initial, engine: 4, palette: 8, colors: palettes[8].colors, bioFeed: 29, bioKill: 36, bioSpeed: 86, bioAmount: 95, bioVeins: 91, block: 44, datamosh: 32, afterimage: 29, scale: 27, motionMode: "Internal turbulence", motionAmount: 68, lightMotion: 74, seed: 22681 },
+  },
+  {
+    name: "Gyroid Signal Cathedral",
+    note: "3D periodic minimal surfaces with glowing depth and phosphor ghosts",
+    family: "Spatial",
+    state: { ...initial, engine: 16, palette: 11, colors: palettes[11].colors, stereoShape: "Gyroid Cathedral", stereoAmount: 96, stereoDepth: 68, stereoMorph: 47, stereoGlow: 89, stereoParallax: 72, stereoWiggle: 41, stereoQuality: 60, motionMode: "Orbital", motionAmount: 19, motionRate: 42, lightMotion: 71, phosphor: 25, seed: 59174 },
+  },
+  {
+    name: "Metaball Ghost Choir",
+    note: "Breathing holographic blobs that swell, collide and reflect rainbow light",
+    family: "Spatial",
+    state: { ...initial, engine: 16, palette: 6, colors: palettes[6].colors, stereoShape: "Metaball Choir", stereoAmount: 98, stereoDepth: 43, stereoMorph: 78, stereoGlow: 93, stereoParallax: 50, stereoWiggle: 37, stereoQuality: 62, motionMode: "Breathing", motionAmount: 24, motionRate: 53, lightMotion: 75, seed: 75092 },
+  },
+  {
+    name: "Opal Knot Apparition",
+    note: "Interlinked 3D opalescent rings with a wavering stereoscopic camera",
+    family: "Spatial",
+    state: { ...initial, engine: 16, palette: 8, colors: palettes[8].colors, stereoShape: "Opal Knot", stereoAmount: 98, stereoDepth: 55, stereoMorph: 72, stereoGlow: 98, stereoParallax: 79, stereoWiggle: 56, stereoQuality: 68, motionMode: "Internal turbulence", motionAmount: 14, motionRate: 41, lightMotion: 94, seed: 16872 },
+  },
+  {
+    name: "Crystal Radio Crypt",
+    note: "Refractive-looking crystalline 3D cells consumed by CRT signal artifacts",
+    family: "Spatial",
+    state: { ...initial, engine: 16, palette: 15, colors: palettes[15].colors, stereoShape: "Crystal Lattice", stereoAmount: 92, stereoDepth: 84, stereoMorph: 43, stereoGlow: 88, stereoParallax: 61, stereoWiggle: 47, stereoQuality: 57, phosphor: 41, datamosh: 18, motionMode: "Orbital", motionAmount: 12, motionRate: 44, lightMotion: 79, seed: 59186 },
+  },
+  {
+    name: "Ribbon Wormhole Wake",
+    note: "Spiraling 3D ribbons, trailing afterimages and screaming iridescence",
+    family: "Spatial",
+    state: { ...initial, engine: 16, palette: 1, colors: palettes[1].colors, stereoShape: "Ribbon Wormhole", stereoAmount: 100, stereoDepth: 81, stereoMorph: 71, stereoGlow: 91, stereoParallax: 78, stereoWiggle: 63, stereoQuality: 59, afterimage: 41, memoryDrift: 37, motionMode: "Traveling waves", motionAmount: 18, motionRate: 49, lightMotion: 83, seed: 32617 },
+  },
+  {
+    name: "Opal Diffraction Parasite",
+    note: "Fivefold 2D interference invaded by a parallax-shifting opal structure",
+    family: "Spatial",
+    state: { ...initial, engine: 14, palette: 10, colors: palettes[10].colors, stereoShape: "Opal Knot", stereoAmount: 73, stereoDepth: 71, stereoMorph: 58, stereoGlow: 96, stereoParallax: 67, stereoWiggle: 39, stereoQuality: 54, quasiDensity: 76, motionMode: "Liquid flow", motionAmount: 43, motionRate: 58, lightMotion: 89, seed: 81935 },
   },
 ];

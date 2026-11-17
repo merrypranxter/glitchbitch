@@ -274,7 +274,7 @@ export function TextInspector({ history }) {
           MAKE WORDS VISIBLE — center + high contrast
         </button>
         <button type="button" className="button secondary"
-          onClick={() => history.change((s) => ({...s,lettering:"",letteringAmount:0}))}>
+          onClick={() => history.change((s) => ({...s,lettering:"",letteringFormats:[],letteringAmount:0}))}>
           Remove words from artwork
         </button>
         <Select label="Choose your retro typeface" value={history.state.letteringFont}

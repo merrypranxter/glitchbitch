@@ -127,8 +127,10 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
      entry.sprites=createLetteringSprites(layer.text,width/height,layer.letteringFont||"original",entry.style);
    }
    const spriteScene=glyphMode?entry.sprites:null;
-   const em=spriteScene ? spriteScene.fontSize*width/spriteScene.width*factorX
-     : Math.min(width,height)*.24*scale;
+   // Match the mobile preview's font-em amplitude at export resolution.
+   const minEdge=Math.min(width,height),resolutionScale=minEdge/430;
+   const em=Math.max(13*resolutionScale,
+     Math.min(minEdge*.24,132*resolutionScale)*(0.63+0.34*zoom));
    const whole=letteringMotionCombinedAt(layer,seconds,width,height,-1,1,em);
    const blend=getLetteringBlendRecipe(layer.letteringBlendMode,layer.letteringBlendStrength);
    const intensity=blend.mode==="Normal"?0:blend.strength;

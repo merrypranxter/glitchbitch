@@ -32,6 +32,8 @@ import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, le
 import { Parameter, Range, Switch, Select, Section } from "./Controls";
 import { letteringBlendGroups, letteringBlendModes } from "../lettering-blends.js";
 import { letteringMotionGroups } from "../lettering-motion.js";
+import { textChoreographyGroups, textChoreographies, applyTextChoreography,
+  remixTextChoreography, mutateTextChoreography } from "../text-choreographies.js";
 import { retroFonts, retroFontGroups, getRetroFont, ensureRetroFontLoaded } from "../retro-fonts";
 const icons = [
   Waves,
@@ -190,6 +192,8 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
 }
 export function TextInspector({ history }) {
   const [fontError,setFontError]=React.useState("");
+  const [choreographyId,setChoreographyId]=React.useState("opal-orbit");
+  const chosenChoreography=textChoreographies.find(p=>p.id===choreographyId);
   const selectedFont=getRetroFont(history.state.letteringFont);
   React.useEffect(()=>{
     if(!history.state.lettering.trim())return;
@@ -215,7 +219,7 @@ export function TextInspector({ history }) {
             onBlur={history.end} />
         </label>
         <div className="text-engine-status" role="status">
-          TEXT ENGINE: DOM v6 · BLENDS + SPARKLEBAE MOTION · {history.state.lettering.trim().length} characters ·
+          TEXT ENGINE: DOM v7 · 24 CHOREOGRAPHIES · {history.state.lettering.trim().length} characters ·
           opacity {history.state.letteringAmount ?? 0}%
         </div>
         <button type="button" className="button secondary"
@@ -261,6 +265,43 @@ export function TextInspector({ history }) {
           onChange={(v) => history.change((s) => ({ ...s, letteringStyle: v }))}>
           {letteringStyles.map((v) => <option key={v}>{v}</option>)}
         </Select>
+        <Section title="TEXT CHOREOGRAPHER — 24 ONE-TAP RECIPES">
+          <Select label="Choose a complete text FX choreography" value={choreographyId}
+            onChange={setChoreographyId}>
+            {textChoreographyGroups.map(group=><optgroup key={group.label} label={group.label}>
+              {group.presets.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}
+            </optgroup>)}
+          </Select>
+          <p className="control-note" aria-live="polite">
+            {chosenChoreography?.description || "Choose a typography choreography."}
+            {" "}Moves: {chosenChoreography?.settings.letteringMotionPath} +
+            {" "}{chosenChoreography?.settings.letteringMotionPath2}.
+            {" "}Blend: {chosenChoreography?.settings.letteringBlendMode}.
+          </p>
+          <div className="palette-action-grid text-choreo-grid">
+            <button type="button" className="button"
+              onClick={()=>history.change(s=>applyTextChoreography(s,choreographyId))}>
+              <span>Apply chosen recipe</span>
+            </button>
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(s=>remixTextChoreography(s,"all"))}>
+              <span>🎲 Surprise text FX</span>
+            </button>
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(s=>remixTextChoreography(s,"motion"))}>
+              <span>Remix movement</span>
+            </button>
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(s=>remixTextChoreography(s,"blend"))}>
+              <span>Remix material + blend</span>
+            </button>
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(s=>mutateTextChoreography(s))}>
+              <span>🧬 Mutate current recipe</span>
+            </button>
+          </div>
+          <p className="control-note">Every button keeps your exact words, font, gradients, outline rings, text position and artwork. The sliders stay editable, and Undo restores the previous choreography. No Netlify or AI calls needed.</p>
+        </Section>
         <Section title="TEXT BLENDING — 44 WAYS TO MISBEHAVE">
           <Select label="Blend text against the artwork" value={history.state.letteringBlendMode ?? "Normal"}
             onChange={v=>history.change(s=>({...s,letteringBlendMode:v}))}>
@@ -344,6 +385,16 @@ export function TextInspector({ history }) {
                     onChange={e=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,[key]:Number(e.target.value)}:x)}))}/>
                 </label>;
               })}
+              <button type="button" className="button secondary"
+                onClick={()=>history.change(s=>({...s,
+                  letteringLayers:s.letteringLayers.map((x,i)=>i===index
+                    ? remixTextChoreography(x,"all"):x)
+                }))}>🎲 Surprise FX for this layer</button>
+              <button type="button" className="button secondary"
+                onClick={()=>history.change(s=>({...s,
+                  letteringLayers:s.letteringLayers.map((x,i)=>i===index
+                    ? applyTextChoreography(x,choreographyId):x)
+                }))}>Apply selected choreography to this layer</button>
               <button type="button" className="button secondary"
                 onClick={()=>history.change(s=>({...s,letteringLayers:s.letteringLayers.filter((_,i)=>i!==index)}))}>Delete this layer</button>
             </div>)}
@@ -453,7 +504,7 @@ export function TextInspector({ history }) {
           <Parameter label="Continuous liquid letter bending" name="letteringWarp" history={history}/>
           <p className="control-note">Whole-word trajectories and Sparklebae-style independent letter dances. Liquid warp bends complete characters smoothly—no chopped horizontal strips. Motion follows closed mathematical loops for animation exports.</p>
         </Section>
-        <p className="control-note">Text effects are live again: all 14 lettering materials use their own appearance. At 100%, Kinetic text motion travels across the canvas, while Liquid text warping shifts independently animated ribbons of letterforms. Playback pauses with the studio.</p>
+        <p className="control-note">All 14 text materials, 44 blends, 34 movement paths and 24 editable choreography recipes are available. Effects pause with the studio; the liquid engine bends whole glyphs smoothly rather than chopping letters into strips.</p>
         <p className="control-note">No random slogans: you decide every word. The font picker includes classic MySpace fonts and locally bundled retro styles. Saved quotes retain their font, and PNG, GIF and MP4 wait for it to load before export. Surprise Me still clears all text.</p>
       </Section>
     </>

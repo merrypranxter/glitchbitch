@@ -3032,3 +3032,6 @@ footer > span:last-child svg {
   color:var(--lime,#d6ff62);
 }
 .live-type-glyph { vertical-align:baseline; }
+
+/* Keep the per-layer word-formatting toolbar full width in the compact editor. */
+.retro-type-actions>.word-style-toolbar{flex-basis:100%;width:100%;}

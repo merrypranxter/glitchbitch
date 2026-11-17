@@ -20,7 +20,7 @@ function TextFace({ text, fontStyle, material, strokes }) {
     color: material.gradient ? "transparent" : material.ink,
     WebkitTextFillColor: material.gradient ? "transparent" : material.ink,
     backgroundImage: material.gradient || "none",
-    backgroundSize: material.hueAnimation ? "280% 280%" : "100% 100%",
+    backgroundSize: material.preset === "Glitter ink" ? "19px 19px, 29px 31px, 280% 280%" : material.hueAnimation ? "280% 280%" : "100% 100%",
     backgroundClip: material.gradient ? "text" : "border-box",
     WebkitBackgroundClip: material.gradient ? "text" : "border-box",
     textShadow: material.gradient ? "none" : material.previewShadow,
@@ -32,7 +32,7 @@ function TextFace({ text, fontStyle, material, strokes }) {
     animationDirection: "alternate"
   };
   return (
-    <div className="live-type-face" style={{ position:"relative", width:"100%" }}>
+    <div className="live-type-face" style={{ position:"relative", width:"100%", isolation:"isolate", zIndex:0 }}>
       {material.echoes.map((echo,i) =>
         inkText({
           ...base, position:"absolute", inset:0,
@@ -63,7 +63,8 @@ function TextLayer({ layer, palette, width, height, playing, index }) {
   const opacity = Math.max(0, Math.min(1, Number(layer.letteringAmount ?? 46) / 100));
   if (!text?.trim() || layer.visible === false || opacity <= 0) return null;
   const material = letteringMaterial(layer, palette);
-  const { motion, warp } = textMotion(layer);
+  const { motion, warp:sliderWarp } = textMotion(layer);
+  const warp = Math.max(sliderWarp, material.preset === "Heatwave" ? 0.23 : 0);
   const font = getRetroFont(layer.letteringFont);
   const minEdge = Math.max(1, Math.min(width || 1, height || 1));
   const zoom = asPercent(layer.letteringScale,48) / 100;

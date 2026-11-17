@@ -119,13 +119,15 @@ test("appearance sliders round trip, reject invalid numbers and keep vintage rec
   for (const key of appearanceKeys) delete old[key];
   assert.deepEqual(appearanceKeys.map(key => parseDocument(old).state[key]), appearanceKeys.map(() => 0));
 });
-test("lookbook contains 18 valid distinct entries covering new materials", () => {
-  assert.equal(looks.length, 18);
+test("lookbook contains 22 valid distinct entries covering new materials and memory", () => {
+  assert.equal(looks.length, 22);
   assert.equal(new Set(looks.map(look => look.name)).size, looks.length);
   for (const look of looks) assert.deepEqual(parseDocument(look.state).state, look.state);
   assert.ok(looks.some(look => look.state.windowCascade > 0));
   assert.ok(looks.some(look => look.state.riso > 0));
   assert.ok(looks.some(look => look.state.phosphor > 0));
+  assert.ok(looks.some(look => look.state.afterimage > 0));
+  assert.ok(looks.some(look => look.state.datamosh > 0));
 });
 
 test("signal drift stays free of hard band discontinuities", async () => {

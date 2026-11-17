@@ -186,6 +186,8 @@ export function createRenderer(canvas) {
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, memory.history);
     gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 0, 0, w, h);
+    if (gl.getError() !== gl.NO_ERROR)
+      throw Error("GPU history texture copy failed.");
     gl.activeTexture(gl.TEXTURE0);
     memory.valid = true;
   }
@@ -407,9 +409,20 @@ export function createRenderer(canvas) {
       gl.uniform1i(loc("count"), s.marks.length);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       if (drawWithMemory) {
-        compositeFeedback(s, timeline, width, height);
-        lastMemoryTime = timeline.time;
-        lastMemoryColorTime = timeline.colorTime;
+        try {
+          compositeFeedback(s, timeline, width, height);
+          lastMemoryTime = timeline.time;
+          lastMemoryColorTime = timeline.colorTime;
+        } catch (e) {
+          // GPU failure cannot black out the art: redraw original output to the canvas.
+          gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+          gl.viewport(0, 0, width, height);
+          gl.useProgram(active.program);
+          gl.drawArrays(gl.TRIANGLES, 0, 6);
+          memoryDisabled = true;
+          releaseMemory();
+          console.warn("GPU frame-memory pass failed; using original renderer.", e);
+        }
       }
       if (gl2) {
         if (fence) gl.deleteSync(fence);

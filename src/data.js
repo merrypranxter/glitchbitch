@@ -641,4 +641,28 @@ export const looks = [
     family: "Mixed",
     state: { ...initial, engine: 10, palette: 9, colors: palettes[9].colors, phosphor: 74, riso: 60, dither: 42, glitter: 35, blend: 43, secondaryEngine: 3, scale: 31, seed: 51408 },
   },
+  {
+    name: "Neon Afterimage Séance",
+    note: "Ghostly plasma trails with real previous-frame persistence",
+    family: "Memory",
+    state: { ...initial, engine: 0, palette: 1, colors: palettes[1].colors, afterimage: 86, datamosh: 9, memoryDrift: 49, memoryDecay: 13, scale: 29, warp: 77, colorAmount: 45, split: 12, seed: 97124 },
+  },
+  {
+    name: "Codec Reef",
+    note: "Living-looking chroma cells trapped in corrupted video blocks",
+    family: "Memory",
+    state: { ...initial, engine: 7, palette: 9, colors: palettes[9].colors, afterimage: 39, datamosh: 83, memoryDrift: 37, memoryDecay: 17, complexity: 76, scale: 21, block: 13, seed: 64517 },
+  },
+  {
+    name: "Spectral Tape Apparition",
+    note: "Iridescent moiré haunted by a dragged video memory",
+    family: "Memory",
+    state: { ...initial, engine: 3, palette: 8, colors: palettes[8].colors, afterimage: 77, datamosh: 45, memoryDrift: 65, memoryDecay: 18, phosphor: 42, glitter: 20, scale: 17, seed: 33572 },
+  },
+  {
+    name: "Magenta Mosh Cathedral",
+    note: "Crystal geometry liquefied into lingering fractured frames",
+    family: "Memory",
+    state: { ...initial, engine: 11, palette: 15, colors: palettes[15].colors, afterimage: 43, datamosh: 96, memoryDrift: 83, memoryDecay: 9, riso: 18, complexity: 80, symmetry: 6, scale: 24, seed: 87231 },
+  },
 ];

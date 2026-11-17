@@ -24,7 +24,15 @@ export default function Lookbook({ onClose, onApply }) {
       if (!active || i >= looks.length) return;
       const n = i++;
       try {
-        renderer.draw(looks[n].state, { time: 4, colorTime: 4 }, 240, 160);
+        const current = looks[n].state;
+        if (current.afterimage > 0 || current.datamosh > 0) {
+          renderer.resetFeedback();
+          // Render temporal history for an honest thumbnail, not a blank first frame.
+          for (let step = 0; step < 6; step++)
+            renderer.draw(current, { time: 3.7 + step * .06, colorTime: 3.7 + step * .06 }, 240, 160);
+        } else {
+          renderer.draw(current, { time: 4, colorTime: 4 }, 240, 160);
+        }
         const data = canvas.toDataURL("image/jpeg", 0.85);
         if (active) setThumbs((old) => ({ ...old, [n]: data }));
         job = setTimeout(draw, 30);

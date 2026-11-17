@@ -18,7 +18,7 @@ The production output is `dist/`. Serve it with a static web server. WebGL and h
 
 ## Make something strange
 
-**12 engines:** Plasma flow, Acid bloom, Fractal melt, Moiré field, Pixel rot, Tunnel vision, Liquid marble, Cellular dream, Orbit lace, Contour planet, Chroma weave, Crystal shards. These implement different analytic/procedural mechanisms, not just palette swaps. The six-entry lookbook renders actual starting-point recipes.
+**12 engines:** Plasma flow, Acid bloom, Fractal melt, Moiré field, Pixel rot, Tunnel vision, Liquid marble, Cellular dream, Orbit lace, Contour planet, Chroma weave, Crystal shards. These implement different analytic/procedural mechanisms, not just palette swaps. The 22-entry lookbook offers editable source recipes, including four true frame-memory looks.
 
 **Layers:** Mix, multiply, or take the absolute difference of two scalar fields. The fields share structure controls, local touch sources, and a geometry clock. Blend at zero bypasses the second engine completely.
 
@@ -28,7 +28,9 @@ The production output is `dist/`. Serve it with a static web server. WebGL and h
 
 **Color choreography:** Independent color and geometry clocks. Opt into traveling phase waves, a harmonic 1:2:3 color canon, or a phase vortex with Rhythm amount. Freeze either clock separately. At zero rhythm amount, the original color-phase mapping is preserved. These are analytic color-phase fields; they are not dye transport or spectral simulations. Palette interpolation uses cyclic smoothstep interpolation in display sRGB, with final sRGB clipping.
 
-**Effects:** Chromatic separation, tracking tears, block corruption, pixelation, scanlines, film grain, vignette, phosphor bloom, color posterization, inversion.
+**Effects:** Chromatic separation, smooth signal drift (no hard full-width tracking seams), block corruption, pixelation, scanlines, film grain, vignette, phosphor bloom, color posterization, inversion. New appearance controls include CRT subpixels, ordered dithering, CMY risograph, ink misregistration, procedural fake error windows, glitter, and broadcast color bars.
+
+**True frame memory:** Optional GPU feedback adds Afterimage, Temporal Datamosh, Memory Drift and Memory Decay. With both Afterimage and Datamosh at zero, rendering uses the original single-pass path. When enabled, an offscreen framebuffer captures the current scene and reuses the previous composited frame. Image export uses deterministic short history pre-roll; video export simulates feedback across frames. This increases GPU memory use; if an unsupported device fails to initialize feedback, the app falls back to the original renderer.
 
 **Explore:** Surprise me changes independent mechanisms; engine and palette locks protect your choices. Mutate makes smaller parameter changes. Both preserve touch sources and aspect ratio. Undo reverses either action.
 
@@ -53,7 +55,7 @@ Space plays/pauses; Ctrl/Cmd+Z undoes; Shift+Ctrl/Cmd+Z redoes; F enters fullscr
 
 ## Rendering and resilience
 
-The engines are analytic rather than stateful simulations. Geometry and color clocks integrate elapsed seconds, independently of preview frame count. Hidden tabs pause both clocks. Opening a dialog holds the preview; video rendering samples an independent exact frame schedule from the chosen frame.
+The 12 original engines remain analytic, while frame memory is a separate optional stateful GPU pass. Geometry and color clocks integrate elapsed seconds, independently of preview frame count. Hidden tabs pause both clocks. Opening a dialog holds the preview; video rendering samples an independent exact frame schedule from the chosen frame.
 
 Preview drawing is capped at 30 fps. Eco/Balanced/Sharp use approximate pixel budgets of 0.32/0.8/1.8 megapixels. Auto starts from Balanced and changes only preview scale (100%, 75%, 55%) after sustained load, with a longer recovery dwell. No equation, octave/iteration count, source, seed, or palette changes with quality. The FPS readout measures submitted draw cadence, **not GPU timing**. This governor is conservative; device performance still requires real-device testing.
 

@@ -286,3 +286,18 @@ test("shared palette vault keeps every 12-stop set and imports/exports portable 
   assert.equal(imported.palettes.length,128);
   assert.throws(()=>parsePaletteLibrary('[{"name":"bad","colors":["#xyz"]}]'));
 });
+
+test("MP4 exports use even-sized H.264 frames and never silently produce WebM", async () => {
+  const { videoDimensions } = await import("../src/export.js");
+  assert.deepEqual(videoDimensions("9:16",720),{width:406,height:720});
+  for(const ratio of ["1:1","9:16","16:9","3:4","4:3"]) {
+    const s=videoDimensions(ratio,1080);
+    assert.equal(s.width%2,0);assert.equal(s.height%2,0);
+  }
+  const {readFileSync}=await import("node:fs");
+  const exporter=readFileSync(new URL("../src/export.js",import.meta.url),"utf8");
+  assert.match(exporter,/Mp4OutputFormat/);
+  assert.match(exporter,/codec: "avc"/);
+  assert.doesNotMatch(exporter,/WebMOutputFormat/);
+  assert.match(exporter,/GIFEncoder/);
+});

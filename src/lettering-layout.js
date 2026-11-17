@@ -90,9 +90,6 @@ export function drawLetteringDecoration(ctx,glyph,size,x,y,stroke=0){
  if(!glyph.format.underline && !glyph.format.strike)return;
  // Decorations have their own narrow ribbons and must not alter text strokes.
  const h=Math.max(1,size*.055),w=Math.max(1,glyph.raw);
- ctx.save();
- ctx.lineWidth=0;
- if(glyph.format.underline)ctx.fillRect(x-w/2,y+size*.45,h? w:0,h);
- if(glyph.format.strike)ctx.fillRect(x-w/2,y-size*.015,w,h);
- ctx.restore();
+ if(glyph.format.underline)ctx.fillRect?.(x-w/2,y+size*.45,w,h);
+ if(glyph.format.strike)ctx.fillRect?.(x-w/2,y-size*.015,w,h);
 }

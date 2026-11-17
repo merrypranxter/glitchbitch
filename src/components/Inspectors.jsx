@@ -30,6 +30,8 @@ import {
 } from "lucide-react";
 import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, letteringStyles, compositionModes, backdropModes, microModes, substanceModes, wiggleModes } from "../data";
 import { Parameter, Range, Switch, Select, Section } from "./Controls";
+import { letteringBlendGroups, letteringBlendModes } from "../lettering-blends.js";
+import { letteringMotionGroups } from "../lettering-motion.js";
 import { retroFonts, retroFontGroups, getRetroFont, ensureRetroFontLoaded } from "../retro-fonts";
 const icons = [
   Waves,
@@ -213,7 +215,7 @@ export function TextInspector({ history }) {
             onBlur={history.end} />
         </label>
         <div className="text-engine-status" role="status">
-          TEXT ENGINE: DOM v4 · 14 MATERIAL FX · {history.state.lettering.trim().length} characters ·
+          TEXT ENGINE: DOM v6 · BLENDS + SPARKLEBAE MOTION · {history.state.lettering.trim().length} characters ·
           opacity {history.state.letteringAmount ?? 0}%
         </div>
         <button type="button" className="button secondary"
@@ -259,6 +261,22 @@ export function TextInspector({ history }) {
           onChange={(v) => history.change((s) => ({ ...s, letteringStyle: v }))}>
           {letteringStyles.map((v) => <option key={v}>{v}</option>)}
         </Select>
+        <Section title="TEXT BLENDING — 44 WAYS TO MISBEHAVE">
+          <Select label="Blend text against the artwork" value={history.state.letteringBlendMode ?? "Normal"}
+            onChange={v=>history.change(s=>({...s,letteringBlendMode:v}))}>
+            {letteringBlendGroups.map(group=><optgroup key={group.label} label={group.label}>
+              {group.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+            </optgroup>)}
+          </Select>
+          <Parameter label="Blend intensity (0 = ordinary text, 100 = full effect)"
+            name="letteringBlendStrength" history={history}/>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>({...s,
+              letteringBlendMode:letteringBlendModes[Math.floor(Math.random()*letteringBlendModes.length)],
+              letteringBlendStrength:100
+            }))}>🎲 Random text blend (keep words & colors)</button>
+          <p className="control-note">Standard modes use real browser/canvas compositing. Photoshop-only and invented modes are artistic emulations. Each layer blends separately over the living artwork. Blink modes are intentional flashes.</p>
+        </Section>
         <Section title="EXTRA TEXT LAYERS — INDEPENDENT WORDS">
           <p className="control-note">Your original quote is layer one. Add up to two independent layers with their own words, fonts, materials, color, gradients, outlines, placement and animation. New layers stack above the original.</p>
           {history.state.letteringLayers.map((layer,index)=>
@@ -278,6 +296,33 @@ export function TextInspector({ history }) {
                 onChange={v=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringStyle:v}:x)}))}>
                 {letteringStyles.map(v=><option key={v}>{v}</option>)}
               </Select>
+              <Select label="Letter motion path" value={layer.letteringMotionPath ?? "Classic drift"}
+                onChange={v=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringMotionPath:v}:x)}))}>
+                {letteringMotionGroups.map(group=><optgroup key={group.label} label={group.label}>
+                  {group.paths.map(path=><option key={path}>{path}</option>)}
+                </optgroup>)}
+              </Select>
+              <Select label="Stack a second path" value={layer.letteringMotionPath2 ?? "None"}
+                onChange={v=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringMotionPath2:v}:x)}))}>
+                <option>None</option>
+                {letteringMotionGroups.map(group=><optgroup key={group.label} label={group.label}>
+                  {group.paths.map(path=><option key={path}>{path}</option>)}
+                </optgroup>)}
+              </Select>
+              <Select label="Letter motion direction" value={layer.letteringMotionDirection ?? "Forward"}
+                onChange={v=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringMotionDirection:v}:x)}))}>
+                <option>Forward</option><option>Reverse</option>
+              </Select>
+              <Select label="Layer blend mode" value={layer.letteringBlendMode ?? "Normal"}
+                onChange={v=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringBlendMode:v}:x)}))}>
+                {letteringBlendGroups.map(group=><optgroup key={group.label} label={group.label}>
+                  {group.modes.map(mode=><option key={mode}>{mode}</option>)}
+                </optgroup>)}
+              </Select>
+              <label className="select-field"><span>Layer blend intensity: {layer.letteringBlendStrength ?? 100}%</span>
+                <input type="range" min="0" max="100" step="1" value={layer.letteringBlendStrength ?? 100}
+                  onChange={e=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringBlendStrength:Number(e.target.value)}:x)}))}/>
+              </label>
               <Select label="Fill" value={layer.letteringFillMode}
                 onChange={v=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringFillMode:v}:x)}))}>
                 {["Solid","Linear gradient","Radial gradient"].map(v=><option key={v}>{v}</option>)}
@@ -288,9 +333,11 @@ export function TextInspector({ history }) {
                 <input key={j} type="color" aria-label={"Gradient stop "+(j+1)} value={color}
                   onChange={e=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringGradient:x.letteringGradient.map((c,n)=>n===j?e.target.value:c)}:x)}))}/>)}
               {["letteringX","letteringY","letteringRotation","letteringStretchX","letteringStretchY",
-                "letteringCurve","letteringScale","letteringAmount","letteringWarp","letteringMotion"].map(key=>{
+                "letteringCurve","letteringScale","letteringAmount","letteringWarp","letteringMotion",
+                "letteringMotionStagger","letteringMotionSpeed","letteringMotionMix"].map(key=>{
                 const bounds=key==="letteringRotation"?[-180,180]:
                   key==="letteringCurve"?[-100,100]:
+                  key==="letteringMotionSpeed"?[1,4]:
                   key==="letteringStretchX"||key==="letteringStretchY"?[25,250]:[0,100];
                 return <label key={key} className="select-field"><span>{key.replace("lettering","")} {layer[key]}</span>
                   <input type="range" min={bounds[0]} max={bounds[1]} value={layer[key]}
@@ -306,7 +353,10 @@ export function TextInspector({ history }) {
               id:"text-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),
               text:"",visible:true,letteringFont:s.letteringFont,
               letteringStyle:"Custom ink",letteringAmount:85,letteringScale:48,
+              letteringBlendMode:s.letteringBlendMode ?? "Normal",letteringBlendStrength:100,
               letteringWarp:0,letteringMotion:0,letteringX:50,letteringY:50,
+              letteringMotionPath:"Classic drift",letteringMotionPath2:"None",letteringMotionMix:65,letteringMotionSpeed:1,
+              letteringMotionStagger:10,letteringMotionDirection:"Forward",
               letteringRotation:0,letteringStretchX:100,letteringStretchY:100,
               letteringCurve:0,letteringFillMode:"Solid",letteringFill:"#ff2fbf",
               letteringGradient:["#ff2fbf","#00f5ff"],letteringGradientAngle:0,
@@ -378,8 +428,31 @@ export function TextInspector({ history }) {
         </Section>
         <Parameter label="Lettering opacity" name="letteringAmount" history={history} />
         <Parameter label="Letter size" name="letteringScale" history={history} />
-        <Parameter label="Liquid text warping" name="letteringWarp" history={history} />
-        <Parameter label="Kinetic text motion" name="letteringMotion" history={history} />
+        <Section title="SPARKLEBAE MOTION LAB — NO MORE PAPER SHREDDER">
+          <Select label="Text movement path" value={history.state.letteringMotionPath ?? "Classic drift"}
+            onChange={v=>history.change(s=>({...s,letteringMotionPath:v}))}>
+            {letteringMotionGroups.map(group=><optgroup key={group.label} label={group.label}>
+              {group.paths.map(path=><option key={path}>{path}</option>)}
+            </optgroup>)}
+          </Select>
+          <Select label="Second motion (optional stack)" value={history.state.letteringMotionPath2 ?? "None"}
+            onChange={v=>history.change(s=>({...s,letteringMotionPath2:v}))}>
+            <option>None</option>
+            {letteringMotionGroups.map(group=><optgroup key={group.label} label={group.label}>
+              {group.paths.map(path=><option key={path}>{path}</option>)}
+            </optgroup>)}
+          </Select>
+          <Parameter label="Second path mixing" name="letteringMotionMix" history={history}/>
+          <Parameter label="Movement amount" name="letteringMotion" history={history}/>
+          <Parameter label="Path speed / loops per cycle" name="letteringMotionSpeed" history={history} format={v=>`${Math.round(v)} loops`}/>
+          <Parameter label="Per-letter stagger" name="letteringMotionStagger" history={history}/>
+          <Select label="Path direction" value={history.state.letteringMotionDirection ?? "Forward"}
+            onChange={v=>history.change(s=>({...s,letteringMotionDirection:v}))}>
+            <option>Forward</option><option>Reverse</option>
+          </Select>
+          <Parameter label="Continuous liquid letter bending" name="letteringWarp" history={history}/>
+          <p className="control-note">Whole-word trajectories and Sparklebae-style independent letter dances. Liquid warp bends complete characters smoothly—no chopped horizontal strips. Motion follows closed mathematical loops for animation exports.</p>
+        </Section>
         <p className="control-note">Text effects are live again: all 14 lettering materials use their own appearance. At 100%, Kinetic text motion travels across the canvas, while Liquid text warping shifts independently animated ribbons of letterforms. Playback pauses with the studio.</p>
         <p className="control-note">No random slogans: you decide every word. The font picker includes classic MySpace fonts and locally bundled retro styles. Saved quotes retain their font, and PNG, GIF and MP4 wait for it to load before export. Surprise Me still clears all text.</p>
       </Section>

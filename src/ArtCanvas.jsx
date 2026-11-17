@@ -86,6 +86,8 @@ export default function ArtCanvas({
       const state = actions.current.current.current,
         rt = runtime.current;
       if (!hidden && rt.playing) {
+        // Independent, wall-clock text phase (not tied to geometry speed).
+        timelineRef.current.textTime=(timelineRef.current.textTime || 0)+dt;
         if (!state.freezeGeometry)
           timelineRef.current.time += (dt * state.speed) / 30;
         if (!state.freezeColor)
@@ -304,7 +306,7 @@ export default function ArtCanvas({
           ref={canvasRef}
           aria-label="Animated artwork. Drag to paint; pinch and twist to resize and rotate a force."
         />
-        <LiveTextOverlay state={history.state} width={size.width} height={size.height} playing={playing} />
+        <LiveTextOverlay state={history.state} width={size.width} height={size.height} playing={playing} timelineRef={timelineRef} />
         {handles &&
           history.state.marks.map((m, i) => (
             <button

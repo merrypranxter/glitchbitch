@@ -2950,10 +2950,10 @@ footer > span:last-child svg {
   line-height: 1.4;
   letter-spacing: .035em;
 }
-.live-type-root, .live-type-layer {
-  isolation: isolate;
-  contain: layout style;
-}
+/* IMPORTANT: no isolate/contain here. Text must blend with the WebGL art
+   behind it, not merely with an empty typography-only stacking context. */
+.live-type-root, .live-type-layer { isolation: auto; }
+
 
 /* Lettering FX v4: visibly different materials, fast kinetic travel and liquid
  * slice displacement. Animations run entirely on the isolated text overlay. */
@@ -2963,12 +2963,6 @@ footer > span:last-child svg {
   49%  { transform: translate(var(--motion-back-x),var(--motion-back-y)) rotate(var(--motion-back-rotation)) scale(.94,1.05); }
   76%  { transform: translate(var(--motion-half-x),var(--motion-back-y)) rotate(var(--motion-rotation)) scale(1.02,.98); }
   100% { transform: translate(0,0) rotate(0deg) scale(1); }
-}
-@keyframes live-type-liquid-slice {
-  0%   { transform: translateX(var(--slice-neg-x)) skewX(var(--slice-skew)); }
-  33%  { transform: translateX(var(--slice-x)) skewX(0deg); }
-  66%  { transform: translateX(var(--slice-neg-x)) skewX(var(--slice-skew)); }
-  100% { transform: translateX(var(--slice-x)) skewX(0deg); }
 }
 @keyframes live-type-spectral-shift {
   0% { background-position:0% 45%; filter:brightness(1) saturate(1.2); }
@@ -2981,7 +2975,44 @@ footer > span:last-child svg {
   100% { filter:brightness(1.08) saturate(1.3); }
 }
 .live-type-ink { will-change: background-position,filter; }
-.live-type-slice { will-change:transform; }
 .live-type-root[data-playing="false"] .live-type-ink,
-.live-type-root[data-playing="false"] .live-type-slice,
 .live-type-root[data-playing="false"] .live-type-kinetic { animation-play-state:paused!important; }
+
+/* Text-blend galaxy v5: lightweight native blend and experimental pulse FX.
+   Animate the inside, never the outer layer, so blend-strength opacity remains
+   independent and motion/warp continue to work. */
+@keyframes type-negative-blink {
+  0%,45%,100% { opacity:1; }
+  46%,85% { opacity:.08; }
+}
+@keyframes type-strobe-xor {
+  0%,49% { opacity:1; }
+  50%,100% { opacity:.12; }
+}
+@keyframes type-prism-bleed {
+  0% { filter:hue-rotate(0deg) saturate(1.2); }
+  50% { filter:hue-rotate(48deg) saturate(2); }
+  100% { filter:hue-rotate(-25deg) saturate(1.5); }
+}
+@keyframes type-acid-smear {
+  0% { filter:blur(0px) hue-rotate(0deg) saturate(1.8); }
+  50% { filter:blur(.9px) hue-rotate(30deg) saturate(2.4); }
+  100% { filter:blur(0px) hue-rotate(-20deg) saturate(1.5); }
+}
+@keyframes type-spectral-swap {
+  0% { filter:hue-rotate(0deg); }
+  50% { filter:hue-rotate(115deg); }
+  100% { filter:hue-rotate(260deg); }
+}
+@keyframes type-afterimage-ink {
+  0% { opacity:.65; filter:blur(0px); }
+  50% { opacity:1; filter:blur(1.3px); }
+  100% { opacity:.72; filter:blur(.2px); }
+}
+.live-type-blend-negative-blink {animation:type-negative-blink .7s steps(1,end) infinite}
+.live-type-blend-strobe-xor {animation:type-strobe-xor .24s steps(1,end) infinite}
+.live-type-blend-prism-bleed {animation:type-prism-bleed 2s ease-in-out infinite alternate}
+.live-type-blend-acid-smear {animation:type-acid-smear 1.5s ease-in-out infinite alternate}
+.live-type-blend-spectral-swap {animation:type-spectral-swap 3s linear infinite alternate}
+.live-type-blend-afterimage-ink {animation:type-afterimage-ink 1.8s ease-in-out infinite alternate}
+.live-type-root[data-playing="false"] [class*="live-type-blend-"] {animation-play-state:paused!important}

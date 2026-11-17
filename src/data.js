@@ -1,6 +1,8 @@
 import { PALETTE_VAULT } from "./palette-vault.js";
 import { generateRandomPalette, shuffleColorStops } from "./palette-actions.js";
 import { retroFontIds } from "./retro-fonts.js";
+import { letteringBlendModes } from "./lettering-blends.js";
+import { letteringMotionPaths } from "./lettering-motion.js";
 export const engineInfo = [
   ["Plasma flow", "Liquid sine fields folded into neon ribbons.", "Fluid"],
   [
@@ -235,9 +237,13 @@ export const numericRanges = {
   foilRelief: [0, 100],
   foilMotion: [0, 100],
   letteringAmount: [0, 100],
+  letteringBlendStrength: [0, 100],
   letteringScale: [0, 100],
   letteringWarp: [0, 100],
   letteringMotion: [0, 100],
+  letteringMotionSpeed: [1, 4],
+  letteringMotionStagger: [0, 100],
+  letteringMotionMix: [0, 100],
   letteringGradientAngle: [0, 360],
   letteringX: [0, 100],
   letteringY: [0, 100],
@@ -360,11 +366,19 @@ export const initial = {
   foilMotion: 47,
   lettering: "",
   letteringStyle: "Neon bling",
+  letteringBlendMode: "Normal",
+  letteringBlendStrength: 100,
   letteringFont: "original",
   letteringAmount: 0,
   letteringScale: 48,
   letteringWarp: 40,
   letteringMotion: 55,
+  letteringMotionPath: "Classic drift",
+  letteringMotionPath2: "None",
+  letteringMotionMix: 65,
+  letteringMotionSpeed: 1,
+  letteringMotionStagger: 10,
+  letteringMotionDirection: "Forward",
   letteringFillMode: "Solid",
   letteringFill: "#ffffff",
   letteringGradient: ["#ff2fbf","#00f5ff","#fff36a"],
@@ -480,6 +494,10 @@ export function validateRecipe(input) {
     stereoShape: stereoShapes,
     wiggleMode: wiggleModes,
     letteringStyle: letteringStyles,
+    letteringBlendMode: letteringBlendModes,
+    letteringMotionPath: letteringMotionPaths,
+    letteringMotionPath2: ["None",...letteringMotionPaths],
+    letteringMotionDirection: ["Forward","Reverse"],
     letteringFont: retroFontIds,
     letteringFillMode: ["Solid","Linear gradient","Radial gradient"],
     compositionMode: compositionModes,
@@ -504,13 +522,14 @@ export function validateRecipe(input) {
       ids.add(id);
       const out={id,text:layer.text,visible:layer.visible!==false};
       if(typeof layer.visible!=="undefined"&&typeof layer.visible!=="boolean")throw Error("Invalid text layer visibility.");
-      for(const key of ["letteringAmount","letteringScale","letteringWarp","letteringMotion",
+      for(const key of ["letteringAmount","letteringScale","letteringWarp","letteringMotion","letteringBlendStrength","letteringMotionSpeed","letteringMotionStagger","letteringMotionMix",
         "letteringX","letteringY","letteringRotation","letteringStretchX","letteringStretchY","letteringCurve"]){
         const value=layer[key]??initial[key],range=numericRanges[key];
         if(!Number.isFinite(value)||value<range[0]||value>range[1])throw Error("Invalid text layer "+key);
         out[key]=value;
       }
-      for(const [key,choices] of Object.entries({letteringFont:retroFontIds,letteringStyle:letteringStyles,
+      for(const [key,choices] of Object.entries({letteringFont:retroFontIds,letteringStyle:letteringStyles,letteringBlendMode:letteringBlendModes,
+        letteringMotionPath:letteringMotionPaths,letteringMotionPath2:["None",...letteringMotionPaths],letteringMotionDirection:["Forward","Reverse"],
         letteringFillMode:["Solid","Linear gradient","Radial gradient"]})){
         const value=layer[key]??initial[key];
         if(!choices.includes(value))throw Error("Invalid text layer "+key);
@@ -608,14 +627,18 @@ export function validateRecipe(input) {
 export function parseDocument(input) {
   const state = validateRecipe(input);
   const time = input.timeline?.time ?? input.time ?? 0,
-    colorTime = input.timeline?.colorTime ?? time;
+    colorTime = input.timeline?.colorTime ?? time,
+    textTime = input.timeline?.textTime ?? 0;
   if (
     !Number.isFinite(time) ||
     time < 0 ||
     time > 1e8 ||
     !Number.isFinite(colorTime) ||
     colorTime < 0 ||
-    colorTime > 1e8
+    colorTime > 1e8 ||
+    !Number.isFinite(textTime) ||
+    textTime < 0 ||
+    textTime > 1e8
   )
     throw Error("Invalid animation time.");
   return {
@@ -624,7 +647,7 @@ export function parseDocument(input) {
       typeof input.title === "string"
         ? input.title.slice(0, 100)
         : "Untitled exploration",
-    timeline: { time, colorTime },
+    timeline: { time, colorTime, textTime },
   };
 }
 export function recipeDocument(state, title, timeline) {
@@ -805,12 +828,20 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.foilMotion=31+random()*67;
   // Surprise Me NEVER generates a slogan. Words belong to the artist.
   s.letteringStyle=different(letteringStyles,state.letteringStyle,random);
+  s.letteringBlendMode="Normal";
+  s.letteringBlendStrength=100;
   s.letteringFont=different(retroFontIds,state.letteringFont,random);
   s.lettering="";
   s.letteringAmount=0;
   s.letteringScale=20+random()*54;
   s.letteringWarp=0;
   s.letteringMotion=15+random()*45;
+  s.letteringMotionPath="Classic drift";
+  s.letteringMotionPath2="None";
+  s.letteringMotionMix=65;
+  s.letteringMotionSpeed=1;
+  s.letteringMotionStagger=10;
+  s.letteringMotionDirection="Forward";
   // Composition is a separately randomized spatial design, not a palette shuffle.
   s.compositionMode=different(compositionModes,state.compositionMode,random);
   s.compositionAmount=random()<.84 ? 53+random()*46 : 0;

@@ -33,6 +33,7 @@ function clockAt(state, timeline, seconds) {
   return {
     time: Math.max(0, timeline.time + (state.freezeGeometry ? 0 : seconds * state.speed / 30)),
     colorTime: Math.max(0, timeline.colorTime + (state.freezeColor ? 0 : seconds * state.colorSpeed / 30)),
+    textTime: Math.max(0, (timeline.textTime || 0) + seconds),
   };
 }
 export async function renderImage(state, timeline, longEdge = 2160, type = "image/png") {

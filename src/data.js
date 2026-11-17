@@ -377,6 +377,7 @@ export const initial = {
   letteringStretchY: 100,
   letteringCurve: 0,
   letteringDrag: false,
+  letteringLayers: [],
   compositionMode: "Iris portals",
   compositionAmount: 0,
   compositionScale: 54,
@@ -490,6 +491,47 @@ export function validateRecipe(input) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
       s[key] = x[key];
     }
+  }
+  if(x.letteringLayers!==undefined){
+    if(!Array.isArray(x.letteringLayers)||x.letteringLayers.length>2)throw Error("Maximum two additional text layers.");
+    const ids=new Set();
+    s.letteringLayers=x.letteringLayers.map((layer,i)=>{
+      if(!layer||typeof layer!=="object"||typeof layer.text!=="string"||
+         layer.text.length>280||/[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(layer.text))
+        throw Error("Invalid text layer.");
+      const id=typeof layer.id==="string"?layer.id.slice(0,60):"layer-"+i;
+      if(ids.has(id))throw Error("Duplicate text layer.");
+      ids.add(id);
+      const out={id,text:layer.text,visible:layer.visible!==false};
+      if(typeof layer.visible!=="undefined"&&typeof layer.visible!=="boolean")throw Error("Invalid text layer visibility.");
+      for(const key of ["letteringAmount","letteringScale","letteringWarp","letteringMotion",
+        "letteringX","letteringY","letteringRotation","letteringStretchX","letteringStretchY","letteringCurve"]){
+        const value=layer[key]??initial[key],range=numericRanges[key];
+        if(!Number.isFinite(value)||value<range[0]||value>range[1])throw Error("Invalid text layer "+key);
+        out[key]=value;
+      }
+      for(const [key,choices] of Object.entries({letteringFont:retroFontIds,letteringStyle:letteringStyles,
+        letteringFillMode:["Solid","Linear gradient","Radial gradient"]})){
+        const value=layer[key]??initial[key];
+        if(!choices.includes(value))throw Error("Invalid text layer "+key);
+        out[key]=value;
+      }
+      out.letteringFill=layer.letteringFill??initial.letteringFill;
+      if(typeof out.letteringFill!=="string"||!colorRE.test(out.letteringFill))throw Error("Invalid text layer fill.");
+      out.letteringGradient=layer.letteringGradient??initial.letteringGradient;
+      if(!Array.isArray(out.letteringGradient)||out.letteringGradient.length<2||
+        out.letteringGradient.length>8||!out.letteringGradient.every(c=>typeof c==="string"&&colorRE.test(c)))
+        throw Error("Invalid text layer gradient.");
+      out.letteringGradientAngle=layer.letteringGradientAngle??0;
+      if(!Number.isFinite(out.letteringGradientAngle)||out.letteringGradientAngle<0||out.letteringGradientAngle>360)
+        throw Error("Invalid gradient angle.");
+      out.letteringStrokes=layer.letteringStrokes??[];
+      if(!Array.isArray(out.letteringStrokes)||out.letteringStrokes.length>5||
+        !out.letteringStrokes.every(x=>x&&typeof x.color==="string"&&colorRE.test(x.color)&&
+          Number.isFinite(x.width)&&x.width>=0&&x.width<=40&&typeof x.enabled==="boolean"))
+        throw Error("Invalid text layer outlines.");
+      return out;
+    });
   }
   if(x.letteringDrag!==undefined){
     if(typeof x.letteringDrag!=="boolean")throw Error("Invalid lettering drag setting.");

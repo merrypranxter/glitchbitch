@@ -244,6 +244,59 @@ export function TextInspector({ history }) {
           onChange={(v) => history.change((s) => ({ ...s, letteringStyle: v }))}>
           {letteringStyles.map((v) => <option key={v}>{v}</option>)}
         </Select>
+        <Section title="EXTRA TEXT LAYERS — INDEPENDENT WORDS">
+          <p className="control-note">Your original quote is layer one. Add up to two independent layers with their own words, fonts, materials, color, gradients, outlines, placement and animation. New layers stack above the original.</p>
+          {history.state.letteringLayers.map((layer,index)=>
+            <div key={layer.id} className="retro-type-actions">
+              <strong>Text layer {index+2}</strong>
+              <label className="select-field"><span>Words</span>
+                <textarea rows={2} maxLength={280} value={layer.text}
+                  onChange={e=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,text:e.target.value}:x)}))}/>
+              </label>
+              <label>Visible <input type="checkbox" checked={layer.visible}
+                onChange={e=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,visible:e.target.checked}:x)}))}/></label>
+              <Select label="Font" value={layer.letteringFont}
+                onChange={v=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringFont:v}:x)}))}>
+                {retroFonts.map(f=><option key={f.id} value={f.id}>{f.label}</option>)}
+              </Select>
+              <Select label="Appearance" value={layer.letteringStyle}
+                onChange={v=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringStyle:v}:x)}))}>
+                {letteringStyles.map(v=><option key={v}>{v}</option>)}
+              </Select>
+              <Select label="Fill" value={layer.letteringFillMode}
+                onChange={v=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringFillMode:v}:x)}))}>
+                {["Solid","Linear gradient","Radial gradient"].map(v=><option key={v}>{v}</option>)}
+              </Select>
+              <input type="color" aria-label="Layer fill color" value={layer.letteringFill}
+                onChange={e=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringFill:e.target.value}:x)}))}/>
+              {layer.letteringFillMode!=="Solid"&&layer.letteringGradient.map((color,j)=>
+                <input key={j} type="color" aria-label={"Gradient stop "+(j+1)} value={color}
+                  onChange={e=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringGradient:x.letteringGradient.map((c,n)=>n===j?e.target.value:c)}:x)}))}/>)}
+              {["letteringX","letteringY","letteringRotation","letteringStretchX","letteringStretchY",
+                "letteringCurve","letteringScale","letteringAmount","letteringWarp","letteringMotion"].map(key=>{
+                const bounds=key==="letteringRotation"?[-180,180]:
+                  key==="letteringCurve"?[-100,100]:
+                  key==="letteringStretchX"||key==="letteringStretchY"?[25,250]:[0,100];
+                return <label key={key} className="select-field"><span>{key.replace("lettering","")} {layer[key]}</span>
+                  <input type="range" min={bounds[0]} max={bounds[1]} value={layer[key]}
+                    onChange={e=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,[key]:Number(e.target.value)}:x)}))}/>
+                </label>;
+              })}
+              <button type="button" className="button secondary"
+                onClick={()=>history.change(s=>({...s,letteringLayers:s.letteringLayers.filter((_,i)=>i!==index)}))}>Delete this layer</button>
+            </div>)}
+          <button type="button" className="button secondary"
+            disabled={history.state.letteringLayers.length>=2}
+            onClick={()=>history.change(s=>({...s,letteringLayers:[...s.letteringLayers,{
+              id:"text-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),
+              text:"",visible:true,letteringFont:s.letteringFont,
+              letteringStyle:"Custom ink",letteringAmount:85,letteringScale:48,
+              letteringWarp:0,letteringMotion:0,letteringX:50,letteringY:50,
+              letteringRotation:0,letteringStretchX:100,letteringStretchY:100,
+              letteringCurve:0,letteringFillMode:"Solid",letteringFill:"#ff2fbf",
+              letteringGradient:["#ff2fbf","#00f5ff"],letteringGradientAngle:0,
+              letteringStrokes:[]}] }))}>+ Add independent text layer</button>
+        </Section>
         <Section title="TEXT FILL — SOLID OR GRADIENT">
           <Select label="Fill type" value={history.state.letteringFillMode}
             onChange={v=>history.change(s=>({...s,letteringFillMode:v}))}>

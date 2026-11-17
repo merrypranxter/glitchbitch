@@ -145,8 +145,13 @@ export function createRenderer(canvas) {
     };
   }
   let typeTexture=null, typeKey="", typeUnavailable=false;
+  const extraTypeTextures=[null,null],extraTypeKeys=["",""];
   const pendingFontLoads=new Set(), failedFontLoads=new Set();
   function releaseLettering(){
+    for(let i=0;i<2;i++){
+      if(extraTypeTextures[i])gl.deleteTexture(extraTypeTextures[i]);
+      extraTypeTextures[i]=null;extraTypeKeys[i]="";
+    }
     if(typeTexture)gl.deleteTexture(typeTexture);
     typeTexture=null;typeKey="";
   }
@@ -188,6 +193,40 @@ export function createRenderer(canvas) {
       console.warn("Kinetic lettering unavailable, original artwork preserved.",error);
       return false;
     }
+  }
+  function updateExtraLettering(s,width,height){
+    const layers=s.letteringLayers||[];
+    for(let i=0;i<2;i++){
+      const layer=layers[i];
+      if(!layer||!layer.visible||!layer.text.trim())continue;
+      const fontId=layer.letteringFont||"original";
+      if(!retroFontReady(fontId)&&!pendingFontLoads.has(fontId)&&!failedFontLoads.has(fontId)){
+        pendingFontLoads.add(fontId);
+        ensureRetroFontLoaded(fontId).then(()=>{pendingFontLoads.delete(fontId);extraTypeKeys[i]="";},
+          err=>{pendingFontLoads.delete(fontId);failedFontLoads.add(fontId);console.warn("Extra text font unavailable",err);});
+      }
+      try{
+        if(!extraTypeTextures[i]){
+          extraTypeTextures[i]=gl.createTexture();
+          gl.activeTexture(gl.TEXTURE4+i);gl.bindTexture(gl.TEXTURE_2D,extraTypeTextures[i]);
+          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+        }
+        const aspect=width/Math.max(1,height);
+        const key=JSON.stringify([layer,aspect.toFixed(4),retroFontRevision()]);
+        gl.activeTexture(gl.TEXTURE4+i);gl.bindTexture(gl.TEXTURE_2D,extraTypeTextures[i]);
+        if(key!==extraTypeKeys[i]){
+          const glyphs=glyphCanvas(layer.text,aspect,fontId,layer);
+          gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+          try{gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,glyphs);}
+          finally{gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);}
+          extraTypeKeys[i]=key;
+        }
+      }catch(e){console.warn("Extra text layer skipped",e);extraTypeKeys[i]="";}
+    }
+    gl.activeTexture(gl.TEXTURE0);
   }
   // Do not let an unsupported high-cost 3D shader blank out existing artwork.
   const safe2DSelection = (s) => ({
@@ -714,6 +753,30 @@ export function createRenderer(canvas) {
       gl.uniform1i(loc("letteringStyle"), ["Neon bling","RGB split","Chrome foil","Void stencil","Custom ink","Holographic","Electric glow","Liquid candy","Ghost echo","Chromatic shimmer","Heatwave","Glitter ink","Prism pulse","Soft shadow"].indexOf(s.letteringStyle));
       gl.uniform1i(loc("letteringAvailable"), hasLettering ? 1 : 0);
       gl.uniform1i(loc("letteringTex"), 3);
+      updateExtraLettering(s,width,height);
+      const extras=s.letteringLayers||[];
+      gl.uniform1i(loc("letteringExtraCount"),extras.length);
+      for(let i=0;i<2;i++){
+        const layer=extras[i];
+        const available=!!(layer&&layer.visible&&layer.text.trim()&&extraTypeTextures[i]&&extraTypeKeys[i]);
+        gl.uniform1f(loc("letteringExtraVisible["+i+"]"),available?1:0);
+        gl.uniform4f(loc("letteringExtraTransform["+i+"]"),
+          (layer?.letteringX??50)/100,(layer?.letteringY??50)/100,
+          layer?.letteringRotation??0,(layer?.letteringScale??48)/100);
+        gl.uniform4f(loc("letteringExtraShape["+i+"]"),
+          (layer?.letteringStretchX??100)/100,(layer?.letteringStretchY??100)/100,
+          (layer?.letteringCurve??0)/100,(layer?.letteringAmount??0)/100);
+        gl.uniform2f(loc("letteringExtraFX["+i+"]"),
+          (layer?.letteringWarp??0)/100,(layer?.letteringMotion??0)/100);
+        gl.uniform1i(loc("letteringExtraStyle["+i+"]"),
+          ["Neon bling","RGB split","Chrome foil","Void stencil","Custom ink",
+           "Holographic","Electric glow","Liquid candy","Ghost echo",
+           "Chromatic shimmer","Heatwave","Glitter ink","Prism pulse","Soft shadow"].indexOf(layer?.letteringStyle));
+        gl.activeTexture(gl.TEXTURE4+i);
+        gl.bindTexture(gl.TEXTURE_2D,extraTypeTextures[i]);
+        gl.uniform1i(loc(i===0?"letteringTexExtra0":"letteringTexExtra1"),4+i);
+      }
+      gl.activeTexture(gl.TEXTURE0);
       gl.uniform1i(loc("wiggleMode"), ["Flipbook", "Smooth orbit", "Hold left", "Hold right"].indexOf(s.wiggleMode));
       gl.uniform1i(loc("stereoShape"), ["Gyroid Cathedral", "Metaball Choir", "Opal Knot",
         "Crystal Lattice", "Ribbon Wormhole"].indexOf(s.stereoShape));

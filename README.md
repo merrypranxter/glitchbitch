@@ -174,3 +174,6 @@ Text includes 14 appearance modes, independent solid or linear/radial gradient f
 
 ## Text placement and transformation
 Text tab has drag-on-canvas mode, horizontal/vertical placement, rotation, independent X/Y stretching, curve bending and placement-only reset. Drag mode temporarily replaces force painting until switched off. All transform values are validated and saved in recipes; PNG/GIF/MP4 share the shader. Text still belongs entirely to the artist. Physical Safari verification is pending.
+
+## Multiple typography layers
+The original text remains the base. Two additional independent text layers can be added and deleted, each with its own words, font, material, gradient fill, placement and animation sliders. The renderer uploads two additional glyph textures and composites them in layer order in the same GPU shader used by preview and exports. Older recipes remain compatible; extra layers default to empty. This is a bounded mobile-first implementation (three total layers), not an unlimited layer engine. Physical iPhone/WebGL testing remains pending.

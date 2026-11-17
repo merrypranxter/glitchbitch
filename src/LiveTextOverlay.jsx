@@ -10,9 +10,9 @@ const inkText = (style, text, key) => <span key={key} style={style}>{text}</span
 // Words stay unbroken when wrapping; each character receives a continuous
 // transform. This replaces the old clipped horizontal slices entirely.
 function MovingGlyphs({text}) {
-  const parts=String(text).split(/(\\s+)/u), total=Array.from(text).filter(c=>!(/\\s/u.test(c))).length;
+  const parts=String(text).split(/(\s+)/u), total=Array.from(text).filter(c=>!(/\s/u.test(c))).length;
   let index=0;
-  return <>{parts.map((part,k)=>(/^(?:\\s)+$/u.test(part))
+  return <>{parts.map((part,k)=>(/^(?:\s)+$/u.test(part))
     ? <React.Fragment key={k}>{part}</React.Fragment>
     : <span key={k} style={{display:"inline-block",whiteSpace:"nowrap"}}>
         {Array.from(part).map((char,j)=>

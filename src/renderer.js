@@ -5,6 +5,7 @@ import { feedbackVertex, feedbackFragment } from "./feedback.js";
 import { createBiology, BIO_SIZE } from "./biology.js";
 import { bioGLSL } from "./bio-shader.js";
 import { stereoGLSL } from "./stereo.js";
+import { wiggleGLSL } from "./wiggle.js";
 import { materialGLSL } from "./materials.js";
 import { kineticGLSL, glyphCanvas } from "./kinetic-type.js";
 import { ensureRetroFontLoaded, retroFontReady, retroFontRevision } from "./retro-fonts.js";
@@ -32,6 +33,7 @@ vec3 palette(float t){float q=fract(t)*float(colorCount);int a=int(floor(q));vec
 ${geometryGLSL}
 ${motionGLSL}
 ${bioGLSL}
+/* WIGGLE_MODULE */
 /* STEREO_MODULE */
 /* TUNNEL_MODULE */
 float field(vec2 p,int kind){float t=time*.3,f=0.;
@@ -88,6 +90,7 @@ float blocks=step(1.-block*.32,hash(floor(uv*vec2(17.,24.))+floor(time*2.)));p+=
 float source=0.;for(int i=0;i<32;i++){if(i<count){vec2 d=(uv-marks[i].xy)*aspect;float radius=max(markShape[i].x,.05);float influence=exp(-dot(d,d)/(radius*radius));float force=marks[i].z*influence;float a=markShape[i].y;vec2 local=rotate(a)*d;
 if(marks[i].w<.5)p+=rotate(a)*vec2(sin(local.y*15.+time),cos(local.x*15.-time))*force;
 else if(marks[i].w<1.5)p+=vec2(-d.y,d.x)*force*8.;else if(marks[i].w<2.5)p+=d*force*8.;else source+=force*(.5+.5*sin(2.*atan(d.y,d.x)+colorTime*.5+a));}}
+/* WIGGLE_POST */
 float v=composed(p);vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*sin(v*(2.+complexity*5.)*TAU),18.);col*=.72+edge*.5;if(bloom)col+=edge*col*.24;
 /* BACKDROP_POST */
 /* COMPOSITION_POST */
@@ -124,12 +127,12 @@ export function createRenderer(canvas) {
   let stereoUnavailable = false, materialUnavailable = false,
     typeShaderUnavailable = false, compositionUnavailable = false,
     backdropUnavailable = false, microUnavailable = false,
-    substanceUnavailable = false;
+    substanceUnavailable = false, wiggleUnavailable = false;
   function compatibleShaderState(s){
     const source = stereoUnavailable ? safe2DSelection(s) : s;
     if(!materialUnavailable && !typeShaderUnavailable &&
        !compositionUnavailable && !backdropUnavailable &&
-       !microUnavailable && !substanceUnavailable)return source;
+       !microUnavailable && !substanceUnavailable && !wiggleUnavailable)return source;
     return {
       ...source,
       ...(materialUnavailable ? {filmAmount:0,opalAmount:0,prismAmount:0,foilRelief:0}:{}),
@@ -137,7 +140,8 @@ export function createRenderer(canvas) {
       ...(compositionUnavailable ? {compositionAmount:0}:{}),
       ...(backdropUnavailable ? {backdropAmount:0}:{}),
       ...(microUnavailable ? {microAmount:0}:{}),
-      ...(substanceUnavailable ? {substanceAmount:0}:{})
+      ...(substanceUnavailable ? {substanceAmount:0}:{}),
+      ...(wiggleUnavailable ? {wiggleAmount:0}:{})
     };
   }
   let typeTexture=null, typeKey="", typeUnavailable=false;
@@ -395,6 +399,7 @@ export function createRenderer(canvas) {
   function programFor(s) {
     const blended = s.blend > 0,
       withStereo = s.engine === 16 || (blended && s.secondaryEngine === 16) || s.stereoAmount > 0,
+      withWiggle = s.wiggleAmount > 0,
       withMaterial = s.filmAmount>0 || s.opalAmount>0 || s.prismAmount>0 || s.foilRelief>0,
       withLettering = s.letteringAmount>0 && !!s.lettering.trim(),
       withComposition = blended && s.compositionAmount>0,
@@ -402,7 +407,7 @@ export function createRenderer(canvas) {
       withMicro = s.microAmount>0,
       withSubstance = s.substanceAmount>0,
       withTunnel = s.engine===5 || (blended && s.secondaryEngine===5),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withWiggle ? "wiggle" : "still"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -417,6 +422,8 @@ export function createRenderer(canvas) {
     );
     if (!blended)
       source = source.replace("if(blend<.001)return a;", "return a;");
+    source = source.replace("/* WIGGLE_MODULE */", withWiggle ? wiggleGLSL : "");
+    source = source.replace("/* WIGGLE_POST */", withWiggle ? "p=wiggleCoordinates(p);" : "");
     source = source.replace("/* STEREO_MODULE */", withStereo ? stereoGLSL : "");
     source = source.replace("/* TUNNEL_MODULE */", withTunnel ? tunnelGLSL :
       "float seamlessTunnel(vec2 p){return 0.;}");
@@ -544,7 +551,7 @@ export function createRenderer(canvas) {
       // Progressive shader fallback: the newest optional effects are disabled
       // one at a time if the driver cannot compile them. Legacy fields stay visible.
       let lastCompileError = null;
-      for(let attempt=0;attempt<8;attempt++){
+      for(let attempt=0;attempt<9;attempt++){
         const candidate=compatibleShaderState(s);
         try {
           active=programFor(candidate);
@@ -552,7 +559,10 @@ export function createRenderer(canvas) {
           break;
         }catch(e){
           lastCompileError=e;
-          if(candidate.letteringAmount>0 && candidate.lettering.trim()){
+          if(candidate.wiggleAmount>0){
+            wiggleUnavailable=true;
+            console.warn("Wiggle stereoscopy unsupported; preserving the original artwork.",e);
+          }else if(candidate.letteringAmount>0 && candidate.lettering.trim()){
             typeShaderUnavailable=true;
             console.warn("Kinetic lettering shader unavailable, preserving original art.",e);
           }else if(candidate.substanceAmount>0){
@@ -644,6 +654,7 @@ export function createRenderer(canvas) {
         "lightMotion",
         "bioAmount",
         "bioVeins",
+        "wiggleAmount", "wiggleDepth", "wiggleSpeed", "wiggleLayers",
         "stereoAmount",
         "stereoDepth",
         "stereoParallax",
@@ -697,6 +708,7 @@ export function createRenderer(canvas) {
       gl.uniform1i(loc("letteringStyle"), ["Neon bling","RGB split","Chrome foil","Void stencil"].indexOf(s.letteringStyle));
       gl.uniform1i(loc("letteringAvailable"), hasLettering ? 1 : 0);
       gl.uniform1i(loc("letteringTex"), 3);
+      gl.uniform1i(loc("wiggleMode"), ["Flipbook", "Smooth orbit", "Hold left", "Hold right"].indexOf(s.wiggleMode));
       gl.uniform1i(loc("stereoShape"), ["Gyroid Cathedral", "Metaball Choir", "Opal Knot",
         "Crystal Lattice", "Ribbon Wormhole"].indexOf(s.stereoShape));
       gl.uniform1i(loc("motionMode"), ["Liquid flow", "Breathing", "Orbital", "Traveling waves", "Internal turbulence"].indexOf(s.motionMode));

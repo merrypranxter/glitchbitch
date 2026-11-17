@@ -147,3 +147,24 @@ The Color tab has four explicit, touch-friendly actions. **Shuffle palette** loa
 
 ## Wave 5 — Sample-Vault Substance Lab
 The four modes in **Effects → Sample Vault — Substance Lab** borrow distinct algorithms from source examples in `merrypranxter/shaderslop_designs/myspace_glitch`: **CMY Lithogenesis** (from `04-pixel-dither-halftone/cmy-substance_20260709_104234.js`, cellular metric mutation and moving CMY interference), **Chromatophore Reef** (from `02-vhs-crt-subpixels/phosphor_reef_engine_20260621_183223.js`, growing pigment organelles and glowing cell membranes), **Chitin Interference** (from `06-glitch-math-hybrids/neon-void-substance.js`, directional layered phase-color reflections), and **Conformal Chromasoup** (from `06-glitch-math-hybrids/chromasoup_20260701_223543.js`, warped Voronoi cells, radial contours and moving color edges). These mechanisms were adapted and simplified into one palette-linked, time-driven, seed-aware fragment layer—not blindly copied Three.js renderers. The layer applies to all original engines and combinations, has seven controls plus a substance-only variation shuffler, and is off by default for legacy recipes. Surprise Me changes the species and all controls; Mutate nudges controls without changing species; eight new wordless sample-hybrid looks bring the Lookbook to **100**. Rendered through the existing PNG/GIF/MP4 frame renderer, with optional module compilation and GPU fallback that preserves older art if a device rejects the shader. Real iPhone WebGL compilation/performance remains to be tested. No Netlify.
+
+## Wave 6 — Wiggle Stereoscopy
+
+**Effects → Wiggle Stereoscopy** creates a cheap pseudo-stereo effect on the
+existing 2D math, separately from the 3D raymarched Ghost Machine. A
+deterministic depth map made of noise and contours assigns approximate
+near/far strata: closer mathematical structures move more than the
+background. It is an artistic two-view illusion, not true reconstructed 3D.
+
+**Flipbook** alternates two views. **Smooth orbit** interpolates between them.
+**Hold left** and **Hold right** let you compare the individual views. Controls
+are view separation, depth, speed and strata density; a one-tap starter
+activates them without changing palettes or artist-written words. Pausing or
+freezing geometry holds the selected view.
+
+Wiggle is compiled only when enabled and defaults off in older recipes. It is
+validated, undoable, and included in Surprise Me, Mutate, local saved recipes
+and the shared full-quality PNG/GIF/MP4 rendering pipeline. Unsupported
+shaders fall back to unchanged artwork, with no added textures or framebuffers.
+No deployment service is needed. iPhone Safari GPU/render tests remain to be
+performed on-device.

@@ -150,6 +150,7 @@ export const touchModes = ["Warp", "Vortex", "Repel", "Chroma"];
 export const motionModes = ["Liquid flow", "Breathing", "Orbital", "Traveling waves", "Internal turbulence"];
 export const tunnelModes = ["Infinite spiral","Conch cathedral","Braided wormhole","Moiré throat","Living iris","Liquid vortex"];
 export const stereoShapes = ["Gyroid Cathedral", "Metaball Choir", "Opal Knot", "Crystal Lattice", "Ribbon Wormhole"];
+export const wiggleModes = ["Flipbook", "Smooth orbit", "Hold left", "Hold right"];
 export const letteringStyles = ["Neon bling", "RGB split", "Chrome foil", "Void stencil"];
 export const compositionModes = [
   "Iris portals", "Braided ribbons", "Cell colonies", "Patchwork",
@@ -216,6 +217,10 @@ export const numericRanges = {
   bioKill: [0, 100],
   bioSpeed: [0, 100],
   bioVeins: [0, 100],
+  wiggleAmount: [0, 100],
+  wiggleDepth: [0, 100],
+  wiggleSpeed: [0, 100],
+  wiggleLayers: [0, 100],
   stereoAmount: [0, 100],
   stereoDepth: [0, 100],
   stereoParallax: [0, 100],
@@ -327,6 +332,11 @@ export const initial = {
   bioKill: 42,
   bioSpeed: 53,
   bioVeins: 54,
+  wiggleMode: "Flipbook",
+  wiggleAmount: 0,
+  wiggleDepth: 65,
+  wiggleSpeed: 45,
+  wiggleLayers: 52,
   stereoAmount: 0,
   stereoDepth: 55,
   stereoParallax: 28,
@@ -448,6 +458,7 @@ export function validateRecipe(input) {
     motionMode: motionModes,
     tunnelMode: tunnelModes,
     stereoShape: stereoShapes,
+    wiggleMode: wiggleModes,
     letteringStyle: letteringStyles,
     letteringFont: retroFontIds,
     compositionMode: compositionModes,
@@ -599,7 +610,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
       "tunnelAperture","tunnelVariation",
       "motionAmount","motionRate","lightMotion","bioAmount","bioFeed","bioKill",
-      "bioSpeed","bioVeins","stereoAmount","stereoDepth","stereoParallax",
+      "bioSpeed","bioVeins","wiggleAmount","wiggleDepth","wiggleSpeed","wiggleLayers",
+      "stereoAmount","stereoDepth","stereoParallax",
       "stereoMorph","stereoGlow","stereoWiggle","stereoQuality",
       "filmAmount","filmThickness","opalAmount","prismAmount","foilRelief","foilMotion",
       "letteringAmount","letteringScale","letteringWarp","letteringMotion",
@@ -686,6 +698,12 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.bioSpeed=25+random()*75;s.bioVeins=random()*100;
   s.bioAmount=(s.engine===15||s.secondaryEngine===15&&s.blend>0||random()<.35)
     ? 30+random()*69:0;
+  // Surprise may opt into a lightweight 2D parallax illusion.
+  s.wiggleMode=different(wiggleModes,state.wiggleMode,random);
+  s.wiggleAmount=random()<.54 ? 30+random()*63 : 0;
+  s.wiggleDepth=22+random()*76;
+  s.wiggleSpeed=16+random()*73;
+  s.wiggleLayers=17+random()*80;
   s.stereoShape=different(stereoShapes,state.stereoShape,random);
   s.stereoAmount=(s.engine===16 || s.secondaryEngine===16 && s.blend>0 || random()<.27)
     ? 32+random()*65 : 0;

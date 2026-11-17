@@ -28,7 +28,7 @@ import {
   Dna,
   Box,
 } from "lucide-react";
-import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, letteringStyles, compositionModes, backdropModes, microModes, substanceModes } from "../data";
+import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, letteringStyles, compositionModes, backdropModes, microModes, substanceModes, wiggleModes } from "../data";
 import { Parameter, Range, Switch, Select, Section } from "./Controls";
 import { retroFonts, retroFontGroups, getRetroFont, ensureRetroFontLoaded } from "../retro-fonts";
 const icons = [
@@ -292,6 +292,27 @@ export function EffectsInspector({ history }) {
           They move even when the primary structure holds its shape. Surprise Me changes
           the entire background species, its motion, density, depth and colors.
         </p>
+      </Section>
+      <Section title="WIGGLE STEREOSCOPY — FAKE DEPTH, REAL WEIRD">
+        <Select label="View motion" value={history.state.wiggleMode}
+          onChange={v=>history.change(s=>({...s,wiggleMode:v}))}>
+          {wiggleModes.map(mode=><option key={mode}>{mode}</option>)}
+        </Select>
+        <Parameter label="Wiggle / view separation" name="wiggleAmount" history={history}/>
+        <Parameter label="Depth displacement" name="wiggleDepth" history={history}/>
+        <Parameter label="View switching speed" name="wiggleSpeed" history={history}/>
+        <Parameter label="Depth strata / texture" name="wiggleLayers" history={history}/>
+        <button type="button" className="button secondary full"
+          onClick={()=>history.change(s=>({...s,wiggleMode:"Flipbook",
+            wiggleAmount:67,wiggleDepth:72,wiggleSpeed:48,wiggleLayers:62}))}>
+          Make this artwork wiggle
+        </button>
+        <p className="control-note">Flipbook alternates exactly two different views.
+          Smooth orbit glides between them; Hold left/right show the two eye frames.
+          This is a lightweight 2D depth illusion, separate from the 3D engine below.
+          The backdrop and your own text stay anchored. Pause or Freeze geometry
+          holds the view. Saved recipes, GIF, MP4, PNG, Surprise Me and Mutate
+          share the same controls. Zero wiggle restores your original artwork.</p>
       </Section>
       <Section title="STEREO GHOST MACHINE — 3D DEPTH">
         <Select label="3D shape family" value={history.state.stereoShape}

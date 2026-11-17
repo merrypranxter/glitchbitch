@@ -1,6 +1,7 @@
 import React from "react";
 import { getRetroFont } from "./retro-fonts.js";
 import { letteringMaterial, textMotion } from "./lettering-materials.js";
+import { getLetteringBlendRecipe } from "./lettering-blends.js";
 
 const asPercent = (value, fallback=50) => Math.max(0, Math.min(100, Number(value ?? fallback)));
 const inkText = (style, text, key) => <span key={key} style={style}>{text}</span>;
@@ -84,55 +85,88 @@ function TextLayer({ layer, palette, width, height, playing, index }) {
   const strips = warp > .015 ? 12 : 0;
   const stripAmplitude = Math.round((4 + 31 * warp) * (minEdge / 430));
   const activity = playing ? "running" : "paused";
-  return (
-    <div className="live-type-layer" key={layer.id || index}
-      style={{
-        position:"absolute", zIndex:index+1, left:`${x}%`, top:`${100-y}%`,
-        width:"70%", transform:`translate(-50%,-50%) rotate(${angle}deg) scale(${sx},${sy}) skewX(${curve*8}deg)`,
-        transformOrigin:"center center", opacity,
-        pointerEvents:"none", userSelect:"none", WebkitUserSelect:"none",
-      }}>
-      <div className="live-type-kinetic" style={{
-        position:"relative", width:"100%",
-        "--motion-x": `${Math.round(39*motion)}px`,
-        "--motion-y": `${Math.round(22*motion)}px`,
-        "--motion-back-x": `${Math.round(-34*motion)}px`,
-        "--motion-back-y": `${Math.round(-19*motion)}px`,
-        "--motion-half-x": `${Math.round(16*motion)}px`,
-        "--motion-rotation":`${(11*motion).toFixed(2)}deg`,
-        "--motion-back-rotation":`${(-12*motion).toFixed(2)}deg`,
-        animationName: motion > .01 ? "live-type-kinetic" : "none",
-        animationDuration:`${(5 - 3.1*motion).toFixed(2)}s`,
-        animationTimingFunction:"ease-in-out", animationIterationCount:"infinite",
-        animationPlayState:activity
-      }}>
-        <div className="live-type-material-motion" style={{ animationPlayState:activity }}>
-          <div style={{visibility:strips ? "hidden" : "visible"}}>{face}</div>
-          {Array.from({length:strips}, (_,i) => {
-            const start = i*100/strips, end = (strips-i-1)*100/strips;
-            const polarity = (i%2===0 ? 1 : -1);
-            const amount = polarity * stripAmplitude * (0.65 + 0.35*Math.sin(i*2.3));
-            return (
-              <div className="live-type-slice" key={i} style={{
-                position:"absolute", inset:0,
-                clipPath:`inset(${start.toFixed(4)}% 0 ${end.toFixed(4)}% 0)`,
-                WebkitClipPath:`inset(${start.toFixed(4)}% 0 ${end.toFixed(4)}% 0)`,
-                "--slice-x":`${amount.toFixed(2)}px`,
-                "--slice-neg-x":`${(-amount*.72).toFixed(2)}px`,
-                "--slice-skew":`${(polarity*warp*14).toFixed(1)}deg`,
-                animationName:"live-type-liquid-slice",
-                animationDuration:`${(3.3-2.05*warp).toFixed(2)}s`,
-                animationDelay:`${(-i*.145).toFixed(3)}s`,
-                animationTimingFunction:"ease-in-out",
-                animationIterationCount:"infinite", animationDirection:"alternate",
-                animationPlayState:activity
-              }}>{face}</div>
-            );
-          })}
+
+  // Strength crossfades NORMAL text with the full composited effect. At 0
+  // the text stays visible and ordinary rather than disappearing.
+  const blend=getLetteringBlendRecipe(layer.letteringBlendMode, layer.letteringBlendStrength);
+  const intensity=blend.mode==="Normal" ? 0 : blend.strength;
+  const passes=[
+    ...(intensity < 1 ? [{id:"normal",cssBlend:"normal",alpha:1-intensity,filter:"none"}] : []),
+    ...(intensity > 0 ? [
+      {id:"effect",cssBlend:blend.cssBlend,alpha:intensity,filter:blend.filter,
+        animation:blend.animation,whiteInk:blend.whiteInk},
+      ...blend.passes.map((p,i)=>({...p,id:"extra-"+i,alpha:intensity*(p.alpha??1),extra:true}))
+    ]:[])
+  ];
+  return <>
+    {passes.map(pass=>{
+      const look=pass.whiteInk
+        ? {...material,gradient:null,ink:"#ffffff",previewShadow:"none",glow:"none",echoes:[]}
+        : pass.tint
+          ? {...material,gradient:null,ink:pass.tint,previewShadow:"none",glow:"none",echoes:[]}
+          : material;
+      const passFace=pass.id==="normal" || pass.id==="effect" ? face
+        : <TextFace text={text} material={look} fontStyle={fontStyle} strokes={strokes}/>;
+      const showFace=pass.whiteInk
+        ? <TextFace text={text} material={look} fontStyle={fontStyle} strokes={strokes}/>
+        : passFace;
+      const bandCount=pass.extra ? 0 : strips;
+      const passOpacity=Math.min(1,Math.max(0,opacity*pass.alpha));
+      const offsetX=(pass.offsetX||0)*minEdge/430;
+      const offsetY=(pass.offsetY||0)*minEdge/430;
+      return (
+        <div className="live-type-layer" key={(layer.id || index)+"-"+pass.id}
+          style={{
+            position:"absolute", zIndex:index*5+(pass.extra?4:pass.id==="effect"?3:2),
+            left:`${x}%`,top:`${100-y}%`,width:"70%",
+            transform:`translate(-50%,-50%) rotate(${angle}deg) scale(${sx},${sy}) skewX(${curve*8}deg)`,
+            transformOrigin:"center center",opacity:passOpacity,
+            mixBlendMode:pass.cssBlend || "normal",
+            filter:pass.filter && pass.filter!=="none" ? pass.filter : undefined,
+            pointerEvents:"none",userSelect:"none",WebkitUserSelect:"none"
+          }}>
+          <div className="live-type-kinetic" style={{
+            position:"relative",width:"100%",
+            "--motion-x":`${Math.round(39*motion)+offsetX}px`,
+            "--motion-y":`${Math.round(22*motion)+offsetY}px`,
+            "--motion-back-x":`${Math.round(-34*motion)+offsetX}px`,
+            "--motion-back-y":`${Math.round(-19*motion)+offsetY}px`,
+            "--motion-half-x":`${Math.round(16*motion)+offsetX}px`,
+            "--motion-rotation":`${(11*motion).toFixed(2)}deg`,
+            "--motion-back-rotation":`${(-12*motion).toFixed(2)}deg`,
+            animationName:motion>.01 ? "live-type-kinetic":"none",
+            animationDuration:`${(5-3.1*motion).toFixed(2)}s`,
+            animationTimingFunction:"ease-in-out",
+            animationIterationCount:"infinite",animationPlayState:activity
+          }}>
+            <div className={pass.animation?"live-type-material-motion live-type-blend-"+pass.animation:"live-type-material-motion"}
+              style={{animationPlayState:activity}}>
+              <div style={{visibility:bandCount?"hidden":"visible"}}>{showFace}</div>
+              {Array.from({length:bandCount},(_,i)=>{
+                const start=i*100/bandCount,end=(bandCount-i-1)*100/bandCount;
+                const polarity=i%2===0?1:-1;
+                const amount=polarity*stripAmplitude*(.65+.35*Math.sin(i*2.3));
+                return <div className="live-type-slice" key={i} style={{
+                  position:"absolute",inset:0,
+                  clipPath:`inset(${start.toFixed(4)}% 0 ${end.toFixed(4)}% 0)`,
+                  WebkitClipPath:`inset(${start.toFixed(4)}% 0 ${end.toFixed(4)}% 0)`,
+                  "--slice-x":`${amount.toFixed(2)}px`,
+                  "--slice-neg-x":`${(-amount*.72).toFixed(2)}px`,
+                  "--slice-skew":`${(polarity*warp*14).toFixed(1)}deg`,
+                  animationName:"live-type-liquid-slice",
+                  animationDuration:`${(3.3-2.05*warp).toFixed(2)}s`,
+                  animationDelay:`${(-i*.145).toFixed(3)}s`,
+                  animationTimingFunction:"ease-in-out",
+                  animationIterationCount:"infinite",animationDirection:"alternate",
+                  animationPlayState:activity
+                }}>{showFace}</div>;
+              })}
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  );
+      );
+    })}
+  </>;
 }
 
 /**
@@ -146,7 +180,7 @@ export default function LiveTextOverlay({state, width, height, playing=true}) {
   ];
   return (
     <div className="live-type-root" aria-hidden="true" data-playing={playing ? "true" : "false"}
-      style={{position:"absolute", inset:0, pointerEvents:"none", zIndex:3, overflow:"hidden"}}>
+      style={{position:"absolute", inset:0, pointerEvents:"none", zIndex:3, overflow:"hidden", isolation:"auto"}}>
       {layers.map((layer,i) =>
         <TextLayer key={layer.id || i} layer={layer} index={i}
           palette={state.colors || []} width={width} height={height} playing={playing}/>)}

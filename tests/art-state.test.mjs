@@ -776,3 +776,60 @@ test("all polar tunnel building blocks match at ±π for all permitted ridge cou
     assert.ok(Math.abs(colorVoice(-Math.PI)-colorVoice(Math.PI))<1e-9);
   }
 });
+
+test("Color tab palette shuffle loads a different vault or saved custom palette", async () => {
+  const {pickDifferentPalette}=await import("../src/palette-actions.js");
+  const choices=[
+    {name:"Vault",colors:["#ff0000","#00ff00"]},
+    {name:"User palette",colors:["#e624bc","#f4ef0c","#3212ce"]},
+    {name:"Other",colors:["#080909","#99eeff"]}
+  ];
+  const first=pickDifferentPalette(choices,choices[0].colors,()=>0);
+  assert.equal(first.index,1,"saved custom palette is included");
+  assert.deepEqual(first.colors,choices[1].colors);
+  first.colors[0]="#aabbcc";
+  assert.equal(choices[1].colors[0],"#e624bc","vault entries must not be mutated");
+  const last=pickDifferentPalette(choices,choices[2].colors,()=>.999);
+  assert.notDeepEqual(last.colors,choices[2].colors);
+  assert.equal(pickDifferentPalette([choices[0]],choices[0].colors),null);
+});
+test("Shuffle and reverse color stops keep the same colors and survive Undo/recipe round-trip", async () => {
+  const {shuffleColorStops,reverseColorStops}=await import("../src/palette-actions.js");
+  const original=["#fa19ac","#03e7ef","#f6ff2e","#080811"];
+  const shuffled=shuffleColorStops(original,()=>.999);
+  assert.notDeepEqual(shuffled,original,"even unlucky random draws must change the order");
+  assert.deepEqual([...shuffled].sort(),[...original].sort());
+  assert.deepEqual(reverseColorStops(original),[...original].reverse());
+  assert.deepEqual(original,["#fa19ac","#03e7ef","#f6ff2e","#080811"]);
+  for(const colors of [shuffled,reverseColorStops(original)]){
+    const doc=recipeDocument({...initial,palette:-1,colors},"Stops",{time:2,colorTime:4});
+    assert.deepEqual(parseDocument(doc).state.colors,colors);
+    assert.equal(parseDocument(doc).state.palette,-1);
+  }
+});
+test("Random palette generates vivid, valid and editable 4-8-stop hex colors",async()=>{
+  const {generateRandomPalette}=await import("../src/palette-actions.js");
+  for(const value of [0,.01,.19,.43,.74,.999]){
+    const colors=generateRandomPalette(()=>value);
+    assert.ok(colors.length>=4 && colors.length<=8);
+    assert.ok(colors.every(c=>/^#[0-9a-f]{6}$/.test(c)));
+    assert.ok(new Set(colors).size>=3);
+    const doc=recipeDocument({...initial,palette:-1,colors},"Custom colors",{time:3,colorTime:5});
+    assert.deepEqual(parseDocument(doc).state.colors,colors);
+  }
+  // Surprise Me can now invent new palettes without ever generating words.
+  const surprise=randomize({...initial,lettering:"MY QUOTE"},{},false,()=>.01);
+  assert.equal(surprise.palette,-1);
+  assert.ok(surprise.colors.length>=4 && surprise.colors.length<=8);
+  assert.equal(surprise.lettering,"");
+});
+test("All four color actions live in the Color tab and stay undoable via history.change",async()=>{
+  const {readFileSync}=await import("node:fs");
+  const ui=readFileSync(new URL("../src/components/ColorLab.jsx",import.meta.url),"utf8");
+  for(const label of ["Shuffle palette","Random palette","Shuffle stops","Reverse stops"])
+    assert.ok(ui.includes(label),label);
+  for(const handler of ["shufflePalette","makeRandomPalette","shuffleStops","reverseStops"])
+    assert.match(ui,new RegExp("function "+handler+"\\(\\)\\s*\\{\\s*history\\.change\\("));
+  assert.match(ui,/customPalettes\],s\.colors/);
+  assert.match(ui,/colors:reverseColorStops\(s\.colors\)/);
+});

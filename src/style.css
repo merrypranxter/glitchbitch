@@ -2929,3 +2929,9 @@ footer > span:last-child svg {
   .studio-page .workspace-bottom>button span:after{font-size:10px}
   .studio-page .transport .restart{display:none}
 }
+
+/* Palette playground: touch-sized actions inside the compact, scrollable Color panel. */
+.palette-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:9px 0 13px}
+.palette-action-grid .button{display:flex;align-items:center;justify-content:center;gap:7px;min-width:0;min-height:40px;padding:9px 8px;text-align:center;white-space:normal;line-height:1.25;font-size:12px}
+.palette-action-grid .button svg{flex-shrink:0}
+@media(max-width:480px){.palette-action-grid{gap:6px}.palette-action-grid .button{font-size:11px;padding:8px 5px;gap:4px}}

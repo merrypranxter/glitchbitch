@@ -4,12 +4,15 @@ import {
   Plus,
   Minus,
   ArrowLeftRight,
+  Shuffle,
+  Dices,
   RotateCw,
   Save,
   Palette,
   Trash2,
 } from "lucide-react";
 import { palettes, parsePalette, paletteName } from "../data";
+import { pickDifferentPalette, generateRandomPalette, shuffleColorStops, reverseColorStops } from "../palette-actions";
 import { parsePaletteLibrary, paletteLibraryDocument } from "../palette-io";
 import { Parameter, Section, Select, Switch } from "./Controls";
 export function Swatches({ colors }) {
@@ -37,6 +40,22 @@ export default function ColorLab({
   const pick = (colors) =>
     history.change((s) => ({ ...s, palette: -1, colors }));
   const index = Math.min(selected, state.colors.length - 1);
+  function shufflePalette(){
+    history.change(s=>{
+      const picked=pickDifferentPalette([...palettes,...customPalettes],s.colors);
+      if(!picked)return s;
+      return {...s,palette:picked.index<palettes.length?picked.index:-1,colors:picked.colors};
+    });
+  }
+  function makeRandomPalette(){
+    history.change(s=>({...s,palette:-1,colors:generateRandomPalette()}));
+  }
+  function shuffleStops(){
+    history.change(s=>({...s,palette:-1,colors:shuffleColorStops(s.colors)}));
+  }
+  function reverseStops(){
+    history.change(s=>({...s,palette:-1,colors:reverseColorStops(s.colors)}));
+  }
   function importColors(e) {
     e.preventDefault();
     try {
@@ -71,6 +90,16 @@ export default function ColorLab({
         title="PALETTE VAULT"
         aside={<span>{palettes.length + customPalettes.length} PALETTES</span>}
       >
+        <div className="palette-action-grid" role="group" aria-label="Palette discovery">
+          <button className="button secondary" type="button" onClick={shufflePalette}
+            title="Pick a different palette from the full vault and your saved palettes">
+            <Shuffle size={15}/> Shuffle palette
+          </button>
+          <button className="button secondary" type="button" onClick={makeRandomPalette}
+            title="Invent a fresh editable palette with four to eight color stops">
+            <Dices size={15}/> Random palette
+          </button>
+        </div>
         <input
           type="search"
           className="search-input"
@@ -133,6 +162,16 @@ export default function ColorLab({
         title="MAKE IT YOURS"
         aside={<span>{paletteName(state).toUpperCase()}</span>}
       >
+        <div className="palette-action-grid" role="group" aria-label="Color stop order">
+          <button className="button secondary" type="button" onClick={shuffleStops}
+            title="Mix up the order of your current colors without adding or removing stops">
+            <Shuffle size={15}/> Shuffle stops
+          </button>
+          <button className="button secondary" type="button" onClick={reverseStops}
+            title="Reverse the current stop order exactly">
+            <ArrowLeftRight size={15}/> Reverse stops
+          </button>
+        </div>
         <div className="color-stops">
           {state.colors.map((c, i) => (
             <button
@@ -183,12 +222,6 @@ export default function ColorLab({
             onClick={() => pick(state.colors.filter((_, i) => i !== index))}
           >
             <Minus size={15} />
-          </button>
-          <button
-            title="Reverse palette"
-            onClick={() => pick([...state.colors].reverse())}
-          >
-            <ArrowLeftRight size={15} />
           </button>
           <button
             title="Rotate palette stops"

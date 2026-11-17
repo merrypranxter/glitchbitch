@@ -1,4 +1,5 @@
 import { PALETTE_VAULT } from "./palette-vault.js";
+import { generateRandomPalette, shuffleColorStops } from "./palette-actions.js";
 import { retroFontIds } from "./retro-fonts.js";
 export const engineInfo = [
   ["Plasma flow", "Liquid sine fields folded into neon ribbons.", "Fluid"],
@@ -564,15 +565,6 @@ export function makeMark(state, x = 0.5, y = 0.5) {
 }
 const clamp = (n, min = 0, max = 100) => Math.max(min, Math.min(max, n));
 const sample = (a, random) => a[Math.min(a.length-1, Math.floor(random()*a.length))];
-const shuffledColors = (a, random) => {
-  const b = [...a];
-  for(let i=b.length-1; i>0; i--){
-    const j=Math.min(i,Math.floor(random()*(i+1)));
-    [b[i],b[j]]=[b[j],b[i]];
-  }
-  if(b.length>1 && b.every((x,i)=>x===a[i])) b.push(b.shift());
-  return b;
-};
 const different = (list, current, random) =>
   sample(list.filter(x => x !== current),random) ?? current;
 
@@ -620,10 +612,19 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.secondaryEngine=sample(engineInfo.filter(e=>e.id!==s.engine && e.id!==state.secondaryEngine),random).id;
   s.seed=Math.floor(random()*1000000000);
   if(s.seed===state.seed)s.seed=(s.seed+1)%1000000000;
-  const paletteChoices=palettes.map((p,i)=>i).filter(i=>i!==state.palette);
-  s.palette=sample(paletteChoices,random);
-  s.colors=random()<.4?shuffledColors(palettes[s.palette].colors,random):[...palettes[s.palette].colors];
-  if(s.colors.some((c,i)=>c!==palettes[s.palette].colors[i])) s.palette=-1;
+  // Most surprises select a different vault palette; some invent fresh colors.
+  // All generated palettes remain user-editable, reversible and recipe-safe.
+  if(random()<.22){
+    s.palette=-1;
+    s.colors=generateRandomPalette(random);
+  }else{
+    const paletteChoices=palettes.map((p,i)=>i).filter(i=>i!==state.palette);
+    s.palette=sample(paletteChoices,random);
+    s.colors=random()<.4
+      ? shuffleColorStops(palettes[s.palette].colors,random)
+      : [...palettes[s.palette].colors];
+    if(s.colors.some((c,i)=>c!==palettes[s.palette].colors[i]))s.palette=-1;
+  }
   s.blendMode=different(["Mix","Multiply","Difference"],state.blendMode,random);
   s.blend=random()<.18?0:22+random()*70;
   s.complexity=20+random()*80; s.scale=8+random()*80; s.warp=12+random()*88;

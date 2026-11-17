@@ -79,6 +79,12 @@ export function letteringMaterial(layer = {}, artworkColors = []) {
       softBlur = 12;
       break;
   }
+  // User-selected solid fill still changes preset materials: it becomes a
+  // dominant highlight or core color without erasing the chosen optical effect.
+  if (preset !== "Custom ink" && fill.toLowerCase() !== "#ffffff") {
+    if (stops && stops.length >= 2) stops = [fill, ...stops.slice(1,-1), fill];
+    else ink = fill;
+  }
   const userStops = Array.isArray(layer.letteringGradient) ? layer.letteringGradient.filter(hex).slice(0, 8) : [];
   if (layer.letteringFillMode !== "Solid" && userStops.length >= 2) {
     stops = userStops; gradientType = layer.letteringFillMode;

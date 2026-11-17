@@ -402,9 +402,10 @@ export function validateRecipe(input) {
     }
   }
   if(x.lettering !== undefined) {
-    if(typeof x.lettering !== "string" || x.lettering.length>56 ||
-       /[\x00-\x08\x0e-\x1f]/.test(x.lettering)) throw Error("Lettering must be 56 printable characters or fewer.");
-    s.lettering=x.lettering;
+    if(typeof x.lettering !== "string" || x.lettering.length>280 ||
+       /[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(x.lettering))
+      throw Error("Your quote must be 280 characters or fewer (line breaks allowed).");
+    s.lettering=x.lettering.replace(/\r\n?/g,"\n");
   }
   if (x.marks !== undefined) {
     if (!Array.isArray(x.marks) || x.marks.length > 32)
@@ -628,12 +629,13 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.prismAmount=random()<.49 ? 24+random()*75:0;
   s.foilRelief=random()<.55 ? 20+random()*70:0;
   s.foilMotion=31+random()*67;
+  // Surprise Me NEVER generates a slogan. Words belong to the artist.
   s.letteringStyle=different(letteringStyles,state.letteringStyle,random);
-  s.lettering=random()<.43 ? sample(chaosPhrases,random) : "";
-  s.letteringAmount=s.lettering ? 43+random()*56 : 0;
-  s.letteringScale=22+random()*72;
-  s.letteringWarp=12+random()*77;
-  s.letteringMotion=24+random()*75;
+  s.lettering="";
+  s.letteringAmount=0;
+  s.letteringScale=20+random()*54;
+  s.letteringWarp=0;
+  s.letteringMotion=15+random()*45;
   // Composition is a separately randomized spatial design, not a palette shuffle.
   s.compositionMode=different(compositionModes,state.compositionMode,random);
   s.compositionAmount=random()<.84 ? 53+random()*46 : 0;
@@ -1060,28 +1062,28 @@ export const looks = [
     state: { ...initial, engine: 16, palette: 10, colors: palettes[10].colors, stereoShape: "Gyroid Cathedral", stereoAmount: 92, filmAmount: 79, filmThickness: 78, opalAmount: 85, prismAmount: 74, foilRelief: 31, foilMotion: 55, lightMotion: 80, seed: 74117 },
   },
   {
-    name: "LOVE.exe.exe",
-    note: "Animated neon old-web type inhabiting a corrupted signal field",
-    family: "Type",
-    state: { ...initial, engine: 3, palette: 1, colors: palettes[1].colors, lettering: "LOVE.exe", letteringStyle: "Neon bling", letteringAmount: 98, letteringScale: 74, letteringWarp: 54, letteringMotion: 91, windowCascade: 41, glitter: 75, filmAmount: 35, motionAmount: 60, lightMotion: 75, seed: 33171 },
+    name: "Velvet Neon Circuit",
+    note: "Glowing CRT ribbons and layered phosphor fibers, without typography",
+    family: "Materials",
+    state: { ...initial, engine: 3, palette: 1, colors: palettes[1].colors, windowCascade: 41, glitter: 75, filmAmount: 55, opalAmount: 53, motionAmount: 60, lightMotion: 75, seed: 33171 },
   },
   {
-    name: "DIVINE MALFUNCTION",
-    note: "Loud chrome typography over oil-slick fractal boundaries",
-    family: "Type",
-    state: { ...initial, engine: 13, palette: 15, colors: palettes[15].colors, lettering: "DIVINE MALFUNCTION", letteringStyle: "Chrome foil", letteringAmount: 94, letteringScale: 61, letteringWarp: 39, letteringMotion: 69, filmAmount: 81, opalAmount: 76, fractalZoom: 48, motionAmount: 47, lightMotion: 87, seed: 51839 },
+    name: "Dichroic Fractal Altar",
+    note: "Liquid-metal color interference along fractal escape boundaries",
+    family: "Materials",
+    state: { ...initial, engine: 13, palette: 15, colors: palettes[15].colors, filmAmount: 81, opalAmount: 76, prismAmount: 67, fractalZoom: 48, motionAmount: 47, lightMotion: 87, seed: 51839 },
   },
   {
-    name: "BLESS THIS ERROR",
-    note: "Void-stencil glyphs punched through a late-night CRT",
-    family: "Type",
-    state: { ...initial, engine: 4, palette: 7, colors: palettes[7].colors, lettering: "BLESS THIS ERROR", letteringStyle: "Void stencil", letteringAmount: 96, letteringScale: 79, letteringWarp: 62, letteringMotion: 70, phosphor: 75, broadcast: 34, afterimage: 19, lightMotion: 81, seed: 67491 },
+    name: "Cathode Bloom Cathedral",
+    note: "Radioactive cathode glow and floating frequency structures",
+    family: "Materials",
+    state: { ...initial, engine: 4, palette: 7, colors: palettes[7].colors, phosphor: 75, broadcast: 34, afterimage: 29, filmAmount: 42, lightMotion: 81, seed: 67491 },
   },
   {
-    name: "COSMIC STATIC",
-    note: "Kinetic RGB typography inside an impossible prismatic camera",
-    family: "Type",
-    state: { ...initial, engine: 14, palette: 6, colors: palettes[6].colors, lettering: "COSMIC STATIC", letteringStyle: "RGB split", letteringAmount: 95, letteringScale: 71, letteringWarp: 76, letteringMotion: 94, prismAmount: 92, opalAmount: 47, filmAmount: 64, quasiDensity: 57, motionAmount: 79, lightMotion: 84, seed: 71691 },
+    name: "Chromatic Quasicrystal Static",
+    note: "Interference lattice and prismatic caustics collide",
+    family: "Materials",
+    state: { ...initial, engine: 14, palette: 6, colors: palettes[6].colors, prismAmount: 92, opalAmount: 67, filmAmount: 84, quasiDensity: 57, motionAmount: 79, lightMotion: 84, seed: 71691 },
   },
   {
     name: "Iris Portal Surgery",
@@ -1145,7 +1147,7 @@ export const looks = [
     family: "Composition",
     state: { ...initial, engine: 13, secondaryEngine: 0,
       palette: 10, colors: palettes[10].colors,
-      compositionMode: "Braided ribbons", compositionAmount: 96, compositionScale: 61, compositionFeather: 46, compositionMotion: 86, compositionColorShift: 89, blend: 81, filmAmount: 95, lettering: "COSMIC STATIC", letteringAmount: 72, letteringMotion: 81, motionAmount: 86, lightMotion: 94, seed: 861420 },
+      compositionMode: "Braided ribbons", compositionAmount: 96, compositionScale: 61, compositionFeather: 46, compositionMotion: 86, compositionColorShift: 89, blend: 81, filmAmount: 95, opalAmount: 68, prismAmount: 73, motionAmount: 86, lightMotion: 94, seed: 861420 },
   },
   {
     name: "Cellular Newsprint Petri",
@@ -1220,10 +1222,10 @@ export const looks = [
       secondaryEngine: 13, blend: 87, compositionMode: "Braided ribbons", compositionAmount: 96, compositionScale: 61, backdropMode: "Phosphor jacquard", backdropAmount: 95, backdropDepth: 64, backdropDensity: 79, backdropMotion: 88, backdropGlow: 92, backdropHue: 66, backdropVariation: 88, motionAmount: 84, lightMotion: 86, seed: 481296 },
   },
   {
-    name: "The Haunted Interface",
-    note: "Kinetic text and old-web damage with distant digital starlight",
+    name: "Haunted Electroluminescence",
+    note: "Old-web signal corruption floating over drifting luminous starlight",
     family: "Backdrop",
     state: { ...initial, engine: 4, palette: 8, colors: palettes[8].colors,
-      lettering: "SOFT APOCALYPSE", letteringAmount: 92, letteringStyle: "Neon bling", windowCascade: 62, glitter: 43, backdropMode: "Cosmic pollen", backdropAmount: 100, backdropDepth: 95, backdropDensity: 77, backdropMotion: 82, backdropGlow: 100, backdropHue: 71, backdropVariation: 47, motionAmount: 63, lightMotion: 81, seed: 592702 },
+      windowCascade: 62, glitter: 43, opalAmount: 75, filmAmount: 55, backdropMode: "Cosmic pollen", backdropAmount: 100, backdropDepth: 95, backdropDensity: 77, backdropMotion: 82, backdropGlow: 100, backdropHue: 71, backdropVariation: 47, motionAmount: 63, lightMotion: 81, seed: 592702 },
   },
 ];

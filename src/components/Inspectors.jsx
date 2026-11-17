@@ -229,16 +229,23 @@ export function EffectsInspector({ history }) {
         <Parameter label="Material animation" name="foilMotion" history={history} />
         <p className="control-note">Animated spectral-film colors, opalescent cells and shape-reactive foil. Works on every math, biological and 3D engine; leave everything at zero for the old appearance.</p>
       </Section>
-      <Section title="KINETIC TYPE STORM">
+      <Section title="YOUR WORDS — OPTIONAL QUOTES">
         <label className="select-field kinetic-type-field">
-          <span>YOUR WORDS — EDIT LIVE</span>
-          <input type="text" maxLength={56} autoComplete="off" spellCheck={false}
-            placeholder="LOVE.exe / DIVINE MALFUNCTION / YOUR WORDS"
+          <span>YOUR QUOTE OR MESSAGE (280 CHARACTERS)</span>
+          <textarea rows={4} maxLength={280} autoComplete="off" spellCheck={false}
+            placeholder={"Type whatever you want.\nLine breaks are welcome."}
             value={history.state.lettering}
             onFocus={history.begin}
-            onChange={(e) => history.preview((s) => ({ ...s, lettering: e.target.value }))}
+            onChange={(e) => history.preview((s) => ({
+              ...s, lettering:e.target.value,
+              letteringAmount:e.target.value.trim() ? (s.letteringAmount||46) : 0
+            }))}
             onBlur={history.end} />
         </label>
+        <button type="button" className="button secondary"
+          onClick={() => history.change((s) => ({...s,lettering:"",letteringAmount:0}))}>
+          Remove words from artwork
+        </button>
         <Select label="Lettering material" value={history.state.letteringStyle}
           onChange={(v) => history.change((s) => ({ ...s, letteringStyle: v }))}>
           {letteringStyles.map((v) => <option key={v}>{v}</option>)}
@@ -247,7 +254,7 @@ export function EffectsInspector({ history }) {
         <Parameter label="Letter size" name="letteringScale" history={history} />
         <Parameter label="Liquid text warping" name="letteringWarp" history={history} />
         <Parameter label="Kinetic text motion" name="letteringMotion" history={history} />
-        <p className="control-note">Real editable text, not random fake glyphs. It animates in the artwork and renders into PNG, GIF and MP4. Clear the text or set opacity to zero to remove it.</p>
+        <p className="control-note">No random slogans: you decide every word. Quotes wrap to fit every artwork aspect ratio and appear in PNG, GIF and MP4 exports. Surprise Me clears all text.</p>
       </Section>
       <Section title="BIOLOGICAL SIGNAL ROT">
         <Parameter label="Growing organism overlay" name="bioAmount" history={history} />

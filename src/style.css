@@ -2857,3 +2857,7 @@ footer > span:last-child svg {
   outline: 2px solid #e3ff57;
   outline-offset: 2px;
 }
+
+/* Artist-owned quotes: usable on mobile without cramped horizontal input. */
+.kinetic-type-field textarea { width:100%;min-width:0;min-height:96px;box-sizing:border-box;resize:vertical;border:1px solid var(--line,#34343d);border-radius:7px;padding:11px;background:#111018;color:#f7f6fd;font:inherit;font-size:14px;line-height:1.45; }
+.kinetic-type-field textarea:focus-visible { outline:2px solid #e3ff57;outline-offset:2px; }

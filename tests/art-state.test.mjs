@@ -362,12 +362,14 @@ test("prismatic materials and live text validate, survive recipe round trip and 
   assert.equal(restored.filmAmount,0);assert.equal(restored.letteringAmount,0);
   assert.equal(restored.lettering,"");
   assert.equal(letteringStyles.length,4);assert.ok(chaosPhrases.length>=10);
-  assert.throws(()=>parseDocument({...initial,lettering:"a".repeat(57)}));
+  assert.throws(()=>parseDocument({...initial,lettering:"a".repeat(281)}));
   assert.throws(()=>parseDocument({...initial,letteringStyle:"Not real"}));
-  const type=looks.find(x=>x.name==="DIVINE MALFUNCTION");
-  assert.equal(type.state.lettering,"DIVINE MALFUNCTION");
+  const manual={...initial,lettering:"I make my own magic.\nAnd I choose my own words.",letteringAmount:49};
+  assert.equal(parseDocument(manual).state.lettering,manual.lettering);
+  assert.ok(looks.every(x=>!x.state.lettering && !x.state.letteringAmount));
   const born=randomize({...initial,lettering:"OLD WORDS"},{},false,()=>.7);
-  assert.notEqual(born.lettering,"OLD WORDS");
+  assert.equal(born.lettering,"");
+  assert.equal(born.letteringAmount,0);
 });
 test("material and lettering GL shaders are opt-in, but complete in normal render and exports", async () => {
   const {readFileSync}=await import("node:fs");
@@ -463,7 +465,7 @@ test("living backdrops are opt-in, use six species, migrate safely and save in r
   }
   assert.throws(()=>parseDocument({...initial,backdropMode:"Fake"}));
   assert.ok(looks.filter(l=>l.family==="Backdrop").length===9);
-  assert.ok(looks.some(l=>l.family==="Backdrop" && l.state.letteringAmount>0));
+  assert.ok(looks.every(l=>l.family!=="Backdrop" || !l.state.letteringAmount));
   const s=randomize({...initial,backdropMode:"Nebula veils",backdropAmount:0},{},false,()=>.67);
   assert.notEqual(s.backdropMode,"Nebula veils");
   assert.ok(s.backdropAmount>=42 && s.backdropAmount<=99);
@@ -497,4 +499,45 @@ test("negative-space shader is only compiled when enabled and has a mobile fallb
   assert.match(renderer,/backdropUnavailable=true/);
   assert.match(backdrop,/backdropMode==4/);
   assert.match(backdrop,/vec3 livingBackdrop/);
+});
+
+test("multiline user quotes wrap inside portrait and landscape frames", async () => {
+  const {wrapQuote,glyphCanvas}=await import("../src/kinetic-type.js");
+  const lines=wrapQuote("The stars are not in the sky.\nThey are in the goddamn circuits.",210,t=>t.length*12);
+  assert.ok(lines.length>=3);
+  assert.ok(lines.every(l=>l.length*12<=210));
+  const {readFileSync}=await import("node:fs");
+  const source=readFileSync(new URL("../src/kinetic-type.js",import.meta.url),"utf8");
+  const drawings=[];
+  let canvas;
+  const ctx={
+    font:"",
+    measureText(t){const font=Number((this.font.match(/(\d+)px/)||[])[1]||20);return {width:t.length*font*.52};},
+    clearRect(){},strokeText(){},
+    fillText(t,x,y,maxWidth){drawings.push({t,x,y,maxWidth});}
+  };
+  const fakeDocument={createElement(){
+    canvas={width:0,height:0,getContext(){return ctx;}};
+    return canvas;
+  }};
+  const fit=new Function("document",source.replace(/^export /gm,"")+";return glyphCanvas;")(fakeDocument);
+  const portrait=fit("The stars are not in the sky.\nThey are in the goddamn circuits.",9/16);
+  assert.equal(portrait.height,1024);
+  assert.ok(portrait.width < portrait.height);
+  assert.ok(drawings.length>=2);
+  assert.ok(drawings.every(v=>v.maxWidth<=portrait.width*.76+1));
+  assert.ok(drawings.every(v=>v.y>=0 && v.y<=portrait.height));
+  drawings.length=0;
+  const landscape=fit("A beautifully strange quote that should not be cropped by any screen.",16/9);
+  assert.equal(landscape.width,1024);
+  assert.ok(landscape.height<landscape.width);
+  assert.ok(drawings.every(v=>v.y>=0 && v.y<=landscape.height));
+});
+test("no Surprise Me RNG result is allowed to insert decorative typography", () => {
+  for(const value of [0,.08,.16,.43,.7,.99]){
+    const s=randomize({...initial,lettering:"MY PREVIOUS WORDS",letteringAmount:97},{},false,()=>value);
+    assert.equal(s.lettering,"");
+    assert.equal(s.letteringAmount,0);
+  }
+  assert.ok(looks.every(l=>l.state.lettering==="" && l.state.letteringAmount===0));
 });

@@ -129,7 +129,7 @@ export function createRenderer(canvas) {
     if(typeTexture)gl.deleteTexture(typeTexture);
     typeTexture=null;typeKey="";
   }
-  function updateLettering(s){
+  function updateLettering(s,width,height){
     if(typeUnavailable || typeShaderUnavailable || !s.letteringAmount || !s.lettering.trim())return false;
     try{
       if(!typeTexture) {
@@ -141,9 +141,10 @@ export function createRenderer(canvas) {
         gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
       }
-      const key=s.lettering;
+      const aspect=width/Math.max(1,height);
+      const key=s.lettering+"|"+aspect.toFixed(4);
       if(key!==typeKey){
-        const glyphs=glyphCanvas(s.lettering);
+        const glyphs=glyphCanvas(s.lettering,aspect);
         gl.activeTexture(gl.TEXTURE3);gl.bindTexture(gl.TEXTURE_2D,typeTexture);
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
         try{gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,glyphs);}
@@ -538,7 +539,7 @@ export function createRenderer(canvas) {
       }
       if(lastCompileError)throw lastCompileError;
       const hasBiology = updateBiology(s, timeline);
-      const hasLettering = updateLettering(s);
+      const hasLettering = updateLettering(s,width,height);
       const hasMemoryEffects = (s.afterimage > 0 || s.datamosh > 0) && !memoryDisabled;
       let drawWithMemory = false;
       if (hasMemoryEffects) {

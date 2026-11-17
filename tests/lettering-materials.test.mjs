@@ -31,3 +31,11 @@ test("kinetic and liquid warp sliders are independently strong at 100%",()=>{
   assert.deepEqual(textMotion({letteringMotion:100,letteringWarp:0}),{motion:1,warp:0});
   assert.deepEqual(textMotion({letteringMotion:0,letteringWarp:100}),{motion:0,warp:1});
 });
+
+test("custom solid fill affects the preset ink without disabling its material",()=>{
+  for(const style of LETTERING_MATERIALS){
+    const look=letteringMaterial({...base,letteringStyle:style,letteringFill:"#17ff80"},colors);
+    assert.ok(look.ink.toLowerCase()==="#17ff80" ||
+      look.stops?.some(color=>color.toLowerCase()==="#17ff80"));
+  }
+});

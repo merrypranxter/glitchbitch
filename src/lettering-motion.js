@@ -97,6 +97,25 @@ export function letteringMotionAt(layer,seconds,width=430,height=430,index=-1,to
  * Continuous *letter* deformation: no clipped rows or scissors-shredded
  * slices. Every glyph curves, shears and breathes independently with phase.
  */
+export function letteringMotionCombinedAt(layer,seconds,width=430,height=430,index=-1,total=1,em=72){
+ const first=letteringMotionAt(layer,seconds,width,height,index,total,em);
+ const secondPath=layer.letteringMotionPath2||"None";
+ const mix=clamp(layer.letteringMotionMix??65,0,100)/100;
+ if(secondPath==="None"||!letteringMotionPaths.includes(secondPath)||mix<.001)return first;
+ const second=letteringMotionAt({...layer,letteringMotionPath:secondPath},
+   seconds,width,height,index,total,em);
+ return {
+  dx:first.dx+second.dx*mix,dy:first.dy+second.dy*mix,
+  rotation:first.rotation+second.rotation*mix,
+  scaleX:first.scaleX*(1+(second.scaleX-1)*mix),
+  scaleY:first.scaleY*(1+(second.scaleY-1)*mix),
+  alpha:first.alpha*(1-(1-second.alpha)*mix)
+ };
+}
+export function letteringMotionNeedsGlyphs(layer) {
+ return letteringMotionIsPerLetter(layer.letteringMotionPath) ||
+   letteringMotionIsPerLetter(layer.letteringMotionPath2);
+}
 export function letteringLiquidAt(layer,seconds,index,total,em=72){
  const amount=clamp(layer.letteringWarp,0,100)/100;
  if(amount<.001)return {dx:0,dy:0,rotation:0,skewX:0,scaleX:1,scaleY:1};

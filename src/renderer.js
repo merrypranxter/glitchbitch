@@ -718,7 +718,9 @@ export function createRenderer(canvas) {
       }
       if(lastCompileError)throw lastCompileError;
       const hasBiology = updateBiology(s, timeline);
-      const hasLettering = updateLettering(s,width,height);
+      // Typography now lives entirely in the DOM preview / 2D export pipeline.
+      // Avoid redundant GL texture uploads (especially expensive on iPhone Safari).
+      const hasLettering = false;
       const hasMemoryEffects = (s.afterimage > 0 || s.datamosh > 0) && !memoryDisabled;
       let drawWithMemory = false;
       if (hasMemoryEffects) {
@@ -841,7 +843,7 @@ export function createRenderer(canvas) {
       gl.uniform1i(loc("letteringStyle"), ["Neon bling","RGB split","Chrome foil","Void stencil","Custom ink","Holographic","Electric glow","Liquid candy","Ghost echo","Chromatic shimmer","Heatwave","Glitter ink","Prism pulse","Soft shadow"].indexOf(s.letteringStyle));
       gl.uniform1i(loc("letteringAvailable"), hasLettering ? 1 : 0);
       gl.uniform1i(loc("letteringTex"), 3);
-      updateExtraLettering(s,width,height);
+      // Additional lettering layers are also composited outside WebGL.
       const extras=s.letteringLayers||[];
       gl.uniform1i(loc("letteringExtraCount"),extras.length);
       for(let i=0;i<2;i++){

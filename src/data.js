@@ -148,6 +148,13 @@ export const numericRanges = {
   block: [0, 100],
   pixel: [0, 100],
   vignette: [0, 100],
+  phosphor: [0, 100],
+  dither: [0, 100],
+  riso: [0, 100],
+  windowCascade: [0, 100],
+  glitter: [0, 100],
+  broadcast: [0, 100],
+  misregister: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -184,6 +191,13 @@ export const initial = {
   block: 0,
   pixel: 0,
   vignette: 0,
+  phosphor: 0,
+  dither: 0,
+  riso: 0,
+  windowCascade: 0,
+  glitter: 0,
+  broadcast: 0,
+  misregister: 0,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -425,6 +439,19 @@ export function randomize(
                 block: 35,
               }[key] || 50);
   }
+  // Choose a few compatible appearances rather than maxing out every overlay.
+  const appearances = ["phosphor", "dither", "riso", "windowCascade", "glitter", "broadcast", "misregister"];
+  if (mutate) {
+    for (const key of appearances) next[key] = clamp(state[key] + (random() - .5) * 24);
+  } else {
+    for (const key of appearances) next[key] = 0;
+    const count = 1 + Math.floor(random() * 3);
+    for (let i = 0; i < count; i++) {
+      const key = appearances[Math.floor(random() * (appearances.length - 1))];
+      next[key] = 35 + random() * 60;
+    }
+    if (next.riso > 0) next.misregister = random() * 70;
+  }
   if (!mutate) {
     next.secondaryEngine = Math.floor(random() * engines.length);
     next.symmetry = [1, 1, 1, 3, 5, 6][Math.floor(random() * 6)];
@@ -528,5 +555,77 @@ export const looks = [
       colorMode: "Traveling wave",
       seed: 99014,
     },
+  },
+  {
+    name: "CRT Bloomquake",
+    note: "Macro subpixels against an electric interference field",
+    family: "CRT",
+    state: { ...initial, engine: 3, palette: 10, colors: palettes[10].colors, phosphor: 95, glitter: 30, scale: 24, complexity: 68, scan: 12, split: 14, seed: 27611 },
+  },
+  {
+    name: "Bayer Funeral",
+    note: "Pixel-locked ordered dithering and crushed color",
+    family: "Print",
+    state: { ...initial, engine: 4, palette: 15, colors: palettes[15].colors, dither: 96, riso: 20, pixel: 28, grain: 10, block: 34, scale: 17, seed: 67142 },
+  },
+  {
+    name: "CMY Print Riot",
+    note: "Angled cyan/magenta/yellow ink misregistration",
+    family: "Print",
+    state: { ...initial, engine: 9, palette: 15, colors: palettes[15].colors, riso: 95, misregister: 65, dither: 24, phosphor: 0, scale: 22, complexity: 70, seed: 23145 },
+  },
+  {
+    name: "GeoCities Afterparty",
+    note: "Animated desktop windows with flickering bling",
+    family: "Old Web",
+    state: { ...initial, engine: 3, palette: 1, colors: palettes[1].colors, windowCascade: 95, glitter: 88, glitch: 30, scale: 35, complexity: 61, seed: 76524 },
+  },
+  {
+    name: "Lost Transmission",
+    note: "Retro test bars, head-switch damage and phosphor",
+    family: "Broadcast",
+    state: { ...initial, engine: 5, palette: 4, colors: palettes[4].colors, broadcast: 88, phosphor: 66, glitch: 72, scan: 50, block: 36, scale: 26, seed: 43181 },
+  },
+  {
+    name: "Haunted Desktop",
+    note: "Floating error popups over impossible math",
+    family: "Old Web",
+    state: { ...initial, engine: 2, palette: 7, colors: palettes[7].colors, windowCascade: 95, phosphor: 52, broadcast: 28, glitter: 14, scale: 42, seed: 18813 },
+  },
+  {
+    name: "Rainbow Snowstorm",
+    note: "Cellular sparkle storms and glowing screen dots",
+    family: "CRT",
+    state: { ...initial, engine: 7, palette: 1, colors: palettes[1].colors, glitter: 95, phosphor: 80, riso: 24, grain: 25, scale: 28, seed: 62491 },
+  },
+  {
+    name: "Acid Newsprint",
+    note: "Printed moiré with crawling halftone rosettes",
+    family: "Print",
+    state: { ...initial, engine: 10, palette: 15, colors: palettes[15].colors, dither: 88, riso: 93, misregister: 62, scale: 32, complexity: 66, seed: 20819 },
+  },
+  {
+    name: "Pixel Cemetery",
+    note: "Decaying digital blocks and ghostly browser windows",
+    family: "Digital",
+    state: { ...initial, engine: 4, palette: 8, colors: palettes[8].colors, dither: 92, windowCascade: 55, pixel: 36, glitch: 64, scale: 13, seed: 52783 },
+  },
+  {
+    name: "TV Church",
+    note: "Prismatic geometry trapped in a dying CRT",
+    family: "Broadcast",
+    state: { ...initial, engine: 11, palette: 11, colors: palettes[11].colors, phosphor: 96, broadcast: 64, windowCascade: 35, glitch: 49, symmetry: 7, scale: 24, seed: 12798 },
+  },
+  {
+    name: "Candy Error Message",
+    note: "Acidic bubbles and animated UI jewelry",
+    family: "Old Web",
+    state: { ...initial, engine: 1, palette: 6, colors: palettes[6].colors, glitter: 82, windowCascade: 89, riso: 28, scale: 31, seed: 83791 },
+  },
+  {
+    name: "Ghost Signal Wallpaper",
+    note: "Layered print, subpixel grids and haunted fabric",
+    family: "Mixed",
+    state: { ...initial, engine: 10, palette: 9, colors: palettes[9].colors, phosphor: 74, riso: 60, dither: 42, glitter: 35, blend: 43, secondaryEngine: 3, scale: 31, seed: 51408 },
   },
 ];

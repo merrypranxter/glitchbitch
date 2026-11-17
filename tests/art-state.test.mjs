@@ -8,6 +8,7 @@ import {
   randomize,
   makeMark,
   palettes,
+  looks,
 } from "../src/data.js";
 import { TouchSession } from "../src/gestures.js";
 import { dimensions } from "../src/export.js";
@@ -104,4 +105,25 @@ test("export dimensions keep their exact long edge across every artwork ratio", 
   assert.deepEqual(dimensions("9:16", 2160), { width: 1215, height: 2160 });
   assert.deepEqual(dimensions("16:9", 4096), { width: 4096, height: 2304 });
   assert.deepEqual(dimensions("1:1", 1080), { width: 1080, height: 1080 });
+});
+
+test("appearance sliders round trip, reject invalid numbers and keep vintage recipes unchanged", () => {
+  const appearanceKeys = ["phosphor","dither","riso","windowCascade","glitter","broadcast","misregister"];
+  for (const key of appearanceKeys) {
+    assert.equal(initial[key], 0);
+    const state = { ...initial, [key]: 77 };
+    assert.equal(parseDocument(recipeDocument(state, "Test", {time:1,colorTime:1})).state[key], 77);
+    assert.throws(() => parseDocument({ ...state, [key]: 101 }));
+  }
+  const old = {...initial};
+  for (const key of appearanceKeys) delete old[key];
+  assert.deepEqual(appearanceKeys.map(key => parseDocument(old).state[key]), appearanceKeys.map(() => 0));
+});
+test("lookbook contains 18 valid distinct entries covering new materials", () => {
+  assert.equal(looks.length, 18);
+  assert.equal(new Set(looks.map(look => look.name)).size, looks.length);
+  for (const look of looks) assert.deepEqual(parseDocument(look.state).state, look.state);
+  assert.ok(looks.some(look => look.state.windowCascade > 0));
+  assert.ok(looks.some(look => look.state.riso > 0));
+  assert.ok(looks.some(look => look.state.phosphor > 0));
 });

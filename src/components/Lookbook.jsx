@@ -41,7 +41,7 @@ export default function Lookbook({ onClose, onApply }) {
     <Modal
       wide
       title="Start somewhere strange."
-      subtitle="Six starting points. Every setting is still yours to change."
+      subtitle={`${looks.length} starting points. Every setting is still yours to change.`}
       onClose={onClose}
     >
       <div className="look-grid">

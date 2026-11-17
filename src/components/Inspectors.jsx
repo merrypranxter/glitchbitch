@@ -147,6 +147,22 @@ export function EffectsInspector({ history }) {
         <Parameter label="Film grain" name="grain" history={history} />
         <Parameter label="Vignette" name="vignette" history={history} />
       </Section>
+      <Section title="SCREEN PHYSICS">
+        <Parameter label="CRT phosphor subpixels" name="phosphor" history={history} />
+        <Parameter label="Broadcast bars" name="broadcast" history={history} />
+        <p className="control-note">Real RGB shadow-mask triads and color-bar interference, not just scanlines.</p>
+      </Section>
+      <Section title="PRINT DAMAGE">
+        <Parameter label="Bayer pixel dither" name="dither" history={history} />
+        <Parameter label="CMY risograph" name="riso" history={history} />
+        <Parameter label="Ink misregistration" name="misregister" history={history} />
+        <p className="control-note">These are independent, stackable color-material treatments.</p>
+      </Section>
+      <Section title="OLD-WEB HAUNTING">
+        <Parameter label="Cascading error windows" name="windowCascade" history={history} />
+        <Parameter label="Glitter explosions" name="glitter" history={history} />
+        <p className="control-note">Decorative procedural windows and living neon starbursts. Both render into image and video exports.</p>
+      </Section>
       <Section title="EXTRA STRANGE">
         <Switch label="Phosphor bloom" name="bloom" history={history} />
         <Switch label="Color posterize" name="posterize" history={history} />

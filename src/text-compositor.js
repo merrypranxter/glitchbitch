@@ -39,7 +39,26 @@ function glyphFor(layer, aspect, artworkPalette) {
   };
   if (material.preset === "Void stencil" && !style.letteringStrokes?.some(s=>s.enabled))
     style.letteringStrokes = [{color:"#eae7ff",width:2,enabled:true}];
-  const entry = {image:glyphCanvas(layer.text,aspect,layer.letteringFont || "original",style),material,tints:new Map()};
+  const image=glyphCanvas(layer.text,aspect,layer.letteringFont || "original",style);
+  if (material.preset === "Glitter ink") {
+    const glints=image.getContext("2d");
+    if (glints) {
+      // Deterministic twinkling micro-facets, confined to the actual letter shapes.
+      // Their glints stay crisp even in a high-resolution MP4 export.
+      glints.save();
+      glints.globalCompositeOperation="source-atop";
+      let seed=layer.text.split("").reduce((n,ch)=>((n*31+ch.charCodeAt(0))>>>0),17);
+      const random=()=>{seed=(1664525*seed+1013904223)>>>0;return seed/4294967296;};
+      for(let i=0;i<200;i++){
+        const x=Math.floor(random()*image.width),y=Math.floor(random()*image.height);
+        const size=1+Math.floor(random()*3);
+        glints.fillStyle=i%4===0?"#ffffff":i%4===1?"#fffbb3":"#98faff";
+        glints.fillRect(x,y,size,size);
+      }
+      glints.restore();
+    }
+  }
+  const entry = {image,material,tints:new Map()};
   glyphCache.set(key,entry);
   while(glyphCache.size>LIMIT)glyphCache.delete(glyphCache.keys().next().value);
   return entry;
@@ -92,7 +111,8 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false) {
   for(const layer of layersOf(state)) {
     if(!active(layer))continue;
     const {image,material,tints}=glyphFor(layer,width/height,state.colors||[]);
-    const {motion,warp}=textMotion(layer);
+    const {motion,warp:sliderWarp}=textMotion(layer);
+    const warp=Math.max(sliderWarp,material.preset==="Heatwave" ? .23 : 0);
     const opacity=Math.max(0,Math.min(1,Number(layer.letteringAmount)/100));
     const zoom=Math.max(0,Math.min(1,Number(layer.letteringScale??48)/100));
     const scale=.63+.34*zoom;

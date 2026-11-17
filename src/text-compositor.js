@@ -8,8 +8,8 @@ import { ensureRetroFontLoaded, retroFontRevision } from "./retro-fonts.js";
 import { letteringMaterial, textMotion } from "./lettering-materials.js";
 import { getLetteringBlendRecipe, letteringBlendPulse } from "./lettering-blends.js";
 import { createLetteringSprites } from "./lettering-sprites.js";
-import { letteringMotionAt, letteringLiquidAt, letteringComposeGlyph,
-  letteringMotionIsPerLetter } from "./lettering-motion.js";
+import { letteringMotionCombinedAt, letteringLiquidAt, letteringComposeGlyph,
+  letteringMotionNeedsGlyphs } from "./lettering-motion.js";
 
 const glyphCache = new Map();
 const LIMIT = 8;
@@ -62,7 +62,7 @@ function glyphFor(layer, aspect, artworkPalette) {
       glints.restore();
     }
   }
-  const entry = {image,material,style,tints:new Map(),sprites:null,spriteTints:new Map()};
+  const entry = {image,material,style,tints:new Map(),sprites:undefined,spriteTints:new Map()};
   glyphCache.set(key,entry);
   while(glyphCache.size>LIMIT)glyphCache.delete(glyphCache.keys().next().value);
   return entry;
@@ -122,14 +122,14 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
    const curve=(Number(layer.letteringCurve)||0)/100;
    const warp=Math.max(Number(layer.letteringWarp)||0,material.preset==="Heatwave"?23:0);
    const liquidLayer=warp===Number(layer.letteringWarp)?layer:{...layer,letteringWarp:warp};
-   const glyphMode=warp>.01 || letteringMotionIsPerLetter(layer.letteringMotionPath);
-   if(glyphMode && entry.sprites===null){
+   const glyphMode=warp>.01 || letteringMotionNeedsGlyphs(layer);
+   if(glyphMode && entry.sprites===undefined){
      entry.sprites=createLetteringSprites(layer.text,width/height,layer.letteringFont||"original",entry.style);
    }
    const spriteScene=glyphMode?entry.sprites:null;
    const em=spriteScene ? spriteScene.fontSize*width/spriteScene.width*factorX
      : Math.min(width,height)*.24*scale;
-   const whole=letteringMotionAt(layer,seconds,width,height,-1,1,em);
+   const whole=letteringMotionCombinedAt(layer,seconds,width,height,-1,1,em);
    const blend=getLetteringBlendRecipe(layer.letteringBlendMode,layer.letteringBlendStrength);
    const intensity=blend.mode==="Normal"?0:blend.strength;
 
@@ -145,7 +145,7 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
        const baseOpacity=ctx.globalAlpha;
        for(let i=0;i<spriteScene.sprites.length;i++){
          const item=spriteScene.sprites[i];
-         const moving=letteringMotionAt(layer,seconds,width,height,item.index,item.total,em);
+         const moving=letteringMotionCombinedAt(layer,seconds,width,height,item.index,item.total,em);
          const liquid=letteringLiquidAt(liquidLayer,seconds,item.index,item.total,em);
          const pose=letteringComposeGlyph(moving,liquid);
          ctx.save();

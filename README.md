@@ -18,7 +18,7 @@ The production output is `dist/`. Serve it with a static web server. WebGL and h
 
 ## Make something strange
 
-**15 engines:** The original 12 mathematical fields, plus Hyperbolic CRT (Poincaré-style disk inversion), Candy fractal portal (Mandelbrot/Julia orbit-trap escape-time), and Fivefold diffraction (aperiodic plane-wave interference). All retain the original palette / touch / layering pipeline. The Lookbook has **37 editable recipes** including 15 new math-and-motion looks.
+**16 engines:** The original 12 mathematical fields, plus Hyperbolic CRT, Candy fractal portal, Fivefold diffraction, and **Chromatic infection**, a real seeded Gray–Scott reaction-diffusion organism. All retain the palette, touch, layering, and animation pipeline. The Lookbook has **43 editable recipes**, including six biological designs.
 
 **Layers:** Mix, multiply, or take the absolute difference of two scalar fields. The fields share structure controls, local touch sources, and a geometry clock. Blend at zero bypasses the second engine completely.
 
@@ -83,3 +83,6 @@ Creative Plugin Ringmaster continues to coordinate this project. Gesture Witch i
 
 ## Motion is part of the artwork (Wave 3)
 Surprise Me now always gives the design independently adjustable **Structure movement**, **Motion pace**, **Living light/shimmer**, and one of five movement styles: Liquid flow, Breathing, Orbital, Traveling waves, or Internal turbulence. This adds continuous animation even to mathematical structures that otherwise look visually stationary. Older saved recipes default to motion off, preserving their legacy appearance. The existing independent geometry and color clocks still govern animation; Pause freezes both, while Freeze geometry permits light to continue with the color clock. All controls are part of undo/redo, saved recipes, PNG capture and video exports. The shader motion is smooth in space, with no hard horizontal seam bands.
+
+## Biological Signal Rot — Wave 3B
+A dedicated, deterministic seeded 96×96 CPU Gray–Scott chemical field with wrapped 9-neighbor Laplacian is uploaded as a low-resolution RGBA texture for the normal WebGL compositor. The growth is real (U/V reactions and diffusion), not a static Voronoi effect. It is selectable as engine 15, compatible with the second-layer blend, and additionally available as a palette-mapped organism overlay on every existing engine. **Effects → Biological Signal Rot** exposes overlay intensity, feed, kill, growth speed and veins. Surprise Me can include it. The biology only allocates/updates when selected or enabled; the default is off for old recipes. Updates are bounded to protect mobile devices, so a large timeline seek may skip intermediate steps rather than replay minutes of chemistry. Video uses the same evolving simulation; export and Lookbook initialize identical seed states, but exact preview history at arbitrary late timestamps is not replayed. Actual iPhone Safari GPU compilation and performance remain to be tested.

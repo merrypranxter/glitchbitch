@@ -27,7 +27,7 @@ export async function renderImage(
   try {
     renderer = createRenderer(canvas);
     const { width, height } = dimensions(state.ratio, longEdge);
-    if (state.afterimage > 0 || state.datamosh > 0) {
+    if (state.afterimage > 0 || state.datamosh > 0 || state.engine === 15 || state.bioAmount > 0 || state.secondaryEngine === 15 && state.blend > 0) {
       // Deterministic short pre-roll makes still exports include actual frame history.
       // Independent of preview's prior animation and frame count.
       for (let i = 5; i >= 1; i--) {

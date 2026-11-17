@@ -58,6 +58,7 @@ export const engineInfo = [
   ["Hyperbolic CRT", "Poincaré-disk inversions crowd the geometry toward impossible edges.", "Non-Euclidean"],
   ["Candy fractal portal", "Actual Mandelbrot/Julia orbit traps and deep complex-plane boundaries.", "Fractal"],
   ["Fivefold diffraction", "Aperiodic five-direction wave interference with irrational overtones.", "Quasicrystal"],
+  ["Chromatic infection", "Persistent Gray–Scott coral, labyrinth and spore growth, with palette-mapped chemistry.", "Biological"],
 ].map(([name, description, family], id) => ({ id, name, description, family }));
 export const engines = engineInfo.map((e) => e.name);
 export const palettes = [
@@ -170,6 +171,11 @@ export const numericRanges = {
   motionAmount: [0, 100],
   motionRate: [0, 100],
   lightMotion: [0, 100],
+  bioAmount: [0, 100],
+  bioFeed: [0, 100],
+  bioKill: [0, 100],
+  bioSpeed: [0, 100],
+  bioVeins: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -225,6 +231,11 @@ export const initial = {
   motionRate: 50,
   lightMotion: 0,
   motionMode: "Liquid flow",
+  bioAmount: 0,
+  bioFeed: 44,
+  bioKill: 42,
+  bioSpeed: 53,
+  bioVeins: 54,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -489,6 +500,11 @@ export function randomize(
     next.memoryDrift = 8 + random() * 70;
     next.memoryDecay = 12 + random() * 48;
   }
+  for (const key of ["bioFeed","bioKill","bioSpeed","bioVeins"])
+    next[key] = mutate ? clamp(state[key]+(random()-.5)*16) : 17+random()*72;
+  next.bioAmount = mutate ? clamp(state.bioAmount+(random()-.5)*28) :
+    (next.engine===15 || next.secondaryEngine===15 && next.blend>0 ? 35+random()*60 :
+      random()<.36 ? 25+random()*55 : 0);
   for (const key of ["hyperbolicFold","fractalZoom","juliaMix","quasiDensity"])
     next[key] = mutate ? clamp(state[key]+(random()-.5)*22) : 10+random()*85;
   if(mutate){
@@ -795,5 +811,41 @@ export const looks = [
     note: "Marble contours that stay composed but never stop stirring",
     family: "Motion",
     state: { ...initial, engine: 6, palette: 10, colors: palettes[10].colors, scale: 33, warp: 79, afterimage: 35, motionMode: "Liquid flow", motionAmount: 59, motionRate: 35, lightMotion: 90, seed: 50732 },
+  },
+  {
+    name: "Coral Codec Shrine",
+    note: "Living reaction-diffusion reefs glowing through a broken tape signal",
+    family: "Biology",
+    state: { ...initial, engine: 15, palette: 9, colors: palettes[9].colors, bioFeed: 35, bioKill: 46, bioSpeed: 64, bioVeins: 83, bioAmount: 54, afterimage: 22, datamosh: 18, scale: 29, glitch: 4, motionMode: "Liquid flow", motionAmount: 62, lightMotion: 79, seed: 23879 },
+  },
+  {
+    name: "Violet Mycelial Modem",
+    note: "Underground spores spreading through shimmering CRT pigment",
+    family: "Biology",
+    state: { ...initial, engine: 15, palette: 11, colors: palettes[11].colors, bioFeed: 42, bioKill: 32, bioSpeed: 75, bioVeins: 95, phosphor: 41, bioAmount: 48, scale: 25, motionMode: "Internal turbulence", motionAmount: 41, lightMotion: 91, seed: 90271 },
+  },
+  {
+    name: "Bubblegum Spore Riot",
+    note: "Candy-colored growing chemistry with bright pixel confetti",
+    family: "Biology",
+    state: { ...initial, engine: 15, palette: 6, colors: palettes[6].colors, bioFeed: 53, bioKill: 52, bioSpeed: 74, bioVeins: 86, bioAmount: 34, glitter: 61, dither: 34, scale: 28, motionMode: "Breathing", motionAmount: 62, lightMotion: 83, seed: 67104 },
+  },
+  {
+    name: "Fungal GeoCities",
+    note: "Animated old-web popups overtaken by self-organizing coral chemistry",
+    family: "Biology",
+    state: { ...initial, engine: 6, palette: 1, colors: palettes[1].colors, bioFeed: 36, bioKill: 44, bioSpeed: 73, bioAmount: 88, bioVeins: 82, windowCascade: 70, glitter: 48, scale: 32, motionMode: "Orbital", motionAmount: 47, lightMotion: 79, seed: 57824 },
+  },
+  {
+    name: "Infected Diffraction",
+    note: "Fivefold mathematical interference colonized by branching spores",
+    family: "Biology",
+    state: { ...initial, engine: 14, palette: 15, colors: palettes[15].colors, bioFeed: 44, bioKill: 57, bioSpeed: 82, bioAmount: 89, bioVeins: 72, dither: 28, riso: 22, quasiDensity: 69, scale: 24, motionMode: "Traveling waves", motionAmount: 61, lightMotion: 71, seed: 14886 },
+  },
+  {
+    name: "Neon Media Rot",
+    note: "Digital blocks consumed by an organism with a persistent chemical history",
+    family: "Biology",
+    state: { ...initial, engine: 4, palette: 8, colors: palettes[8].colors, bioFeed: 29, bioKill: 36, bioSpeed: 86, bioAmount: 95, bioVeins: 91, block: 44, datamosh: 32, afterimage: 29, scale: 27, motionMode: "Internal turbulence", motionAmount: 68, lightMotion: 74, seed: 22681 },
   },
 ];

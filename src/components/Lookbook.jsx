@@ -25,9 +25,10 @@ export default function Lookbook({ onClose, onApply }) {
       const n = i++;
       try {
         const current = looks[n].state;
-        if (current.afterimage > 0 || current.datamosh > 0) {
+        if (current.afterimage > 0 || current.datamosh > 0 || current.engine === 15 || current.secondaryEngine === 15 && current.blend > 0 || current.bioAmount > 0) {
           renderer.resetFeedback();
-          // Render temporal history for an honest thumbnail, not a blank first frame.
+          renderer.resetBiology();
+          // Render several real simulation/feedback frames for an honest thumbnail.
           for (let step = 0; step < 6; step++)
             renderer.draw(current, { time: 3.7 + step * .06, colorTime: 3.7 + step * .06 }, 240, 160);
         } else {

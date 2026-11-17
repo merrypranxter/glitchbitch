@@ -2,6 +2,8 @@ import { appearanceGLSL } from "./appearance.js";
 import { geometryGLSL } from "./geometry.js";
 import { motionGLSL } from "./motion.js";
 import { feedbackVertex, feedbackFragment } from "./feedback.js";
+import { createBiology, BIO_SIZE } from "./biology.js";
+import { bioGLSL } from "./bio-shader.js";
 
 const vertex = `attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
 const fragment = `precision highp float;
@@ -20,6 +22,7 @@ mat2 rotate(float a){return mat2(cos(a),-sin(a),sin(a),cos(a));}
 vec3 palette(float t){float q=fract(t)*float(colorCount);int a=int(floor(q));vec3 c=colors[0],d=colors[0];for(int i=0;i<8;i++){if(i==a)c=colors[i];if(i==a+1)d=colors[i];}if(a==colorCount-1)d=colors[0];return mix(c,d,smoothstep(0.,1.,fract(q)));}
 ${geometryGLSL}
 ${motionGLSL}
+${bioGLSL}
 float field(vec2 p,int kind){float t=time*.3,f=0.;
 if(kind==0){for(int i=0;i<5;i++){float n=float(i)+1.;p+=warp*.32*vec2(sin(p.y*n+t/n),cos(p.x*n-t/n));f+=sin(p.x*n+cos(p.y*n+t))/n;}f=f*.25+length(p)*.12;}
 else if(kind==1){f=sin(length(p-vec2(sin(t),cos(t)))*12.)*sin(length(p+vec2(cos(t*.7),sin(t*.8)))*13.);f=f*.4+length(p)*.15;}
@@ -36,6 +39,7 @@ else if(kind==11){float a=atan(p.y,p.x),r=length(p);float n=3.+floor(complexity*
 else if(kind==12){f=hyperbolicCRT(p);}
 else if(kind==13){f=candyFractalPortal(p);}
 else if(kind==14){f=fivefoldDiffraction(p);}
+else if(kind==15){f=biologicalField(p);}
 else {f=0.;}
 return f;}
 float composed(vec2 p){float a=field(p,engine);if(blend<.001)return a;float b=field(rotate(.43)*p+vec2(.37,-.21),secondaryEngine);float c=b;if(blendMode==1)c=a*b*2.;if(blendMode==2)c=abs(a-b);return mix(a,c,blend);}
@@ -65,6 +69,7 @@ if(marks[i].w<.5)p+=rotate(a)*vec2(sin(local.y*15.+time),cos(local.x*15.-time))*
 else if(marks[i].w<1.5)p+=vec2(-d.y,d.x)*force*8.;else if(marks[i].w<2.5)p+=d*force*8.;else source+=force*(.5+.5*sin(2.*atan(d.y,d.x)+colorTime*.5+a));}}
 float v=composed(p);vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*sin(v*(2.+complexity*5.)*TAU),18.);col*=.72+edge*.5;if(bloom)col+=edge*col*.24;
 col=animateLight(col,uv,v);
+col=stainWithBiology(col,uv,p);
 if(split>.001){col.r=mix(col.r,palette(phaseOf(composed(p+vec2(split*.09,0.)),uv,source)).r,split);col.b=mix(col.b,palette(phaseOf(composed(p-vec2(split*.09,0.)),uv,source)).b,split);}
 col*=1.-scan*(.5+.5*sin(uv.y*900.))*.55;col+=(hash(floor(uv*1000.)+fract(time))-.5)*grain*.3;col=mix(col,col.brg,tear*.65);col=mix(col,col.gbr,blocks*block*.6);
 float luma=dot(col,vec3(.2126,.7152,.0722));col=mix(vec3(luma),col,saturation*2.);col=(col-.5)*(.5+contrast)+.5;col*=.5+brightness;col*=1.-vignette*smoothstep(.15,.8,length((uv-.5)*aspect));if(invert)col=1.-col;
@@ -89,6 +94,82 @@ export function createRenderer(canvas) {
   const programs = new Map();
   let active, fence = null, memory = null, memoryShader = null, memoryDisabled = false;
   let memoryIdentity = "", lastMemoryTime = -Infinity, lastMemoryColorTime = -Infinity;
+  let biology = null, biologySeed = null, biologyTexture = null;
+  let biologyLastTime = null, biologyFraction = 0, biologyDisabled = false;
+  let biologyFeed = 44, biologyKill = 42;
+  const emptyBioTexture = gl.createTexture();
+  if (!emptyBioTexture) throw Error("Cannot allocate the fallback biology texture.");
+  gl.activeTexture(gl.TEXTURE2);
+  gl.bindTexture(gl.TEXTURE_2D, emptyBioTexture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
+    new Uint8Array([0, 0, 0, 255]));
+  gl.activeTexture(gl.TEXTURE0);
+  function releaseBiology() {
+    if (biologyTexture) gl.deleteTexture(biologyTexture);
+    biologyTexture = null;
+    biology = null;
+    biologySeed = null;
+    biologyLastTime = null;
+    biologyFraction = 0;
+  }
+  function updateBiology(s, timeline) {
+    const needed = s.engine === 15 || (s.blend > 0 && s.secondaryEngine === 15) || s.bioAmount > 0;
+    if (!needed || biologyDisabled) return false;
+    try {
+      if (!biology || biologySeed !== s.seed) {
+        releaseBiology();
+        biology = createBiology(s.seed);
+        biologySeed = s.seed;
+        biologyFeed = s.bioFeed;
+        biologyKill = s.bioKill;
+        biology.advance(48, biologyFeed, biologyKill);
+        biologyLastTime = timeline.time;
+        biologyTexture = gl.createTexture();
+        if (!biologyTexture) throw Error("Biological texture allocation failed.");
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, biologyTexture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, BIO_SIZE, BIO_SIZE, 0,
+          gl.RGBA, gl.UNSIGNED_BYTE, biology.pixels());
+      } else {
+        const elapsed = biologyLastTime === null ? 0 : timeline.time - biologyLastTime;
+        biologyFeed = s.bioFeed;
+        biologyKill = s.bioKill;
+        if (elapsed < -.0001) {
+          biology.reset();
+          biology.advance(48, s.bioFeed, s.bioKill);
+          biologyFraction = 0;
+        } else if (elapsed > 0) {
+          const desired = elapsed * (9 + s.bioSpeed * .23) + biologyFraction;
+          const steps = Math.min(9, Math.floor(desired));
+          // Bounded catch-up: large seeks never freeze an iPhone for hundreds of steps.
+          biologyFraction = elapsed > 2 ? 0 : desired - Math.floor(desired);
+          if (steps) biology.advance(steps, s.bioFeed, s.bioKill);
+        }
+        biologyLastTime = timeline.time;
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, biologyTexture);
+        gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, BIO_SIZE, BIO_SIZE,
+          gl.RGBA, gl.UNSIGNED_BYTE, biology.pixels());
+      }
+      gl.activeTexture(gl.TEXTURE0);
+      return true;
+    } catch (error) {
+      // The biology engine must never take the original art down with it.
+      biologyDisabled = true;
+      releaseBiology();
+      console.warn("Biology simulation disabled; original art preserved.", error);
+      gl.activeTexture(gl.TEXTURE0);
+      return false;
+    }
+  }
   function releaseMemory() {
     if (memory) {
       gl.deleteTexture(memory.scene);
@@ -241,6 +322,7 @@ export function createRenderer(canvas) {
             "precision highp float;\nout vec4 fragColor;",
           )
           .replaceAll("gl_FragColor", "fragColor")
+          .replaceAll("texture2D(", "texture(")
       : source;
     let vertexShader, fragmentShader, program;
     try {
@@ -328,6 +410,7 @@ export function createRenderer(canvas) {
         canvas.height = height;
       }
       active = programFor(s);
+      const hasBiology = updateBiology(s, timeline);
       const hasMemoryEffects = (s.afterimage > 0 || s.datamosh > 0) && !memoryDisabled;
       let drawWithMemory = false;
       if (hasMemoryEffects) {
@@ -388,6 +471,8 @@ export function createRenderer(canvas) {
         "motionAmount",
         "motionRate",
         "lightMotion",
+        "bioAmount",
+        "bioVeins",
       ])
         gl.uniform1f(loc(k), s[k] / 100);
       gl.uniform1f(loc("rotation"), (s.rotation * Math.PI) / 180);
@@ -404,6 +489,11 @@ export function createRenderer(canvas) {
       );
       gl.uniform1i(loc("colorCount"), s.colors.length);
       gl.uniform1i(loc("motionMode"), ["Liquid flow", "Breathing", "Orbital", "Traveling waves", "Internal turbulence"].indexOf(s.motionMode));
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, hasBiology ? biologyTexture : emptyBioTexture);
+      gl.uniform1i(loc("bioTex"), 2);
+      gl.uniform1i(loc("bioAvailable"), hasBiology ? 1 : 0);
+      gl.activeTexture(gl.TEXTURE0);
       const key = s.colors.join("");
       if (key !== active.paletteKey) {
         active.paletteKey = key;
@@ -449,6 +539,14 @@ export function createRenderer(canvas) {
       }
       return true;
     },
+    resetBiology() {
+      if (biology) {
+        biology.reset();
+        biology.advance(48, biologyFeed, biologyKill);
+        biologyLastTime = null;
+        biologyFraction = 0;
+      }
+    },
     resetFeedback() {
       if (memory) memory.valid = false;
       memoryIdentity = "";
@@ -457,6 +555,8 @@ export function createRenderer(canvas) {
     destroy(release = false) {
       if (fence) gl.deleteSync(fence);
       releaseMemory();
+      releaseBiology();
+      gl.deleteTexture(emptyBioTexture);
       if (memoryShader) gl.deleteProgram(memoryShader.program);
       memoryShader = null;
       programs.forEach((p) => gl.deleteProgram(p.program));

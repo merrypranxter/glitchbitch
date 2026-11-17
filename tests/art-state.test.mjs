@@ -44,7 +44,7 @@ test("invalid seed, clock, color and source data cannot enter the renderer", () 
     { ...initial, seed: -1 },
     { ...initial, colors: ["#abc", "javascript:bad"] },
     { ...initial, marks: [{ ...makeMark(initial), radius: 8 }] },
-    { ...initial, engine: 15 },
+    { ...initial, engine: 16 },
     { ...initial, blend: NaN },
   ])
     assert.throws(() => parseDocument(bad));
@@ -119,8 +119,8 @@ test("appearance sliders round trip, reject invalid numbers and keep vintage rec
   for (const key of appearanceKeys) delete old[key];
   assert.deepEqual(appearanceKeys.map(key => parseDocument(old).state[key]), appearanceKeys.map(() => 0));
 });
-test("lookbook contains 37 valid distinct entries across original, math, motion and memory", () => {
-  assert.equal(looks.length, 37);
+test("lookbook contains 43 valid distinct entries across original, math, motion and biology", () => {
+  assert.equal(looks.length, 43);
   assert.equal(new Set(looks.map(look => look.name)).size, looks.length);
   for (const look of looks) assert.deepEqual(parseDocument(look.state).state, look.state);
   assert.ok(looks.some(look => look.state.windowCascade > 0));
@@ -163,8 +163,9 @@ test("memory renderer only activates when explicitly enabled", async () => {
 
 test("new math and ambient movement preserve valid recipe and clock semantics", async () => {
   const {engines, motionModes} = await import("../src/data.js");
-  assert.equal(engines.length, 15);
-  assert.deepEqual(engines.slice(12), ["Hyperbolic CRT", "Candy fractal portal", "Fivefold diffraction"]);
+  assert.equal(engines.length, 16);
+  assert.deepEqual(engines.slice(12,15), ["Hyperbolic CRT", "Candy fractal portal", "Fivefold diffraction"]);
+  assert.equal(engines[15], "Chromatic infection");
   assert.equal(motionModes.length, 5);
   for(const name of ["hyperbolicFold","fractalZoom","juliaMix","quasiDensity","motionAmount","motionRate","lightMotion"]){
     const value=73, s={...initial,[name]:value};
@@ -205,4 +206,50 @@ test("Surprise Me brings animation clocks back from zero and leaves paused trans
   const mutated = randomize(immobile,{},true,()=>.5);
   assert.equal(mutated.freezeGeometry,true);
   assert.equal(mutated.freezeColor,true);
+});
+
+test("genuine Gray–Scott biology is seeded, grows, and responds to different chemistry", async () => {
+  const { createBiology, BIO_SIZE } = await import("../src/biology.js");
+  const a = createBiology(31827), b = createBiology(31827);
+  assert.equal(a.size, BIO_SIZE);
+  assert.equal(a.pixels().length, BIO_SIZE * BIO_SIZE * 4);
+  assert.deepEqual(a.pixels(), b.pixels());
+  const before = a.pixels().slice();
+  a.advance(75, 45, 45);
+  b.advance(75, 45, 45);
+  const after = a.pixels().slice();
+  assert.notDeepEqual(after, before);
+  assert.deepEqual(after, b.pixels());
+  const mutant = createBiology(31827);
+  mutant.advance(75, 65, 32);
+  assert.notDeepEqual(after, mutant.pixels());
+  a.reset(); assert.deepEqual(a.pixels(), before);
+  const unrelated = createBiology(53123);
+  assert.notDeepEqual(unrelated.pixels(), before);
+});
+test("biology recipe migration, stacking and Surprise Me remain safe", () => {
+  const old = {...initial};
+  for (const key of ["bioAmount","bioFeed","bioKill","bioSpeed","bioVeins"]) delete old[key];
+  assert.equal(parseDocument(old).state.bioAmount, 0);
+  const keys=["bioAmount","bioFeed","bioKill","bioSpeed","bioVeins"];
+  for(const key of keys) {
+    const item={...initial,[key]:76};
+    assert.equal(parseDocument(recipeDocument(item,"Rot",{time:0,colorTime:0})).state[key],76);
+    assert.throws(()=>parseDocument({...item,[key]:101}));
+  }
+  const look = looks.find(l=>l.name==="Coral Codec Shrine");
+  assert.equal(look.state.engine,15);
+  assert.ok(looks.some(l=>l.state.engine!==15 && l.state.bioAmount>0));
+  assert.ok(looks.some(l=>l.family==="Biology" && l.state.motionAmount>0));
+});
+test("biology shader is available as primary or secondary with a fallback", async () => {
+  const { readFileSync } = await import("node:fs");
+  const shader=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
+  const bio=readFileSync(new URL("../src/bio-shader.js",import.meta.url),"utf8");
+  assert.match(shader,/kind==15/);
+  assert.match(shader,/bioAvailable/);
+  assert.match(shader,/updateBiology/);
+  assert.match(shader,/gl\.texSubImage2D/);
+  assert.match(bio,/stainWithBiology/);
+  assert.match(bio,/biologicalField/);
 });

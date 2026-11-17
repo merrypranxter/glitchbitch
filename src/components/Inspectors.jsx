@@ -25,6 +25,7 @@ import {
   Layers,
   ArrowDown,
   ArrowUpRight,
+  Dna,
 } from "lucide-react";
 import { engineInfo, engines, touchModes, makeMark, motionModes } from "../data";
 import { Parameter, Range, Switch, Select, Section } from "./Controls";
@@ -44,6 +45,7 @@ const icons = [
   Orbit,
   Snowflake,
   Grid3X3,
+  Dna,
 ];
 export function MathInspector({ history, locked, onLock, onLookbook }) {
   const state = history.state;
@@ -116,7 +118,7 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
         />
         <Switch label="Mirror dimension" name="mirror" history={history} />
       </Section>
-      {(selected(12) || selected(13) || selected(14)) && (
+      {(selected(12) || selected(13) || selected(14) || selected(15)) && (
         <Section title="IMPOSSIBLE GEOMETRY">
           {selected(12) && <Parameter label="Hyperbolic fold depth" name="hyperbolicFold" history={history} />}
           {selected(13) && (
@@ -126,6 +128,7 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
             </>
           )}
           {selected(14) && <Parameter label="Diffraction density" name="quasiDensity" history={history} />}
+          {selected(15) && <p className="control-note">This is real two-chemical reaction-diffusion. Change its growth chemistry under Effects → Biological Signal Rot.</p>}
           <p className="control-note">These engines can be combined with every original engine, palette, and touch force.</p>
         </Section>
       )}
@@ -175,6 +178,14 @@ export function EffectsInspector({ history }) {
         <Parameter label="Scanlines" name="scan" history={history} />
         <Parameter label="Film grain" name="grain" history={history} />
         <Parameter label="Vignette" name="vignette" history={history} />
+      </Section>
+      <Section title="BIOLOGICAL SIGNAL ROT">
+        <Parameter label="Growing organism overlay" name="bioAmount" history={history} />
+        <Parameter label="Chemical feed" name="bioFeed" history={history} />
+        <Parameter label="Chemical kill" name="bioKill" history={history} />
+        <Parameter label="Growth speed" name="bioSpeed" history={history} />
+        <Parameter label="Membrane veins" name="bioVeins" history={history} />
+        <p className="control-note">Genuine seeded reaction-diffusion; its cells grow even over nonbiological engines. Choose Chromatic infection in Math to make the organism the main structure.</p>
       </Section>
       <Section title="FRAME MEMORY — ACTUAL FEEDBACK">
         <Parameter label="Afterimage persistence" name="afterimage" history={history} />

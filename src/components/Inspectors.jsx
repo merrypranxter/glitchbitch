@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, letteringStyles, compositionModes, backdropModes, microModes, substanceModes, wiggleModes } from "../data";
 import { Parameter, Range, Switch, Select, Section } from "./Controls";
+import { letteringBlendGroups, letteringBlendModes } from "../lettering-blends.js";
 import { retroFonts, retroFontGroups, getRetroFont, ensureRetroFontLoaded } from "../retro-fonts";
 const icons = [
   Waves,
@@ -213,7 +214,7 @@ export function TextInspector({ history }) {
             onBlur={history.end} />
         </label>
         <div className="text-engine-status" role="status">
-          TEXT ENGINE: DOM v4 · 14 MATERIAL FX · {history.state.lettering.trim().length} characters ·
+          TEXT ENGINE: DOM v5 · 44 BLEND MODES · 14 MATERIAL FX · {history.state.lettering.trim().length} characters ·
           opacity {history.state.letteringAmount ?? 0}%
         </div>
         <button type="button" className="button secondary"
@@ -259,6 +260,22 @@ export function TextInspector({ history }) {
           onChange={(v) => history.change((s) => ({ ...s, letteringStyle: v }))}>
           {letteringStyles.map((v) => <option key={v}>{v}</option>)}
         </Select>
+        <Section title="TEXT BLENDING — 44 WAYS TO MISBEHAVE">
+          <Select label="Blend text against the artwork" value={history.state.letteringBlendMode ?? "Normal"}
+            onChange={v=>history.change(s=>({...s,letteringBlendMode:v}))}>
+            {letteringBlendGroups.map(group=><optgroup key={group.label} label={group.label}>
+              {group.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+            </optgroup>)}
+          </Select>
+          <Parameter label="Blend intensity (0 = ordinary text, 100 = full effect)"
+            name="letteringBlendStrength" history={history}/>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>({...s,
+              letteringBlendMode:letteringBlendModes[Math.floor(Math.random()*letteringBlendModes.length)],
+              letteringBlendStrength:100
+            }))}>🎲 Random text blend (keep words & colors)</button>
+          <p className="control-note">Standard modes use real browser/canvas compositing. Photoshop-only and invented modes are artistic emulations. Each layer blends separately over the living artwork. Blink modes are intentional flashes.</p>
+        </Section>
         <Section title="EXTRA TEXT LAYERS — INDEPENDENT WORDS">
           <p className="control-note">Your original quote is layer one. Add up to two independent layers with their own words, fonts, materials, color, gradients, outlines, placement and animation. New layers stack above the original.</p>
           {history.state.letteringLayers.map((layer,index)=>
@@ -278,6 +295,16 @@ export function TextInspector({ history }) {
                 onChange={v=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringStyle:v}:x)}))}>
                 {letteringStyles.map(v=><option key={v}>{v}</option>)}
               </Select>
+              <Select label="Layer blend mode" value={layer.letteringBlendMode ?? "Normal"}
+                onChange={v=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringBlendMode:v}:x)}))}>
+                {letteringBlendGroups.map(group=><optgroup key={group.label} label={group.label}>
+                  {group.modes.map(mode=><option key={mode}>{mode}</option>)}
+                </optgroup>)}
+              </Select>
+              <label className="select-field"><span>Layer blend intensity: {layer.letteringBlendStrength ?? 100}%</span>
+                <input type="range" min="0" max="100" step="1" value={layer.letteringBlendStrength ?? 100}
+                  onChange={e=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringBlendStrength:Number(e.target.value)}:x)}))}/>
+              </label>
               <Select label="Fill" value={layer.letteringFillMode}
                 onChange={v=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringFillMode:v}:x)}))}>
                 {["Solid","Linear gradient","Radial gradient"].map(v=><option key={v}>{v}</option>)}
@@ -306,6 +333,7 @@ export function TextInspector({ history }) {
               id:"text-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),
               text:"",visible:true,letteringFont:s.letteringFont,
               letteringStyle:"Custom ink",letteringAmount:85,letteringScale:48,
+              letteringBlendMode:s.letteringBlendMode ?? "Normal",letteringBlendStrength:100,
               letteringWarp:0,letteringMotion:0,letteringX:50,letteringY:50,
               letteringRotation:0,letteringStretchX:100,letteringStretchY:100,
               letteringCurve:0,letteringFillMode:"Solid",letteringFill:"#ff2fbf",

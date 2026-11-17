@@ -32,6 +32,7 @@ import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, le
 import { Parameter, Range, Switch, Select, Section } from "./Controls";
 import { letteringBlendGroups, letteringBlendModes } from "../lettering-blends.js";
 import { letteringMotionGroups } from "../lettering-motion.js";
+import { textFormatTools, toggleTextFormat, rebaseTextFormats, textStyleAt, wordSelection } from "../text-formatting.js";
 import { textChoreographyGroups, textChoreographies, applyTextChoreography,
   remixTextChoreography, mutateTextChoreography } from "../text-choreographies.js";
 import { retroFonts, retroFontGroups, getRetroFont, ensureRetroFontLoaded } from "../retro-fonts";
@@ -190,8 +191,34 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
     </>
   );
 }
+function WordStyleToolbar({text,formats,selection,onToggle}){
+  const {start,end}=wordSelection(text,selection.current.start,selection.current.end);
+  const indices=Array.from({length:Math.max(0,end-start)},(_,i)=>start+i)
+    .filter(i=>!/\s/u.test(text[i]||" "));
+  return <div className="word-style-toolbar" role="group"
+    aria-label="Format highlighted words or the word under your cursor">
+    {textFormatTools.map(tool=><button key={tool.key} type="button"
+      className="button secondary word-style-button"
+      aria-pressed={indices.length>0&&indices.every(i=>Boolean(textStyleAt(formats,i)[tool.key]))}
+      title={tool.label+" — selected words only"}
+      onClick={()=>onToggle(tool.key)}>
+      {tool.key==="bold"?<strong>B</strong>:tool.key==="italic"?<em>I</em>:
+       tool.key==="underline"?<span style={{textDecoration:"underline"}}>U</span>:
+       tool.key==="strike"?<span style={{textDecoration:"line-through"}}>S</span>:"AA"}
+    </button>)}
+  </div>;
+}
 export function TextInspector({ history }) {
   const [fontError,setFontError]=React.useState("");
+  const textSelection=React.useRef({start:0,end:0});
+  const layerSelections=React.useRef({});
+  const remember=(ref,event)=>{ref.current={
+    start:event.currentTarget.selectionStart??0,end:event.currentTarget.selectionEnd??0
+  };};
+  const layerSelection=id=>{
+    if(!layerSelections.current[id])layerSelections.current[id]={current:{start:0,end:0}};
+    return layerSelections.current[id];
+  };
   const [choreographyId,setChoreographyId]=React.useState("opal-orbit");
   const chosenChoreography=textChoreographies.find(p=>p.id===choreographyId);
   const selectedFont=getRetroFont(history.state.letteringFont);
@@ -209,17 +236,30 @@ export function TextInspector({ history }) {
         <label className="select-field kinetic-type-field">
           <span>YOUR QUOTE OR MESSAGE (280 CHARACTERS)</span>
           <textarea rows={4} maxLength={280} autoComplete="off" spellCheck={false}
+            onSelect={e=>remember(textSelection,e)}
+            onKeyUp={e=>remember(textSelection,e)}
             placeholder={"Type whatever you want.\nLine breaks are welcome."}
             value={history.state.lettering}
             onFocus={history.begin}
             onChange={(e) => history.preview((s) => ({
               ...s, lettering:e.target.value,
+              letteringFormats:rebaseTextFormats(s.lettering,e.target.value,s.letteringFormats),
               letteringAmount:e.target.value.trim() ? (s.letteringAmount||46) : 0
             }))}
             onBlur={history.end} />
         </label>
+        <WordStyleToolbar text={history.state.lettering}
+          formats={history.state.letteringFormats} selection={textSelection}
+          onToggle={key=>history.change(s=>({...s,
+            letteringFormats:toggleTextFormat(s.lettering,s.letteringFormats,
+              textSelection.current.start,textSelection.current.end,key)
+          }))}/>
+        <p className="control-note">Highlight a word or phrase, then tap B, I, U, S or AA. Without a highlight, the word under your cursor changes. Tap again to remove the style. AA changes appearance without rewriting the original words.</p>
+        <Parameter label="Letter spacing (tracking)" name="letteringTracking" history={history}
+          format={v=>`${v>0?"+":""}${Math.round(v)}%`}/>
+        <Parameter label="Line spacing (leading)" name="letteringLineSpacing" history={history}/>
         <div className="text-engine-status" role="status">
-          TEXT ENGINE: DOM v7 · 24 CHOREOGRAPHIES · {history.state.lettering.trim().length} characters ·
+          TEXT ENGINE: DOM v8 · WORD STYLES + SPACING · {history.state.lettering.trim().length} characters ·
           opacity {history.state.letteringAmount ?? 0}%
         </div>
         <button type="button" className="button secondary"
@@ -325,8 +365,18 @@ export function TextInspector({ history }) {
               <strong>Text layer {index+2}</strong>
               <label className="select-field"><span>Words</span>
                 <textarea rows={2} maxLength={280} value={layer.text}
-                  onChange={e=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,text:e.target.value}:x)}))}/>
+                  onSelect={e=>remember(layerSelection(layer.id),e)}
+                  onKeyUp={e=>remember(layerSelection(layer.id),e)}
+                  onChange={e=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,text:e.target.value,letteringFormats:rebaseTextFormats(x.text,e.target.value,x.letteringFormats)}:x)}))}/>
               </label>
+              <WordStyleToolbar text={layer.text} formats={layer.letteringFormats}
+                selection={layerSelection(layer.id)}
+                onToggle={key=>history.change(s=>({...s,
+                  letteringLayers:s.letteringLayers.map((x,i)=>i===index?{
+                    ...x,letteringFormats:toggleTextFormat(x.text,x.letteringFormats,
+                      layerSelection(x.id).current.start,layerSelection(x.id).current.end,key)
+                  }:x)
+                }))}/>
               <label>Visible <input type="checkbox" checked={layer.visible}
                 onChange={e=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,visible:e.target.checked}:x)}))}/></label>
               <Select label="Font" value={layer.letteringFont}
@@ -374,10 +424,12 @@ export function TextInspector({ history }) {
                 <input key={j} type="color" aria-label={"Gradient stop "+(j+1)} value={color}
                   onChange={e=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,letteringGradient:x.letteringGradient.map((c,n)=>n===j?e.target.value:c)}:x)}))}/>)}
               {["letteringX","letteringY","letteringRotation","letteringStretchX","letteringStretchY",
-                "letteringCurve","letteringScale","letteringAmount","letteringWarp","letteringMotion",
+                "letteringCurve","letteringScale","letteringTracking","letteringLineSpacing","letteringAmount","letteringWarp","letteringMotion",
                 "letteringMotionStagger","letteringMotionSpeed","letteringMotionMix"].map(key=>{
                 const bounds=key==="letteringRotation"?[-180,180]:
                   key==="letteringCurve"?[-100,100]:
+                  key==="letteringTracking"?[-20,100]:
+                  key==="letteringLineSpacing"?[60,300]:
                   key==="letteringMotionSpeed"?[1,4]:
                   key==="letteringStretchX"||key==="letteringStretchY"?[25,250]:[0,100];
                 return <label key={key} className="select-field"><span>{key.replace("lettering","")} {layer[key]}</span>
@@ -404,6 +456,7 @@ export function TextInspector({ history }) {
               id:"text-"+Date.now()+"-"+Math.random().toString(36).slice(2,7),
               text:"",visible:true,letteringFont:s.letteringFont,
               letteringStyle:"Custom ink",letteringAmount:85,letteringScale:48,
+              letteringTracking:0,letteringLineSpacing:118,letteringFormats:[],
               letteringBlendMode:s.letteringBlendMode ?? "Normal",letteringBlendStrength:100,
               letteringWarp:0,letteringMotion:0,letteringX:50,letteringY:50,
               letteringMotionPath:"Classic drift",letteringMotionPath2:"None",letteringMotionMix:65,letteringMotionSpeed:1,

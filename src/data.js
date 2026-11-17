@@ -243,6 +243,7 @@ export const numericRanges = {
   letteringMotion: [0, 100],
   letteringMotionSpeed: [1, 4],
   letteringMotionStagger: [0, 100],
+  letteringMotionMix: [0, 100],
   letteringGradientAngle: [0, 360],
   letteringX: [0, 100],
   letteringY: [0, 100],
@@ -373,6 +374,8 @@ export const initial = {
   letteringWarp: 40,
   letteringMotion: 55,
   letteringMotionPath: "Classic drift",
+  letteringMotionPath2: "None",
+  letteringMotionMix: 65,
   letteringMotionSpeed: 1,
   letteringMotionStagger: 10,
   letteringMotionDirection: "Forward",
@@ -493,6 +496,7 @@ export function validateRecipe(input) {
     letteringStyle: letteringStyles,
     letteringBlendMode: letteringBlendModes,
     letteringMotionPath: letteringMotionPaths,
+    letteringMotionPath2: ["None",...letteringMotionPaths],
     letteringMotionDirection: ["Forward","Reverse"],
     letteringFont: retroFontIds,
     letteringFillMode: ["Solid","Linear gradient","Radial gradient"],
@@ -518,14 +522,14 @@ export function validateRecipe(input) {
       ids.add(id);
       const out={id,text:layer.text,visible:layer.visible!==false};
       if(typeof layer.visible!=="undefined"&&typeof layer.visible!=="boolean")throw Error("Invalid text layer visibility.");
-      for(const key of ["letteringAmount","letteringScale","letteringWarp","letteringMotion","letteringBlendStrength","letteringMotionSpeed","letteringMotionStagger",
+      for(const key of ["letteringAmount","letteringScale","letteringWarp","letteringMotion","letteringBlendStrength","letteringMotionSpeed","letteringMotionStagger","letteringMotionMix",
         "letteringX","letteringY","letteringRotation","letteringStretchX","letteringStretchY","letteringCurve"]){
         const value=layer[key]??initial[key],range=numericRanges[key];
         if(!Number.isFinite(value)||value<range[0]||value>range[1])throw Error("Invalid text layer "+key);
         out[key]=value;
       }
       for(const [key,choices] of Object.entries({letteringFont:retroFontIds,letteringStyle:letteringStyles,letteringBlendMode:letteringBlendModes,
-        letteringMotionPath:letteringMotionPaths,letteringMotionDirection:["Forward","Reverse"],
+        letteringMotionPath:letteringMotionPaths,letteringMotionPath2:["None",...letteringMotionPaths],letteringMotionDirection:["Forward","Reverse"],
         letteringFillMode:["Solid","Linear gradient","Radial gradient"]})){
         const value=layer[key]??initial[key];
         if(!choices.includes(value))throw Error("Invalid text layer "+key);
@@ -833,6 +837,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.letteringWarp=0;
   s.letteringMotion=15+random()*45;
   s.letteringMotionPath="Classic drift";
+  s.letteringMotionPath2="None";
+  s.letteringMotionMix=65;
   s.letteringMotionSpeed=1;
   s.letteringMotionStagger=10;
   s.letteringMotionDirection="Forward";

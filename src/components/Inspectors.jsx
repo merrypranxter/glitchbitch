@@ -28,7 +28,7 @@ import {
   Dna,
   Box,
 } from "lucide-react";
-import { engineInfo, engines, touchModes, makeMark, motionModes, letteringStyles, compositionModes, backdropModes } from "../data";
+import { engineInfo, engines, touchModes, makeMark, motionModes, letteringStyles, compositionModes, backdropModes, microModes } from "../data";
 import { Parameter, Range, Switch, Select, Section } from "./Controls";
 const icons = [
   Waves,
@@ -219,6 +219,25 @@ export function EffectsInspector({ history }) {
         <Parameter label="Camera wiggle speed" name="stereoWiggle" history={history} />
         <Parameter label="Raymarch detail / GPU load" name="stereoQuality" history={history} />
         <p className="control-note">The 3D engine always shows its raymarched form; on other engines, raise 3D overlay to add moving depth. Higher raymarch detail costs more GPU on iPhone.</p>
+      </Section>
+      <Section title="LIVING MICROSTRUCTURES">
+        <Select label="Texture organism / construction" value={history.state.microMode}
+          onChange={(v)=>history.change(s=>({...s,microMode:v}))}>
+          {microModes.map(mode=><option key={mode}>{mode}</option>)}
+        </Select>
+        <Parameter label="Texture presence" name="microAmount" history={history}/>
+        <Parameter label="Microscopic scale" name="microScale" history={history}/>
+        <Parameter label="Independent texture motion" name="microMotion" history={history}/>
+        <Parameter label="Thread / glass relief" name="microRelief" history={history}/>
+        <Parameter label="Texture density" name="microDensity" history={history}/>
+        <Parameter label="Color shift" name="microHue" history={history}/>
+        <Parameter label="Texture variation" name="microVariation" history={history}/>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(s=>({...s,microVariation:
+            (s.microVariation+23+Math.random()*56)%100}))}>
+          Reseed texture only
+        </button>
+        <p className="control-note">Six moving material textures that ride your mathematical shapes: embroidery, granules, caustics, lace, glass hairlines and fluorescent cilia. Surprise Me changes the texture family and every setting. Set presence to zero to restore the original artwork.</p>
       </Section>
       <Section title="PRISMATIC TAPE DECK">
         <Parameter label="Thin-film interference" name="filmAmount" history={history} />

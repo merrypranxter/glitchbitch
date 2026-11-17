@@ -156,6 +156,10 @@ export const backdropModes = [
   "Nebula veils", "Cosmic pollen", "Caustic undercurrent", "Ghost architecture",
   "Phosphor jacquard", "Opal cell fog",
 ];
+export const microModes = [
+  "Living embroidery", "Opal granulation", "Gel caustics", "Point lace",
+  "Glass filaments", "Crystalline cilia",
+];
 export const chaosPhrases = ["ERROR ANGEL", "GLITCHBITCH", "LOVE.exe", "U R CUTE", "SOFT APOCALYPSE",
   "INFINITE TRASH", "COSMIC STATIC", "NEON FUNERAL", "NO SIGNAL", "DIVINE MALFUNCTION",
   "HYPERSPACE", "TOXIC DREAM", "BLESSED ERROR", "404 REALITY", "SWEET CORRUPTION"];
@@ -229,6 +233,13 @@ export const numericRanges = {
   backdropGlow: [0, 100],
   backdropHue: [0, 100],
   backdropVariation: [0, 100],
+  microAmount: [0, 100],
+  microScale: [0, 100],
+  microMotion: [0, 100],
+  microRelief: [0, 100],
+  microDensity: [0, 100],
+  microHue: [0, 100],
+  microVariation: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -324,6 +335,14 @@ export const initial = {
   backdropGlow: 72,
   backdropHue: 47,
   backdropVariation: 50,
+  microMode: "Living embroidery",
+  microAmount: 0,
+  microScale: 50,
+  microMotion: 52,
+  microRelief: 55,
+  microDensity: 57,
+  microHue: 48,
+  microVariation: 50,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -395,6 +414,7 @@ export function validateRecipe(input) {
     letteringStyle: letteringStyles,
     compositionMode: compositionModes,
     backdropMode: backdropModes,
+    microMode: microModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -555,6 +575,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "compositionMotion","compositionColorShift","compositionVariation",
       "backdropAmount","backdropDepth","backdropDensity","backdropMotion",
       "backdropGlow","backdropHue","backdropVariation",
+      "microAmount","microScale","microMotion","microRelief",
+      "microDensity","microHue","microVariation",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -653,6 +675,14 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.backdropGlow=35+random()*64;
   s.backdropHue=12+random()*86;
   s.backdropVariation=random()*100;
+  s.microMode=different(microModes,state.microMode,random);
+  s.microAmount=random()<.82?27+random()*60:0;
+  s.microScale=16+random()*78;
+  s.microMotion=32+random()*65;
+  s.microRelief=20+random()*77;
+  s.microDensity=20+random()*74;
+  s.microHue=11+random()*87;
+  s.microVariation=random()*100;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;
@@ -1227,5 +1257,53 @@ export const looks = [
     family: "Backdrop",
     state: { ...initial, engine: 4, palette: 8, colors: palettes[8].colors,
       windowCascade: 62, glitter: 43, opalAmount: 75, filmAmount: 55, backdropMode: "Cosmic pollen", backdropAmount: 100, backdropDepth: 95, backdropDensity: 77, backdropMotion: 82, backdropGlow: 100, backdropHue: 71, backdropVariation: 47, motionAmount: 63, lightMotion: 81, seed: 592702 },
+  },
+  {
+    name: "Electrified Embroidery",
+    note: "Sewn threads that rearrange themselves across moving chromatic circuitry",
+    family: "Microtexture",
+    state: {...initial,engine:10,palette:1,colors:palettes[1].colors,microMode:"Living embroidery",microAmount:87,microScale:60,microMotion:74,microRelief:82,microDensity:76,microHue:49,microVariation:31,backdropMode:"Phosphor jacquard",backdropAmount:64,motionAmount:74,lightMotion:79,seed:932174},
+  },
+  {
+    name: "Pearl Granulation Organism",
+    note: "Living glassy beads creep through fluid color fields",
+    family: "Microtexture",
+    state: {...initial,engine:6,palette:8,colors:palettes[8].colors,microMode:"Opal granulation",microAmount:94,microScale:51,microMotion:62,microRelief:95,microDensity:67,microHue:56,microVariation:70,opalAmount:81,filmAmount:55,motionAmount:71,lightMotion:81,seed:248173},
+  },
+  {
+    name: "Gel Caustic Meltdown",
+    note: "Moving gelatinous caustic lines on an animated cell membrane",
+    family: "Microtexture",
+    state: {...initial,engine:7,palette:10,colors:palettes[10].colors,microMode:"Gel caustics",microAmount:96,microScale:44,microMotion:90,microRelief:91,microDensity:86,microHue:64,microVariation:11,prismAmount:73,motionAmount:83,lightMotion:94,seed:361728},
+  },
+  {
+    name: "Particle Lace Exorcism",
+    note: "Fine living point lace interrupted by a fivefold crystalline lattice",
+    family: "Microtexture",
+    state: {...initial,engine:14,palette:15,colors:palettes[15].colors,microMode:"Point lace",microAmount:85,microScale:70,microMotion:65,microRelief:74,microDensity:87,microHue:32,microVariation:65,compositionAmount:49,blend:67,secondaryEngine:8,motionAmount:62,lightMotion:86,seed:462791},
+  },
+  {
+    name: "Glass Filament Apparition",
+    note: "Iridescent luminous hairline streams orbiting behind a translucent 3D sculpture",
+    family: "Microtexture",
+    state: {...initial,engine:16,palette:6,colors:palettes[6].colors,microMode:"Glass filaments",microAmount:92,microScale:57,microMotion:85,microRelief:96,microDensity:79,microHue:80,microVariation:43,stereoAmount:69,stereoShape:"Opal Knot",filmAmount:44,opalAmount:57,motionAmount:41,lightMotion:97,seed:713942},
+  },
+  {
+    name: "Crystalline Cilia Reef",
+    note: "Self-aligning fluorescent microscopic rods growing through a chemical reef",
+    family: "Microtexture",
+    state: {...initial,engine:15,palette:11,colors:palettes[11].colors,microMode:"Crystalline cilia",microAmount:95,microScale:63,microMotion:80,microRelief:87,microDensity:85,microHue:51,microVariation:89,bioAmount:77,bioSpeed:78,backdropAmount:54,motionAmount:68,lightMotion:73,seed:318642},
+  },
+  {
+    name: "Moiré Tape Microscopy",
+    note: "Signal interference viewed through moving fluorescent woven filaments",
+    family: "Microtexture",
+    state: {...initial,engine:3,palette:7,colors:palettes[7].colors,microMode:"Living embroidery",microAmount:91,microScale:79,microMotion:78,microRelief:79,microDensity:71,microHue:48,microVariation:82,glitch:38,phosphor:45,afterimage:25,motionAmount:74,lightMotion:85,seed:610293},
+  },
+  {
+    name: "Opal Membrane Crawlers",
+    note: "Fractal boundary lenses nested inside swimming pearlescent ringlets",
+    family: "Microtexture",
+    state: {...initial,engine:13,palette:9,colors:palettes[9].colors,microMode:"Opal granulation",microAmount:86,microScale:67,microMotion:64,microRelief:88,microDensity:82,microHue:74,microVariation:58,fractalZoom:55,opalAmount:84,filmAmount:93,backdropAmount:63,motionAmount:64,lightMotion:95,seed:527174},
   },
 ];

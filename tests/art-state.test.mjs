@@ -119,8 +119,8 @@ test("appearance sliders round trip, reject invalid numbers and keep vintage rec
   for (const key of appearanceKeys) delete old[key];
   assert.deepEqual(appearanceKeys.map(key => parseDocument(old).state[key]), appearanceKeys.map(() => 0));
 });
-test("lookbook contains 76 valid distinct entries including living-background worlds", () => {
-  assert.equal(looks.length, 76);
+test("lookbook contains 84 valid distinct entries including living microscopic textures", () => {
+  assert.equal(looks.length, 84);
   assert.equal(new Set(looks.map(look => look.name)).size, looks.length);
   for (const look of looks) assert.deepEqual(parseDocument(look.state).state, look.state);
   assert.ok(looks.some(look => look.state.windowCascade > 0));
@@ -540,4 +540,38 @@ test("no Surprise Me RNG result is allowed to insert decorative typography", () 
     assert.equal(s.letteringAmount,0);
   }
   assert.ok(looks.every(l=>l.state.lettering==="" && l.state.letteringAmount===0));
+});
+
+test("six living microstructure species are opt-in and fully covered by Surprise", async () => {
+  const {microModes,numericRanges}=await import("../src/data.js");
+  assert.equal(microModes.length,6);
+  const knobs=["microAmount","microScale","microMotion","microRelief","microDensity","microHue","microVariation"];
+  for(const key of knobs){
+    const s={...initial,[key]:68};
+    assert.equal(parseDocument(recipeDocument(s,"Under microscope",{time:2,colorTime:4})).state[key],68);
+    assert.throws(()=>parseDocument({...initial,[key]:108}));
+    assert.ok(numericRanges[key],key);
+  }
+  const old={...initial};
+  for(const key of knobs)delete old[key];
+  delete old.microMode;
+  assert.equal(parseDocument(old).state.microAmount,0);
+  assert.equal(looks.filter(l=>l.family==="Microtexture").length,8);
+  assert.ok(looks.every(l=>!l.state.lettering && l.state.letteringAmount===0));
+  for(const v of [.11,.43,.73,.91]){
+    const random=randomize({...initial,microMode:"Living embroidery"}, {}, false,()=>v);
+    assert.notEqual(random.microMode,"Living embroidery");
+    assert.ok(random.microMotion>0);
+    assert.ok(Number.isFinite(random.microVariation));
+    assert.equal(random.lettering,"");
+  }
+});
+test("opt-in microstructure can be disabled on unsupported devices without blanking the old art", async () => {
+  const {readFileSync}=await import("node:fs");
+  const renderer=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
+  const micro=readFileSync(new URL("../src/microstructure.js",import.meta.url),"utf8");
+  assert.match(renderer,/withMicro = s\.microAmount>0/);
+  assert.match(renderer,/movingMicrostructure\(col,p,uv,v\)/);
+  assert.match(renderer,/microUnavailable=true/);
+  assert.match(micro,/microMode==5/);
 });

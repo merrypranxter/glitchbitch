@@ -3,6 +3,7 @@ import { generateRandomPalette, shuffleColorStops } from "./palette-actions.js";
 import { retroFontIds } from "./retro-fonts.js";
 import { letteringBlendModes } from "./lettering-blends.js";
 import { letteringMotionPaths } from "./lettering-motion.js";
+import { normalizeTextFormats } from "./text-formatting.js";
 export const engineInfo = [
   ["Plasma flow", "Liquid sine fields folded into neon ribbons.", "Fluid"],
   [
@@ -239,6 +240,8 @@ export const numericRanges = {
   letteringAmount: [0, 100],
   letteringBlendStrength: [0, 100],
   letteringScale: [0, 100],
+  letteringTracking: [-20, 100],
+  letteringLineSpacing: [60, 300],
   letteringWarp: [0, 100],
   letteringMotion: [0, 100],
   letteringMotionSpeed: [1, 4],
@@ -371,6 +374,9 @@ export const initial = {
   letteringFont: "original",
   letteringAmount: 0,
   letteringScale: 48,
+  letteringTracking: 0,
+  letteringLineSpacing: 118,
+  letteringFormats: [],
   letteringWarp: 40,
   letteringMotion: 55,
   letteringMotionPath: "Classic drift",
@@ -522,7 +528,7 @@ export function validateRecipe(input) {
       ids.add(id);
       const out={id,text:layer.text,visible:layer.visible!==false};
       if(typeof layer.visible!=="undefined"&&typeof layer.visible!=="boolean")throw Error("Invalid text layer visibility.");
-      for(const key of ["letteringAmount","letteringScale","letteringWarp","letteringMotion","letteringBlendStrength","letteringMotionSpeed","letteringMotionStagger","letteringMotionMix",
+      for(const key of ["letteringAmount","letteringScale","letteringTracking","letteringLineSpacing","letteringWarp","letteringMotion","letteringBlendStrength","letteringMotionSpeed","letteringMotionStagger","letteringMotionMix",
         "letteringX","letteringY","letteringRotation","letteringStretchX","letteringStretchY","letteringCurve"]){
         const value=layer[key]??initial[key],range=numericRanges[key];
         if(!Number.isFinite(value)||value<range[0]||value>range[1])throw Error("Invalid text layer "+key);
@@ -535,6 +541,19 @@ export function validateRecipe(input) {
         if(!choices.includes(value))throw Error("Invalid text layer "+key);
         out[key]=value;
       }
+      if(layer.letteringFormats!==undefined){
+        if(!Array.isArray(layer.letteringFormats)||layer.letteringFormats.length>280)
+          throw Error("Invalid layer rich text.");
+        for(const run of layer.letteringFormats){
+          if(!run||!Number.isInteger(run.start)||!Number.isInteger(run.end)||
+            run.start<0||run.end>layer.text.length||run.end<=run.start)
+            throw Error("Invalid layer text format range.");
+          for(const field of ["bold","italic","underline","strike","caps"])
+            if(run[field]!==undefined&&typeof run[field]!=="boolean")
+              throw Error("Invalid layer text format property.");
+        }
+      }
+      out.letteringFormats=normalizeTextFormats(layer.text,layer.letteringFormats);
       out.letteringFill=layer.letteringFill??initial.letteringFill;
       if(typeof out.letteringFill!=="string"||!colorRE.test(out.letteringFill))throw Error("Invalid text layer fill.");
       out.letteringGradient=layer.letteringGradient??initial.letteringGradient;
@@ -551,6 +570,19 @@ export function validateRecipe(input) {
         throw Error("Invalid text layer outlines.");
       return out;
     });
+  }
+  if(x.letteringFormats!==undefined){
+    if(!Array.isArray(x.letteringFormats) || x.letteringFormats.length>280)
+      throw Error("Invalid rich text formatting.");
+    for(const run of x.letteringFormats){
+      if(!run||!Number.isInteger(run.start)||!Number.isInteger(run.end)||
+        run.start<0||run.end>String(x.lettering||"").length||run.end<=run.start)
+        throw Error("Invalid rich text range.");
+      for(const field of ["bold","italic","underline","strike","caps"])
+        if(run[field]!==undefined && typeof run[field]!=="boolean")
+          throw Error("Invalid rich text property.");
+    }
+    s.letteringFormats=normalizeTextFormats(String(x.lettering||""),x.letteringFormats);
   }
   if(x.letteringDrag!==undefined){
     if(typeof x.letteringDrag!=="boolean")throw Error("Invalid lettering drag setting.");
@@ -832,6 +864,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.letteringBlendStrength=100;
   s.letteringFont=different(retroFontIds,state.letteringFont,random);
   s.lettering="";
+  s.letteringFormats=[];
   s.letteringAmount=0;
   s.letteringScale=20+random()*54;
   s.letteringWarp=0;

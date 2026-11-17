@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { getRetroFont } from "./retro-fonts.js";
+import { textFormattingSegments, formatCharStyle, textStyleAt } from "./text-formatting.js";
 import { letteringMaterial, textMotion } from "./lettering-materials.js";
 import { getLetteringBlendRecipe } from "./lettering-blends.js";
 import { letteringMotionCombinedAt, letteringLiquidAt, letteringComposeGlyph,
@@ -9,21 +10,35 @@ const asPercent = (value, fallback=50) => Math.max(0, Math.min(100, Number(value
 const inkText = (style, text, key) => <span key={key} style={style}>{text}</span>;
 // Words stay unbroken when wrapping; each character receives a continuous
 // transform. This replaces the old clipped horizontal slices entirely.
-function MovingGlyphs({text}) {
-  const parts=String(text).split(/(\s+)/u), total=Array.from(text).filter(c=>!(/\s/u.test(c))).length;
-  let index=0;
-  return <>{parts.map((part,k)=>(/^(?:\s)+$/u.test(part))
-    ? <React.Fragment key={k}>{part}</React.Fragment>
-    : <span key={k} style={{display:"inline-block",whiteSpace:"nowrap"}}>
-        {Array.from(part).map((char,j)=>
-          <span key={j} className="live-type-glyph" data-text-glyph=""
-            data-index={index++} data-total={total}
-            style={{display:"inline-block",whiteSpace:"pre",transformOrigin:"50% 70%"}}>{char}</span>)}
-      </span>)}</>;
+function MovingGlyphs({text,formats,trackingPx,ink}) {
+  const parts=String(text).split(/(\s+)/u);
+  const total=Array.from(text).filter(c=>!(/\s/u.test(c))).length;
+  let index=0,cursor=0;
+  return <>{parts.map((part,k)=>{
+    const start=cursor;cursor+=part.length;
+    if(/^(?:\s)+$/u.test(part))return <React.Fragment key={k}>{part}</React.Fragment>;
+    let charOffset=start;
+    return <span key={k} style={{display:"inline-block",whiteSpace:"nowrap"}}>
+      {Array.from(part).map((char,j)=>{
+        const style=textStyleAt(formats,charOffset);charOffset+=char.length;
+        return <span key={j} className="live-type-glyph" data-text-glyph=""
+          data-index={index++} data-total={total}
+          style={{...formatCharStyle(style),display:"inline-block",whiteSpace:"pre",
+            textDecorationColor:ink,marginInlineEnd:trackingPx,
+            transformOrigin:"50% 70%"}}>{style.caps?char.toUpperCase():char}</span>;
+      })}
+    </span>;
+  })}</>;
 }
 
-function TextFace({ text, fontStyle, material, strokes, dynamicGlyphs=false }) {
-  const display=()=>dynamicGlyphs ? <MovingGlyphs text={text}/> : text;
+function TextFace({ text, fontStyle, material, strokes, dynamicGlyphs=false, formats=[], trackingPx=0 }) {
+  const ink=material.stops?.[0]||material.ink;
+  const display=()=>dynamicGlyphs
+    ? <MovingGlyphs text={text} formats={formats} trackingPx={trackingPx} ink={ink}/>
+    : textFormattingSegments(text,formats).map((seg,i)=>
+      <span key={i} style={{...formatCharStyle(seg.style),textDecorationColor:ink}}>
+        {seg.display}
+      </span>);
   const base = {
     ...fontStyle, whiteSpace: "pre-wrap", overflowWrap: "anywhere",
     textAlign: "center", width: "100%", display: "block"
@@ -94,13 +109,15 @@ function TextLayer({ layer, palette, width, height, playing, index }) {
   const sy = Math.max(0.25, Number(layer.letteringStretchY ?? 100) / 100);
   const curve = Number(layer.letteringCurve || 0) / 100;
   const strokes = (layer.letteringStrokes || []).filter(s => s?.enabled && Number(s.width)>0).slice(0,5);
+  const dynamicGlyphs=(warp>.001 || letteringMotionNeedsGlyphs(layer)) && Array.from(text).length<=120;
+  const trackingPx=size*Math.max(-20,Math.min(100,Number(layer.letteringTracking??0)))/100;
   const fontStyle = {
     fontFamily:font.family, fontWeight:font.weight, fontSize:size,
-    lineHeight:1.18, letterSpacing:0
+    lineHeight:Math.max(.6,Math.min(3,Number(layer.letteringLineSpacing??118)/100)),
+    letterSpacing:dynamicGlyphs?0:`${(size*Math.max(-20,Math.min(100,Number(layer.letteringTracking??0)))/100).toFixed(2)}px`
   };
-  const dynamicGlyphs=(warp>.001 || letteringMotionNeedsGlyphs(layer)) && Array.from(text).length<=120;
   const face = <TextFace text={text} material={material} fontStyle={fontStyle}
-    strokes={strokes} dynamicGlyphs={dynamicGlyphs}/>;
+    strokes={strokes} dynamicGlyphs={dynamicGlyphs} formats={layer.letteringFormats} trackingPx={trackingPx}/>;
   const activity = playing ? "running" : "paused";
 
   // Strength crossfades NORMAL text with the full composited effect. At 0
@@ -123,7 +140,7 @@ function TextLayer({ layer, palette, width, height, playing, index }) {
           ? {...material,gradient:null,ink:pass.tint,previewShadow:"none",glow:"none",echoes:[]}
           : material;
       const passFace=pass.id==="normal" || pass.id==="effect" ? face
-        : <TextFace text={text} material={look} fontStyle={fontStyle} strokes={strokes} dynamicGlyphs={dynamicGlyphs}/>;
+        : <TextFace text={text} material={look} fontStyle={fontStyle} strokes={strokes} dynamicGlyphs={dynamicGlyphs} formats={layer.letteringFormats} trackingPx={trackingPx}/>;
       const showFace=pass.whiteInk
         ? <TextFace text={text} material={look} fontStyle={fontStyle} strokes={strokes}/>
         : passFace;

@@ -3055,3 +3055,15 @@ footer > span:last-child svg {
 .word-ink-picker input[type="color"] { width:52px;min-height:35px; }
 .word-ink-toolbar>.button { flex:1 1 125px;min-height:40px; }
 .retro-type-actions>.word-ink-toolbar { flex-basis:100%; }
+
+/* Small, on-demand proof of the actual flattened export compositor. */
+.export-proof-panel {
+  display:flex;flex-direction:column;gap:8px;
+  padding:10px 0;min-width:0;
+}
+.export-proof-panel img {
+  max-width:100%;max-height:320px;width:auto;height:auto;object-fit:contain;
+  align-self:center;border-radius:8px;border:1px solid rgba(180,220,235,.22);
+}
+.export-proof-panel .button { width:100%;min-height:42px; }
+.export-proof-panel .export-note { margin:0; }

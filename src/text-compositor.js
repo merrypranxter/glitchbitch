@@ -5,7 +5,7 @@
  */
 import { glyphCanvas } from "./kinetic-type.js";
 import { ensureRetroFontLoaded, retroFontRevision } from "./retro-fonts.js";
-import { letteringMaterial, textMotion, letteringExportGlowLayers } from "./lettering-materials.js";
+import { letteringMaterial, textMotion, letteringExportGlowLayers, letteringExportColorFilter } from "./lettering-materials.js";
 import { createLetteringHalo } from "./lettering-halo.js";
 import { getLetteringBlendRecipe, letteringBlendPulse } from "./lettering-blends.js";
 import { createLetteringSprites } from "./lettering-sprites.js";
@@ -154,6 +154,7 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
        :null;
    }
    const intensity=blend.mode==="Normal"?0:blend.strength;
+   const previewColorFilter=blend.foundation?letteringExportColorFilter(material,seconds):"none";
 
    ctx.save();
    ctx.translate(positionX+whole.dx,positionY+whole.dy);
@@ -209,9 +210,24 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
      ctx.save();
      ctx.globalCompositeOperation=recipe.canvasBlend||"source-over";
      ctx.globalAlpha=opacity*amount*letteringBlendPulse(recipe.animation,seconds);
-     if(recipe.filter && recipe.filter!=="none"&&typeof ctx.filter==="string")
-       ctx.filter=recipe.filter;
-     if(!recipe.whiteInk && !opts.extra && !opts.tint){
+     // Live CSS applies the selected blend to BOTH the glyph and its shadow.
+     // The first two blend families previously used Screen for every halo:
+     // their actual Multiply/Difference/Burn effect was hidden by a pale
+     // brightening veil. Keep the optical halo INSIDE each main blend pass.
+     const originalFace=!recipe.whiteInk && !opts.extra && !opts.tint;
+     const paintFoundationHalo=blend.foundation && originalFace && glowLayers.length>0;
+     const recipeFilter=recipe.filter&&recipe.filter!=="none"?recipe.filter:"";
+     const mergedFilter=blend.foundation && originalFace && previewColorFilter!=="none"
+       ? [recipeFilter,previewColorFilter].filter(Boolean).join(" "):recipeFilter;
+     if(mergedFilter && typeof ctx.filter==="string")ctx.filter=mergedFilter;
+     if(paintFoundationHalo){
+       ctx.save();
+       // Glow and its letter face get the same actual Canvas blend.
+       // Keep the alpha mask cached to avoid full-frame allocations per MP4 frame.
+       paintShape({halo:true});
+       ctx.restore();
+     }
+     if(originalFace){
        for(const echo of material.echoes){
          ctx.save();ctx.globalAlpha*=echo.alpha;
          paintShape({tint:echo.color,dx:echo.x*width/430,dy:echo.y*height/430});
@@ -221,7 +237,8 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
          ctx.shadowColor="#0a051b";ctx.shadowBlur=Math.min(50,12*width/430);
          ctx.shadowOffsetX=7*width/430;ctx.shadowOffsetY=9*height/430;
        }
-       if(material.hueAnimation&&typeof ctx.filter==="string")
+       // Existing enhanced/experimental styles are intentionally unchanged.
+       if(!blend.foundation && material.hueAnimation && typeof ctx.filter==="string")
          ctx.filter=(recipe.filter&&recipe.filter!=="none"?recipe.filter+" ":"")+
            "hue-rotate("+(28*Math.sin(seconds*2.1)).toFixed(1)+"deg) saturate(1.35)";
      }
@@ -235,7 +252,9 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
    // the selected letter face and blending, exactly as CSS text-shadow does.
    // The old implementation painted three bright opaque glyph copies OVER
    // Difference/Multiply and the user's gradients, making exports look white.
-   if(glowLayers.length){
+   if(glowLayers.length && !blend.foundation){
+     // The advanced/experimental blend families were already matching
+     // their preview. Preserve their optical behavior unchanged.
      ctx.save();
      ctx.globalCompositeOperation="screen";
      ctx.globalAlpha=opacity*(material.pulseAnimation

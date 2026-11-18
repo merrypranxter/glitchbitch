@@ -32,6 +32,7 @@ import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, le
 import { Parameter, Range, Switch, Select, Section } from "./Controls";
 import { letteringBlendGroups, letteringBlendModes } from "../lettering-blends.js";
 import { letteringMotionGroups } from "../lettering-motion.js";
+import { photonSpecies, photonPresets, photonPresetState, nextPhotonSpecies } from "../photon-zoo.js";
 import { textFormatTools, toggleTextFormat, rebaseTextFormats, textStyleAt, wordSelection,
   setTextInk, setTextRainbow, clearTextInk } from "../text-formatting.js";
 import { textChoreographyGroups, textChoreographies, applyTextChoreography,
@@ -607,11 +608,49 @@ export function TextInspector({ history }) {
   );
 }
 export function EffectsInspector({ history }) {
+  const [photonPreset,setPhotonPreset]=React.useState(photonPresets[0].name);
   return (
     <>
       <p className="inspector-intro">
         Beautiful signal. Questionable reception.
       </p>
+      <Section title="PHOTON ZOO — EIGHT LIVING OPTICAL CREATURES" defaultOpen>
+        <p className="control-note">Geometry-first, animated optical art. Prism flowers, moving glass lenses, interference organisms and luminous architecture—independent of your main art engine and driven by your existing palette. Turn presence to zero to restore the original art.</p>
+        <Select label="Optical architecture / species" value={history.state.photonSpecies}
+          onChange={v=>history.change(s=>({...s,photonSpecies:v,photonAmount:Math.max(52,s.photonAmount)}))}>
+          {photonSpecies.map(name=><option key={name} value={name}>{name}</option>)}
+        </Select>
+        <Parameter label="Optical presence" name="photonAmount" history={history}/>
+        <Parameter label="Structure size / scale" name="photonScale" history={history}/>
+        <Parameter label="Fine structure density" name="photonDensity" history={history}/>
+        <Parameter label="Independent optical motion" name="photonMotion" history={history}/>
+        <Parameter label="Glass relief / specular light" name="photonRelief" history={history}/>
+        <Parameter label="Spectrum phase shift" name="photonHue" history={history}/>
+        <Parameter label="Shape variation / seed" name="photonVariation" history={history}/>
+        <Select label="Quick-start optical sculpture" value={photonPreset} onChange={setPhotonPreset}>
+          {photonPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <div className="retro-type-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>photonPresetState(s,photonPreset))}>
+            Spawn selected sculpture
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>nextPhotonSpecies(s))}>
+            🎲 New creature, keep art
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>({...s,
+              photonVariation:(s.photonVariation+19+Math.random()*64)%100}))}>
+            Reseed this creature
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>({...s,photonAmount:0}))}>
+            Hide photons
+          </button>
+        </div>
+        <p className="control-note">The species selector automatically brings hidden photons back. Sculptures alter only Photon Zoo settings; your geometry, background, brush marks, palettes and lettering stay intact. These effects render in PNG, GIF and MP4 without extra capture passes.</p>
+      </Section>
       <Section title="BREAK THE SIGNAL">
         <Parameter label="Chromatic split" name="split" history={history} />
         <Parameter label="Smooth signal drift" name="glitch" history={history} />

@@ -17,7 +17,10 @@ export function createLetteringSprites(text,aspect=1,fontId="original",style={},
  const outlines=(style.letteringStrokes||[]).filter(x=>x?.enabled&&Number(x.width)>0).slice(0,5);
  const totals=[];let sum=0;
  for(const ring of outlines){sum+=Number(ring.width);totals.push(sum);}
- const padding=Math.ceil(Math.min(80,sum)+fontSize*.2+6);
+ // Extra transparent room for the halo beyond each moving letter. This
+ // prevents outer neon light from being cropped at the glyph atlas edge.
+ const haloPad=Math.min(36,Math.max(0,Number(style.letteringHaloPadding)||0)*fontSize);
+ const padding=Math.ceil(Math.min(80,sum)+fontSize*.2+6+haloPad);
  const fill=colorRE.test(style.letteringFill||"")?style.letteringFill:"#ffffff";
  const stops=Array.isArray(style.letteringGradient)
    ?style.letteringGradient.filter(x=>colorRE.test(x)).slice(0,8):[];

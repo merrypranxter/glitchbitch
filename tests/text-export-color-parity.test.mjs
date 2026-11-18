@@ -109,10 +109,11 @@ test("Colored letter face is painted AFTER the alpha-only halo in export",()=>wi
  paintLettering(surface.getContext("2d"),state,{textTime:0},430,430);
  const passes=registry.find(x=>x.canvas===surface).log.filter(x=>x.op==="drawImage");
  assert.ok(passes.length>=2);
- assert.equal(passes[0].blend,"screen");
- assert.ok(passes.findIndex(x=>x.blend==="difference")>0);
- assert.equal(passes.filter(x=>x.blend==="screen").length,1,
-   "there must NOT be an opaque white glow pass after Difference");
+ assert.equal(passes[0].blend,"difference",
+   "classic Difference must blend its halo with the SAME operator as the ink");
+ assert.ok(passes.filter(x=>x.blend==="difference").length>=2);
+ assert.equal(passes.filter(x=>x.blend==="screen").length,0,
+   "no hidden Screen halo should wash out a classic Difference blend");
 }));
 
 test("Multiply and Screen remain genuine distinct Canvas blend operations",()=>withCanvas(registry=>{

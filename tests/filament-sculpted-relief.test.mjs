@@ -108,7 +108,7 @@ test("Shader compile switch and fallback preserve original hybrid, material and 
  assert.match(renderer,/filamentSculptModes\.indexOf\(s\.filamentSculptMode\)/);
  assert.match(renderer,/filamentSculptUnavailable=true/);
  assert.match(renderer,/\{filamentSculptAmount:0\}/);
- assert.match(renderer,/attempt<15/);
+ assert.match(renderer,/attempt<16/);
  for(const k of filamentSculptControls)
    assert.ok(renderer.includes('"'+k+'"'),k+" must have a uniform");
 });

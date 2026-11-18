@@ -40,6 +40,8 @@ import { filamentSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpec
   remixFilamentMaterials,filamentStitchModes,filamentStitchPresets,
   applyFilamentStitchPreset,stopFilamentStitching,
   filamentSculptModes,filamentSculptPresets,applyFilamentSculptPreset,disableFilamentSculpt } from "../filament-forge.js";
+import { underlayModes, underlayPresets, applyUnderlayPreset,
+  changeUnderlayMode, nextUnderlayMode, disableUnderlay } from "../living-underlay.js";
 import { sections, sectionActive, effectGroups } from "../ui-index";
 export { TextInspector } from "./TextInspector";
 const icons = [
@@ -214,6 +216,7 @@ export function EffectsInspector({ history }) {
   const [materialPreset,setMaterialPreset]=React.useState(filamentMaterialPresets[0].name);
   const [stitchPreset,setStitchPreset]=React.useState(filamentStitchPresets[0].name);
   const [sculptPreset,setSculptPreset]=React.useState(filamentSculptPresets[0].name);
+  const [underlayPreset,setUnderlayPreset]=React.useState(underlayPresets[0].name);
   // Find jumps to a section that might be filtered out: show everything.
   useReveal((detail) => {
     if (effectSections.some((x) => x.id === detail.id) && filter !== "All") setFilter("All");
@@ -226,6 +229,45 @@ export function EffectsInspector({ history }) {
     return meta.group === filter;
   };
   const body = {
+    underlay: <>
+      <p className="control-note">Six mathematical textile grounds that fill the spaces behind the stitched lines. Moving jacquard, shifting moiré, fivefold twill, velvet pile, opaline damask and cellular gauze. Also works as stand-alone animated artwork with Filament Forge turned off.</p>
+      <Select label="Fabric ground" value={s.underlayMode}
+        onChange={mode=>history.change(x=>changeUnderlayMode(x,mode))}>
+        {underlayModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <Parameter label="Underlay presence" name="underlayAmount" history={history}/>
+      <Parameter label="Fabric pattern scale" name="underlayScale" history={history}/>
+      <Parameter label="Weave / pile density" name="underlayDensity" history={history}/>
+      <Parameter label="Fabric motion" name="underlayMotion" history={history}/>
+      <Parameter label="Fiber relief and sheen" name="underlayRelief" history={history}/>
+      <Parameter label="Palette hue offset" name="underlayHue" history={history}/>
+      <Parameter label="Yarn contrast" name="underlayContrast" history={history}/>
+      <Parameter label="Pattern variation" name="underlayVariation" history={history}/>
+      <Select label="Instant fabric" value={underlayPreset} onChange={setUnderlayPreset}>
+        {underlayPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+      </Select>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applyUnderlayPreset(x,underlayPreset))}>
+          Weave this ground
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>nextUnderlayMode(x))}>
+          <Dices size={13}/> New fabric
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>({...x,
+            underlayVariation:(x.underlayVariation+19+Math.random()*63)%100}))}>
+          <Shuffle size={13}/> Reseed ground
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.underlayAmount<=0}
+          onClick={()=>history.change(disableUnderlay)}>
+          Hide underlay
+        </button>
+      </div>
+      <p className="control-note">Underlay is an independent layer: hide it without losing your lace, text, Photon Zoo or underlying math art. It uses the existing palette and normal PNG/GIF/MP4 renderer.</p>
+    </>,
     filament: <>
       <p className="control-note">Six animated stitch geometries: actual filament paths, not a blurry texture. They ride your palette without replacing the underlying art, and can stack with Photon Zoo.</p>
       <Select label="Thread geometry" value={s.filamentSpecies}

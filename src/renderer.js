@@ -15,6 +15,7 @@ import { microGLSL } from "./microstructure.js";
 import { substanceGLSL } from "./substance.js";
 import { photonGLSL, photonSpecies } from "./photon-zoo.js";
 import { filamentGLSL, filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes } from "./filament-forge.js";
+import { underlayGLSL, underlayModes } from "./living-underlay.js";
 import { tunnelGLSL } from "./tunnels.js";
 
 const vertex = `attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
@@ -70,6 +71,7 @@ phase+=source;if(posterize)phase=floor(phase*7.)/7.;return phase;}
 /* MICRO_MODULE */
 /* SUBSTANCE_MODULE */
 /* PHOTON_MODULE */
+/* UNDERLAY_MODULE */
 /* FILAMENT_MODULE */
 /* MATERIAL_MODULE */
 /* LETTERING_MODULE */
@@ -103,6 +105,7 @@ float v=composed(p);vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*
 /* SUBSTANCE_POST */
 /* MICRO_POST */
 /* PHOTON_POST */
+/* UNDERLAY_POST */
 /* FILAMENT_POST */
 col=animateLight(col,uv,v);
 col=stainWithBiology(col,uv,p);
@@ -136,7 +139,8 @@ export function createRenderer(canvas) {
     substanceUnavailable = false, wiggleUnavailable = false,
     photonUnavailable = false, filamentUnavailable = false,
     filamentHybridUnavailable = false, filamentMaterialUnavailable = false,
-    filamentStitchUnavailable = false, filamentSculptUnavailable = false;
+    filamentStitchUnavailable = false, filamentSculptUnavailable = false,
+    underlayUnavailable = false;
   function compatibleShaderState(s){
     const source = stereoUnavailable ? safe2DSelection(s) : s;
     if(!materialUnavailable && !typeShaderUnavailable &&
@@ -144,7 +148,7 @@ export function createRenderer(canvas) {
        !microUnavailable && !substanceUnavailable && !wiggleUnavailable &&
        !photonUnavailable && !filamentUnavailable && !filamentHybridUnavailable &&
        !filamentMaterialUnavailable && !filamentStitchUnavailable &&
-       !filamentSculptUnavailable)return source;
+       !filamentSculptUnavailable && !underlayUnavailable)return source;
     return {
       ...source,
       ...(materialUnavailable ? {filmAmount:0,opalAmount:0,prismAmount:0,foilRelief:0}:{}),
@@ -158,6 +162,7 @@ export function createRenderer(canvas) {
       ...(filamentHybridUnavailable ? {filamentCrossbreed:0}:{}),
       ...(filamentStitchUnavailable ? {filamentStitchAmount:0}:{}),
       ...(filamentSculptUnavailable ? {filamentSculptAmount:0}:{}),
+      ...(underlayUnavailable ? {underlayAmount:0}:{}),
       ...(filamentMaterialUnavailable ? {filamentMaterial:"Original thread",filamentSecondMaterial:"Original thread",
         filamentNap:0,filamentBeads:0}:{}),
       ...(wiggleUnavailable ? {wiggleAmount:0}:{})
@@ -553,6 +558,7 @@ export function createRenderer(canvas) {
       withMicro = s.microAmount>0,
       withSubstance = s.substanceAmount>0,
       withPhoton = s.photonAmount>0,
+      withUnderlay = s.underlayAmount>0,
       withFilament = s.filamentAmount>0,
       withHybrid = withFilament && s.filamentCrossbreed>0,
       withStitch = withFilament && s.filamentStitchAmount>0,
@@ -563,7 +569,7 @@ export function createRenderer(canvas) {
         s.filamentNap>0 || s.filamentBeads>0
       ),
       withTunnel = s.engine===5 || (blended && s.secondaryEngine===5),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withWiggle ? "wiggle" : "still"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withWiggle ? "wiggle" : "still"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -601,6 +607,15 @@ export function createRenderer(canvas) {
       : "";
     source=source.replace("/* PHOTON_MODULE */",specializedPhoton);
     source=source.replace("/* PHOTON_POST */",withPhoton?"col=livingPhotonZoo(col,uv,p,v);":"");
+    // Textile ground is independent from filament visibility. Inject it
+    // directly behind the stitches and specialize to the selected pattern.
+    const selectedUnderlay = withUnderlay
+      ? underlayGLSL.replace("uniform int underlayMode;",
+          "#define underlayMode "+Math.max(0,underlayModes.indexOf(s.underlayMode)))
+      : "";
+    source=source.replace("/* UNDERLAY_MODULE */",selectedUnderlay);
+    source=source.replace("/* UNDERLAY_POST */",
+      withUnderlay?"col=livingTextileUnderlay(col,uv,v);":"");
     // Do not compile the second geometry at all for old or single-parent art.
     const selectedFilament=withFilament
       ? (withHybrid ? "#define FILAMENT_HYBRID 1\n" : "") +
@@ -737,7 +752,7 @@ export function createRenderer(canvas) {
       // Progressive shader fallback: the newest optional effects are disabled
       // one at a time if the driver cannot compile them. Legacy fields stay visible.
       let lastCompileError = null;
-      for(let attempt=0;attempt<15;attempt++){
+      for(let attempt=0;attempt<16;attempt++){
         const candidate=compatibleShaderState(s);
         try {
           active=programFor(candidate);
@@ -745,7 +760,10 @@ export function createRenderer(canvas) {
           break;
         }catch(e){
           lastCompileError=e;
-          if(candidate.filamentAmount>0 && candidate.filamentSculptAmount>0){
+          if(candidate.underlayAmount>0){
+            underlayUnavailable=true;
+            console.warn("Living textile underlay unsupported by this GPU; preserving the original artwork and filaments.",e);
+          }else if(candidate.filamentAmount>0 && candidate.filamentSculptAmount>0){
             filamentSculptUnavailable=true;
             console.warn("Sculpted thread shading unsupported; preserving woven geometry, materials and stitching.",e);
           }else if(candidate.filamentAmount>0 && candidate.filamentStitchAmount>0){
@@ -888,6 +906,8 @@ export function createRenderer(canvas) {
         "filamentStitchLength","filamentStitchGlow",
         "filamentSculptAmount","filamentSculptDepth","filamentSculptLight",
         "filamentSculptShadow","filamentSculptPuff",
+        "underlayAmount","underlayScale","underlayDensity","underlayMotion",
+        "underlayRelief","underlayHue","underlayContrast","underlayVariation",
         "photonAmount","photonScale","photonMotion","photonDensity",
         "photonRelief","photonHue","photonVariation",
         "substanceAmount","substanceScale","substanceMotion",
@@ -922,6 +942,7 @@ export function createRenderer(canvas) {
       gl.uniform1i(loc("filamentSecondMaterial"), filamentMaterials.indexOf(s.filamentSecondMaterial));
       gl.uniform1i(loc("filamentStitchMode"), filamentStitchModes.indexOf(s.filamentStitchMode));
       gl.uniform1i(loc("filamentSculptMode"), filamentSculptModes.indexOf(s.filamentSculptMode));
+      gl.uniform1i(loc("underlayMode"), underlayModes.indexOf(s.underlayMode));
       gl.uniform1i(loc("substanceMode"), [
         "CMY lithogenesis","Chromatophore reef",
         "Chitin interference","Conformal chromasoup"].indexOf(s.substanceMode));

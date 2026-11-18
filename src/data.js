@@ -5,6 +5,7 @@ import { letteringBlendModes } from "./lettering-blends.js";
 import { letteringMotionPaths } from "./lettering-motion.js";
 import { photonSpecies } from "./photon-zoo.js";
 import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes } from "./filament-forge.js";
+import { underlayModes } from "./living-underlay.js";
 import { normalizeTextFormats } from "./text-formatting.js";
 export const engineInfo = [
   ["Plasma flow", "Liquid sine fields folded into neon ribbons.", "Fluid"],
@@ -302,6 +303,14 @@ export const numericRanges = {
   filamentSculptLight: [0, 100],
   filamentSculptShadow: [0, 100],
   filamentSculptPuff: [0, 100],
+  underlayAmount: [0, 100],
+  underlayScale: [0, 100],
+  underlayDensity: [0, 100],
+  underlayMotion: [0, 100],
+  underlayRelief: [0, 100],
+  underlayHue: [0, 100],
+  underlayContrast: [0, 100],
+  underlayVariation: [0, 100],
   photonAmount: [0, 100],
   photonScale: [0, 100],
   photonMotion: [0, 100],
@@ -488,6 +497,15 @@ export const initial = {
   filamentSculptLight: 16,
   filamentSculptShadow: 66,
   filamentSculptPuff: 45,
+  underlayMode: "Ornamental jacquard",
+  underlayAmount: 0,
+  underlayScale: 55,
+  underlayDensity: 64,
+  underlayMotion: 41,
+  underlayRelief: 77,
+  underlayHue: 37,
+  underlayContrast: 68,
+  underlayVariation: 29,
   photonSpecies: "Prism rosettes",
   photonAmount: 0,
   photonScale: 53,
@@ -592,6 +610,7 @@ export function validateRecipe(input) {
     filamentSecondMaterial: filamentMaterials,
     filamentStitchMode: filamentStitchModes,
     filamentSculptMode: filamentSculptModes,
+    underlayMode: underlayModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -855,6 +874,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "filamentStitchLength","filamentStitchGlow",
       "filamentSculptAmount","filamentSculptDepth",
       "filamentSculptLight","filamentSculptShadow","filamentSculptPuff",
+      "underlayAmount","underlayScale","underlayDensity","underlayMotion",
+      "underlayRelief","underlayHue","underlayContrast","underlayVariation",
       "photonAmount","photonScale","photonMotion","photonDensity",
       "photonRelief","photonHue","photonVariation",
       "substanceAmount","substanceScale","substanceMotion",
@@ -1030,6 +1051,15 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.filamentSculptLight=random()*100;
   s.filamentSculptShadow=20+random()*79;
   s.filamentSculptPuff=12+random()*85;
+  s.underlayMode=different(underlayModes,state.underlayMode,random);
+  s.underlayAmount=random()<.72?37+random()*62:0;
+  s.underlayScale=22+random()*76;
+  s.underlayDensity=21+random()*77;
+  s.underlayMotion=16+random()*82;
+  s.underlayRelief=28+random()*70;
+  s.underlayHue=random()*100;
+  s.underlayContrast=20+random()*79;
+  s.underlayVariation=random()*100;
   s.photonSpecies=different(photonSpecies,state.photonSpecies,random);
   s.photonAmount=random()<.85?39+random()*58:0;
   s.photonScale=17+random()*79;

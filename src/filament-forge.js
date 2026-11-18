@@ -191,12 +191,58 @@ export function stopFilamentStitching(state){
  return {...state,filamentStitchAmount:0};
 }
 
+/**
+ * SCULPTED THREADS — optional 2.5D lighting of actual filament masks.
+ * This is deliberately shading, not a claim of a true 3D mesh. It follows
+ * the same math paths as the stitched and hybrid material pass.
+ */
+export const filamentSculptModes=[
+  "Raised satin",
+  "Trapunto quilting",
+  "Recessed engraving",
+  "Chased metal",
+  "Shadow cutwork",
+];
+export const filamentSculptControls=[
+  "filamentSculptAmount","filamentSculptDepth",
+  "filamentSculptLight","filamentSculptShadow","filamentSculptPuff",
+];
+export const filamentSculptPresets=[
+  {name:"Opal satin relief",filamentSculptMode:"Raised satin",
+    filamentSculptAmount:91,filamentSculptDepth:72,
+    filamentSculptLight:14,filamentSculptShadow:53,filamentSculptPuff:34},
+  {name:"Psychedelic trapunto",filamentSculptMode:"Trapunto quilting",
+    filamentSculptAmount:95,filamentSculptDepth:89,
+    filamentSculptLight:31,filamentSculptShadow:77,filamentSculptPuff:93},
+  {name:"Ancient signal engraving",filamentSculptMode:"Recessed engraving",
+    filamentSculptAmount:88,filamentSculptDepth:64,
+    filamentSculptLight:75,filamentSculptShadow:64,filamentSculptPuff:21},
+  {name:"Mercury chased jewelry",filamentSculptMode:"Chased metal",
+    filamentSculptAmount:93,filamentSculptDepth:82,
+    filamentSculptLight:9,filamentSculptShadow:81,filamentSculptPuff:19},
+  {name:"Cutwork cathedral",filamentSculptMode:"Shadow cutwork",
+    filamentSculptAmount:91,filamentSculptDepth:85,
+    filamentSculptLight:60,filamentSculptShadow:96,filamentSculptPuff:46},
+];
+export function applyFilamentSculptPreset(state,name){
+  const preset=filamentSculptPresets.find(p=>p.name===name);
+  if(!preset)return state;
+  const {name:label,...relief}=preset;
+  return {...state,...relief,filamentAmount:Math.max(55,state.filamentAmount||0)};
+}
+export function disableFilamentSculpt(state){
+  return {...state,filamentSculptAmount:0};
+}
+
 export const filamentGLSL = `
 // Independent structural geometry with stitched, shaded filament ribbons.
 uniform int filamentSpecies;
 uniform int filamentSecondSpecies;
 uniform int filamentMaterial,filamentSecondMaterial;
 uniform int filamentStitchMode;
+uniform int filamentSculptMode;
+uniform float filamentSculptAmount,filamentSculptDepth;
+uniform float filamentSculptLight,filamentSculptShadow,filamentSculptPuff;
 uniform float filamentStitchAmount,filamentStitchSpeed;
 uniform float filamentStitchLength,filamentStitchGlow;
 uniform float filamentNap,filamentLuster,filamentBeads,filamentBeadSize,filamentSecondHue;
@@ -326,6 +372,9 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float width=.009+filamentWidth*.070;
   float core=(1.0-smoothstep(width,width+aa,threadD))*mask;
   maskCore=core;
+#ifdef FILAMENT_SCULPT
+  float sculptReveal=1.0;
+#endif
   float halo=(1.0-smoothstep(width*2.0,width*5.5+aa,threadD))*mask;
   float edge=(1.0-smoothstep(width*.5,width*2.5+aa,abs(threadD-width*1.25)))*mask;
 #ifdef FILAMENT_STITCHING
@@ -372,6 +421,9 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   halo*=reveal;
   edge*=reveal;
   maskCore=core;
+#ifdef FILAMENT_SCULPT
+  sculptReveal=reveal;
+#endif
 #endif
   float pigmentPhase=fract(phase*.17+filamentHue*.88+hueOffset+
     seedPhase*.047+ct*(.023+.017*filamentMotion)+fieldV*.06);
@@ -455,6 +507,63 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     vec3 pearlColor=mix(ink,glimmer,.46+.3*glisten);
     result=mix(result,pearlColor*.68,bead*.65);
     result+=vec3(1.0,.98,.92)*bead*(.3+.7*luster)*glisten;
+  }
+#endif
+#ifdef FILAMENT_SCULPT
+  // Geometry-constrained 2.5D emboss: a rounded cross-section, directional
+  // grazing highlight and soft darkening immediately around stitch boundaries.
+  // It is deliberately not a screen-wide drop shadow or a fake depth texture.
+  float sculptPower=filamentSculptAmount;
+  float sculptDepth=filamentSculptDepth;
+  float sculptPuff=filamentSculptPuff;
+  float sculptShadow=filamentSculptShadow;
+  float lampAngle=filamentSculptLight*6.2831853;
+  vec2 lamp=vec2(cos(lampAngle),sin(lampAngle));
+  // The local phase is a stable tangent proxy; it travels with the actual
+  // procedural thread rather than remaining fixed on the display pixels.
+  float tangent=phase*2.1+q.x*.11-q.y*.07+seedPhase*.04;
+  vec2 facing=vec2(-sin(tangent),cos(tangent));
+  float incidence=dot(facing,lamp);
+  float acrossThread=clamp(threadD/max(width+aa,.002),0.0,1.0);
+  float crown=sqrt(max(0.0,1.0-acrossThread*acrossThread));
+  float rounded=pow(crown,mix(1.5,.32,sculptPuff));
+  float shadowWidth=width*(1.6+2.6*sculptDepth)+aa;
+  float shadowRegion=max(0.0,
+    (1.0-smoothstep(width,shadowWidth,threadD))*mask-core);
+  // Unfinished parts must cast NO thread shadow.
+  shadowRegion*=sculptReveal;
+  float shadowSide=.38+.62*(.5-.5*incidence);
+  float shadowStrength=shadowRegion*shadowSide*
+    sculptShadow*(.14+.54*sculptDepth)*sculptPower;
+  float litSide=.5+.5*incidence;
+  float brightCrown=rounded*(.29+.71*litSide);
+  float grazing=pow(clamp(.2+.8*brightCrown,0.0,1.0),
+    mix(14.0,3.0,sculptPuff));
+  float lightStrength=(.14+.48*sculptDepth)*sculptPower;
+  if(filamentSculptMode==0){ // Raised satin stitch.
+    result*=1.0-shadowStrength;
+    result+=mix(ink,vec3(1.0,.98,1.0),.49)*core*
+      (grazing*.62+rounded*.22)*lightStrength;
+  }else if(filamentSculptMode==1){ // Trapunto: broad quilted swelling.
+    float pillow=pow(rounded,.42);
+    result*=1.0-shadowStrength*1.25;
+    result+=mix(ink,glimmer,.56)*core*
+      (.24+pillow*(.42+.34*litSide))*lightStrength*1.25;
+  }else if(filamentSculptMode==2){ // Concave engraved etch.
+    float trench=pow(1.0-rounded,1.5);
+    result*=1.0-(core*(.21+.28*sculptDepth)+
+      shadowStrength*.42)*sculptPower;
+    result+=glimmer*edge*(.3+.7*litSide)*sculptPower*.22;
+    result+=ink*core*trench*sculptPower*.14;
+  }else if(filamentSculptMode==3){ // Hard metallic chased line.
+    float spec=pow(clamp(.22+.78*rounded*litSide,0.0,1.0),19.0);
+    result*=1.0-shadowStrength*1.38;
+    result+=vec3(1.0,.95,.94)*core*spec*lightStrength*1.8;
+    result+=glimmer*edge*lightStrength*.49;
+  }else{ // Shadow cutwork: dark relieved edge and luminous rim.
+    result*=1.0-shadowStrength*1.6;
+    result*=1.0-core*sculptPower*(.12+.19*sculptDepth);
+    result+=glimmer*edge*(.43+.57*litSide)*sculptPower*.42;
   }
 #endif
   return clamp(result,0.0,1.6);

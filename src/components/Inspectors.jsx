@@ -38,7 +38,8 @@ import { filamentSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpec
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
   filamentMaterials,filamentMaterialPresets,applyFilamentMaterialPreset,
   remixFilamentMaterials,filamentStitchModes,filamentStitchPresets,
-  applyFilamentStitchPreset,stopFilamentStitching } from "../filament-forge.js";
+  applyFilamentStitchPreset,stopFilamentStitching,
+  filamentSculptModes,filamentSculptPresets,applyFilamentSculptPreset,disableFilamentSculpt } from "../filament-forge.js";
 import { sections, sectionActive, effectGroups } from "../ui-index";
 export { TextInspector } from "./TextInspector";
 const icons = [
@@ -212,6 +213,7 @@ export function EffectsInspector({ history }) {
   const [hybridPreset,setHybridPreset]=React.useState(filamentHybridPresets[0].name);
   const [materialPreset,setMaterialPreset]=React.useState(filamentMaterialPresets[0].name);
   const [stitchPreset,setStitchPreset]=React.useState(filamentStitchPresets[0].name);
+  const [sculptPreset,setSculptPreset]=React.useState(filamentSculptPresets[0].name);
   // Find jumps to a section that might be filtered out: show everything.
   useReveal((detail) => {
     if (effectSections.some((x) => x.id === detail.id) && filter !== "All") setFilter("All");
@@ -263,6 +265,36 @@ export function EffectsInspector({ history }) {
           Hide threads
         </button>
       </div>
+      <details className="filament-crossbreeder filament-sculpt-lab">
+        <summary>💎 SCULPTED THREADS — RAISED RELIEF & LIGHT</summary>
+        <p className="control-note">Give the existing filament paths tactile-looking volume with directional highlights, raised satin, quilted puff, engraved grooves and shadow-cut lace. This is lightweight 2.5D shading—not a heavyweight 3D mesh.</p>
+        <Select label="Sculpted thread style" value={s.filamentSculptMode}
+          onChange={value=>history.change(x=>({...x,filamentSculptMode:value,
+            filamentSculptAmount:Math.max(65,x.filamentSculptAmount),
+            filamentAmount:Math.max(55,x.filamentAmount)}))}>
+          {filamentSculptModes.map(name=><option key={name} value={name}>{name}</option>)}
+        </Select>
+        <Parameter label="Tactile relief presence" name="filamentSculptAmount" history={history}/>
+        <Parameter label="Thread height / depth" name="filamentSculptDepth" history={history}/>
+        <Parameter label="Light direction" name="filamentSculptLight" history={history}/>
+        <Parameter label="Soft border shadows" name="filamentSculptShadow" history={history}/>
+        <Parameter label="Rounded / pillowy crown" name="filamentSculptPuff" history={history}/>
+        <Select label="Sculpted fiber recipe" value={sculptPreset} onChange={setSculptPreset}>
+          {filamentSculptPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>applyFilamentSculptPreset(x,sculptPreset))}>
+            Sculpt selected preset
+          </button>
+          <button type="button" className="button secondary"
+            disabled={s.filamentSculptAmount<=0}
+            onClick={()=>history.change(disableFilamentSculpt)}>
+            Flatten relief (keep threads)
+          </button>
+        </div>
+        <p className="control-note">Flat relief means the exact previous thread appearance. This stays compatible with crossbreeding, thread materials, self-weaving, and the existing animation/export clock.</p>
+      </details>
       <details className="filament-crossbreeder filament-stitch-lab">
         <summary>🪡 SELF-WEAVING LOOM — STITCH IN MOTION</summary>
         <p className="control-note">Watch the threads sew themselves, chase a glowing needle, advance in running stitches, or unfurl and resew. The stitch travels along the generated geometry instead of fading an unrelated full-screen texture.</p>

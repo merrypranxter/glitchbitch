@@ -22,7 +22,7 @@ export function textStyleAt(formats,index){
   for(const item of Array.isArray(formats)?formats:[]){
     if(index>=item.start && index<item.end){
       for(const key of textFormatKeys)if(item[key])out[key]=true;
-      if(typeof item.ink==="string"&&colorRE.test(item.ink))out.ink=item.ink.toLowerCase();
+      if(typeof item.ink==="string"&&colorRE.test(item.ink)){out.ink=item.ink.toLowerCase();out.rainbow=false;}
       if(item.rainbow===true){out.rainbow=true;out.ink=null;}
     }
   }

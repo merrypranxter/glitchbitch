@@ -95,7 +95,7 @@ test("Relief shader is opt-in, thread-bound, and honors unfinished stitch reveal
  assert.match(filamentGLSL,/sculptReveal=reveal/);
  assert.match(filamentGLSL,/shadowRegion\*=sculptReveal/);
  assert.match(filamentGLSL,/filamentSculptLight\*6\.2831853/);
- assert.match(filamentGLSL,/filamentSculptMode==4/);
+ assert.match(filamentGLSL,/Shadow cutwork: dark relieved edge/);
  assert.match(filamentGLSL,/threadD\/max\(width\+aa/);
  assert.doesNotMatch(filamentGLSL,/texture2D|texelFetch|\bfwidth\b/);
  const balance=filamentGLSL.split("{").length-filamentGLSL.split("}").length;

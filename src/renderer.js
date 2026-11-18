@@ -13,6 +13,7 @@ import { compositionGLSL } from "./composition.js";
 import { backdropGLSL } from "./backdrops.js";
 import { microGLSL } from "./microstructure.js";
 import { substanceGLSL } from "./substance.js";
+import { photonGLSL, photonSpecies } from "./photon-zoo.js";
 import { tunnelGLSL } from "./tunnels.js";
 
 const vertex = `attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
@@ -67,6 +68,7 @@ phase+=source;if(posterize)phase=floor(phase*7.)/7.;return phase;}
 /* BACKDROP_MODULE */
 /* MICRO_MODULE */
 /* SUBSTANCE_MODULE */
+/* PHOTON_MODULE */
 /* MATERIAL_MODULE */
 /* LETTERING_MODULE */
 ${appearanceGLSL}
@@ -98,6 +100,7 @@ float v=composed(p);vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*
 /* MATERIAL_POST */
 /* SUBSTANCE_POST */
 /* MICRO_POST */
+/* PHOTON_POST */
 col=animateLight(col,uv,v);
 col=stainWithBiology(col,uv,p);
 /* LETTERING_POST */
@@ -127,12 +130,13 @@ export function createRenderer(canvas) {
   let stereoUnavailable = false, materialUnavailable = false,
     typeShaderUnavailable = false, compositionUnavailable = false,
     backdropUnavailable = false, microUnavailable = false,
-    substanceUnavailable = false, wiggleUnavailable = false;
+    substanceUnavailable = false, wiggleUnavailable = false,
+    photonUnavailable = false;
   function compatibleShaderState(s){
     const source = stereoUnavailable ? safe2DSelection(s) : s;
     if(!materialUnavailable && !typeShaderUnavailable &&
        !compositionUnavailable && !backdropUnavailable &&
-       !microUnavailable && !substanceUnavailable && !wiggleUnavailable)return source;
+       !microUnavailable && !substanceUnavailable && !wiggleUnavailable && !photonUnavailable)return source;
     return {
       ...source,
       ...(materialUnavailable ? {filmAmount:0,opalAmount:0,prismAmount:0,foilRelief:0}:{}),
@@ -141,6 +145,7 @@ export function createRenderer(canvas) {
       ...(backdropUnavailable ? {backdropAmount:0}:{}),
       ...(microUnavailable ? {microAmount:0}:{}),
       ...(substanceUnavailable ? {substanceAmount:0}:{}),
+      ...(photonUnavailable ? {photonAmount:0}:{}),
       ...(wiggleUnavailable ? {wiggleAmount:0}:{})
     };
   }
@@ -533,8 +538,9 @@ export function createRenderer(canvas) {
       withBackdrop = s.backdropAmount>0,
       withMicro = s.microAmount>0,
       withSubstance = s.substanceAmount>0,
+      withPhoton = s.photonAmount>0,
       withTunnel = s.engine===5 || (blended && s.secondaryEngine===5),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withWiggle ? "wiggle" : "still"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? "photon" : "unlit"}/${withWiggle ? "wiggle" : "still"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -564,6 +570,8 @@ export function createRenderer(canvas) {
     source=source.replace("/* SUBSTANCE_MODULE */",withSubstance?substanceGLSL:"");
     source=source.replace("/* SUBSTANCE_POST */",
       withSubstance?"col=livingSubstance(col,uv,p,v);":"");
+    source=source.replace("/* PHOTON_MODULE */",withPhoton?photonGLSL:"");
+    source=source.replace("/* PHOTON_POST */",withPhoton?"col=livingPhotonZoo(col,uv,p,v);":"");
     source=source.replace("/* MICRO_MODULE */",withMicro?microGLSL:"");
     source=source.replace("/* MICRO_POST */",withMicro?"col=movingMicrostructure(col,p,uv,v);":"");
     source=source.replace("/* BACKDROP_MODULE */",withBackdrop?backdropGLSL:"");
@@ -678,7 +686,7 @@ export function createRenderer(canvas) {
       // Progressive shader fallback: the newest optional effects are disabled
       // one at a time if the driver cannot compile them. Legacy fields stay visible.
       let lastCompileError = null;
-      for(let attempt=0;attempt<9;attempt++){
+      for(let attempt=0;attempt<10;attempt++){
         const candidate=compatibleShaderState(s);
         try {
           active=programFor(candidate);
@@ -686,7 +694,10 @@ export function createRenderer(canvas) {
           break;
         }catch(e){
           lastCompileError=e;
-          if(candidate.wiggleAmount>0){
+          if(candidate.photonAmount>0){
+            photonUnavailable=true;
+            console.warn("Photon Zoo shader unsupported by this GPU; protecting the original artwork.",e);
+          }else if(candidate.wiggleAmount>0){
             wiggleUnavailable=true;
             console.warn("Wiggle stereoscopy unsupported; preserving the original artwork.",e);
           }else if(candidate.letteringAmount>0 && candidate.lettering.trim()){
@@ -800,6 +811,8 @@ export function createRenderer(canvas) {
         "backdropGlow","backdropHue","backdropVariation",
         "microAmount","microScale","microMotion","microRelief",
         "microDensity","microHue","microVariation",
+        "photonAmount","photonScale","photonMotion","photonDensity",
+        "photonRelief","photonHue","photonVariation",
         "substanceAmount","substanceScale","substanceMotion",
         "substanceRelief","substanceEdge","substanceHue","substanceVariation",
         "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
@@ -825,6 +838,7 @@ export function createRenderer(canvas) {
       ].indexOf(s.tunnelMode));
       gl.uniform1i(loc("microMode"), ["Living embroidery","Opal granulation",
         "Gel caustics","Point lace","Glass filaments","Crystalline cilia"].indexOf(s.microMode));
+      gl.uniform1i(loc("photonSpecies"), photonSpecies.indexOf(s.photonSpecies));
       gl.uniform1i(loc("substanceMode"), [
         "CMY lithogenesis","Chromatophore reef",
         "Chitin interference","Conformal chromasoup"].indexOf(s.substanceMode));

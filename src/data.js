@@ -3,6 +3,7 @@ import { generateRandomPalette, shuffleColorStops } from "./palette-actions.js";
 import { retroFontIds } from "./retro-fonts.js";
 import { letteringBlendModes } from "./lettering-blends.js";
 import { letteringMotionPaths } from "./lettering-motion.js";
+import { photonSpecies } from "./photon-zoo.js";
 import { normalizeTextFormats } from "./text-formatting.js";
 export const engineInfo = [
   ["Plasma flow", "Liquid sine fields folded into neon ribbons.", "Fluid"],
@@ -274,6 +275,13 @@ export const numericRanges = {
   microDensity: [0, 100],
   microHue: [0, 100],
   microVariation: [0, 100],
+  photonAmount: [0, 100],
+  photonScale: [0, 100],
+  photonMotion: [0, 100],
+  photonDensity: [0, 100],
+  photonRelief: [0, 100],
+  photonHue: [0, 100],
+  photonVariation: [0, 100],
   substanceAmount: [0, 100],
   substanceScale: [0, 100],
   substanceMotion: [0, 100],
@@ -421,6 +429,14 @@ export const initial = {
   microDensity: 57,
   microHue: 48,
   microVariation: 50,
+  photonSpecies: "Prism rosettes",
+  photonAmount: 0,
+  photonScale: 53,
+  photonMotion: 57,
+  photonDensity: 66,
+  photonRelief: 76,
+  photonHue: 48,
+  photonVariation: 33,
   substanceMode: "CMY lithogenesis",
   substanceAmount: 0,
   substanceScale: 54,
@@ -510,6 +526,7 @@ export function validateRecipe(input) {
     backdropMode: backdropModes,
     microMode: microModes,
     substanceMode: substanceModes,
+    photonSpecies: photonSpecies,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -764,6 +781,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "backdropGlow","backdropHue","backdropVariation",
       "microAmount","microScale","microMotion","microRelief",
       "microDensity","microHue","microVariation",
+      "photonAmount","photonScale","photonMotion","photonDensity",
+      "photonRelief","photonHue","photonVariation",
       "substanceAmount","substanceScale","substanceMotion",
       "substanceRelief","substanceEdge","substanceHue","substanceVariation",
       "saturation","contrast","brightness","colorOffset",
@@ -904,6 +923,14 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.microDensity=20+random()*74;
   s.microHue=11+random()*87;
   s.microVariation=random()*100;
+  s.photonSpecies=different(photonSpecies,state.photonSpecies,random);
+  s.photonAmount=random()<.85?39+random()*58:0;
+  s.photonScale=17+random()*79;
+  s.photonMotion=20+random()*79;
+  s.photonDensity=23+random()*75;
+  s.photonRelief=30+random()*68;
+  s.photonHue=random()*100;
+  s.photonVariation=random()*100;
   s.substanceMode=different(substanceModes,state.substanceMode,random);
   s.substanceAmount=random()<.67 ? 45+random()*52 : 0;
   s.substanceScale=20+random()*77;

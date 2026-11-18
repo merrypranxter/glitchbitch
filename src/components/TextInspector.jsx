@@ -511,6 +511,19 @@ function BlendPane({ t }) {
         ))}
       </Select>
       <TextParam t={t} name="letteringBlendStrength" label="Intensity" />
+      <div className="text-blend-compare" role="group" aria-label="Compare clearly different text blend modes">
+        {["Normal","Multiply","Difference","Screen"].map(mode=>
+          <button type="button" key={mode}
+            className={"button secondary"+(l.letteringBlendMode===mode?" selected":"")}
+            aria-pressed={l.letteringBlendMode===mode && (mode==="Normal" || l.letteringBlendStrength===100)}
+            onClick={()=>t.set({letteringBlendMode:mode,letteringBlendStrength:100})}>
+            {mode}
+          </button>
+        )}
+      </div>
+      <p className="control-note">Quick blend test: Multiply darkens the artwork inside the words;
+        Difference inverts colors; Screen brightens. With a busy colorful background these
+        should look distinctly different. Export → Compare actual blend vs Normal shows the real result.</p>
       <button type="button" className="subtle-button full"
         onClick={() => t.set({
           letteringBlendMode: letteringBlendModes[Math.floor(Math.random() * letteringBlendModes.length)],

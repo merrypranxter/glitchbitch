@@ -67,19 +67,18 @@ test("Neon exporter derives the same colored halo layers as the live material",(
  assert.equal(holo.length,2);
  assert.deepEqual(letteringExportGlowLayers(letteringMaterial({...base,letteringStyle:"Custom ink"},base.colors)),[]);
 });
-test("Luminous text remains glowing after a darkening blend operation in export",()=>withDocument(()=>{
+test("Colored neon aura no longer paints WHITE letters on top of Difference export",()=>withDocument(()=>{
  const log=[],ctx=fakeContext(log);
  paintLettering(ctx,base,{textTime:.5},430,430);
  const draws=log.filter(x=>x.kind==="draw");
  const main=draws.findIndex(x=>x.globalCompositeOperation==="difference");
  const halo=draws.findIndex(x=>x.globalCompositeOperation==="screen");
  assert.ok(main>=0);
- assert.ok(halo>main,"optical halos must be applied AFTER the text blend");
+ assert.ok(halo>=0 && halo<main,"halo must sit UNDER colored blend face");
  const lit=draws.filter(x=>x.globalCompositeOperation==="screen");
- assert.ok(lit.length>=4,"at least three halos and an inner core");
- assert.ok(lit.some(x=>x.shadowBlur>=27&&x.shadowColor==="#00aaff"));
- assert.ok(lit.some(x=>x.shadowColor==="#b0ff1a"));
- assert.ok(lit.every(x=>x.globalAlpha>0));
+ assert.equal(lit.length,1,"single ALPHA-PUNCHED halo, not four white face copies");
+ assert.equal(lit[0].shadowBlur,0,"blur should be baked into an external-only mask");
+ assert.ok(lit[0].globalAlpha>0);
 }));
 test("Plain text stays plain with no forced glow passes",()=>withDocument(()=>{
  const log=[];

@@ -14,7 +14,7 @@ import { backdropGLSL } from "./backdrops.js";
 import { microGLSL } from "./microstructure.js";
 import { substanceGLSL } from "./substance.js";
 import { photonGLSL, photonSpecies } from "./photon-zoo.js";
-import { filamentGLSL, filamentSpecies, filamentMaterials } from "./filament-forge.js";
+import { filamentGLSL, filamentSpecies, filamentMaterials, filamentStitchModes } from "./filament-forge.js";
 import { tunnelGLSL } from "./tunnels.js";
 
 const vertex = `attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
@@ -135,14 +135,15 @@ export function createRenderer(canvas) {
     backdropUnavailable = false, microUnavailable = false,
     substanceUnavailable = false, wiggleUnavailable = false,
     photonUnavailable = false, filamentUnavailable = false,
-    filamentHybridUnavailable = false, filamentMaterialUnavailable = false;
+    filamentHybridUnavailable = false, filamentMaterialUnavailable = false,
+    filamentStitchUnavailable = false;
   function compatibleShaderState(s){
     const source = stereoUnavailable ? safe2DSelection(s) : s;
     if(!materialUnavailable && !typeShaderUnavailable &&
        !compositionUnavailable && !backdropUnavailable &&
        !microUnavailable && !substanceUnavailable && !wiggleUnavailable &&
        !photonUnavailable && !filamentUnavailable && !filamentHybridUnavailable &&
-       !filamentMaterialUnavailable)return source;
+       !filamentMaterialUnavailable && !filamentStitchUnavailable)return source;
     return {
       ...source,
       ...(materialUnavailable ? {filmAmount:0,opalAmount:0,prismAmount:0,foilRelief:0}:{}),
@@ -154,6 +155,7 @@ export function createRenderer(canvas) {
       ...(photonUnavailable ? {photonAmount:0}:{}),
       ...(filamentUnavailable ? {filamentAmount:0}:{}),
       ...(filamentHybridUnavailable ? {filamentCrossbreed:0}:{}),
+      ...(filamentStitchUnavailable ? {filamentStitchAmount:0}:{}),
       ...(filamentMaterialUnavailable ? {filamentMaterial:"Original thread",filamentSecondMaterial:"Original thread",
         filamentNap:0,filamentBeads:0}:{}),
       ...(wiggleUnavailable ? {wiggleAmount:0}:{})
@@ -551,13 +553,14 @@ export function createRenderer(canvas) {
       withPhoton = s.photonAmount>0,
       withFilament = s.filamentAmount>0,
       withHybrid = withFilament && s.filamentCrossbreed>0,
+      withStitch = withFilament && s.filamentStitchAmount>0,
       withFiberDetail = withFilament && (
         s.filamentMaterial!=="Original thread" ||
         withHybrid && s.filamentSecondMaterial!=="Original thread" ||
         s.filamentNap>0 || s.filamentBeads>0
       ),
       withTunnel = s.engine===5 || (blended && s.secondaryEngine===5),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withWiggle ? "wiggle" : "still"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withWiggle ? "wiggle" : "still"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -599,12 +602,15 @@ export function createRenderer(canvas) {
     const selectedFilament=withFilament
       ? (withHybrid ? "#define FILAMENT_HYBRID 1\n" : "") +
         (withFiberDetail ? "#define FILAMENT_FIBER_DETAIL 1\n" : "") +
+        (withStitch ? "#define FILAMENT_STITCHING 1\n" : "") +
         filamentGLSL.replace("uniform int filamentSpecies;",
           "#define filamentSpecies "+Math.max(0,filamentSpecies.indexOf(s.filamentSpecies)))
           .replace("uniform int filamentSecondSpecies;",
             "#define filamentSecondSpecies "+Math.max(0,filamentSpecies.indexOf(s.filamentSecondSpecies)))
           .replace("uniform int filamentMaterial;",
             "#define filamentMaterial "+Math.max(0,filamentMaterials.indexOf(s.filamentMaterial)))
+          .replace("uniform int filamentStitchMode;",
+            "#define filamentStitchMode "+Math.max(0,filamentStitchModes.indexOf(s.filamentStitchMode)))
           .replace("uniform int filamentSecondMaterial;",
             "#define filamentSecondMaterial "+Math.max(0,filamentMaterials.indexOf(s.filamentSecondMaterial)))
       : "";
@@ -725,7 +731,7 @@ export function createRenderer(canvas) {
       // Progressive shader fallback: the newest optional effects are disabled
       // one at a time if the driver cannot compile them. Legacy fields stay visible.
       let lastCompileError = null;
-      for(let attempt=0;attempt<13;attempt++){
+      for(let attempt=0;attempt<14;attempt++){
         const candidate=compatibleShaderState(s);
         try {
           active=programFor(candidate);
@@ -733,7 +739,10 @@ export function createRenderer(canvas) {
           break;
         }catch(e){
           lastCompileError=e;
-          if(candidate.filamentAmount>0 &&
+          if(candidate.filamentAmount>0 && candidate.filamentStitchAmount>0){
+            filamentStitchUnavailable=true;
+            console.warn("Animated stitches unsupported by this GPU; keeping the lace and materials.",e);
+          }else if(candidate.filamentAmount>0 &&
             (candidate.filamentMaterial!=="Original thread" ||
              candidate.filamentCrossbreed>0 && candidate.filamentSecondMaterial!=="Original thread" ||
              candidate.filamentNap>0 || candidate.filamentBeads>0)){
@@ -866,6 +875,8 @@ export function createRenderer(canvas) {
         "filamentWidth","filamentRelief","filamentHue","filamentVariation",
         "filamentCrossbreed","filamentInterlace","filamentTwist","filamentPhase",
         "filamentNap","filamentLuster","filamentBeads","filamentBeadSize","filamentSecondHue",
+        "filamentStitchAmount","filamentStitchSpeed",
+        "filamentStitchLength","filamentStitchGlow",
         "photonAmount","photonScale","photonMotion","photonDensity",
         "photonRelief","photonHue","photonVariation",
         "substanceAmount","substanceScale","substanceMotion",
@@ -898,6 +909,7 @@ export function createRenderer(canvas) {
       gl.uniform1i(loc("filamentSecondSpecies"), filamentSpecies.indexOf(s.filamentSecondSpecies));
       gl.uniform1i(loc("filamentMaterial"), filamentMaterials.indexOf(s.filamentMaterial));
       gl.uniform1i(loc("filamentSecondMaterial"), filamentMaterials.indexOf(s.filamentSecondMaterial));
+      gl.uniform1i(loc("filamentStitchMode"), filamentStitchModes.indexOf(s.filamentStitchMode));
       gl.uniform1i(loc("substanceMode"), [
         "CMY lithogenesis","Chromatophore reef",
         "Chitin interference","Conformal chromasoup"].indexOf(s.substanceMode));

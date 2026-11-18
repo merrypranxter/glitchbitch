@@ -4,6 +4,8 @@ import Modal from "./Modal";
 import { Select } from "./Controls";
 import { ratios, recipeDocument } from "../data";
 import { dimensions, videoDimensions, renderImage, download, recordClip, videoFormat } from "../export";
+import { hasVisibleLettering } from "../text-compositor.js";
+import { normalTextBlendState } from "../text-blend-proof.js";
 export default function ExportDialog({ state, title, timelineRef, onClose, onNotice }) {
   const [tab,setTab]=useState("Image"),
     [longEdge,setLongEdge]=useState(2160),
@@ -18,11 +20,13 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     [progress,setProgress]=useState(0),
     [error,setError]=useState(""),
     [proof,setProof]=useState(null),
+    [blendProof,setBlendProof]=useState(null),
     [ready,setReady]=useState(null);
-  const controller=useRef(null), mounted=useRef(true), proofUrl=useRef(null);
+  const controller=useRef(null), mounted=useRef(true), proofUrl=useRef(null), blendUrls=useRef([]);
   const capability=videoFormat();
   useEffect(()=>()=>{mounted.current=false;controller.current?.abort();
     if(proofUrl.current) URL.revokeObjectURL(proofUrl.current);
+    blendUrls.current.forEach(url=>URL.revokeObjectURL(url));
   },[]);
   const size=tab==="Video" ? clipFormat==="mp4"
     ? videoDimensions(ratio,videoSize) : dimensions(ratio,gifSize)
@@ -45,6 +49,32 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     }catch(e){
       if(mounted.current)setError("Export proof could not render: "+e.message);
     }finally{
+      if(mounted.current)setBusy(false);
+    }
+  }
+  async function compareBlends(){
+    if(busy||!hasVisibleLettering(state))return;
+    setBusy(true);setError("");
+    const snapshot={...state,ratio},timeline={...timelineRef.current};
+    const temporary=[];
+    try{
+      // Sequential 480px renders bound mobile WebGL memory. Both captures
+      // use the identical timeline and Canvas compositor used by actual MP4.
+      const normal=await renderImage(normalTextBlendState(snapshot),timeline,480);
+      const selected=await renderImage(snapshot,timeline,480);
+      if(!mounted.current)return;
+      const normalUrl=URL.createObjectURL(normal);
+      const selectedUrl=URL.createObjectURL(selected);
+      temporary.push(normalUrl,selectedUrl);
+      blendUrls.current.forEach(url=>URL.revokeObjectURL(url));
+      blendUrls.current=[normalUrl,selectedUrl];
+      setBlendProof({normal:normalUrl,selected:selectedUrl,
+        ratio,seed:state.seed,
+        mode:state.letteringBlendMode||"Normal"});
+    }catch(e){
+      if(mounted.current)setError("Blend comparison failed: "+e.message);
+    }finally{
+      if(!mounted.current)temporary.forEach(url=>URL.revokeObjectURL(url));
       if(mounted.current)setBusy(false);
     }
   }
@@ -163,9 +193,21 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
         {proof&&proof.ratio===ratio&&proof.seed===state.seed&&
           <img src={proof.url}
             alt="Flattened frame from the actual PNG/GIF/MP4 compositing engine" />}
-        <p className="export-note">Proof uses the export renderer—not the live browser text overlay.
-          Check the color and glow here before posting your GIF or MP4.
-          It's a single frame; animations and feedback may change through the clip.</p>
+        {hasVisibleLettering(state)&&<>
+          <button type="button" className="button secondary" disabled={busy}
+            onClick={compareBlends}>Compare actual blend vs Normal (A/B)</button>
+          {blendProof&&blendProof.ratio===ratio&&blendProof.seed===state.seed&&
+            <div className="blend-proof-grid" aria-label="Export blend A/B comparison">
+              <figure><img src={blendProof.normal} alt="Same artwork with all text layers set to Normal blend"/>
+                <figcaption>A · Normal</figcaption></figure>
+              <figure><img src={blendProof.selected} alt="Same artwork with the actual selected text blend modes"/>
+                <figcaption>B · Selected blends</figcaption></figure>
+            </div>}
+        </>}
+        <p className="export-note">These previews are rendered by the actual PNG/GIF/MP4
+          compositor, not by the browser text overlay. The A/B pair uses the
+          exact same frame and colors. Modes like Screen on a bright backdrop
+          can appear subtle; try Difference or Multiply to verify the effect.</p>
       </div>}
       {error&&<p className="field-error" role="alert">{error}</p>}
       {busy&&tab==="Video"&&<div className="record-progress">

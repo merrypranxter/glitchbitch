@@ -4,7 +4,7 @@
  * and mixed font weights/slants without turning formatting into literal text.
  */
 import { getRetroFont } from "./retro-fonts.js";
-import { textStyleAt } from "./text-formatting.js";
+import { textStyleAt, formattedGlyphInk } from "./text-formatting.js";
 
 const clamp=(n,a,b)=>Math.min(b,Math.max(a,Number.isFinite(+n)?+n:a));
 export function textTrackingFraction(style) {return clamp(style?.letteringTracking??0,-20,100)/100;}
@@ -95,21 +95,23 @@ export function drawLetteringDecoration(ctx,glyph,size,x,y,stroke=0){
 }
 
 /** Continuous word-wide underline/strike runs on static text bitmaps. */
-export function drawLineDecorations(ctx,glyphs,size) {
+export function drawLineDecorations(ctx,glyphs,size,baseInk="#ffffff") {
  for(const key of ["underline","strike"]){
    let group=null;
    const flush=()=>{
      if(!group)return;
      const thickness=Math.max(1,size*.055);
      const yy=key==="underline"?group.y+size*.45:group.y-size*.015;
+     ctx.fillStyle=group.ink;
      ctx.fillRect?.(group.left,yy,Math.max(1,group.right-group.left),thickness);
      group=null;
    };
    for(const glyph of glyphs){
      if(!glyph.format[key]){flush();continue;}
      const left=glyph.x-glyph.raw/2,right=glyph.x+glyph.raw/2;
-     const adjacent=group && group.line===glyph.line && group.lastEnd===glyph.index;
-     if(!adjacent){flush();group={left,right,y:glyph.y,line:glyph.line,lastEnd:glyph.index+glyph.char.length};}
+     const ink=formattedGlyphInk(glyph.format,glyph.index,baseInk);
+     const adjacent=group && group.line===glyph.line && group.lastEnd===glyph.index && group.ink===ink;
+     if(!adjacent){flush();group={left,right,y:glyph.y,line:glyph.line,lastEnd:glyph.index+glyph.char.length,ink};}
      else{group.right=right;group.lastEnd=glyph.index+glyph.char.length;}
    }
    flush();

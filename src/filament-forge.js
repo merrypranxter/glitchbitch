@@ -13,6 +13,50 @@ export const filamentSpecies = [
   "Fractal veinwork",
 ];
 
+export const filamentMaterials = [
+  "Original thread",
+  "Iridescent silk",
+  "Molten chrome",
+  "Opaline glass",
+  "Velvet flock",
+  "Electroluminescent yarn",
+];
+
+export const filamentMaterialControls=[
+  "filamentNap","filamentLuster","filamentBeads","filamentBeadSize",
+  "filamentSecondHue"
+];
+
+export const filamentMaterialPresets=[
+  {name:"Silk cathedral",filamentMaterial:"Iridescent silk",
+    filamentSecondMaterial:"Molten chrome",filamentNap:16,
+    filamentLuster:85,filamentBeads:8,filamentBeadSize:32,filamentSecondHue:28},
+  {name:"Mercury embroidery",filamentMaterial:"Molten chrome",
+    filamentSecondMaterial:"Opaline glass",filamentNap:3,
+    filamentLuster:98,filamentBeads:24,filamentBeadSize:58,filamentSecondHue:36},
+  {name:"Opal spiderweb",filamentMaterial:"Opaline glass",
+    filamentSecondMaterial:"Iridescent silk",filamentNap:18,
+    filamentLuster:94,filamentBeads:53,filamentBeadSize:64,filamentSecondHue:47},
+  {name:"Feral velvet tapestry",filamentMaterial:"Velvet flock",
+    filamentSecondMaterial:"Iridescent silk",filamentNap:93,
+    filamentLuster:23,filamentBeads:7,filamentBeadSize:34,filamentSecondHue:18},
+  {name:"Electric nerve fiber",filamentMaterial:"Electroluminescent yarn",
+    filamentSecondMaterial:"Molten chrome",filamentNap:32,
+    filamentLuster:91,filamentBeads:33,filamentBeadSize:48,filamentSecondHue:72},
+  {name:"Alien seed-bead couture",filamentMaterial:"Iridescent silk",
+    filamentSecondMaterial:"Opaline glass",filamentNap:10,
+    filamentLuster:96,filamentBeads:99,filamentBeadSize:82,filamentSecondHue:62}
+];
+
+export function applyFilamentMaterialPreset(state,name){
+  const preset=filamentMaterialPresets.find(p=>p.name===name);
+  if(!preset)return state;
+  const {name:label,...material}=preset;
+  // Material presets don't change an existing geometry, palette, quote,
+  // second parent, crossbreed amount, or anything else in the artwork.
+  return {...state,...material,filamentAmount:Math.max(50,state.filamentAmount||0)};
+}
+
 export const filamentControls = [
   "filamentAmount","filamentScale","filamentDensity","filamentMotion",
   "filamentWidth","filamentRelief","filamentHue","filamentVariation",
@@ -93,12 +137,15 @@ export const filamentGLSL = `
 // Independent structural geometry with stitched, shaded filament ribbons.
 uniform int filamentSpecies;
 uniform int filamentSecondSpecies;
+uniform int filamentMaterial,filamentSecondMaterial;
+uniform float filamentNap,filamentLuster,filamentBeads,filamentBeadSize,filamentSecondHue;
 uniform float filamentCrossbreed,filamentInterlace,filamentTwist,filamentPhase;
 uniform float filamentAmount,filamentScale,filamentDensity,filamentMotion;
 uniform float filamentWidth,filamentRelief,filamentHue,filamentVariation;
 
 vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
-    int species,float phaseOffset,float twist,out float maskCore){
+    int species,int fiberMaterial,float phaseOffset,float twist,float hueOffset,
+    out float maskCore){
   float t=time*(.14+filamentMotion*.72)+phaseOffset;
   float ct=colorTime*.12+phaseOffset*.18;
   float freq=3.0+filamentScale*11.0;
@@ -220,27 +267,90 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   maskCore=core;
   float halo=(1.0-smoothstep(width*2.0,width*5.5+aa,threadD))*mask;
   float edge=(1.0-smoothstep(width*.5,width*2.5+aa,abs(threadD-width*1.25)))*mask;
-  float pigmentPhase=fract(phase*.17+filamentHue*.88+seedPhase*.047+
-    ct*(.023+.017*filamentMotion)+fieldV*.06);
+  float pigmentPhase=fract(phase*.17+filamentHue*.88+hueOffset+
+    seedPhase*.047+ct*(.023+.017*filamentMotion)+fieldV*.06);
   vec3 ink=palette(pigmentPhase);
   vec3 glimmer=palette(fract(pigmentPhase+.23+.16*filamentRelief));
   float sheen=(.38+.62*highlight)*(.3+.7*filamentRelief);
   vec3 thread=ink*(.75+.55*sheen)+glimmer*.21*filamentRelief;
+  // Raised fibers are described in thread-local coordinates, so relief,
+  // anisotropic light, and fraying move WITH the stitch rather than sliding
+  // over the finished picture as a separate texture.
+  float luster=filamentLuster;
+  float nap=filamentNap;
+  float across=clamp(threadD/max(width,.002),0.0,2.0);
+  float cord=1.0-smoothstep(.18,1.2,across);
+  float twistWave=sin(phase*18.0+q.x*9.0-q.y*6.0+t*.28);
+  float spun=.5+.5*twistWave;
+  float fibers=.5+.5*sin(q.x*91.0+q.y*54.0+
+    sin(q.y*17.0+t*.28)*2.0+seedPhase*1.7);
+  float glisten=pow(clamp(.5+.5*cos(across*5.2-1.0+t*.07),0.0,1.0),
+    mix(12.0,3.0,luster));
+  float extraHalo=0.0;
+  if(fiberMaterial==1){ // Iridescent silk: striations and grazing-angle sheen.
+    vec3 irid=.5+.5*cos(vec3(0.0,2.094,4.188)+
+      pigmentPhase*8.4+across*4.5+spun*2.2+colorTime*.08);
+    thread=mix(thread,ink*.53+irid*.75,
+      .2+.43*luster);
+    thread+=glimmer*(.14+.48*luster)*glisten*cord;
+    thread*=.75+.32*spun;
+  }else if(fiberMaterial==2){ // Metallic thread: sharp specular core, dark sides.
+    float chrome=pow(max(0.0,1.0-abs(across-.38)*1.5),3.0);
+    float darkness=.24+.45*abs(twistWave);
+    thread=thread*darkness+vec3(.95,1.0,1.0)*chrome*(.37+1.45*luster);
+    thread+=glimmer*.3*pow(spun,10.0);
+  }else if(fiberMaterial==3){ // Opal glass: thin-film rim and transparent body.
+    vec3 spectral=.5+.5*cos(vec3(0.0,2.094,4.188)+
+      (pigmentPhase+across*.2)*12.0+spun*.8+colorTime*.06);
+    thread=mix(thread*.45,glimmer*.38+spectral*.95,.3+.57*luster);
+    thread+=vec3(1.0,.94,1.0)*glisten*cord*(.16+.42*luster);
+    extraHalo=.08+.15*luster;
+  }else if(fiberMaterial==4){ // Velvet pile: low specularity and fuzzy nap.
+    thread=mix(thread*.48,ink*(.55+.37*fibers),.45+.4*nap);
+    thread*=.65+.3*spun;
+  }else if(fiberMaterial==5){ // Electroluminescent twisted fiber.
+    float helix=.5+.5*cos(phase*28.0+t*.39+q.x*7.0+seedPhase);
+    thread=ink*.58+glimmer*.48+
+      vec3(.92,.97,1.0)*helix*(.23+.6*luster);
+    thread*=.75+.3*spun;
+    extraHalo=.18+.33*luster;
+  }
+  // Edge nap is geometric: it expands only near the actual stitch edge.
+  float fuzz=nap*(fiberMaterial==4?1.0:.53);
+  float fray=(1.0-smoothstep(width,width*3.2+aa,threadD))*
+    (1.0-core)*fibers*fuzz*filamentAmount;
+  // Beads are pearls separated along the local filament path, not a
+  // full-frame dot texture. They work for single and hybrid geometry.
+  float beadPeriod=8.0+filamentBeadSize*18.0;
+  float pearl=pow(max(0.0,.5+.5*cos(phase*beadPeriod+
+    q.x*.3+seedPhase*.17)),mix(24.0,9.0,filamentBeadSize));
+  float bead=filamentBeads*pearl*pow(max(0.0,core),1.4)*filamentAmount;
   float amount=filamentAmount;
   vec3 result=mix(background,background*.48+thread*1.06,core*amount*.91);
   result+=glimmer*halo*amount*(.045+.115*filamentRelief);
   result+=vec3(.89,.95,1.0)*edge*amount*filamentRelief*.11;
+  result+=thread*fray*.36+glimmer*halo*amount*extraHalo;
+  if(filamentBeads>.001){
+    // Rounded bead interior, tiny directional white highlight, dark
+    // attachment socket. All confined to the exact filament mask.
+    vec3 pearlColor=mix(ink,glimmer,.46+.3*glisten);
+    result=mix(result,pearlColor*.68,bead*.65);
+    result+=vec3(1.0,.98,.92)*bead*(.3+.7*luster)*glisten;
+  }
   return clamp(result,0.0,1.6);
 }
 vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
   if(filamentAmount<.001)return background;
   float firstCore=0.0;
-  vec3 first=filamentField(background,uv,fieldP,fieldV,filamentSpecies,0.0,0.0,firstCore);
+  vec3 first=filamentField(background,uv,fieldP,fieldV,
+    filamentSpecies,filamentMaterial,0.0,0.0,0.0,firstCore);
 #ifdef FILAMENT_HYBRID
   if(filamentCrossbreed<.001)return first;
   float secondCore=0.0;
-  vec3 second=filamentField(first,uv,fieldP,fieldV,filamentSecondSpecies,
-    filamentPhase*6.2831853,filamentTwist*6.2831853,secondCore);
+  vec3 second=filamentField(first,uv,fieldP,fieldV,
+    filamentSecondSpecies,filamentSecondMaterial,
+    filamentPhase*6.2831853,filamentTwist*6.2831853,
+    filamentSecondHue*.9,secondCore);
   // True under/over crossings: only where two threads overlap. Different
   // paths remain distinct rather than dissolving into a flat opacity mix.
   float contact=clamp(firstCore*secondCore,0.0,1.0);
@@ -248,7 +358,15 @@ vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
     seed*.000021+filamentPhase*6.2831853+time*.07));
   float tuck=filamentInterlace*contact*(1.0-alternating);
   second=mix(second,first*.82,tuck*.88);
-  return clamp(mix(first,second,filamentCrossbreed),0.0,1.6);
+  vec3 crossed=mix(first,second,filamentCrossbreed);
+  if(filamentBeads>.001){
+    // Extra knots exactly where the two genuine thread cores meet.
+    float node=pow(clamp(contact,0.0,1.0),.6)*
+      filamentBeads*(.6+.4*filamentBeadSize);
+    crossed=mix(crossed,crossed*.72+vec3(.8,.89,1.0)*.63,
+      clamp(node*.6,0.0,.7));
+  }
+  return clamp(crossed,0.0,1.6);
 #else
   // Compiled-out secondary layer: original single-thread performance.
   return first;

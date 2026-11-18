@@ -5,7 +5,7 @@
  */
 import { glyphCanvas } from "./kinetic-type.js";
 import { ensureRetroFontLoaded, retroFontRevision } from "./retro-fonts.js";
-import { letteringMaterial, textMotion } from "./lettering-materials.js";
+import { letteringMaterial, textMotion, letteringExportGlowLayers } from "./lettering-materials.js";
 import { getLetteringBlendRecipe, letteringBlendPulse } from "./lettering-blends.js";
 import { createLetteringSprites } from "./lettering-sprites.js";
 import { letteringMotionCombinedAt, letteringLiquidAt, letteringComposeGlyph,
@@ -111,7 +111,7 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
  for(const layer of layersOf(state)){
    if(!active(layer))continue;
    const entry=glyphFor(layer,width/height,state.colors||[]);
-   const {image,material,tints}=entry;
+   const {image,material}=entry;
    const opacity=Math.max(0,Math.min(1,Number(layer.letteringAmount)/100));
    const zoom=Math.max(0,Math.min(1,Number(layer.letteringScale??48)/100));
    const scale=.63+.34*zoom;
@@ -137,6 +137,7 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
      Math.min(minEdge*.24,132*resolutionScale)*(0.63+0.34*zoom));
    const whole=letteringMotionCombinedAt(layer,seconds,width,height,-1,1,em);
    const blend=getLetteringBlendRecipe(layer.letteringBlendMode,layer.letteringBlendStrength);
+   const glowLayers=letteringExportGlowLayers(material);
    const intensity=blend.mode==="Normal"?0:blend.strength;
 
    ctx.save();
@@ -156,9 +157,13 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
          const pose=letteringComposeGlyph(moving,liquid);
          ctx.save();
          ctx.globalAlpha=baseOpacity*(pose.alpha??1);
+         // Echo offsets must work even when liquid/glyph choreography is on.
+         // Previous export ignored paintShape({dx,dy}) for sprite glyphs.
+         const echoX=Number(options.dx||0)/Math.max(.05,factorX*whole.scaleX);
+         const echoY=Number(options.dy||0)/Math.max(.05,factorY*whole.scaleY);
          ctx.translate(
-           (item.x/spriteScene.width-.5)*width+(pose.dx/(factorX*whole.scaleX)),
-           (item.y/spriteScene.height-.5)*height+(pose.dy/(factorY*whole.scaleY))
+           (item.x/spriteScene.width-.5)*width+(pose.dx/(factorX*whole.scaleX))+echoX,
+           (item.y/spriteScene.height-.5)*height+(pose.dy/(factorY*whole.scaleY))+echoY
          );
          ctx.rotate(pose.rotation*Math.PI/180);
          if(pose.skewX)ctx.transform(1,0,Math.tan(pose.skewX*Math.PI/180),1,0,0);
@@ -177,7 +182,8 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
          ctx.rotate(.045*wobble);
        }
        const source=options.tint?tint(entry,options.tint):image;
-       ctx.drawImage(source,-width/2+(options.dx||0),-height/2+(options.dy||0),width,height);
+       ctx.drawImage(source,-width/2+Number(options.dx||0)/Math.max(.05,factorX*whole.scaleX),
+         -height/2+Number(options.dy||0)/Math.max(.05,factorY*whole.scaleY),width,height);
        ctx.restore();
      }
    }
@@ -197,9 +203,6 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
        if(material.preset==="Soft shadow"){
          ctx.shadowColor="#0a051b";ctx.shadowBlur=Math.min(50,12*width/430);
          ctx.shadowOffsetX=7*width/430;ctx.shadowOffsetY=9*height/430;
-       }else if(material.glow!=="none"){
-         ctx.shadowColor=material.stops?.[1]||"#00eeff";
-         ctx.shadowBlur=Math.min(48,14*width/430);
        }
        if(material.hueAnimation&&typeof ctx.filter==="string")
          ctx.filter=(recipe.filter&&recipe.filter!=="none"?recipe.filter+" ":"")+
@@ -215,6 +218,35 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
    if(intensity>0){
      pass(blend,intensity);
      for(const p of blend.passes)pass(p,intensity*(p.alpha??1),{...p,extra:true});
+   }
+   // Match LiveTextOverlay's luminous multi-color text shadow. Optical halos
+   // must composite with SCREEN *after* the text's chosen blend operator:
+   // a multiply/difference body cannot eat its own light source.
+   if(glowLayers.length){
+     const resolutionScale=Math.min(width,height)/430;
+     const pulse=material.pulseAnimation
+       ? .91+.09*Math.sin(seconds*3.4) : 1;
+     for(let i=0;i<glowLayers.length;i++){
+       const halo=glowLayers[i];
+       const isOuter=i===glowLayers.length-1;
+       ctx.save();
+       ctx.globalCompositeOperation="screen";
+       ctx.globalAlpha=opacity*pulse*(isOuter?.31:i===0?.44:.38);
+       ctx.shadowColor=halo.color;
+       ctx.shadowBlur=Math.min(64,halo.blur*resolutionScale);
+       ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
+       paintShape({tint:halo.color});
+       ctx.restore();
+     }
+     // The glowing face stays readable over a bright, saturated backdrop
+     // without erasing the artistic blend setting underneath it.
+     ctx.save();
+     ctx.globalCompositeOperation="screen";
+     ctx.globalAlpha=opacity*.34;
+     ctx.shadowColor=material.stops?.[0]||material.ink;
+     ctx.shadowBlur=Math.min(14,5*resolutionScale);
+     paintShape({tint:material.stops?.[0]||material.ink});
+     ctx.restore();
    }
    ctx.restore();
  }

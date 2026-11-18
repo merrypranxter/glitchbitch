@@ -50,7 +50,7 @@ vec3 livingPhotonZoo(vec3 original,vec2 uv,vec2 p,float v){
   q+=.21*photonMotion*vec2(sin(q.y*.87+t*.41),cos(q.x*.69-t*.33));
   float rr=length(q)+.0001;
   float aa=atan(q.y,q.x);
-  float shape=0.0, rim=0.0, bloom=0.0, phase=0.0, alpha=.0;
+  float shape=0.0, rim=0.0, glint=0.0, phase=0.0, alpha=.0;
   if(photonSpecies==0){ // Polar opal rosettes: nested petal-locked glass ripples.
     float petal=6.0+floor(photonDensity*13.0);
     float warpPetal=.31*cos(aa*petal+t*.29+phaseShift)
@@ -58,17 +58,17 @@ vec3 livingPhotonZoo(vec3 original,vec2 uv,vec2 p,float v){
     float f=rr*(7.0+photonScale*8.0)+warpPetal*3.2-t*.78;
     shape=pow(.5+.5*cos(f),12.0);
     rim=pow(.5+.5*sin(f+aa*petal*.3),18.0);
-    bloom=pow(.5+.5*cos(aa*petal-t*.34),8.0)*exp(-rr*.36);
+    glint=pow(.5+.5*cos(aa*petal-t*.34),8.0)*exp(-rr*.36);
     phase=f*.18+aa*.23;
-    alpha=.23+.58*shape+.42*rim+.2*bloom;
+    alpha=.23+.58*shape+.42*rim+.2*glint;
   }else if(photonSpecies==1){ // Cathedral halos: luminous multi-arc architecture.
     float spokes=8.0+floor(photonDensity*20.0);
     float rings=rr*(9.0+photonScale*9.0)-t*.72+sin(aa*5.0+t*.3)*.8;
     shape=pow(.5+.5*cos(rings),21.0);
     rim=pow(.5+.5*cos(aa*spokes+rr*2.0+t*.34+phaseShift),33.0);
-    bloom=pow(.5+.5*cos(aa*spokes*.5-rings*.44),19.0)*.8;
+    glint=pow(.5+.5*cos(aa*spokes*.5-rings*.44),19.0)*.8;
     phase=rings*.1+aa*.33;
-    alpha=.14+.64*shape+.34*rim+.25*bloom;
+    alpha=.14+.64*shape+.34*rim+.25*glint;
   }else if(photonSpecies==2){ // Migrating rounded lenses with thick liquid rims.
     vec2 g=q*(.42+photonDensity*1.6), cell=floor(g), local=fract(g);
     float best=3.0, second=3.0, phaseId=0.0;
@@ -87,7 +87,7 @@ vec3 livingPhotonZoo(vec3 original,vec2 uv,vec2 p,float v){
     float core=1.0-smoothstep(radius-.08,radius+.15,best);
     rim=1.0-smoothstep(.025,.085,abs(best-radius));
     shape=pow(.5+.5*cos(best*(19.0+photonDensity*16.0)-t+phaseId*6.28),10.0)*core;
-    bloom=pow(max(0.0,1.0-best),9.0)+.45*pow(1.0-smoothstep(.02,.14,second-best),2.0);
+    glint=pow(max(0.0,1.0-best),9.0)+.45*pow(1.0-smoothstep(.02,.14,second-best),2.0);
     phase=phaseId+best*2.8+t*.08;
     alpha=.13+.41*core+.55*rim+.27*shape;
   }else if(photonSpecies==3){ // Diffractive floral fans, not a flat mandala stamp.
@@ -96,9 +96,9 @@ vec3 livingPhotonZoo(vec3 original,vec2 uv,vec2 p,float v){
     float shell=rr*(8.0+photonScale*12.0)+sin(aa*petals)*2.0-t*.8;
     shape=pow(.5+.5*sin(shell),13.0)*(.6+.4*fan*fan);
     rim=pow(.5+.5*cos(aa*petals*2.0-shell*.65),25.0);
-    bloom=pow(.5+.5*fan,13.0)*exp(-rr*.23);
+    glint=pow(.5+.5*fan,13.0)*exp(-rr*.23);
     phase=aa*.6+shell*.065;
-    alpha=.18+.54*shape+.46*rim+.2*bloom;
+    alpha=.18+.54*shape+.46*rim+.2*glint;
   }else if(photonSpecies==4){ // Two moving wavefront sources grow interference organisms.
     vec2 a=vec2(.8*sin(t*.42),.65*cos(t*.37));
     vec2 b=vec2(.7*cos(t*.34+2.0),.8*sin(t*.31+1.4));
@@ -107,36 +107,36 @@ vec3 livingPhotonZoo(vec3 original,vec2 uv,vec2 p,float v){
     float interference=u*w;
     shape=pow(.5+.5*interference,10.0);
     rim=pow(.5+.5*cos((d1-d2)*density*3.0+t*.26),18.0);
-    bloom=pow(.5+.5*sin((d1+d2)*7.0-t*.71),13.0);
+    glint=pow(.5+.5*sin((d1+d2)*7.0-t*.71),13.0);
     phase=(d1-d2)*1.8+(d1+d2)*.25;
-    alpha=.11+.52*shape+.49*rim+.15*bloom;
+    alpha=.11+.52*shape+.49*rim+.15*glint;
   }else if(photonSpecies==5){ // Folding fabric-like chrome ribbons with specular ridges.
     float fold=q.y+sin(q.x*(1.4+photonDensity*1.7)+t*.47)*(.43+photonRelief*.45)
        +.16*sin(q.x*4.0-q.y*1.3-t*.63+phaseShift);
     float flow=fold*(7.0+photonScale*11.0)+t*.7;
     shape=pow(.5+.5*sin(flow),9.0);
     rim=pow(.5+.5*cos(flow*.52+q.x*.72),25.0);
-    bloom=pow(.5+.5*sin(flow*.26+v*2.0),7.0);
+    glint=pow(.5+.5*sin(flow*.26+v*2.0),7.0);
     phase=flow*.09+q.x*.16;
-    alpha=.25+.41*shape+.46*rim+.18*bloom;
+    alpha=.25+.41*shape+.46*rim+.18*glint;
   }else if(photonSpecies==6){ // Optical pressure waves + checker moire distortions.
     float radius=rr*(9.0+photonScale*9.0)-t*.91;
     float spiral=sin(aa*(7.0+floor(photonDensity*8.0))+radius*.31);
     float grid=sin(q.x*density*1.9+t*.32)*cos(q.y*density*1.78-t*.27);
     shape=pow(.5+.5*sin(radius+grid*2.0),16.0);
     rim=pow(.5+.5*cos(radius*.55+spiral*2.1),19.0);
-    bloom=pow(.5+.5*grid,9.0);
+    glint=pow(.5+.5*grid,9.0);
     phase=radius*.14+grid*.37;
-    alpha=.14+.52*shape+.48*rim+.16*bloom;
+    alpha=.14+.52*shape+.48*rim+.16*glint;
   }else{ // Kinetic starburst engines: polygon mirrors and radial light needles.
     float needles=8.0+floor(photonDensity*24.0);
     float beam=pow(abs(cos(aa*needles*.5+t*.16+phaseShift)),30.0);
     float ring=rr*(7.0+photonScale*11.0)-t*.73+sin(aa*6.0)*.8;
     shape=beam*(.55+.45*sin(ring));
     rim=pow(.5+.5*cos(ring),19.0);
-    bloom=pow(.5+.5*cos(aa*needles+t*.21),25.0);
+    glint=pow(.5+.5*cos(aa*needles+t*.21),25.0);
     phase=aa*.44+rr*.71+t*.07;
-    alpha=.15+.68*shape+.44*rim+.25*bloom;
+    alpha=.15+.68*shape+.44*rim+.25*glint;
   }
   float chroma=fract(photonHue*.82+phase*.25+ct*.021+phaseShift*.065+v*.09);
   vec3 pigment=palette(chroma);
@@ -146,7 +146,7 @@ vec3 livingPhotonZoo(vec3 original,vec2 uv,vec2 p,float v){
     +vec3(0.0,2.094,4.188));
   vec3 jewel=mix(pigment*.9+secondPigment*.32,iridescence*.72+pigment*.6,.28+.47*photonRelief);
   jewel+=secondPigment*rim*(.17+.73*photonRelief);
-  jewel+=vec3(1.0,.94,1.0)*bloom*.22*photonRelief;
+  jewel+=vec3(1.0,.94,1.0)*glint*.22*photonRelief;
   // A proper new architecture over the base art, not an opaque screenwash.
   float coverage=clamp(alpha*(.5+.45*photonDensity),0.0,.92);
   vec3 result=mix(original,original*.65+jewel,coverage*photonAmount);

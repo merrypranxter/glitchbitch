@@ -90,7 +90,7 @@ vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
     highlight=.5+.5*sin(a*10.0+b*9.0+t*.6);
   }else if(filamentSpecies==1){
     // Poincaré-disk metric: rings contract visually toward the boundary.
-    vec2 z=(uv-.5)*vec2(res.x/res.y,1.0)*1.95;
+    vec2 z=(uv-.5)*vec2(res.x/res.y,1.0)*(1.25+filamentScale*1.05);
     z+=.065*filamentMotion*vec2(sin(t*.36),cos(t*.32));
     float r=length(z);
     float safeR=min(r,.978);
@@ -106,14 +106,16 @@ vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
     highlight=.5+.5*cos(radial*.8-a*sectors*.4);
   }else if(filamentSpecies==2){
     // Two arc threads through each deterministic Truchet tile.
-    vec2 cell=floor(q),local=fract(q);
+    vec2 stitchQ=q*(.72+density*1.35);
+    vec2 cell=floor(stitchQ),local=fract(stitchQ);
     float flip=step(.5,hash(cell+seedPhase));
     vec2 cornerA=mix(vec2(0.0,0.0),vec2(1.0,0.0),flip);
     vec2 cornerB=mix(vec2(1.0,1.0),vec2(0.0,1.0),flip);
-    vec2 moveA=.026*filamentMotion*vec2(sin(t*.9+hash(cell)*6.0),cos(t*.81+hash(cell)*7.0));
-    float radius=.5+.04*sin(t*.38+hash(cell)*6.28);
-    float arcA=abs(length(local-cornerA+moveA)-radius);
-    float arcB=abs(length(local-cornerB-moveA)-radius);
+    // Fixed half-tile arc radius keeps both ends meeting precisely at cell
+    // boundaries. Motion happens in the continuous coordinate warp above.
+    float radius=.5;
+    float arcA=abs(length(local-cornerA)-radius);
+    float arcB=abs(length(local-cornerB)-radius);
     threadD=min(arcA,arcB);
     // Faint parallel seams preserve the woven-thread character.
     threadD=min(threadD,abs(min(arcA,arcB)-.12)*.73);

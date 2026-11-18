@@ -70,8 +70,8 @@ test("Surprise and Mutate incorporate filament settings without generating words
 test("Shader has six geometric branches and no WebGL2-only requirements",()=>{
  assert.match(filamentGLSL,/vec3 livingFilamentForge/);
  assert.match(filamentGLSL,/uniform int filamentSpecies;/);
- assert.match(filamentGLSL,/if\(filamentSpecies==0\)/);
- assert.match(filamentGLSL,/filamentSpecies==4/);
+ assert.match(filamentGLSL,/if\(species==0\)/);
+ assert.match(filamentGLSL,/species==4/);
  assert.match(filamentGLSL,/palette\(pigmentPhase\)/);
  assert.match(filamentGLSL,/return clamp\(result,0\.0,1\.6\);/);
  assert.doesNotMatch(filamentGLSL,/texture2D|texelFetch|\bfwidth\b/);

@@ -134,13 +134,14 @@ export function createRenderer(canvas) {
     typeShaderUnavailable = false, compositionUnavailable = false,
     backdropUnavailable = false, microUnavailable = false,
     substanceUnavailable = false, wiggleUnavailable = false,
-    photonUnavailable = false, filamentUnavailable = false;
+    photonUnavailable = false, filamentUnavailable = false,
+    filamentHybridUnavailable = false;
   function compatibleShaderState(s){
     const source = stereoUnavailable ? safe2DSelection(s) : s;
     if(!materialUnavailable && !typeShaderUnavailable &&
        !compositionUnavailable && !backdropUnavailable &&
        !microUnavailable && !substanceUnavailable && !wiggleUnavailable &&
-       !photonUnavailable && !filamentUnavailable)return source;
+       !photonUnavailable && !filamentUnavailable && !filamentHybridUnavailable)return source;
     return {
       ...source,
       ...(materialUnavailable ? {filmAmount:0,opalAmount:0,prismAmount:0,foilRelief:0}:{}),
@@ -151,6 +152,7 @@ export function createRenderer(canvas) {
       ...(substanceUnavailable ? {substanceAmount:0}:{}),
       ...(photonUnavailable ? {photonAmount:0}:{}),
       ...(filamentUnavailable ? {filamentAmount:0}:{}),
+      ...(filamentHybridUnavailable ? {filamentCrossbreed:0}:{}),
       ...(wiggleUnavailable ? {wiggleAmount:0}:{})
     };
   }
@@ -545,8 +547,9 @@ export function createRenderer(canvas) {
       withSubstance = s.substanceAmount>0,
       withPhoton = s.photonAmount>0,
       withFilament = s.filamentAmount>0,
+      withHybrid = withFilament && s.filamentCrossbreed>0,
       withTunnel = s.engine===5 || (blended && s.secondaryEngine===5),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withWiggle ? "wiggle" : "still"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withWiggle ? "wiggle" : "still"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -584,9 +587,13 @@ export function createRenderer(canvas) {
       : "";
     source=source.replace("/* PHOTON_MODULE */",specializedPhoton);
     source=source.replace("/* PHOTON_POST */",withPhoton?"col=livingPhotonZoo(col,uv,p,v);":"");
+    // Do not compile the second geometry at all for old or single-parent art.
     const selectedFilament=withFilament
-      ? filamentGLSL.replace("uniform int filamentSpecies;",
-        "#define filamentSpecies "+Math.max(0,filamentSpecies.indexOf(s.filamentSpecies)))
+      ? (withHybrid ? "#define FILAMENT_HYBRID 1\n" : "") +
+        filamentGLSL.replace("uniform int filamentSpecies;",
+          "#define filamentSpecies "+Math.max(0,filamentSpecies.indexOf(s.filamentSpecies)))
+          .replace("uniform int filamentSecondSpecies;",
+            "#define filamentSecondSpecies "+Math.max(0,filamentSpecies.indexOf(s.filamentSecondSpecies)))
       : "";
     source=source.replace("/* FILAMENT_MODULE */",selectedFilament);
     source=source.replace("/* FILAMENT_POST */",
@@ -705,7 +712,7 @@ export function createRenderer(canvas) {
       // Progressive shader fallback: the newest optional effects are disabled
       // one at a time if the driver cannot compile them. Legacy fields stay visible.
       let lastCompileError = null;
-      for(let attempt=0;attempt<11;attempt++){
+      for(let attempt=0;attempt<12;attempt++){
         const candidate=compatibleShaderState(s);
         try {
           active=programFor(candidate);
@@ -713,7 +720,10 @@ export function createRenderer(canvas) {
           break;
         }catch(e){
           lastCompileError=e;
-          if(candidate.filamentAmount>0){
+          if(candidate.filamentAmount>0 && candidate.filamentCrossbreed>0){
+            filamentHybridUnavailable=true;
+            console.warn("Filament hybrid too demanding for this GPU; retaining the primary threads.",e);
+          }else if(candidate.filamentAmount>0){
             filamentUnavailable=true;
             console.warn("Filament Forge unsupported by this GPU; original artwork remains intact.",e);
           }else if(candidate.photonAmount>0){
@@ -835,6 +845,7 @@ export function createRenderer(canvas) {
         "microDensity","microHue","microVariation",
         "filamentAmount","filamentScale","filamentMotion","filamentDensity",
         "filamentWidth","filamentRelief","filamentHue","filamentVariation",
+        "filamentCrossbreed","filamentInterlace","filamentTwist","filamentPhase",
         "photonAmount","photonScale","photonMotion","photonDensity",
         "photonRelief","photonHue","photonVariation",
         "substanceAmount","substanceScale","substanceMotion",
@@ -864,6 +875,7 @@ export function createRenderer(canvas) {
         "Gel caustics","Point lace","Glass filaments","Crystalline cilia"].indexOf(s.microMode));
       gl.uniform1i(loc("photonSpecies"), photonSpecies.indexOf(s.photonSpecies));
       gl.uniform1i(loc("filamentSpecies"), filamentSpecies.indexOf(s.filamentSpecies));
+      gl.uniform1i(loc("filamentSecondSpecies"), filamentSpecies.indexOf(s.filamentSecondSpecies));
       gl.uniform1i(loc("substanceMode"), [
         "CMY lithogenesis","Chromatophore reef",
         "Chitin interference","Conformal chromasoup"].indexOf(s.substanceMode));

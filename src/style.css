@@ -3247,3 +3247,16 @@ main { grid-template-columns: 264px minmax(320px, 1fr) 300px; }
   .studio-page .chaos-dock.compact{display:none}
   .find-backdrop{padding-top:8vh}
 }
+
+/* The two-parent mathematical loom lives inside Filament Forge, not a new tab. */
+.filament-crossbreeder{
+  margin:12px 0;padding:10px;border:1px solid rgba(185,225,250,.22);
+  border-radius:12px;min-width:0;
+}
+.filament-crossbreeder summary{
+  cursor:pointer;min-height:42px;display:list-item;align-content:center;
+  font-weight:750;letter-spacing:.025em;user-select:none;
+}
+.filament-crossbreeder .control-note{margin:8px 0 11px;}
+.filament-crossbreeder .pane-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;}
+.filament-crossbreeder .pane-actions>.button{flex:1 1 132px;min-height:42px;}

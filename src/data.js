@@ -284,6 +284,10 @@ export const numericRanges = {
   filamentRelief: [0, 100],
   filamentHue: [0, 100],
   filamentVariation: [0, 100],
+  filamentCrossbreed: [0, 100],
+  filamentInterlace: [0, 100],
+  filamentTwist: [0, 100],
+  filamentPhase: [0, 100],
   photonAmount: [0, 100],
   photonScale: [0, 100],
   photonMotion: [0, 100],
@@ -447,6 +451,11 @@ export const initial = {
   filamentRelief: 77,
   filamentHue: 43,
   filamentVariation: 38,
+  filamentSecondSpecies: "Truchet knotwork",
+  filamentCrossbreed: 0,
+  filamentInterlace: 72,
+  filamentTwist: 22,
+  filamentPhase: 35,
   photonSpecies: "Prism rosettes",
   photonAmount: 0,
   photonScale: 53,
@@ -546,6 +555,7 @@ export function validateRecipe(input) {
     substanceMode: substanceModes,
     photonSpecies: photonSpecies,
     filamentSpecies: filamentSpecies,
+    filamentSecondSpecies: filamentSpecies,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -802,6 +812,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "microDensity","microHue","microVariation",
       "filamentAmount","filamentScale","filamentMotion","filamentDensity",
       "filamentWidth","filamentRelief","filamentHue","filamentVariation",
+      "filamentCrossbreed","filamentInterlace","filamentTwist","filamentPhase",
       "photonAmount","photonScale","photonMotion","photonDensity",
       "photonRelief","photonHue","photonVariation",
       "substanceAmount","substanceScale","substanceMotion",
@@ -953,6 +964,12 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.filamentRelief=35+random()*64;
   s.filamentHue=random()*100;
   s.filamentVariation=random()*100;
+  s.filamentSecondSpecies=different(
+    filamentSpecies.filter(x=>x!==s.filamentSpecies),state.filamentSecondSpecies,random);
+  s.filamentCrossbreed=s.filamentAmount>0 && random()<.56 ? 36+random()*63 : 0;
+  s.filamentInterlace=32+random()*66;
+  s.filamentTwist=random()*100;
+  s.filamentPhase=random()*100;
   s.photonSpecies=different(photonSpecies,state.photonSpecies,random);
   s.photonAmount=random()<.85?39+random()*58:0;
   s.photonScale=17+random()*79;

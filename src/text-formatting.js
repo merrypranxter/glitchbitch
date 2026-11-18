@@ -11,15 +11,19 @@ export const textFormatTools = [
   {key:"caps",label:"ALL CAPS",symbol:"AA"}
 ];
 export const textFormatKeys=textFormatTools.map(t=>t.key);
-const empty=()=>({bold:false,italic:false,underline:false,strike:false,caps:false});
+const colorRE=/^#[0-9a-f]{6}$/i;
+const empty=()=>({bold:false,italic:false,underline:false,strike:false,caps:false,ink:null,rainbow:false});
 const clamp=(n,min,max)=>Math.max(min,Math.min(max,Number.isFinite(Number(n))?Number(n):min));
-const equal=(a,b)=>textFormatKeys.every(k=>Boolean(a[k])===Boolean(b[k]));
-export const hasTextFormat=style=>textFormatKeys.some(k=>style?.[k]);
+const equal=(a,b)=>textFormatKeys.every(k=>Boolean(a[k])===Boolean(b[k]))
+  && (a.ink||null)===(b.ink||null) && Boolean(a.rainbow)===Boolean(b.rainbow);
+export const hasTextFormat=style=>textFormatKeys.some(k=>style?.[k]) || Boolean(style?.ink) || Boolean(style?.rainbow);
 export function textStyleAt(formats,index){
   const out=empty();
   for(const item of Array.isArray(formats)?formats:[]){
     if(index>=item.start && index<item.end){
       for(const key of textFormatKeys)if(item[key])out[key]=true;
+      if(typeof item.ink==="string"&&colorRE.test(item.ink))out.ink=item.ink.toLowerCase();
+      if(item.rainbow===true){out.rainbow=true;out.ink=null;}
     }
   }
   return out;
@@ -35,7 +39,8 @@ export function packTextStyles(styles){
     const style=styles[i]||empty(),start=i;
     while(i<styles.length && equal(style,styles[i]||empty()))i++;
     if(hasTextFormat(style))result.push({start,end:i,
-      ...Object.fromEntries(textFormatKeys.filter(k=>style[k]).map(k=>[k,true]))});
+      ...Object.fromEntries(textFormatKeys.filter(k=>style[k]).map(k=>[k,true])),
+      ...(style.ink?{ink:style.ink}:{}),...(style.rainbow?{rainbow:true}:{})});
   }
   return result;
 }
@@ -72,6 +77,39 @@ export function toggleTextFormat(text,formats,selectionStart,selectionEnd,key){
   for(const i of positions)styles[i][key]=shouldEnable;
   return packTextStyles(styles);
 }
+function editSelectedInk(text,formats,start,end,editor){
+  const value=String(text||"");
+  const range=wordSelection(value,start,end);
+  const styles=Array.from({length:value.length},(_,i)=>textStyleAt(formats,i));
+  for(let i=range.start;i<range.end;i++){
+    if(/\s/u.test(value[i]))continue;
+    editor(styles[i]);
+  }
+  return packTextStyles(styles);
+}
+/** Paint a selected word with an explicit six-digit hex ink color. */
+export function setTextInk(text,formats,start,end,color){
+  if(typeof color!=="string"||!colorRE.test(color))return normalizeTextFormats(text,formats);
+  return editSelectedInk(text,formats,start,end,style=>{
+    style.ink=color.toLowerCase();
+    style.rainbow=false;
+  });
+}
+/** A deterministic per-character prismatic rainbow for selected words. */
+export function setTextRainbow(text,formats,start,end){
+  return editSelectedInk(text,formats,start,end,style=>{style.ink=null;style.rainbow=true;});
+}
+/** Restore the layer's material/gradient without removing bold or underline. */
+export function clearTextInk(text,formats,start,end){
+  return editSelectedInk(text,formats,start,end,style=>{style.ink=null;style.rainbow=false;});
+}
+export function spectrumInk(index){
+  const hue=((Math.floor(index)*51.43)%360+360)%360;
+  return `hsl(${hue.toFixed(1)} 100% 60%)`;
+}
+export function formattedGlyphInk(style,index,baseInk){
+  return style?.rainbow?spectrumInk(index):style?.ink||baseInk;
+}
 export function rebaseTextFormats(oldText,newText,formats){
   const oldValue=String(oldText||""),fresh=String(newText||"");
   const oldLen=oldValue.length,newLen=fresh.length;
@@ -100,14 +138,17 @@ export function textFormattingSegments(text,formats){
     const style=textStyleAt(formats,start);
     const display=style.caps?char.toUpperCase():char;
     const previous=out[out.length-1];
-    if(previous&&equal(previous.style,style)){
+    if(previous&&!style.rainbow&&equal(previous.style,style)){
       previous.raw+=char;previous.display+=display;previous.end+=char.length;
     }else out.push({start,end:start+char.length,raw:char,display,style});
   }
   return out;
 }
-export function formatCharStyle(style={}){
+export function formatCharStyle(style={},index=0){
+ const ink=style.rainbow?spectrumInk(index):style.ink;
  return {
+   color:ink||undefined,
+   WebkitTextFillColor:ink||undefined,
    fontWeight:style.bold?900:undefined,
    fontStyle:style.italic?"italic":undefined,
    textDecorationLine:[style.underline?"underline":null,

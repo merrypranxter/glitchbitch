@@ -4,7 +4,7 @@ import { retroFontIds } from "./retro-fonts.js";
 import { letteringBlendModes } from "./lettering-blends.js";
 import { letteringMotionPaths } from "./lettering-motion.js";
 import { photonSpecies } from "./photon-zoo.js";
-import { filamentSpecies, filamentMaterials, filamentStitchModes } from "./filament-forge.js";
+import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes } from "./filament-forge.js";
 import { normalizeTextFormats } from "./text-formatting.js";
 export const engineInfo = [
   ["Plasma flow", "Liquid sine fields folded into neon ribbons.", "Fluid"],
@@ -297,6 +297,11 @@ export const numericRanges = {
   filamentStitchSpeed: [0, 100],
   filamentStitchLength: [0, 100],
   filamentStitchGlow: [0, 100],
+  filamentSculptAmount: [0, 100],
+  filamentSculptDepth: [0, 100],
+  filamentSculptLight: [0, 100],
+  filamentSculptShadow: [0, 100],
+  filamentSculptPuff: [0, 100],
   photonAmount: [0, 100],
   photonScale: [0, 100],
   photonMotion: [0, 100],
@@ -477,6 +482,12 @@ export const initial = {
   filamentStitchSpeed: 52,
   filamentStitchLength: 46,
   filamentStitchGlow: 76,
+  filamentSculptMode: "Raised satin",
+  filamentSculptAmount: 0,
+  filamentSculptDepth: 60,
+  filamentSculptLight: 16,
+  filamentSculptShadow: 66,
+  filamentSculptPuff: 45,
   photonSpecies: "Prism rosettes",
   photonAmount: 0,
   photonScale: 53,
@@ -580,6 +591,7 @@ export function validateRecipe(input) {
     filamentMaterial: filamentMaterials,
     filamentSecondMaterial: filamentMaterials,
     filamentStitchMode: filamentStitchModes,
+    filamentSculptMode: filamentSculptModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -841,6 +853,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "filamentSecondHue",
       "filamentStitchAmount","filamentStitchSpeed",
       "filamentStitchLength","filamentStitchGlow",
+      "filamentSculptAmount","filamentSculptDepth",
+      "filamentSculptLight","filamentSculptShadow","filamentSculptPuff",
       "photonAmount","photonScale","photonMotion","photonDensity",
       "photonRelief","photonHue","photonVariation",
       "substanceAmount","substanceScale","substanceMotion",
@@ -1010,6 +1024,12 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.filamentStitchSpeed=15+random()*84;
   s.filamentStitchLength=18+random()*80;
   s.filamentStitchGlow=25+random()*74;
+  s.filamentSculptMode=different(filamentSculptModes,state.filamentSculptMode,random);
+  s.filamentSculptAmount=s.filamentAmount>0 && random()<.59?40+random()*58:0;
+  s.filamentSculptDepth=20+random()*78;
+  s.filamentSculptLight=random()*100;
+  s.filamentSculptShadow=20+random()*79;
+  s.filamentSculptPuff=12+random()*85;
   s.photonSpecies=different(photonSpecies,state.photonSpecies,random);
   s.photonAmount=random()<.85?39+random()*58:0;
   s.photonScale=17+random()*79;

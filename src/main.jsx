@@ -28,6 +28,7 @@ import {
   ChevronDown,
   LoaderCircle,
   X,
+  Search,
 } from "lucide-react";
 import ArtCanvas from "./ArtCanvas";
 import ColorLab from "./components/ColorLab";
@@ -42,6 +43,8 @@ import ExportDialog from "./components/ExportDialog";
 import Lookbook from "./components/Lookbook";
 import Modal from "./components/Modal";
 import Collection from "./components/Collection";
+import FindControl from "./components/FindControl";
+import { requestReveal } from "./components/Controls";
 import { engines, engineInfo, ratios, parseDocument, randomize } from "./data";
 import useHistory from "./useHistory";
 import {
@@ -203,7 +206,18 @@ function App() {
           target.isContentEditable ||
           ["TEXTAREA", "SELECT"].includes(target.tagName) ||
           (target.tagName === "INPUT" && target.type !== "range");
-      if (typing || latest.current.modal) return;
+      if (latest.current.modal) return;
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setModal("find");
+        return;
+      }
+      if (typing) return;
+      if (e.key === "/") {
+        e.preventDefault();
+        setModal("find");
+        return;
+      }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
         e.preventDefault();
         e.shiftKey
@@ -359,6 +373,20 @@ function App() {
     setModal(null);
     toast(`Exploring “${look.name}”. Undo takes you back.`);
   }
+  function pickControl(hit) {
+    setModal(null);
+    if (hit.kind === "action") {
+      if (hit.id === "export") setModal("export");
+      else if (hit.id === "lookbook") setModal("lookbook");
+      else if (hit.id === "help") setModal("help");
+      else if (hit.id === "save") saveWork();
+      else if (hit.id === "surprise") surprise();
+      return;
+    }
+    setPage("Studio");
+    showMobile(hit.tab);
+    requestReveal({ id: hit.id, pane: hit.pane });
+  }
   const active =
     state.blend > 0
       ? `${engines[state.engine]} × ${engines[state.secondaryEngine]}`
@@ -390,6 +418,15 @@ function App() {
           ))}
         </nav>
         <div className="header-actions">
+          <button
+            className="find-button"
+            title="Find a control (Ctrl/Cmd+K or /)"
+            onClick={() => setModal("find")}
+          >
+            <Search size={14} />
+            <span>Find a control</span>
+            <kbd>/</kbd>
+          </button>
           <button
             className="icon-button help-button"
             title="How to play"
@@ -455,10 +492,6 @@ function App() {
                   onImportPaletteLibrary={importPaletteLibrary}
                 />
               )}
-            </div>
-            <div className="inspector-bottom">
-              <span>MATHEMATICS WITH A WILD SIDE.</span>
-              <Asterisk size={14} />
             </div>
           </aside>
           <div className="workspace">
@@ -628,31 +661,15 @@ function App() {
                 <Maximize size={16} />
               </button>
             </div>
-            <div className="canvas-caption">
-              <button
-                className="touch-guide"
-                aria-label="How to play"
-                onClick={() => setModal("help")}
-              >
-                <Hand size={13} />
-                Drag to sculpt. Pinch to stretch. Follow the weird.
-              </button>
-              <button onClick={() => setModal("help")}>
-                <kbd>SPACE</kbd> pause
-              </button>
-            </div>
             <div className="workspace-bottom">
               <button onClick={() => setModal("lookbook")}>
                 <BookOpen size={14} />
-                Need a starting point?{" "}
                 <span>
-                  Open the lookbook <ArrowUpRight size={12} />
+                  Lookbook <ArrowUpRight size={12} />
                 </span>
               </button>
               <span>
                 {status.width && `${status.width} × ${status.height}`}
-                <i />
-                100% CODE. INFINITELY YOURS.
               </span>
               <div className="mobile-chaos">
                 <button title="Mutate design" onClick={() => surprise(true)}>
@@ -713,13 +730,20 @@ function App() {
             }
           >
             <div className="inspector-tabs">
-              {["Effects", "Text", "Touch", "Layers"].map((t) => (
+              {[
+                ["Effects", Sparkles],
+                ["Text", Type],
+                ["Touch", Hand],
+                ["Layers", Layers],
+              ].map(([t, Icon]) => (
                 <button
                   className={rightTab === t ? "active" : ""}
                   onClick={() => setRightTab(t)}
                   key={t}
+                  title={t}
                 >
-                  {t}
+                  <Icon size={13} />
+                  <span>{t}</span>
                 </button>
               ))}
             </div>
@@ -740,32 +764,23 @@ function App() {
                 />
               )}
             </div>
-            <div className="chaos-dock">
-              <div className="chaos-locks">
-                <button
-                  className={locks.color ? "locked" : ""}
-                  aria-pressed={locks.color}
-                  onClick={() => setLocks((l) => ({ ...l, color: !l.color }))}
-                >
-                  {locks.color ? (
-                    <LockKeyhole size={12} />
-                  ) : (
-                    <Unlock size={12} />
-                  )}
-                  Palette {locks.color ? "locked" : "unlocked"}
-                </button>
-                <button className="mutate" onClick={() => surprise(true)}>
-                  Mutate <Shuffle size={12} />
-                </button>
-              </div>
-              <button className="surprise" onClick={() => surprise()}>
-                <Sparkles size={20} />
-                <span>
-                  Surprise me<small>LET CHAOS TAKE THE WHEEL</small>
-                </span>
-                <Shuffle size={16} />
+            <div className="chaos-dock compact">
+              <button
+                className={"dock-lock " + (locks.color ? "locked" : "")}
+                aria-pressed={locks.color}
+                title={locks.color ? "Palette locked: Surprise me keeps your colors" : "Lock palette so Surprise me keeps your colors"}
+                onClick={() => setLocks((l) => ({ ...l, color: !l.color }))}
+              >
+                {locks.color ? <LockKeyhole size={13} /> : <Unlock size={13} />}
+                <Palette size={13} />
               </button>
-              <p>Happy accidents encouraged. Undo always available.</p>
+              <button className="dock-mutate" title="Small random nudge to the current design" onClick={() => surprise(true)}>
+                <Shuffle size={13} /> Mutate
+              </button>
+              <button className="surprise" title="Randomize everything except aspect ratio. Undo always works." onClick={() => surprise()}>
+                <Sparkles size={16} />
+                <span>Surprise me</span>
+              </button>
             </div>
           </aside>
         </main>
@@ -808,6 +823,9 @@ function App() {
           onClose={() => setModal(null)}
           onNotice={toast}
         />
+      )}
+      {modal === "find" && (
+        <FindControl onPick={pickControl} onClose={() => setModal(null)} />
       )}
       {modal === "lookbook" && (
         <Lookbook onClose={() => setModal(null)} onApply={applyLook} />
@@ -874,6 +892,9 @@ function App() {
             </span>
             <span>
               <kbd>?</kbd>This guide
+            </span>
+            <span>
+              <kbd>/</kbd>Find a control
             </span>
           </div>
           <p className="modal-footnote">

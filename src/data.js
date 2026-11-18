@@ -4,6 +4,7 @@ import { retroFontIds } from "./retro-fonts.js";
 import { letteringBlendModes } from "./lettering-blends.js";
 import { letteringMotionPaths } from "./lettering-motion.js";
 import { photonSpecies } from "./photon-zoo.js";
+import { filamentSpecies } from "./filament-forge.js";
 import { normalizeTextFormats } from "./text-formatting.js";
 export const engineInfo = [
   ["Plasma flow", "Liquid sine fields folded into neon ribbons.", "Fluid"],
@@ -275,6 +276,14 @@ export const numericRanges = {
   microDensity: [0, 100],
   microHue: [0, 100],
   microVariation: [0, 100],
+  filamentAmount: [0, 100],
+  filamentScale: [0, 100],
+  filamentDensity: [0, 100],
+  filamentMotion: [0, 100],
+  filamentWidth: [0, 100],
+  filamentRelief: [0, 100],
+  filamentHue: [0, 100],
+  filamentVariation: [0, 100],
   photonAmount: [0, 100],
   photonScale: [0, 100],
   photonMotion: [0, 100],
@@ -429,6 +438,15 @@ export const initial = {
   microDensity: 57,
   microHue: 48,
   microVariation: 50,
+  filamentSpecies: "Fivefold brocade",
+  filamentAmount: 0,
+  filamentScale: 54,
+  filamentDensity: 62,
+  filamentMotion: 50,
+  filamentWidth: 33,
+  filamentRelief: 77,
+  filamentHue: 43,
+  filamentVariation: 38,
   photonSpecies: "Prism rosettes",
   photonAmount: 0,
   photonScale: 53,
@@ -527,6 +545,7 @@ export function validateRecipe(input) {
     microMode: microModes,
     substanceMode: substanceModes,
     photonSpecies: photonSpecies,
+    filamentSpecies: filamentSpecies,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -781,6 +800,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "backdropGlow","backdropHue","backdropVariation",
       "microAmount","microScale","microMotion","microRelief",
       "microDensity","microHue","microVariation",
+      "filamentAmount","filamentScale","filamentMotion","filamentDensity",
+      "filamentWidth","filamentRelief","filamentHue","filamentVariation",
       "photonAmount","photonScale","photonMotion","photonDensity",
       "photonRelief","photonHue","photonVariation",
       "substanceAmount","substanceScale","substanceMotion",
@@ -923,6 +944,15 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.microDensity=20+random()*74;
   s.microHue=11+random()*87;
   s.microVariation=random()*100;
+  s.filamentSpecies=different(filamentSpecies,state.filamentSpecies,random);
+  s.filamentAmount=random()<.64?39+random()*58:0;
+  s.filamentScale=20+random()*78;
+  s.filamentMotion=16+random()*78;
+  s.filamentDensity=26+random()*72;
+  s.filamentWidth=12+random()*65;
+  s.filamentRelief=35+random()*64;
+  s.filamentHue=random()*100;
+  s.filamentVariation=random()*100;
   s.photonSpecies=different(photonSpecies,state.photonSpecies,random);
   s.photonAmount=random()<.85?39+random()*58:0;
   s.photonScale=17+random()*79;

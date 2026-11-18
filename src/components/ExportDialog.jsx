@@ -167,7 +167,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
           Check the color and glow here before posting your GIF or MP4.
           It's a single frame; animations and feedback may change through the clip.</p>
       </div>}
-      {error&&<p className="field-error" role="alert">{error}</p>
+      {error&&<p className="field-error" role="alert">{error}</p>}
       {busy&&tab==="Video"&&<div className="record-progress">
         <div><span style={{width:`${progress*100}%`}}/></div>
         <p><i/>{Math.round(progress*clipDuration*fps)} / {Math.round(clipDuration*fps)} frames{" "}

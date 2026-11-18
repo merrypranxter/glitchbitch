@@ -43,7 +43,13 @@ The production output is `dist/`. Serve it with a static web server. WebGL and h
 - The 32 most recent sources are retained. Declarative source IDs, normalized positions, radii, angles, modes, and strengths are saved in the recipe. Coordinates use bottom-left UV; radius is in normalized artwork-height units.
 - Toolbar controls provide a keyboard/mouse alternative to gestures. On phones, artwork stays above collapsible control panels.
 
-Space plays/pauses; Ctrl/Cmd+Z undoes; Shift+Ctrl/Cmd+Z redoes; F enters fullscreen; H toggles Focus mode; ? opens the guide. Native text controls retain their normal keyboard behavior. Reduced-motion preferences pause playback initially.
+Space plays/pauses; Ctrl/Cmd+Z undoes; Shift+Ctrl/Cmd+Z redoes; F enters fullscreen; H toggles Focus mode; ? opens the guide; / or Ctrl/Cmd+K opens **Find a control** (type “scanlines”, “outline”, “kaleidoscope”… and jump straight there). Native text controls retain their normal keyboard behavior. Reduced-motion preferences pause playback initially.
+
+## Finding your way around
+
+- **Sections start collapsed** and remember what you opened. A lime dot on a section header means that effect is currently changing your artwork; each section has its own Reset.
+- **Effects** has quick Bloom / Posterize / Invert pills and filter chips: All, On (only what's active), Glitch, Texture, Light, Depth, Scene.
+- **Text** is one editor for all three layers. Pick a layer chip (1, 2, 3), type, then highlight words: the style bar says exactly what it will style (“Styling “glitch””) before you tap B / I / U / S / AA or a color. Everything else lives in six tabs: Font, Color, Layout, Motion, Blend, Recipes. Recipes and remixes apply to the selected layer.
 
 ## Keep your creations
 

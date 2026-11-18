@@ -687,8 +687,10 @@ test("mobile studio keeps one canvas above resize divider and independent scroll
   assert.match(main,/localStorage\.setItem\("glitch-studio-pane-v1"/);
   assert.match(main,/\["Text", Type\]/);
   assert.match(main,/<TextInspector history=\{history\}/);
-  assert.equal(inspectors.split('title="YOUR WORDS — OPTIONAL QUOTES"').length-1,1);
-  assert.match(inspectors,/export function TextInspector/);
+  const text=readFileSync(new URL("../src/components/TextInspector.jsx",import.meta.url),"utf8");
+  assert.match(inspectors,/export \{ TextInspector \} from "\.\/TextInspector"/);
+  assert.match(text,/export function TextInspector/);
+  assert.equal(text.split('className="text-input"').length-1,1,"One words box drives every text layer");
   assert.match(style,/\.studio-page \.inspector-scroll\{flex:1 1 auto;min-height:0;max-height:none;overflow-y:auto/);
   assert.match(style,/flex:0 0 min\(var\(--canvas-pane-ratio,58%\),calc\(100% - 175px\)\)/);
   assert.match(controls,/aria-expanded=\{expanded\}/);

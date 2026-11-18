@@ -540,7 +540,7 @@ export function createRenderer(canvas) {
       withSubstance = s.substanceAmount>0,
       withPhoton = s.photonAmount>0,
       withTunnel = s.engine===5 || (blended && s.secondaryEngine===5),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? "photon" : "unlit"}/${withWiggle ? "wiggle" : "still"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withWiggle ? "wiggle" : "still"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -570,7 +570,13 @@ export function createRenderer(canvas) {
     source=source.replace("/* SUBSTANCE_MODULE */",withSubstance?substanceGLSL:"");
     source=source.replace("/* SUBSTANCE_POST */",
       withSubstance?"col=livingSubstance(col,uv,p,v);":"");
-    source=source.replace("/* PHOTON_MODULE */",withPhoton?photonGLSL:"");
+    // Specialize to the chosen species: dead branches disappear at compile
+    // time instead of making iPhone GPUs carry all eight architectures.
+    const specializedPhoton = withPhoton
+      ? photonGLSL.replace("uniform int photonSpecies;",
+          "#define photonSpecies "+Math.max(0,photonSpecies.indexOf(s.photonSpecies)))
+      : "";
+    source=source.replace("/* PHOTON_MODULE */",specializedPhoton);
     source=source.replace("/* PHOTON_POST */",withPhoton?"col=livingPhotonZoo(col,uv,p,v);":"");
     source=source.replace("/* MICRO_MODULE */",withMicro?microGLSL:"");
     source=source.replace("/* MICRO_POST */",withMicro?"col=movingMicrostructure(col,p,uv,v);":"");

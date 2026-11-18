@@ -34,7 +34,8 @@ import {
 import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, compositionModes, backdropModes, microModes, substanceModes, wiggleModes } from "../data";
 import { Parameter, Range, Toggle, Switch, Select, Section, Segmented, Pill, useReveal } from "./Controls";
 import { photonSpecies, photonPresets, photonPresetState, nextPhotonSpecies } from "../photon-zoo.js";
-import { filamentSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies } from "../filament-forge.js";
+import { filamentSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies,
+  filamentHybridPresets, applyFilamentHybrid, breedFilaments } from "../filament-forge.js";
 import { sections, sectionActive, effectGroups } from "../ui-index";
 export { TextInspector } from "./TextInspector";
 const icons = [
@@ -205,6 +206,7 @@ export function EffectsInspector({ history }) {
   };
   const [photonPreset,setPhotonPreset]=React.useState(photonPresets[0].name);
   const [filamentPreset,setFilamentPreset]=React.useState(filamentPresets[0].name);
+  const [hybridPreset,setHybridPreset]=React.useState(filamentHybridPresets[0].name);
   // Find jumps to a section that might be filtered out: show everything.
   useReveal((detail) => {
     if (effectSections.some((x) => x.id === detail.id) && filter !== "All") setFilter("All");
@@ -256,7 +258,45 @@ export function EffectsInspector({ history }) {
           Hide threads
         </button>
       </div>
-      <p className="control-note">Presence at 0 leaves your existing art untouched. Shader is optional, and all eight settings travel with saved recipes and exports.</p>
+      <details className="filament-crossbreeder">
+        <summary>🧬 CROSSBREED TWO THREAD SPECIES</summary>
+        <p className="control-note">A second mathematical lace structure shares the canvas with your first. At crossings the threads can pass over and under each other. This does not change your artwork engine or your words.</p>
+        <Select label="Second thread parent" value={s.filamentSecondSpecies}
+          onChange={v=>history.change(x=>({...x,
+            filamentSecondSpecies:v,filamentCrossbreed:Math.max(60,x.filamentCrossbreed),
+            filamentAmount:Math.max(55,x.filamentAmount)}))}>
+          {filamentSpecies.map(name=><option key={name} value={name}>{name}</option>)}
+        </Select>
+        <Parameter label="Second parent presence" name="filamentCrossbreed" history={history}/>
+        <Parameter label="Under / over crossing depth" name="filamentInterlace" history={history}/>
+        <Parameter label="Secondary thread rotation" name="filamentTwist" history={history}/>
+        <Parameter label="Secondary motion phase" name="filamentPhase" history={history}/>
+        <Select label="Hybrid breeding recipe" value={hybridPreset} onChange={setHybridPreset}>
+          {filamentHybridPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>applyFilamentHybrid(x,hybridPreset))}>
+            Spawn hybrid
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>breedFilaments(x))}>
+            <Dices size={13}/> Breed wild
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>({...x,
+              filamentSpecies:x.filamentSecondSpecies,
+              filamentSecondSpecies:x.filamentSpecies}))}>
+            Swap parents
+          </button>
+          <button type="button" className="button secondary"
+            disabled={s.filamentCrossbreed<=0}
+            onClick={()=>history.change(x=>({...x,filamentCrossbreed:0}))}>
+            Unbreed (keep first)
+          </button>
+        </div>
+      </details>
+      <p className="control-note">Presence at 0 leaves existing art untouched. Crossbreed at 0 runs only the original thread shader. Both patterns use the normal PNG/GIF/MP4 renderer.</p>
     </>,
     photon: <>
       <Select label="Species" value={s.photonSpecies}

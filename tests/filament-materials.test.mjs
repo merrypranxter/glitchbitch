@@ -124,7 +124,7 @@ test("Optional surface fallback preserves primary/hybrid geometry when GPU rejec
  assert.match(renderer,/filamentMaterialUnavailable=true/);
  assert.match(renderer,/filamentMaterial:"Original thread",filamentSecondMaterial:"Original thread"/);
  assert.match(renderer,/filamentHybridUnavailable=true/);
- assert.match(renderer,/attempt<14/);
+ assert.match(renderer,/attempt<15/);
  for(const key of filamentMaterialControls)
    assert.ok(renderer.includes('"'+key+'"'),"renderer uniform "+key);
 });

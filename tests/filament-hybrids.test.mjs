@@ -118,7 +118,7 @@ test("Renderer specializes the hybrid shader and disables only hybrid on GPU fai
  assert.match(r,/filamentHybridUnavailable=true/);
  assert.match(r,/\{filamentCrossbreed:0\}/);
  assert.match(r,/hybrid\$\{filamentSpecies\.indexOf\(s\.filamentSecondSpecies\)\}/);
- assert.match(r,/attempt<15/);
+ assert.match(r,/attempt<16/);
 });
 test("Find a Control, undoable presets and section reset expose every hybrid option",()=>{
  const ui=readFileSync(new URL("../src/components/Inspectors.jsx",import.meta.url),"utf8");

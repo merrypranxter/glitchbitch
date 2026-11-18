@@ -78,7 +78,9 @@ test("Shader is optional, compiled per species, with a reversible failure fallba
  assert.match(renderer,/photonUnavailable=true/);
  assert.match(renderer,/\{photonAmount:0\}/);
  assert.match(renderer,/col=livingPhotonZoo\(col,uv,p,v\);/);
- assert.match(inspector,/PHOTON ZOO — EIGHT LIVING OPTICAL CREATURES/);
+ const index=readFileSync(new URL("../src/ui-index.js",import.meta.url),"utf8");
+ assert.match(index,/id: "photon", tab: "Effects", group: "Light", title: "Photon zoo"/);
+ assert.match(inspector,/photon: <>/);
  assert.match(inspector,/Spawn selected sculpture/);
  assert.match(inspector,/New creature, keep art/);
 });

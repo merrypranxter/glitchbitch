@@ -101,7 +101,7 @@ test("Renderer keys stitch-mode programs separately and disables only stitching 
  assert.match(src,/filamentStitchUnavailable=true/);
  assert.match(src,/\{filamentStitchAmount:0\}/);
  assert.match(src,/filamentMaterialUnavailable=true/);
- assert.match(src,/attempt<15/);
+ assert.match(src,/attempt<16/);
  for(const k of filamentStitchControls)assert.ok(src.includes('"'+k+'"'),k+" missing uniform");
 });
 test("Mobile editing UI has stitch presets, Hold Fabric and searchable resets",()=>{

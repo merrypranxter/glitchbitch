@@ -171,7 +171,7 @@ export const filamentStitchPresets=[
   {name:"Witch's loom shuttle",filamentStitchMode:"Loom sweep",
     filamentStitchAmount:94,filamentStitchSpeed:43,
     filamentStitchLength:44,filamentStitchGlow:70},
-  {name:"Pearled running stitch",filamentStitchMode:"Running stitch",
+  {name:"Running stitch pulse",filamentStitchMode:"Running stitch",
     filamentStitchAmount:89,filamentStitchSpeed:77,
     filamentStitchLength:61,filamentStitchGlow:81},
   {name:"Velvet breathing lattice",filamentStitchMode:"Purl breathing",

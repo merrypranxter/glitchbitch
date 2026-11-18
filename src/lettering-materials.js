@@ -106,3 +106,25 @@ export function letteringMaterial(layer = {}, artworkColors = []) {
     pulseAnimation: ["Neon bling","Electric glow","Prism pulse","Heatwave"].includes(preset)
   };
 }
+
+/**
+ * Export-side approximation of the same stacked CSS text-shadow halos used
+ * by LiveTextOverlay. The old Canvas2D exporter collapsed 2–4 neon lights to
+ * one faint shadow *inside* the selected blend operation, making bright
+ * typography turn dark on saturated artwork.
+ *
+ * Parse the existing material's glow definition instead of inventing a
+ * second palette that can drift from the live preview.
+ */
+export function letteringExportGlowLayers(material) {
+  if(!material?.glow || material.glow==="none")return [];
+  const source=String(material.glow).split(",").map(part=>part.trim());
+  const layers=source.map(part=>{
+    const found=part.match(/([0-9]+(?:\.[0-9]+)?)px\s+(#[0-9a-f]{6}(?:[0-9a-f]{2})?)$/i);
+    return found?{blur:Math.max(0,Math.min(64,Number(found[1]))),color:found[2]}:null;
+  }).filter(Boolean).filter(item=>item.blur>0);
+  // Keep a white/cyan highlight, colored aura and wide halo, without drawing
+  // all four shadows for every moving letter on iPhone.
+  if(layers.length<=3)return layers;
+  return [layers[0],layers[Math.floor(layers.length/2)],layers[layers.length-1]];
+}

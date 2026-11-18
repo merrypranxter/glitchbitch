@@ -17,15 +17,37 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     [busy,setBusy]=useState(false),
     [progress,setProgress]=useState(0),
     [error,setError]=useState(""),
+    [proof,setProof]=useState(null),
     [ready,setReady]=useState(null);
-  const controller=useRef(null), mounted=useRef(true);
+  const controller=useRef(null), mounted=useRef(true), proofUrl=useRef(null);
   const capability=videoFormat();
-  useEffect(()=>()=>{mounted.current=false;controller.current?.abort();},[]);
+  useEffect(()=>()=>{mounted.current=false;controller.current?.abort();
+    if(proofUrl.current) URL.revokeObjectURL(proofUrl.current);
+  },[]);
   const size=tab==="Video" ? clipFormat==="mp4"
     ? videoDimensions(ratio,videoSize) : dimensions(ratio,gifSize)
     : dimensions(ratio,longEdge);
   const fps=clipFormat==="gif" ? 15 : frameRate;
   const clipDuration=clipFormat==="gif"?Math.min(duration,10):duration;
+  async function makeProof(){
+    if(busy)return;
+    setBusy(true);setError("");
+    const snapshot={...state,ratio},timeline={...timelineRef.current};
+    try {
+      // This is the SAME compositing function used by the PNG and video
+      // workspace, not a screenshot of the CSS live preview.
+      const blob=await renderImage(snapshot,timeline,480);
+      if(!mounted.current)return;
+      const url=URL.createObjectURL(blob);
+      if(proofUrl.current)URL.revokeObjectURL(proofUrl.current);
+      proofUrl.current=url;
+      setProof({url,ratio,seed:state.seed});
+    }catch(e){
+      if(mounted.current)setError("Export proof could not render: "+e.message);
+    }finally{
+      if(mounted.current)setBusy(false);
+    }
+  }
   async function run() {
     setError("");setProgress(0);setBusy(true);setReady(null);
     if(tab==="Video")controller.current=new AbortController();
@@ -135,7 +157,17 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
           <span>BACKWARD COMPATIBLE WITH OLDER RECIPES</span>
         </div>}
       </fieldset>
-      {error&&<p className="field-error" role="alert">{error}</p>}
+      {tab!=="Recipe"&&<div className="export-proof-panel">
+        <button type="button" className="button secondary" disabled={busy}
+          onClick={makeProof}>See flattened export proof (480px)</button>
+        {proof&&proof.ratio===ratio&&proof.seed===state.seed&&
+          <img src={proof.url}
+            alt="Flattened frame from the actual PNG/GIF/MP4 compositing engine" />}
+        <p className="export-note">Proof uses the export renderer—not the live browser text overlay.
+          Check the color and glow here before posting your GIF or MP4.
+          It's a single frame; animations and feedback may change through the clip.</p>
+      </div>}
+      {error&&<p className="field-error" role="alert">{error}</p>
       {busy&&tab==="Video"&&<div className="record-progress">
         <div><span style={{width:`${progress*100}%`}}/></div>
         <p><i/>{Math.round(progress*clipDuration*fps)} / {Math.round(clipDuration*fps)} frames{" "}

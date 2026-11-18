@@ -1,6 +1,8 @@
-import React, { useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
-import { numericRanges } from "../data";
+import React, { useEffect, useRef, useState } from "react";
+import { ChevronDown, RotateCcw } from "lucide-react";
+import { numericRanges, initial } from "../data";
+import { sectionMeta, sectionActive } from "../ui-index";
+
 export function Range({
   label,
   value,
@@ -88,20 +90,73 @@ export function Parameter({ label, name, history, format }) {
     />
   );
 }
-export function Switch({ label, name, history, note }) {
+/** One switch look for every on/off control in the app. */
+export function Toggle({ label, note, checked, onChange, icon }) {
   return (
     <button
+      type="button"
       className="toggle-row"
       role="switch"
-      aria-checked={history.state[name]}
-      onClick={() => history.change((s) => ({ ...s, [name]: !s[name] }))}
+      aria-checked={Boolean(checked)}
+      onClick={() => onChange(!checked)}
     >
       <span>
+        {icon}
         {label}
         {note && <small>{note}</small>}
       </span>
-      <span className={"switch " + (history.state[name] ? "on" : "")} />
+      <span className={"switch " + (checked ? "on" : "")} />
     </button>
+  );
+}
+export function Switch({ label, name, history, note }) {
+  return (
+    <Toggle
+      label={label}
+      note={note}
+      checked={history.state[name]}
+      onChange={() => history.change((s) => ({ ...s, [name]: !s[name] }))}
+    />
+  );
+}
+/** Pill toggle for compact on/off rows (Bloom · Posterize · Invert). */
+export function Pill({ label, checked, onChange, title }) {
+  return (
+    <button
+      type="button"
+      className={"pill " + (checked ? "on" : "")}
+      aria-pressed={Boolean(checked)}
+      title={title}
+      onClick={() => onChange(!checked)}
+    >
+      <i />
+      {label}
+    </button>
+  );
+}
+/** Segmented control: use instead of a <select> when there are 2–4 choices. */
+export function Segmented({ label, value, options, onChange, className = "" }) {
+  return (
+    <div className={"segmented-field " + className}>
+      {label && <span className="segmented-label">{label}</span>}
+      <div className="segmented" role="radiogroup" aria-label={label}>
+        {options.map((option) => {
+          const [id, text] = Array.isArray(option) ? option : [option, option];
+          return (
+            <button
+              type="button"
+              role="radio"
+              key={id}
+              aria-checked={value === id}
+              className={value === id ? "active" : ""}
+              onClick={() => onChange(id)}
+            >
+              {text}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 export function Select({ label, value, onChange, children }) {
@@ -114,26 +169,125 @@ export function Select({ label, value, onChange, children }) {
     </label>
   );
 }
-export function Section({ title, aside, children, defaultOpen }) {
-  // In the phone editor only the primary section starts expanded.
-  const [expanded,setExpanded]=useState(()=>
-    defaultOpen ?? (
-      typeof window==="undefined" ||
-      !window.matchMedia("(max-width: 980px)").matches ||
-      /THE ENGINE|PALETTE VAULT|BREAK THE SIGNAL|YOUR WORDS|PRIMARY FIELD|YOUR HAND/.test(title)
-    )
+
+// ---- Section: collapsible, remembered, revealable --------------------------
+const OPEN_KEY = "glitch-sections-v2";
+function readOpen() {
+  try {
+    return JSON.parse(localStorage.getItem(OPEN_KEY) || "{}") || {};
+  } catch {
+    return {};
+  }
+}
+function writeOpen(id, open) {
+  try {
+    localStorage.setItem(OPEN_KEY, JSON.stringify({ ...readOpen(), [id]: open }));
+  } catch {
+    /* Private mode: the section still toggles for this session. */
+  }
+}
+let pendingReveal = null;
+/** Ask a section (or text pane) to open, scroll into view and flash. */
+export function requestReveal(detail) {
+  pendingReveal = { ...detail, at: Date.now() };
+  // Two frames: lets the target tab mount before sections look for it.
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() =>
+      window.dispatchEvent(new CustomEvent("glitch:reveal", { detail })),
+    ),
   );
+}
+/** Subscribe to reveal requests; also replays one that arrived before mount. */
+export function useReveal(handler) {
+  const latest = useRef(handler);
+  latest.current = handler;
+  useEffect(() => {
+    if (pendingReveal && Date.now() - pendingReveal.at < 1500)
+      latest.current(pendingReveal);
+    const listen = (e) => latest.current(e.detail);
+    window.addEventListener("glitch:reveal", listen);
+    return () => window.removeEventListener("glitch:reveal", listen);
+  }, []);
+}
+/**
+ * A collapsible group of controls.
+ * - `id` looks up the short title, "is it on?" keys and reset keys in ui-index.
+ * - Open/closed is remembered per section.
+ * - A lime dot shows when the effect is currently affecting the artwork.
+ */
+export function Section({ id, title, aside, children, defaultOpen = false, history }) {
+  const meta = id ? sectionMeta(id) : null;
+  const label = title || meta?.title || id;
+  const key = id || label;
+  const [expanded, setExpanded] = useState(() => {
+    const saved = readOpen()[key];
+    return typeof saved === "boolean" ? saved : defaultOpen;
+  });
+  const [flash, setFlash] = useState(false);
+  const ref = useRef(null);
+  useReveal((detail) => {
+    if (!id || detail.id !== id) return;
+    pendingReveal = null;
+    setExpanded(true);
+    writeOpen(key, true);
+    requestAnimationFrame(() =>
+      ref.current?.scrollIntoView({ block: "start", behavior: "smooth" }),
+    );
+    setFlash(true);
+    setTimeout(() => setFlash(false), 1400);
+  });
+  const active = history && meta ? sectionActive(meta, history.state) : false;
+  const resettable = history && meta?.reset?.length;
+  function toggle() {
+    setExpanded((v) => {
+      writeOpen(key, !v);
+      return !v;
+    });
+  }
   return (
-    <section className={"control-section " + (expanded?"":"is-collapsed")}>
+    <section
+      ref={ref}
+      className={
+        "control-section " + (expanded ? "" : "is-collapsed ") + (flash ? "is-flashing" : "")
+      }
+      data-section={id}
+    >
       <div className="section-heading">
-        <button type="button" className="section-disclosure"
-          aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>
-          <span>{title}</span>
-          <ChevronDown size={15} className={expanded?"expanded":""}/>
+        <button
+          type="button"
+          className="section-disclosure"
+          aria-expanded={expanded}
+          onClick={toggle}
+        >
+          <span className="section-title">
+            {label}
+            {active && <i className="on-dot" title="Currently affecting your artwork" />}
+          </span>
+          <ChevronDown size={15} className={expanded ? "expanded" : ""} />
         </button>
         {aside}
       </div>
-      {expanded&&<div className="section-body">{children}</div>}
+      {expanded && (
+        <div className="section-body">
+          {meta?.hint && <p className="section-hint">{meta.hint}</p>}
+          {children}
+          {resettable && (
+            <button
+              type="button"
+              className="reset-link"
+              onClick={() =>
+                history.change((s) => {
+                  const next = { ...s };
+                  for (const k of meta.reset) if (initial[k] !== undefined) next[k] = initial[k];
+                  return next;
+                })
+              }
+            >
+              <RotateCcw size={11} /> Reset {label.toLowerCase()}
+            </button>
+          )}
+        </div>
+      )}
     </section>
   );
 }

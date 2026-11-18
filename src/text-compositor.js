@@ -5,8 +5,9 @@
  */
 import { glyphCanvas } from "./kinetic-type.js";
 import { ensureRetroFontLoaded, retroFontRevision } from "./retro-fonts.js";
-import { letteringMaterial, textMotion, letteringExportGlowLayers } from "./lettering-materials.js";
+import { letteringMaterial, textMotion, letteringExportGlowLayers, letteringExportColorFilter } from "./lettering-materials.js";
 import { createLetteringHalo } from "./lettering-halo.js";
+import { canvasImageFiltersWork, fallbackMaterialFilter, bakeTextCanvasFilter } from "./lettering-filter-fallback.js";
 import { getLetteringBlendRecipe, letteringBlendPulse } from "./lettering-blends.js";
 import { createLetteringSprites } from "./lettering-sprites.js";
 import { letteringMotionCombinedAt, letteringLiquidAt, letteringComposeGlyph,
@@ -66,7 +67,7 @@ function glyphFor(layer, aspect, artworkPalette) {
     }
   }
   const entry = {image,material,style,tints:new Map(),sprites:undefined,spriteTints:new Map(),
-    staticHalo:undefined,spriteHalos:undefined};
+    staticHalo:undefined,spriteHalos:undefined,cpuCanvases:new WeakMap()};
   glyphCache.set(key,entry);
   while(glyphCache.size>LIMIT)glyphCache.delete(glyphCache.keys().next().value);
   return entry;
@@ -83,6 +84,23 @@ function tint(entry,color) {
   c.globalCompositeOperation="source-over";
   entry.tints.set(color,image);
   return image;
+}
+function filteredLetteringImage(entry,source,filter){
+ if(!source||!filter||filter==="none")return source;
+ let cached=entry.cpuCanvases.get(source);
+ if(!cached){cached=new Map();entry.cpuCanvases.set(source,cached);}
+ if(cached.has(filter))return cached.get(filter);
+ const output=bakeTextCanvasFilter(source,filter);
+ if(output===source)return source;
+ // Do not retain a whole animation's worth of offscreen canvases.
+ if(cached.size>=2){
+   const oldest=cached.keys().next().value;
+   const unused=cached.get(oldest);
+   if(unused&&unused!==source)unused.width=unused.height=1;
+   cached.delete(oldest);
+ }
+ cached.set(filter,output);
+ return output;
 }
 function tintedSpriteImages(entry,color) {
  if(entry.spriteTints.has(color))return entry.spriteTints.get(color);
@@ -154,6 +172,9 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
        :null;
    }
    const intensity=blend.mode==="Normal"?0:blend.strength;
+   const previewColorFilter=blend.foundation?letteringExportColorFilter(material,seconds):"none";
+   const useCpuFilters=blend.foundation && !canvasImageFiltersWork();
+   const cpuMaterialFilter=useCpuFilters?fallbackMaterialFilter(material):"";
 
    ctx.save();
    ctx.translate(positionX+whole.dx,positionY+whole.dy);
@@ -183,7 +204,9 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
          ctx.rotate(pose.rotation*Math.PI/180);
          if(pose.skewX)ctx.transform(1,0,Math.tan(pose.skewX*Math.PI/180),1,0,0);
          ctx.scale(pose.scaleX,pose.scaleY);
-         const sprite=options.halo?entry.spriteHalos?.[i]:colored?.[i]||item.image;
+         const original=options.halo?entry.spriteHalos?.[i]:colored?.[i]||item.image;
+         const sprite=options.cpuFilter
+           ?filteredLetteringImage(entry,original,options.cpuFilter):original;
          if(!sprite){ctx.restore();continue;}
          const sw=sprite.width*ratioX*item.widthScale,sh=sprite.height*ratioY;
          ctx.drawImage(sprite,-sw/2,-sh/2,sw,sh);
@@ -197,7 +220,9 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
          ctx.transform(1,0,.13*wobble,1,0,0);
          ctx.rotate(.045*wobble);
        }
-       const source=options.halo?entry.staticHalo:options.tint?tint(entry,options.tint):image;
+       const unfiltered=options.halo?entry.staticHalo:options.tint?tint(entry,options.tint):image;
+       const source=options.cpuFilter
+         ?filteredLetteringImage(entry,unfiltered,options.cpuFilter):unfiltered;
        if(!source){ctx.restore();return;}
        ctx.drawImage(source,-width/2+Number(options.dx||0)/Math.max(.05,factorX*whole.scaleX),
          -height/2+Number(options.dy||0)/Math.max(.05,factorY*whole.scaleY),width,height);
@@ -209,9 +234,30 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
      ctx.save();
      ctx.globalCompositeOperation=recipe.canvasBlend||"source-over";
      ctx.globalAlpha=opacity*amount*letteringBlendPulse(recipe.animation,seconds);
-     if(recipe.filter && recipe.filter!=="none"&&typeof ctx.filter==="string")
-       ctx.filter=recipe.filter;
-     if(!recipe.whiteInk && !opts.extra && !opts.tint){
+     // Live CSS applies the selected blend to BOTH the glyph and its shadow.
+     // The first two blend families previously used Screen for every halo:
+     // their actual Multiply/Difference/Burn effect was hidden by a pale
+     // brightening veil. Keep the optical halo INSIDE each main blend pass.
+     const originalFace=!recipe.whiteInk && !opts.extra && !opts.tint;
+     const paintFoundationHalo=blend.foundation && originalFace && glowLayers.length>0;
+     const recipeFilter=recipe.filter&&recipe.filter!=="none"?recipe.filter:"";
+     const mergedFilter=blend.foundation && originalFace && previewColorFilter!=="none"
+       ? [recipeFilter,previewColorFilter].filter(Boolean).join(" "):recipeFilter;
+     if(mergedFilter && !useCpuFilters && typeof ctx.filter==="string")
+       ctx.filter=mergedFilter;
+     // Safari often exposes no working Canvas2D.filter, even when CSS
+     // filter works in the live preview. Bake static color energy into
+     // the cached glyph atlas once; never run getImageData every MP4 frame.
+     const cpuFilter=useCpuFilters
+       ? [recipeFilter,originalFace?cpuMaterialFilter:""].filter(Boolean).join(" ")
+       : "";
+     if(paintFoundationHalo){
+       ctx.save();
+       // Glow and its letter face get the same actual Canvas blend.
+       paintShape({halo:true,cpuFilter});
+       ctx.restore();
+     }
+     if(originalFace){
        for(const echo of material.echoes){
          ctx.save();ctx.globalAlpha*=echo.alpha;
          paintShape({tint:echo.color,dx:echo.x*width/430,dy:echo.y*height/430});
@@ -221,21 +267,24 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
          ctx.shadowColor="#0a051b";ctx.shadowBlur=Math.min(50,12*width/430);
          ctx.shadowOffsetX=7*width/430;ctx.shadowOffsetY=9*height/430;
        }
-       if(material.hueAnimation&&typeof ctx.filter==="string")
+       // Existing enhanced/experimental styles are intentionally unchanged.
+       if(!blend.foundation && material.hueAnimation && typeof ctx.filter==="string")
          ctx.filter=(recipe.filter&&recipe.filter!=="none"?recipe.filter+" ":"")+
            "hue-rotate("+(28*Math.sin(seconds*2.1)).toFixed(1)+"deg) saturate(1.35)";
      }
      const shiftX=Number(opts.offsetX||0)*width/430;
      const shiftY=Number(opts.offsetY||0)*height/430;
      ctx.translate(shiftX/Math.max(.05,factorX*whole.scaleX),shiftY/Math.max(.05,factorY*whole.scaleY));
-     paintShape({tint:recipe.whiteInk?"#ffffff":opts.tint});
+     paintShape({tint:recipe.whiteInk?"#ffffff":opts.tint,cpuFilter});
      ctx.restore();
    }
    // Paint ONLY the halo beyond the glyph outline. It goes underneath
    // the selected letter face and blending, exactly as CSS text-shadow does.
    // The old implementation painted three bright opaque glyph copies OVER
    // Difference/Multiply and the user's gradients, making exports look white.
-   if(glowLayers.length){
+   if(glowLayers.length && !blend.foundation){
+     // The advanced/experimental blend families were already matching
+     // their preview. Preserve their optical behavior unchanged.
      ctx.save();
      ctx.globalCompositeOperation="screen";
      ctx.globalAlpha=opacity*(material.pulseAnimation

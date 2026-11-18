@@ -128,3 +128,34 @@ export function letteringExportGlowLayers(material) {
   if(layers.length<=3)return layers;
   return [layers[0],layers[Math.floor(layers.length/2)],layers[layers.length-1]];
 }
+
+/**
+ * The live DOM overlay animates brightness + saturation on its ink face.
+ * The ordinary Canvas exporter previously kept only a weak hue-rotate,
+ * so native/first-two-group blends looked pale beside the preview.
+ * Evaluate CSS-like keyframes from the export's deterministic text clock.
+ * This is applied ONLY to the classic and Add/Subtract blend families
+ * while preserving the already-working experimental render recipes.
+ */
+export function letteringExportColorFilter(material,seconds=0) {
+  if(!material?.hueAnimation && !material?.pulseAnimation)return "none";
+  const t=Math.max(0,Number(seconds)||0);
+  const spectral=Boolean(material.hueAnimation); // Matches live overlay precedence.
+  const duration=spectral?3.3:1.85;
+  const fraction=(t/duration)%2;
+  const forward=fraction<=1?fraction:2-fraction;
+  const frames=spectral
+    ? [[0,1,1.2],[.5,1.36,1.7],[1,1.08,1.4]]
+    : [[0,1,1],[.48,1.6,1.7],[1,1.08,1.3]];
+  let left=frames[0],right=frames[1];
+  if(forward>frames[1][0]){left=frames[1];right=frames[2];}
+  const raw=Math.max(0,Math.min(1,(forward-left[0])/(right[0]-left[0])));
+  const eased=.5-.5*Math.cos(Math.PI*raw);
+  const brightness=left[1]+(right[1]-left[1])*eased;
+  const saturation=left[2]+(right[2]-left[2])*eased;
+  // CSS's animated background-position cannot move a Canvas2D gradient
+  // cheaply on iPhone. Gently rotate its color wheel instead.
+  const hue=spectral?Math.round(12*Math.sin(t*1.24)):0;
+  return `brightness(${brightness.toFixed(3)}) saturate(${saturation.toFixed(3)})`+
+    (hue?` hue-rotate(${hue}deg)`:"");
+}

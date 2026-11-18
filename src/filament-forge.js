@@ -377,6 +377,7 @@ vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
   float tuck=filamentInterlace*contact*(1.0-alternating);
   second=mix(second,first*.82,tuck*.88);
   vec3 crossed=mix(first,second,filamentCrossbreed);
+#ifdef FILAMENT_FIBER_DETAIL
   if(filamentBeads>.001){
     // Extra knots exactly where the two genuine thread cores meet.
     float node=pow(clamp(contact,0.0,1.0),.6)*
@@ -384,6 +385,7 @@ vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
     crossed=mix(crossed,crossed*.72+vec3(.8,.89,1.0)*.63,
       clamp(node*.6,0.0,.7));
   }
+#endif
   return clamp(crossed,0.0,1.6);
 #else
   // Compiled-out secondary layer: original single-thread performance.

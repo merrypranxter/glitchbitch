@@ -53,25 +53,67 @@ export function nextFilamentSpecies(state,rng=Math.random){
   return {...state,filamentSpecies:others[index],filamentAmount:Math.max(55,state.filamentAmount||0)};
 }
 
+/** Two parents produce one optical fabric; no base-art parameters are touched. */
+export const filamentHybridPresets = [
+  {name:"Cathedral circuit lace",first:"Poincaré crochet",second:"Truchet knotwork",
+    filamentAmount:94,filamentCrossbreed:88,filamentInterlace:80,filamentTwist:12,filamentPhase:23},
+  {name:"Quasicrystal cell garden",first:"Fivefold brocade",second:"Voronoi lace",
+    filamentAmount:95,filamentCrossbreed:82,filamentInterlace:74,filamentTwist:21,filamentPhase:44},
+  {name:"Living nervous embroidery",first:"Fractal veinwork",second:"Spiral appliqué",
+    filamentAmount:91,filamentCrossbreed:90,filamentInterlace:63,filamentTwist:43,filamentPhase:76},
+  {name:"Alien bridal knot",first:"Truchet knotwork",second:"Fivefold brocade",
+    filamentAmount:92,filamentCrossbreed:77,filamentInterlace:93,filamentTwist:33,filamentPhase:55},
+  {name:"Psychedelic cellular crochet",first:"Voronoi lace",second:"Poincaré crochet",
+    filamentAmount:89,filamentCrossbreed:85,filamentInterlace:87,filamentTwist:14,filamentPhase:68},
+  {name:"Spiral crown mycelium",first:"Spiral appliqué",second:"Fractal veinwork",
+    filamentAmount:96,filamentCrossbreed:91,filamentInterlace:51,filamentTwist:62,filamentPhase:37},
+];
+export const filamentHybridControls=[
+  "filamentCrossbreed","filamentInterlace","filamentTwist","filamentPhase"
+];
+export function applyFilamentHybrid(state,name){
+ const p=filamentHybridPresets.find(x=>x.name===name);
+ if(!p)return state;
+ const {name:label,first,second,...controls}=p;
+ return {...state,filamentSpecies:first,filamentSecondSpecies:second,...controls};
+}
+export function breedFilaments(state,rng=Math.random){
+ const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(.999999,n)):0;};
+ const choices=filamentSpecies.filter(x=>x!==state.filamentSpecies);
+ const first=choices[Math.floor(unit()*choices.length)];
+ const other=filamentSpecies.filter(x=>x!==first);
+ const second=other[Math.floor(unit()*other.length)];
+ return {...state,filamentSpecies:first,filamentSecondSpecies:second,
+   filamentAmount:Math.max(55,state.filamentAmount||0),
+   filamentCrossbreed:52+unit()*46,filamentInterlace:34+unit()*64,
+   filamentTwist:unit()*100,filamentPhase:unit()*100};
+}
+
 export const filamentGLSL = `
 // Independent structural geometry with stitched, shaded filament ribbons.
 uniform int filamentSpecies;
+uniform int filamentSecondSpecies;
+uniform float filamentCrossbreed,filamentInterlace,filamentTwist,filamentPhase;
 uniform float filamentAmount,filamentScale,filamentDensity,filamentMotion;
 uniform float filamentWidth,filamentRelief,filamentHue,filamentVariation;
 
-vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
-  if(filamentAmount<.001)return background;
-  float t=time*(.14+filamentMotion*.72);
-  float ct=colorTime*.12;
+vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
+    int species,float phaseOffset,float twist,out float maskCore){
+  float t=time*(.14+filamentMotion*.72)+phaseOffset;
+  float ct=colorTime*.12+phaseOffset*.18;
   float freq=3.0+filamentScale*11.0;
   // Artboard UVs are aspect-correct and do not inherit the base engine's
   // kaleidoscope warp. The field modulates color and local movement instead.
-  vec2 q=(uv-.5)*vec2(res.x/res.y,1.0)*freq;
+  vec2 aspect=vec2(res.x/res.y,1.0);
+  vec2 centered=(uv-.5)*aspect;
+  vec2 rotated=mat2(cos(twist),-sin(twist),sin(twist),cos(twist))*centered;
+  vec2 localUV=.5+rotated/aspect;
+  vec2 q=rotated*freq;
   q+=.14*filamentMotion*vec2(sin(q.y*.81+t*.53),cos(q.x*.93-t*.44));
   float density=filamentDensity;
-  float seedPhase=filamentVariation*6.28318+seed*.000013;
+  float seedPhase=filamentVariation*6.28318+seed*.000013+phaseOffset*.61;
   float threadD=1.0,phase=0.0,mask=1.0,highlight=0.0;
-  if(filamentSpecies==0){
+  if(species==0){
     // Two five-axis quasiperiodic thread families, never a repeating tile.
     float a=0.0,b=0.0;
     for(int i=0;i<5;i++){
@@ -88,9 +130,9 @@ vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
     threadD*=.095;
     phase=a*2.4+b*1.8;
     highlight=.5+.5*sin(a*10.0+b*9.0+t*.6);
-  }else if(filamentSpecies==1){
+  }else if(species==1){
     // Poincaré-disk metric: rings contract visually toward the boundary.
-    vec2 z=(uv-.5)*vec2(res.x/res.y,1.0)*(1.25+filamentScale*1.05);
+    vec2 z=(localUV-.5)*vec2(res.x/res.y,1.0)*(1.25+filamentScale*1.05);
     z+=.065*filamentMotion*vec2(sin(t*.36),cos(t*.32));
     float r=length(z);
     float safeR=min(r,.978);
@@ -104,7 +146,7 @@ vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
     mask=1.0-smoothstep(.82,.975,r);
     phase=radial*.19+a*.7;
     highlight=.5+.5*cos(radial*.8-a*sectors*.4);
-  }else if(filamentSpecies==2){
+  }else if(species==2){
     // Two arc threads through each deterministic Truchet tile.
     vec2 stitchQ=q*(.72+density*1.35);
     vec2 cell=floor(stitchQ),local=fract(stitchQ);
@@ -121,7 +163,7 @@ vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
     threadD=min(threadD,abs(min(arcA,arcB)-.12)*.73);
     phase=hash(cell)*1.3+local.x*.4+local.y*.3;
     highlight=.5+.5*cos((local.x+local.y)*6.28+t*.54);
-  }else if(filamentSpecies==3){
+  }else if(species==3){
     // Moving Voronoi stitch boundaries, plus a small stitched rosette in cells.
     vec2 cell=floor(q),local=fract(q);
     float nearD=5.0,secondD=5.0,chosen=0.0;
@@ -141,7 +183,7 @@ vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
     threadD=min(border*.53,beaded+.018);
     phase=chosen+nearD*.62+fieldV*.13;
     highlight=.5+.5*cos(nearD*13.0+t*.43);
-  }else if(filamentSpecies==4){
+  }else if(species==4){
     // Independent logarithmic curls inside repeatable embroidery hoops.
     vec2 cell=floor(q),local=fract(q)-.5;
     float rand=hash(cell+seedPhase);
@@ -175,6 +217,7 @@ vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
   float aa=max(.005,1.2*freq/min(res.x,res.y));
   float width=.009+filamentWidth*.070;
   float core=(1.0-smoothstep(width,width+aa,threadD))*mask;
+  maskCore=core;
   float halo=(1.0-smoothstep(width*2.0,width*5.5+aa,threadD))*mask;
   float edge=(1.0-smoothstep(width*.5,width*2.5+aa,abs(threadD-width*1.25)))*mask;
   float pigmentPhase=fract(phase*.17+filamentHue*.88+seedPhase*.047+
@@ -188,5 +231,27 @@ vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
   result+=glimmer*halo*amount*(.045+.115*filamentRelief);
   result+=vec3(.89,.95,1.0)*edge*amount*filamentRelief*.11;
   return clamp(result,0.0,1.6);
+}
+vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
+  if(filamentAmount<.001)return background;
+  float firstCore=0.0;
+  vec3 first=filamentField(background,uv,fieldP,fieldV,filamentSpecies,0.0,0.0,firstCore);
+#ifdef FILAMENT_HYBRID
+  if(filamentCrossbreed<.001)return first;
+  float secondCore=0.0;
+  vec3 second=filamentField(first,uv,fieldP,fieldV,filamentSecondSpecies,
+    filamentPhase*6.2831853,filamentTwist*6.2831853,secondCore);
+  // True under/over crossings: only where two threads overlap. Different
+  // paths remain distinct rather than dissolving into a flat opacity mix.
+  float contact=clamp(firstCore*secondCore,0.0,1.0);
+  float alternating=step(0.0,sin((uv.x*res.x+uv.y*res.y)*.053+
+    seed*.000021+filamentPhase*6.2831853+time*.07));
+  float tuck=filamentInterlace*contact*(1.0-alternating);
+  second=mix(second,first*.82,tuck*.88);
+  return clamp(mix(first,second,filamentCrossbreed),0.0,1.6);
+#else
+  // Compiled-out secondary layer: original single-thread performance.
+  return first;
+#endif
 }
 `;

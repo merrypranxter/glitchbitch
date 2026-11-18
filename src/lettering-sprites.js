@@ -4,6 +4,7 @@
  * Canvas lettering compositor. Never slices glyphs into horizontal strips.
  */
 import { layoutLettering, richCanvasFont, drawLetteringDecoration } from "./lettering-layout.js";
+import { formattedGlyphInk } from "./text-formatting.js";
 
 const colorRE=/^#[0-9a-f]{6}$/i;
 export function createLetteringSprites(text,aspect=1,fontId="original",style={},limit=180){
@@ -51,7 +52,7 @@ export function createLetteringSprites(text,aspect=1,fontId="original",style={},
      ctx.lineWidth=2*totals[j];
      ctx.strokeText(glyph.display,localX,localY);
    }
-   ctx.fillStyle=ink;
+   ctx.fillStyle=formattedGlyphInk(glyph.format,glyph.index,ink);
    ctx.fillText(glyph.display,localX,localY);
    drawLetteringDecoration(ctx,glyph,fontSize,localX,localY);
    sprites.push({char:glyph.char,index:i,total:glyphs.length,

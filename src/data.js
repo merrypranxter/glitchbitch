@@ -548,9 +548,11 @@ export function validateRecipe(input) {
           if(!run||!Number.isInteger(run.start)||!Number.isInteger(run.end)||
             run.start<0||run.end>layer.text.length||run.end<=run.start)
             throw Error("Invalid layer text format range.");
-          for(const field of ["bold","italic","underline","strike","caps"])
+          for(const field of ["bold","italic","underline","strike","caps","rainbow"])
             if(run[field]!==undefined&&typeof run[field]!=="boolean")
               throw Error("Invalid layer text format property.");
+          if(run.ink!==undefined && (typeof run.ink!=="string"||!colorRE.test(run.ink)))
+            throw Error("Invalid layer text ink color.");
         }
       }
       out.letteringFormats=normalizeTextFormats(layer.text,layer.letteringFormats);
@@ -578,9 +580,11 @@ export function validateRecipe(input) {
       if(!run||!Number.isInteger(run.start)||!Number.isInteger(run.end)||
         run.start<0||run.end>String(x.lettering||"").length||run.end<=run.start)
         throw Error("Invalid rich text range.");
-      for(const field of ["bold","italic","underline","strike","caps"])
+      for(const field of ["bold","italic","underline","strike","caps","rainbow"])
         if(run[field]!==undefined && typeof run[field]!=="boolean")
           throw Error("Invalid rich text property.");
+      if(run.ink!==undefined && (typeof run.ink!=="string"||!colorRE.test(run.ink)))
+        throw Error("Invalid rich text ink color.");
     }
     s.letteringFormats=normalizeTextFormats(String(x.lettering||""),x.letteringFormats);
   }

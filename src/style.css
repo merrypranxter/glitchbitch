@@ -3035,3 +3035,23 @@ footer > span:last-child svg {
 
 /* Keep the per-layer word-formatting toolbar full width in the compact editor. */
 .retro-type-actions>.word-style-toolbar{flex-basis:100%;width:100%;}
+
+/* Per-word custom ink chips: compact enough for phone editor. */
+.word-ink-toolbar {
+  display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  width:100%;min-width:0;margin:5px 0 10px;
+}
+.word-ink-swatches {
+  display:flex;align-items:center;gap:5px;flex-wrap:wrap;
+  width:100%;
+}
+.word-ink-swatch {
+  width:30px;height:30px;min-width:30px;border:2px solid #676372;
+  border-radius:9px;cursor:pointer;padding:0;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.25);
+}
+.word-ink-swatch:focus-visible { outline:3px solid #fff;outline-offset:2px; }
+.word-ink-picker { flex:1 1 145px;min-width:130px; }
+.word-ink-picker input[type="color"] { width:52px;min-height:35px; }
+.word-ink-toolbar>.button { flex:1 1 125px;min-height:40px; }
+.retro-type-actions>.word-ink-toolbar { flex-basis:100%; }

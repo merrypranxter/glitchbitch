@@ -32,7 +32,8 @@ import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, le
 import { Parameter, Range, Switch, Select, Section } from "./Controls";
 import { letteringBlendGroups, letteringBlendModes } from "../lettering-blends.js";
 import { letteringMotionGroups } from "../lettering-motion.js";
-import { textFormatTools, toggleTextFormat, rebaseTextFormats, textStyleAt, wordSelection } from "../text-formatting.js";
+import { textFormatTools, toggleTextFormat, rebaseTextFormats, textStyleAt, wordSelection,
+  setTextInk, setTextRainbow, clearTextInk } from "../text-formatting.js";
 import { textChoreographyGroups, textChoreographies, applyTextChoreography,
   remixTextChoreography, mutateTextChoreography } from "../text-choreographies.js";
 import { retroFonts, retroFontGroups, getRetroFont, ensureRetroFontLoaded } from "../retro-fonts";
@@ -208,6 +209,25 @@ function WordStyleToolbar({text,formats,selection,onToggle}){
     </button>)}
   </div>;
 }
+const wordInkSwatches=["#ff32bc","#00ebff","#c2ff29","#ffea3b","#9357ff","#ff6a2d","#ffffff","#08020c"];
+function WordInkToolbar({onInk,onRainbow,onClear}){
+  const [chosen,setChosen]=React.useState("#ff32bc");
+  return <div className="word-ink-toolbar" role="group" aria-label="Color the highlighted word or phrase">
+    <div className="word-ink-swatches">
+      {wordInkSwatches.map(color=><button type="button" key={color}
+        className="word-ink-swatch" style={{background:color}}
+        aria-label={"Paint selected word "+color}
+        title={"Paint selected word "+color} onClick={()=>{setChosen(color);onInk(color)}}/>)}
+    </div>
+    <label className="select-field word-ink-picker">
+      <span>Custom word color</span>
+      <input type="color" value={chosen} aria-label="Custom color for selected words"
+        onChange={event=>{setChosen(event.target.value);onInk(event.target.value)}}/>
+    </label>
+    <button type="button" className="button secondary" onClick={onRainbow}>🌈 Rainbow selected words</button>
+    <button type="button" className="button secondary" onClick={onClear}>Clear word color</button>
+  </div>;
+}
 export function TextInspector({ history }) {
   const [fontError,setFontError]=React.useState("");
   const textSelection=React.useRef({start:0,end:0});
@@ -254,12 +274,21 @@ export function TextInspector({ history }) {
             letteringFormats:toggleTextFormat(s.lettering,s.letteringFormats,
               textSelection.current.start,textSelection.current.end,key)
           }))}/>
+        <WordInkToolbar
+          onInk={color=>history.change(s=>({...s,letteringFormats:setTextInk(s.lettering,
+            s.letteringFormats,textSelection.current.start,textSelection.current.end,color)}))}
+          onRainbow={()=>history.change(s=>({...s,letteringFormats:setTextRainbow(s.lettering,
+            s.letteringFormats,textSelection.current.start,textSelection.current.end)}))}
+          onClear={()=>history.change(s=>({...s,letteringFormats:clearTextInk(s.lettering,
+            s.letteringFormats,textSelection.current.start,textSelection.current.end)}))}
+        />
+        <p className="control-note">Select a word or phrase and paint it with a neon swatch, any custom color, or rainbow lettering. Clear word color restores your original layer material without touching bold, italic or other styles.</p>
         <p className="control-note">Highlight a word or phrase, then tap B, I, U, S or AA. Without a highlight, the word under your cursor changes. Tap again to remove the style. AA changes appearance without rewriting the original words. The typing box remains plain text; styling appears on the artwork and in exports.</p>
         <Parameter label="Letter spacing (tracking)" name="letteringTracking" history={history}
           format={v=>`${v>0?"+":""}${Math.round(v)}%`}/>
         <Parameter label="Line spacing (leading)" name="letteringLineSpacing" history={history}/>
         <div className="text-engine-status" role="status">
-          TEXT ENGINE: DOM v8 · WORD STYLES + SPACING · {history.state.lettering.trim().length} characters ·
+          TEXT ENGINE: DOM v9 · WORD INK + RAINBOW · {history.state.lettering.trim().length} characters ·
           opacity {history.state.letteringAmount ?? 0}%
         </div>
         <button type="button" className="button secondary"
@@ -377,6 +406,20 @@ export function TextInspector({ history }) {
                       layerSelection(x.id).current.start,layerSelection(x.id).current.end,key)
                   }:x)
                 }))}/>
+              <WordInkToolbar
+                onInk={color=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{
+                  ...x,letteringFormats:setTextInk(x.text,x.letteringFormats,
+                    layerSelection(x.id).current.start,layerSelection(x.id).current.end,color)
+                }:x)}))}
+                onRainbow={()=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{
+                  ...x,letteringFormats:setTextRainbow(x.text,x.letteringFormats,
+                    layerSelection(x.id).current.start,layerSelection(x.id).current.end)
+                }:x)}))}
+                onClear={()=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{
+                  ...x,letteringFormats:clearTextInk(x.text,x.letteringFormats,
+                    layerSelection(x.id).current.start,layerSelection(x.id).current.end)
+                }:x)}))}
+              />
               <label>Visible <input type="checkbox" checked={layer.visible}
                 onChange={e=>history.change(s=>({...s,letteringLayers:s.letteringLayers.map((x,i)=>i===index?{...x,visible:e.target.checked}:x)}))}/></label>
               <Select label="Font" value={layer.letteringFont}

@@ -43,7 +43,7 @@ export function applyFilamentPreset(state,name){
   const recipe=filamentPresets.find(p=>p.name===name);
   if(!recipe)return state;
   const {name:unused,species,...controls}=recipe;
-  return {...state,filamentSpecies:species,...controls};
+  return {...state,filamentSpecies:species,...controls,filamentCrossbreed:0};
 }
 
 export function nextFilamentSpecies(state,rng=Math.random){

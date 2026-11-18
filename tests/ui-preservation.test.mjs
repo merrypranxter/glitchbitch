@@ -19,9 +19,9 @@ const exp=read("components/ExportDialog.jsx");
 test("Claude UI preserves every old numeric art/text parameter",()=>{
  const names=`afterimage backdropAmount backdropDensity backdropDepth backdropGlow backdropHue
   backdropMotion backdropVariation bioAmount bioFeed bioKill bioSpeed bioVeins blend block
-  broadcast complexity compositionAmount compositionColorShift compositionFeather
+  brightness broadcast colorAmount colorOffset colorRepeat colorSpeed complexity compositionAmount compositionColorShift compositionFeather
   compositionMotion compositionScale compositionVariation datamosh dither filmAmount
-  filmThickness foilMotion foilRelief fractalZoom freezeGeometry glitch glitter grain
+  filmThickness foilMotion foilRelief fractalZoom freezeGeometry freezeColor glitch glitter grain
   hyperbolicFold juliaMix letteringAmount letteringBlendStrength letteringCurve
   letteringGradientAngle letteringLineSpacing letteringMotion letteringMotionMix
   letteringMotionSpeed letteringMotionStagger letteringRotation letteringScale
@@ -30,7 +30,7 @@ test("Claude UI preserves every old numeric art/text parameter",()=>{
   microMotion microRelief microScale microVariation mirror misregister motionAmount
   motionRate opalAmount phosphor photonAmount photonDensity photonHue photonMotion
   photonRelief photonScale photonVariation pixel prismAmount quasiDensity radius riso
-  rotation scale scan speed split stereoAmount stereoDepth stereoGlow stereoMorph
+  rotation saturation scale scan speed split stereoAmount stereoDepth stereoGlow stereoMorph
   stereoParallax stereoQuality stereoWiggle strength substanceAmount substanceEdge
   substanceHue substanceMotion substanceRelief substanceScale substanceVariation
   symmetry tunnelAperture tunnelDepth tunnelPulse tunnelRidges tunnelTwist
@@ -38,7 +38,9 @@ test("Claude UI preserves every old numeric art/text parameter",()=>{
   windowCascade`.split(/\s+/).filter(Boolean);
  const all=inspector+"\n"+colors+"\n"+textUI;
  for(const name of names){
-  assert.ok(Object.hasOwn(numericRanges,name),name+" has a numeric range");
+  if(["freezeGeometry","freezeColor","mirror"].includes(name))
+   assert.equal(typeof initial[name],"boolean",name+" has a boolean default");
+  else assert.ok(Object.hasOwn(numericRanges,name),name+" has a numeric range");
   assert.ok(all.includes('name="'+name+'"'),name+" remains editable");
  }
  for(const k of ["bloom","posterize","invert"]){

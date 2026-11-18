@@ -27,6 +27,20 @@ export const filamentMaterialControls=[
   "filamentSecondHue"
 ];
 
+export function remixFilamentMaterials(state,rng=Math.random){
+  const pick=old=>{
+    const possibilities=filamentMaterials.filter(x=>x!==old);
+    const number=Number(rng());
+    return possibilities[Math.floor(Math.max(0,Math.min(.999999,Number.isFinite(number)?number:0))*possibilities.length)];
+  };
+  return {...state,filamentMaterial:pick(state.filamentMaterial),
+    filamentSecondMaterial:pick(state.filamentSecondMaterial),
+    filamentNap:Math.max(10,Math.min(100,Number(rng())*100||0)),
+    filamentLuster:35+Math.min(.999999,Math.max(0,Number(rng())||0))*65,
+    filamentBeads:Math.min(100,Math.max(0,Number(rng())*100||0)),
+    filamentAmount:Math.max(50,state.filamentAmount||0)};
+}
+
 export const filamentMaterialPresets=[
   {name:"Silk cathedral",filamentMaterial:"Iridescent silk",
     filamentSecondMaterial:"Molten chrome",filamentNap:16,
@@ -276,6 +290,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   // Raised fibers are described in thread-local coordinates, so relief,
   // anisotropic light, and fraying move WITH the stitch rather than sliding
   // over the finished picture as a separate texture.
+#ifdef FILAMENT_FIBER_DETAIL
   float luster=filamentLuster;
   float nap=filamentNap;
   float across=clamp(threadD/max(width,.002),0.0,2.0);
@@ -325,10 +340,12 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float pearl=pow(max(0.0,.5+.5*cos(phase*beadPeriod+
     q.x*.3+seedPhase*.17)),mix(24.0,9.0,filamentBeadSize));
   float bead=filamentBeads*pearl*pow(max(0.0,core),1.4)*filamentAmount;
+#endif
   float amount=filamentAmount;
   vec3 result=mix(background,background*.48+thread*1.06,core*amount*.91);
   result+=glimmer*halo*amount*(.045+.115*filamentRelief);
   result+=vec3(.89,.95,1.0)*edge*amount*filamentRelief*.11;
+#ifdef FILAMENT_FIBER_DETAIL
   result+=thread*fray*.36+glimmer*halo*amount*extraHalo;
   if(filamentBeads>.001){
     // Rounded bead interior, tiny directional white highlight, dark
@@ -337,6 +354,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     result=mix(result,pearlColor*.68,bead*.65);
     result+=vec3(1.0,.98,.92)*bead*(.3+.7*luster)*glisten;
   }
+#endif
   return clamp(result,0.0,1.6);
 }
 vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){

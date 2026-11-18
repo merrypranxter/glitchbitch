@@ -35,7 +35,9 @@ import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, co
 import { Parameter, Range, Toggle, Switch, Select, Section, Segmented, Pill, useReveal } from "./Controls";
 import { photonSpecies, photonPresets, photonPresetState, nextPhotonSpecies } from "../photon-zoo.js";
 import { filamentSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies,
-  filamentHybridPresets, applyFilamentHybrid, breedFilaments } from "../filament-forge.js";
+  filamentHybridPresets, applyFilamentHybrid, breedFilaments,
+  filamentMaterials,filamentMaterialPresets,applyFilamentMaterialPreset,
+  remixFilamentMaterials } from "../filament-forge.js";
 import { sections, sectionActive, effectGroups } from "../ui-index";
 export { TextInspector } from "./TextInspector";
 const icons = [
@@ -207,6 +209,7 @@ export function EffectsInspector({ history }) {
   const [photonPreset,setPhotonPreset]=React.useState(photonPresets[0].name);
   const [filamentPreset,setFilamentPreset]=React.useState(filamentPresets[0].name);
   const [hybridPreset,setHybridPreset]=React.useState(filamentHybridPresets[0].name);
+  const [materialPreset,setMaterialPreset]=React.useState(filamentMaterialPresets[0].name);
   // Find jumps to a section that might be filtered out: show everything.
   useReveal((detail) => {
     if (effectSections.some((x) => x.id === detail.id) && filter !== "All") setFilter("All");
@@ -258,6 +261,45 @@ export function EffectsInspector({ history }) {
           Hide threads
         </button>
       </div>
+      <details className="filament-crossbreeder filament-material-lab">
+        <summary>✨ THREAD ALCHEMY — MATERIALS & BEADS</summary>
+        <p className="control-note">Dress the actual stitch paths in iridescent silk, molten chrome, translucent opal, velvet fiber, or glowing twisted yarn. Both parents can wear different materials. Original Thread retains the old look.</p>
+        <Select label="First parent fiber material" value={s.filamentMaterial}
+          onChange={value=>history.change(x=>({...x,filamentMaterial:value,
+            filamentAmount:Math.max(50,x.filamentAmount)}))}>
+          {filamentMaterials.map(name=><option key={name} value={name}>{name}</option>)}
+        </Select>
+        <Select label="Second parent fiber material" value={s.filamentSecondMaterial}
+          onChange={value=>history.change(x=>({...x,filamentSecondMaterial:value}))}>
+          {filamentMaterials.map(name=><option key={name} value={name}>{name}</option>)}
+        </Select>
+        <Parameter label="Fuzzy fiber nap" name="filamentNap" history={history}/>
+        <Parameter label="Specular luster / shine" name="filamentLuster" history={history}/>
+        <Parameter label="Seed bead presence" name="filamentBeads" history={history}/>
+        <Parameter label="Seed bead size / spacing" name="filamentBeadSize" history={history}/>
+        <Parameter label="Second parent color offset" name="filamentSecondHue" history={history}/>
+        <Select label="Material recipe" value={materialPreset} onChange={setMaterialPreset}>
+          {filamentMaterialPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>applyFilamentMaterialPreset(x,materialPreset))}>
+            Dress the threads
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentMaterials(x))}>
+            <Dices size={13}/> Remix fibers
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>({...x,
+              filamentMaterial:"Original thread",
+              filamentSecondMaterial:"Original thread",
+              filamentNap:0,filamentBeads:0,filamentSecondHue:0}))}>
+            Restore classic threads
+          </button>
+        </div>
+        <p className="control-note">The color offset applies to the second parent when crossbreeding is on. Material details compile only when used, and the old shader remains the fallback.</p>
+      </details>
       <details className="filament-crossbreeder">
         <summary>🧬 CROSSBREED TWO THREAD SPECIES</summary>
         <p className="control-note">A second mathematical lace structure shares the canvas with your first. At crossings the threads can pass over and under each other. This does not change your artwork engine or your words.</p>

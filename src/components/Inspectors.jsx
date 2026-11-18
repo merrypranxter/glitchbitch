@@ -34,6 +34,7 @@ import {
 import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, compositionModes, backdropModes, microModes, substanceModes, wiggleModes } from "../data";
 import { Parameter, Range, Toggle, Switch, Select, Section, Segmented, Pill, useReveal } from "./Controls";
 import { photonSpecies, photonPresets, photonPresetState, nextPhotonSpecies } from "../photon-zoo.js";
+import { filamentSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies } from "../filament-forge.js";
 import { sections, sectionActive, effectGroups } from "../ui-index";
 export { TextInspector } from "./TextInspector";
 const icons = [
@@ -203,6 +204,7 @@ export function EffectsInspector({ history }) {
     try { localStorage.setItem(FILTER_KEY, f); } catch { /* session only */ }
   };
   const [photonPreset,setPhotonPreset]=React.useState(photonPresets[0].name);
+  const [filamentPreset,setFilamentPreset]=React.useState(filamentPresets[0].name);
   // Find jumps to a section that might be filtered out: show everything.
   useReveal((detail) => {
     if (effectSections.some((x) => x.id === detail.id) && filter !== "All") setFilter("All");
@@ -215,6 +217,47 @@ export function EffectsInspector({ history }) {
     return meta.group === filter;
   };
   const body = {
+    filament: <>
+      <p className="control-note">Six animated stitch geometries: actual filament paths, not a blurry texture. They ride your palette without replacing the underlying art, and can stack with Photon Zoo.</p>
+      <Select label="Thread geometry" value={s.filamentSpecies}
+        onChange={v=>history.change(x=>({...x,filamentSpecies:v,filamentAmount:Math.max(55,x.filamentAmount)}))}>
+        {filamentSpecies.map(name=><option key={name} value={name}>{name}</option>)}
+      </Select>
+      <Parameter label="Thread presence" name="filamentAmount" history={history}/>
+      <Parameter label="Pattern scale" name="filamentScale" history={history}/>
+      <Parameter label="Stitch density" name="filamentDensity" history={history}/>
+      <Parameter label="Living motion" name="filamentMotion" history={history}/>
+      <Parameter label="Thread thickness" name="filamentWidth" history={history}/>
+      <Parameter label="Raised relief / sheen" name="filamentRelief" history={history}/>
+      <Parameter label="Palette shift" name="filamentHue" history={history}/>
+      <Parameter label="Variation" name="filamentVariation" history={history}/>
+      <div className="preset-row">
+        <Select label="Filament sculpture preset" value={filamentPreset} onChange={setFilamentPreset}>
+          {filamentPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applyFilamentPreset(x,filamentPreset))}>
+          Weave selected preset
+        </button>
+      </div>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>nextFilamentSpecies(x))}>
+          <Dices size={13}/> New stitch species
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>({...x,
+            filamentVariation:(x.filamentVariation+17+Math.random()*61)%100}))}>
+          <Shuffle size={13}/> Reseed threads
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.filamentAmount<=0}
+          onClick={()=>history.change(x=>({...x,filamentAmount:0}))}>
+          Hide threads
+        </button>
+      </div>
+      <p className="control-note">Presence at 0 leaves your existing art untouched. Shader is optional, and all eight settings travel with saved recipes and exports.</p>
+    </>,
     photon: <>
       <Select label="Species" value={s.photonSpecies}
         onChange={v=>history.change(x=>({...x,photonSpecies:v,photonAmount:Math.max(52,x.photonAmount)}))}>

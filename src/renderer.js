@@ -14,6 +14,7 @@ import { backdropGLSL } from "./backdrops.js";
 import { microGLSL } from "./microstructure.js";
 import { substanceGLSL } from "./substance.js";
 import { photonGLSL, photonSpecies } from "./photon-zoo.js";
+import { filamentGLSL, filamentSpecies } from "./filament-forge.js";
 import { tunnelGLSL } from "./tunnels.js";
 
 const vertex = `attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
@@ -69,6 +70,7 @@ phase+=source;if(posterize)phase=floor(phase*7.)/7.;return phase;}
 /* MICRO_MODULE */
 /* SUBSTANCE_MODULE */
 /* PHOTON_MODULE */
+/* FILAMENT_MODULE */
 /* MATERIAL_MODULE */
 /* LETTERING_MODULE */
 ${appearanceGLSL}
@@ -101,6 +103,7 @@ float v=composed(p);vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*
 /* SUBSTANCE_POST */
 /* MICRO_POST */
 /* PHOTON_POST */
+/* FILAMENT_POST */
 col=animateLight(col,uv,v);
 col=stainWithBiology(col,uv,p);
 /* LETTERING_POST */
@@ -131,12 +134,13 @@ export function createRenderer(canvas) {
     typeShaderUnavailable = false, compositionUnavailable = false,
     backdropUnavailable = false, microUnavailable = false,
     substanceUnavailable = false, wiggleUnavailable = false,
-    photonUnavailable = false;
+    photonUnavailable = false, filamentUnavailable = false;
   function compatibleShaderState(s){
     const source = stereoUnavailable ? safe2DSelection(s) : s;
     if(!materialUnavailable && !typeShaderUnavailable &&
        !compositionUnavailable && !backdropUnavailable &&
-       !microUnavailable && !substanceUnavailable && !wiggleUnavailable && !photonUnavailable)return source;
+       !microUnavailable && !substanceUnavailable && !wiggleUnavailable &&
+       !photonUnavailable && !filamentUnavailable)return source;
     return {
       ...source,
       ...(materialUnavailable ? {filmAmount:0,opalAmount:0,prismAmount:0,foilRelief:0}:{}),
@@ -146,6 +150,7 @@ export function createRenderer(canvas) {
       ...(microUnavailable ? {microAmount:0}:{}),
       ...(substanceUnavailable ? {substanceAmount:0}:{}),
       ...(photonUnavailable ? {photonAmount:0}:{}),
+      ...(filamentUnavailable ? {filamentAmount:0}:{}),
       ...(wiggleUnavailable ? {wiggleAmount:0}:{})
     };
   }
@@ -539,8 +544,9 @@ export function createRenderer(canvas) {
       withMicro = s.microAmount>0,
       withSubstance = s.substanceAmount>0,
       withPhoton = s.photonAmount>0,
+      withFilament = s.filamentAmount>0,
       withTunnel = s.engine===5 || (blended && s.secondaryEngine===5),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withWiggle ? "wiggle" : "still"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withWiggle ? "wiggle" : "still"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -578,6 +584,13 @@ export function createRenderer(canvas) {
       : "";
     source=source.replace("/* PHOTON_MODULE */",specializedPhoton);
     source=source.replace("/* PHOTON_POST */",withPhoton?"col=livingPhotonZoo(col,uv,p,v);":"");
+    const selectedFilament=withFilament
+      ? filamentGLSL.replace("uniform int filamentSpecies;",
+        "#define filamentSpecies "+Math.max(0,filamentSpecies.indexOf(s.filamentSpecies)))
+      : "";
+    source=source.replace("/* FILAMENT_MODULE */",selectedFilament);
+    source=source.replace("/* FILAMENT_POST */",
+      withFilament?"col=livingFilamentForge(col,uv,p,v);":"");
     source=source.replace("/* MICRO_MODULE */",withMicro?microGLSL:"");
     source=source.replace("/* MICRO_POST */",withMicro?"col=movingMicrostructure(col,p,uv,v);":"");
     source=source.replace("/* BACKDROP_MODULE */",withBackdrop?backdropGLSL:"");
@@ -692,7 +705,7 @@ export function createRenderer(canvas) {
       // Progressive shader fallback: the newest optional effects are disabled
       // one at a time if the driver cannot compile them. Legacy fields stay visible.
       let lastCompileError = null;
-      for(let attempt=0;attempt<10;attempt++){
+      for(let attempt=0;attempt<11;attempt++){
         const candidate=compatibleShaderState(s);
         try {
           active=programFor(candidate);
@@ -700,7 +713,10 @@ export function createRenderer(canvas) {
           break;
         }catch(e){
           lastCompileError=e;
-          if(candidate.photonAmount>0){
+          if(candidate.filamentAmount>0){
+            filamentUnavailable=true;
+            console.warn("Filament Forge unsupported by this GPU; original artwork remains intact.",e);
+          }else if(candidate.photonAmount>0){
             photonUnavailable=true;
             console.warn("Photon Zoo shader unsupported by this GPU; protecting the original artwork.",e);
           }else if(candidate.wiggleAmount>0){
@@ -817,6 +833,8 @@ export function createRenderer(canvas) {
         "backdropGlow","backdropHue","backdropVariation",
         "microAmount","microScale","microMotion","microRelief",
         "microDensity","microHue","microVariation",
+        "filamentAmount","filamentScale","filamentMotion","filamentDensity",
+        "filamentWidth","filamentRelief","filamentHue","filamentVariation",
         "photonAmount","photonScale","photonMotion","photonDensity",
         "photonRelief","photonHue","photonVariation",
         "substanceAmount","substanceScale","substanceMotion",
@@ -845,6 +863,7 @@ export function createRenderer(canvas) {
       gl.uniform1i(loc("microMode"), ["Living embroidery","Opal granulation",
         "Gel caustics","Point lace","Glass filaments","Crystalline cilia"].indexOf(s.microMode));
       gl.uniform1i(loc("photonSpecies"), photonSpecies.indexOf(s.photonSpecies));
+      gl.uniform1i(loc("filamentSpecies"), filamentSpecies.indexOf(s.filamentSpecies));
       gl.uniform1i(loc("substanceMode"), [
         "CMY lithogenesis","Chromatophore reef",
         "Chitin interference","Conformal chromasoup"].indexOf(s.substanceMode));

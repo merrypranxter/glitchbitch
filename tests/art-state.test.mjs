@@ -390,7 +390,7 @@ test("opt-in material or type compile failures progressively retain the old 2D a
   assert.match(renderer,/materialUnavailable=true/);
   assert.match(renderer,/typeShaderUnavailable=true/);
   assert.match(renderer,/compatibleShaderState\(s\)/);
-  assert.match(renderer,/for\(let attempt=0;attempt<10;attempt\+\+\)/);
+  assert.match(renderer,/for\(let attempt=0;attempt<11;attempt\+\+\)/);
 });
 
 test("composition regions are independently editable and migrate from legacy full-canvas blends", async () => {

@@ -9,10 +9,13 @@ function fakeCanvas() {
     font: "", lineJoin: "", textAlign: "", textBaseline: "",
     measureText: text => ({ width: String(text).length * 32 }),
     clearRect() {},
+    fillRect() {},
     fillText(text) { drawn.push(text); },
     strokeText() {},
     drawImage() { drawn.push("composite"); },
-    save() {}, restore() {}, translate() {}, scale() {}, rotate() {}, setTransform() {},
+    createLinearGradient: () => ({ addColorStop() {} }),
+    createRadialGradient: () => ({ addColorStop() {} }),
+    save() {}, restore() {}, translate() {}, scale() {}, rotate() {}, transform() {}, setTransform() {},
   };
   return { drawn, ctx, canvas: { width: 0, height: 0, getContext: () => ctx } };
 }
@@ -30,7 +33,7 @@ test("typed words paint over artwork using a 2D layer, even with distortion enab
   try {
     assert.equal(hasVisibleLettering(base), true);
     paintLettering(preview.ctx, base, { time: 1.7 }, 431, 431, true);
-    assert.ok(glyph.drawn.includes("Yo"));
+    assert.ok(glyph.drawn.join("").includes("Yo"));
     assert.ok(preview.drawn.filter(x => x === "composite").length > 0);
   } finally { globalThis.document = original; }
 });

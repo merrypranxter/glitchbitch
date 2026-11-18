@@ -31,7 +31,7 @@ test("complete recipe round trip preserves clocks, title, custom colors, and sou
       marks: [makeMark(initial)],
     },
     "Moon jelly",
-    { time: 34.23, colorTime: 5.43 },
+    { time: 34.23, colorTime: 5.43, textTime: 0 },
   );
   assert.deepEqual(parseDocument(JSON.parse(JSON.stringify(doc))), {
     state: doc.state,
@@ -390,7 +390,7 @@ test("opt-in material or type compile failures progressively retain the old 2D a
   assert.match(renderer,/materialUnavailable=true/);
   assert.match(renderer,/typeShaderUnavailable=true/);
   assert.match(renderer,/compatibleShaderState\(s\)/);
-  assert.match(renderer,/for\(let attempt=0;attempt<9;attempt\+\+\)/);
+  assert.match(renderer,/for\(let attempt=0;attempt<10;attempt\+\+\)/);
 });
 
 test("composition regions are independently editable and migrate from legacy full-canvas blends", async () => {
@@ -669,7 +669,7 @@ test("fonts load lazily once, and still frames refresh when fonts arrive", async
   assert.match(canvas,/lastFontRevision !== retroFontRevision\(\)/);
   assert.match(renderer,/glyphCanvas\(s\.lettering,aspect,fontId(?:,s)?\)/);
   assert.match(renderer,/retroFontRevision\(\)/);
-  assert.match(exporter,/await ensureRetroFontLoaded\(state\.letteringFont\)/);
+  assert.match(exporter,/await waitForLetteringFonts\(state\)/);
 });
 
 test("mobile studio keeps one canvas above resize divider and independent scrollable editor", async () => {

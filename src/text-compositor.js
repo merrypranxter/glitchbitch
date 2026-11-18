@@ -6,6 +6,7 @@
 import { glyphCanvas } from "./kinetic-type.js";
 import { ensureRetroFontLoaded, retroFontRevision } from "./retro-fonts.js";
 import { letteringMaterial, textMotion, letteringExportGlowLayers } from "./lettering-materials.js";
+import { createLetteringHalo } from "./lettering-halo.js";
 import { getLetteringBlendRecipe, letteringBlendPulse } from "./lettering-blends.js";
 import { createLetteringSprites } from "./lettering-sprites.js";
 import { letteringMotionCombinedAt, letteringLiquidAt, letteringComposeGlyph,
@@ -40,7 +41,8 @@ function glyphFor(layer, aspect, artworkPalette) {
     letteringFill:material.ink,
     letteringFillMode:material.stops ? material.gradientType : "Solid",
     letteringGradient:material.stops || [],
-    letteringGradientAngle:material.gradientAngle
+    letteringGradientAngle:material.gradientAngle,
+    letteringHaloPadding:material.glow!=="none"?.28:0
   };
   if (material.preset === "Void stencil" && !style.letteringStrokes?.some(s=>s.enabled))
     style.letteringStrokes = [{color:"#eae7ff",width:2,enabled:true}];
@@ -63,7 +65,8 @@ function glyphFor(layer, aspect, artworkPalette) {
       glints.restore();
     }
   }
-  const entry = {image,material,style,tints:new Map(),sprites:undefined,spriteTints:new Map()};
+  const entry = {image,material,style,tints:new Map(),sprites:undefined,spriteTints:new Map(),
+    staticHalo:undefined,spriteHalos:undefined};
   glyphCache.set(key,entry);
   while(glyphCache.size>LIMIT)glyphCache.delete(glyphCache.keys().next().value);
   return entry;
@@ -138,6 +141,18 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
    const whole=letteringMotionCombinedAt(layer,seconds,width,height,-1,1,em);
    const blend=getLetteringBlendRecipe(layer.letteringBlendMode,layer.letteringBlendStrength);
    const glowLayers=letteringExportGlowLayers(material);
+   // These are alpha-only halos, not opaque white glyphs. Both bitmaps
+   // are created once per text/material recipe and reused for video frames.
+   if(glowLayers.length && entry.staticHalo===undefined)
+     entry.staticHalo=createLetteringHalo(image,glowLayers,
+       Math.min(image.width,image.height)/430);
+   if(glowLayers.length && spriteScene && entry.spriteHalos===undefined){
+     // Avoid doubling a 180-glyph atlas on memory-constrained iPhones.
+     entry.spriteHalos=spriteScene.sprites.length<=80
+       ?spriteScene.sprites.map(item=>createLetteringHalo(item.image,glowLayers,
+         Math.min(spriteScene.width,spriteScene.height)/430))
+       :null;
+   }
    const intensity=blend.mode==="Normal"?0:blend.strength;
 
    ctx.save();
@@ -147,7 +162,7 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
    if(Math.abs(curve)>.001)ctx.transform(1,0,curve*.11,1,0,0);
    function paintShape(options={}){
      if(spriteScene && spriteScene.sprites.length){
-       const colored=options.tint?tintedSpriteImages(entry,options.tint):null;
+       const colored=!options.halo&&options.tint?tintedSpriteImages(entry,options.tint):null;
        const ratioX=width/spriteScene.width,ratioY=height/spriteScene.height;
        const baseOpacity=ctx.globalAlpha;
        for(let i=0;i<spriteScene.sprites.length;i++){
@@ -168,7 +183,8 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
          ctx.rotate(pose.rotation*Math.PI/180);
          if(pose.skewX)ctx.transform(1,0,Math.tan(pose.skewX*Math.PI/180),1,0,0);
          ctx.scale(pose.scaleX,pose.scaleY);
-         const sprite=colored?.[i]||item.image;
+         const sprite=options.halo?entry.spriteHalos?.[i]:colored?.[i]||item.image;
+         if(!sprite){ctx.restore();continue;}
          const sw=sprite.width*ratioX*item.widthScale,sh=sprite.height*ratioY;
          ctx.drawImage(sprite,-sw/2,-sh/2,sw,sh);
          ctx.restore();
@@ -181,7 +197,8 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
          ctx.transform(1,0,.13*wobble,1,0,0);
          ctx.rotate(.045*wobble);
        }
-       const source=options.tint?tint(entry,options.tint):image;
+       const source=options.halo?entry.staticHalo:options.tint?tint(entry,options.tint):image;
+       if(!source){ctx.restore();return;}
        ctx.drawImage(source,-width/2+Number(options.dx||0)/Math.max(.05,factorX*whole.scaleX),
          -height/2+Number(options.dy||0)/Math.max(.05,factorY*whole.scaleY),width,height);
        ctx.restore();
@@ -214,39 +231,22 @@ export function paintLettering(ctx,state,timeline,width,height,clear=false){
      paintShape({tint:recipe.whiteInk?"#ffffff":opts.tint});
      ctx.restore();
    }
+   // Paint ONLY the halo beyond the glyph outline. It goes underneath
+   // the selected letter face and blending, exactly as CSS text-shadow does.
+   // The old implementation painted three bright opaque glyph copies OVER
+   // Difference/Multiply and the user's gradients, making exports look white.
+   if(glowLayers.length){
+     ctx.save();
+     ctx.globalCompositeOperation="screen";
+     ctx.globalAlpha=opacity*(material.pulseAnimation
+       ? .87+.13*Math.sin(seconds*3.4) : 1);
+     paintShape({halo:true});
+     ctx.restore();
+   }
    if(intensity<1)pass({canvasBlend:"source-over"},1-intensity);
    if(intensity>0){
      pass(blend,intensity);
      for(const p of blend.passes)pass(p,intensity*(p.alpha??1),{...p,extra:true});
-   }
-   // Match LiveTextOverlay's luminous multi-color text shadow. Optical halos
-   // must composite with SCREEN *after* the text's chosen blend operator:
-   // a multiply/difference body cannot eat its own light source.
-   if(glowLayers.length){
-     const resolutionScale=Math.min(width,height)/430;
-     const pulse=material.pulseAnimation
-       ? .91+.09*Math.sin(seconds*3.4) : 1;
-     for(let i=0;i<glowLayers.length;i++){
-       const halo=glowLayers[i];
-       const isOuter=i===glowLayers.length-1;
-       ctx.save();
-       ctx.globalCompositeOperation="screen";
-       ctx.globalAlpha=opacity*pulse*(isOuter?.31:i===0?.44:.38);
-       ctx.shadowColor=halo.color;
-       ctx.shadowBlur=Math.min(64,halo.blur*resolutionScale);
-       ctx.shadowOffsetX=0;ctx.shadowOffsetY=0;
-       paintShape({tint:halo.color});
-       ctx.restore();
-     }
-     // The glowing face stays readable over a bright, saturated backdrop
-     // without erasing the artistic blend setting underneath it.
-     ctx.save();
-     ctx.globalCompositeOperation="screen";
-     ctx.globalAlpha=opacity*.34;
-     ctx.shadowColor=material.stops?.[0]||material.ink;
-     ctx.shadowBlur=Math.min(14,5*resolutionScale);
-     paintShape({tint:material.stops?.[0]||material.ink});
-     ctx.restore();
    }
    ctx.restore();
  }

@@ -72,13 +72,13 @@ test("Colored neon aura no longer paints WHITE letters on top of Difference expo
  paintLettering(ctx,base,{textTime:.5},430,430);
  const draws=log.filter(x=>x.kind==="draw");
  const main=draws.findIndex(x=>x.globalCompositeOperation==="difference");
- const halo=draws.findIndex(x=>x.globalCompositeOperation==="screen");
  assert.ok(main>=0);
- assert.ok(halo>=0 && halo<main,"halo must sit UNDER colored blend face");
+ const selected=draws.filter(x=>x.globalCompositeOperation==="difference");
+ assert.ok(selected.length>=2,"classic Difference must composite halo AND face with Difference");
  const lit=draws.filter(x=>x.globalCompositeOperation==="screen");
- assert.equal(lit.length,1,"single ALPHA-PUNCHED halo, not four white face copies");
- assert.equal(lit[0].shadowBlur,0,"blur should be baked into an external-only mask");
- assert.ok(lit[0].globalAlpha>0);
+ assert.equal(lit.length,0,"Screen halo would bleach the colored Difference blend");
+ assert.ok(selected.every(x=>x.shadowBlur===0),
+   "the glow blur belongs in the cached alpha-only bitmap, not on a white glyph");
 }));
 test("Plain text stays plain with no forced glow passes",()=>withDocument(()=>{
  const log=[];

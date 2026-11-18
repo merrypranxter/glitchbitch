@@ -23,6 +23,13 @@ export const letteringBlendGroups = [
   ]}
 ];
 export const letteringBlendModes=letteringBlendGroups.flatMap(g=>g.modes);
+// The first two UI families use fundamental CSS/Canvas compositing. Their
+// text shadows and colored ink MUST pass through the SAME chosen blend, or
+// the exporter gets a pale Screen halo that the live preview never used.
+// The more involved experimental families retain their own effects.
+const foundationModes=new Set(letteringBlendGroups.slice(0,2).flatMap(g=>g.modes));
+export const isFoundationBlend=mode=>foundationModes.has(mode);
+
 
 const native = {
   "Normal":["normal","source-over"],
@@ -89,11 +96,12 @@ export function getLetteringBlendRecipe(mode="Normal",strength=100) {
   const both=native[selected];
   if(both)return {
     mode:selected,strength:mix,cssBlend:both[0],canvasBlend:both[1],
-    filter:"none",whiteInk:false,animation:null,passes:[],exact:true
+    filter:"none",whiteInk:false,animation:null,passes:[],exact:true,
+    foundation:isFoundationBlend(selected)
   };
   return {
     mode:selected,strength:mix,filter:"none",whiteInk:false,animation:null,passes:[],
-    exact:false,...special[selected]
+    exact:false,foundation:isFoundationBlend(selected),...special[selected]
   };
 }
 export function letteringBlendPulse(animation,seconds) {

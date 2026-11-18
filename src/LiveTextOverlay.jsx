@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { getRetroFont } from "./retro-fonts.js";
-import { textFormattingSegments, formatCharStyle, textStyleAt } from "./text-formatting.js";
+import { textFormattingSegments, formatCharStyle, textStyleAt, formattedGlyphInk } from "./text-formatting.js";
 import { letteringMaterial, textMotion } from "./lettering-materials.js";
 import { getLetteringBlendRecipe } from "./lettering-blends.js";
 import { letteringMotionCombinedAt, letteringLiquidAt, letteringComposeGlyph,
@@ -20,11 +20,11 @@ function MovingGlyphs({text,formats,trackingPx,ink}) {
     let charOffset=start;
     return <span key={k} style={{display:"inline-block",whiteSpace:"nowrap"}}>
       {Array.from(part).map((char,j)=>{
-        const style=textStyleAt(formats,charOffset);charOffset+=char.length;
+        const at=charOffset;const style=textStyleAt(formats,at);charOffset+=char.length;
         return <span key={j} className="live-type-glyph" data-text-glyph=""
           data-index={index++} data-total={total}
-          style={{...formatCharStyle(style),display:"inline-block",whiteSpace:"pre",
-            textDecorationColor:ink,marginInlineEnd:trackingPx,
+          style={{...formatCharStyle(style,at),display:"inline-block",whiteSpace:"pre",
+            textDecorationColor:formattedGlyphInk(style,at,ink),marginInlineEnd:trackingPx,
             transformOrigin:"50% 70%"}}>{style.caps?char.toUpperCase():char}</span>;
       })}
     </span>;
@@ -36,7 +36,7 @@ function TextFace({ text, fontStyle, material, strokes, dynamicGlyphs=false, for
   const display=()=>dynamicGlyphs
     ? <MovingGlyphs text={text} formats={formats} trackingPx={trackingPx} ink={ink}/>
     : textFormattingSegments(text,formats).map((seg,i)=>
-      <span key={i} style={{...formatCharStyle(seg.style),textDecorationColor:ink}}>
+      <span key={i} style={{...formatCharStyle(seg.style,seg.start),textDecorationColor:formattedGlyphInk(seg.style,seg.start,ink)}}>
         {seg.display}
       </span>);
   const base = {

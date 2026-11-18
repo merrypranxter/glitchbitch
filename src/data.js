@@ -4,7 +4,7 @@ import { retroFontIds } from "./retro-fonts.js";
 import { letteringBlendModes } from "./lettering-blends.js";
 import { letteringMotionPaths } from "./lettering-motion.js";
 import { photonSpecies } from "./photon-zoo.js";
-import { filamentSpecies, filamentMaterials } from "./filament-forge.js";
+import { filamentSpecies, filamentMaterials, filamentStitchModes } from "./filament-forge.js";
 import { normalizeTextFormats } from "./text-formatting.js";
 export const engineInfo = [
   ["Plasma flow", "Liquid sine fields folded into neon ribbons.", "Fluid"],
@@ -293,6 +293,10 @@ export const numericRanges = {
   filamentBeads: [0, 100],
   filamentBeadSize: [0, 100],
   filamentSecondHue: [0, 100],
+  filamentStitchAmount: [0, 100],
+  filamentStitchSpeed: [0, 100],
+  filamentStitchLength: [0, 100],
+  filamentStitchGlow: [0, 100],
   photonAmount: [0, 100],
   photonScale: [0, 100],
   photonMotion: [0, 100],
@@ -468,6 +472,11 @@ export const initial = {
   filamentBeads: 0,
   filamentBeadSize: 45,
   filamentSecondHue: 0,
+  filamentStitchMode: "Needle chase",
+  filamentStitchAmount: 0,
+  filamentStitchSpeed: 52,
+  filamentStitchLength: 46,
+  filamentStitchGlow: 76,
   photonSpecies: "Prism rosettes",
   photonAmount: 0,
   photonScale: 53,
@@ -570,6 +579,7 @@ export function validateRecipe(input) {
     filamentSecondSpecies: filamentSpecies,
     filamentMaterial: filamentMaterials,
     filamentSecondMaterial: filamentMaterials,
+    filamentStitchMode: filamentStitchModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -829,6 +839,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "filamentCrossbreed","filamentInterlace","filamentTwist","filamentPhase",
       "filamentNap","filamentLuster","filamentBeads","filamentBeadSize",
       "filamentSecondHue",
+      "filamentStitchAmount","filamentStitchSpeed",
+      "filamentStitchLength","filamentStitchGlow",
       "photonAmount","photonScale","photonMotion","photonDensity",
       "photonRelief","photonHue","photonVariation",
       "substanceAmount","substanceScale","substanceMotion",
@@ -993,6 +1005,11 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.filamentBeads=random()<.6 ? 21+random()*78 : 0;
   s.filamentBeadSize=14+random()*83;
   s.filamentSecondHue=random()*100;
+  s.filamentStitchMode=different(filamentStitchModes,state.filamentStitchMode,random);
+  s.filamentStitchAmount=s.filamentAmount>0 && random()<.58 ? 45+random()*54 : 0;
+  s.filamentStitchSpeed=15+random()*84;
+  s.filamentStitchLength=18+random()*80;
+  s.filamentStitchGlow=25+random()*74;
   s.photonSpecies=different(photonSpecies,state.photonSpecies,random);
   s.photonAmount=random()<.85?39+random()*58:0;
   s.photonScale=17+random()*79;

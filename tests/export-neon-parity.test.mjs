@@ -97,15 +97,15 @@ test("Animated RGB echoes offset BOTH SIDES of full glyphs, not just static bitm
    letteringBlendMode:"Normal",letteringWarp:70
  },{textTime:0},430,430);
  const positions=log.filter(x=>x.kind==="move").slice(1).map(x=>x.x);
- assert.ok(positions.length>=9);
- // The first three positions are left red echo, next three are right cyan
- // echo and final three are the original characters. Each corresponding
- // letter must actually shift, despite being animated intact glyph sprites.
- const n=positions.length/3;
- assert.ok(Number.isInteger(n),positions.length);
+ // Three colored glyphs per echo, a zero-offset pass translation, then
+ // three original glyphs. Paint must honor the echo's dx even in sprite mode.
+ const n=3;
+ assert.ok(positions.length>=n*3+1);
  for(let i=0;i<n;i++){
-   assert.ok(positions[i]<positions[n+i],"red and cyan echoes must separate");
-   assert.ok(positions[n+i]>positions[2*n+i],"cyan echo must be right of the text");
+   const red=positions[i],cyan=positions[n+i],core=positions[2*n+1+i];
+   assert.ok(red<cyan,"red and cyan echoes must separate");
+   assert.ok(cyan>core,"cyan echo must be right of the original glyph");
+   assert.ok(red<core,"red echo must be left of the original glyph");
  }
 }));
 test("Export-dialog proof renders via the real PNG and video text compositor",()=>{

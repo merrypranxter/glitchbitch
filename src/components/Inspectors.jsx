@@ -244,6 +244,11 @@ export function EffectsInspector({ history }) {
           onClick={()=>history.change(x=>({...x,photonVariation:(x.photonVariation+19+Math.random()*64)%100}))}>
           <Shuffle size={13}/> Reseed
         </button>
+        <button type="button" className="button secondary"
+          disabled={s.photonAmount<=0}
+          onClick={()=>history.change(x=>({...x,photonAmount:0}))}>
+          Hide photons
+        </button>
       </div>
     </>,
     signal: <>

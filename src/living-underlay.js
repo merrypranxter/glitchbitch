@@ -79,12 +79,12 @@ vec3 livingTextileUnderlay(vec3 original,vec2 uv,float baseField){
   // Displace the cloth itself; the two yarn directions share this warp.
   q+=.11*underlayMotion*vec2(sin(q.y*.54+t*.35+phaseSeed),
     cos(q.x*.49-t*.33+phaseSeed*.7));
-  float count=1.6+underlayDensity*3.7;
+  float yarnFreq=1.6+underlayDensity*3.7;
   float fiber=0.0,ornament=0.0,shimmer=0.0,shadow=0.0,phase=0.0;
   if(underlayMode==0){
     // Jacquard: separately crossing warp/weft, with raised floral motifs.
-    float warp=sin(q.x*count+sin(q.y*.88+t*.2)*.72);
-    float weft=cos(q.y*count+sin(q.x*.86-t*.23)*.65);
+    float warp=sin(q.x*yarnFreq+sin(q.y*.88+t*.2)*.72);
+    float weft=cos(q.y*yarnFreq+sin(q.x*.86-t*.23)*.65);
     float motif=cos(q.x*1.38+q.y*.48+phaseSeed)*
       sin(q.y*1.46-q.x*.38-t*.14);
     fiber=.5+.5*(warp*.51+weft*.49);
@@ -98,9 +98,9 @@ vec3 livingTextileUnderlay(vec3 original,vec2 uv,float baseField){
     vec2 a=vec2(cos(angle),sin(angle));
     vec2 b=vec2(cos(angle+.085+underlayDensity*.15),
       sin(angle+.085+underlayDensity*.15));
-    float mesh1=cos(dot(q,a)*count*2.4);
-    float mesh2=cos(dot(q,b)*count*2.4);
-    float cross1=cos(dot(q,vec2(-a.y,a.x))*count*1.9);
+    float mesh1=cos(dot(q,a)*yarnFreq*2.4);
+    float mesh2=cos(dot(q,b)*yarnFreq*2.4);
+    float cross1=cos(dot(q,vec2(-a.y,a.x))*yarnFreq*1.9);
     fiber=.5+.5*(mesh1*.5+mesh2*.26+cross1*.24);
     ornament=.5+.5*cos((mesh1-mesh2)*4.1+q.y*.24);
     shimmer=pow(max(0.0,.5+.5*mesh1*mesh2),8.0);

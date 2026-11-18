@@ -37,7 +37,8 @@ import { photonSpecies, photonPresets, photonPresetState, nextPhotonSpecies } fr
 import { filamentSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
   filamentMaterials,filamentMaterialPresets,applyFilamentMaterialPreset,
-  remixFilamentMaterials } from "../filament-forge.js";
+  remixFilamentMaterials,filamentStitchModes,filamentStitchPresets,
+  applyFilamentStitchPreset,stopFilamentStitching } from "../filament-forge.js";
 import { sections, sectionActive, effectGroups } from "../ui-index";
 export { TextInspector } from "./TextInspector";
 const icons = [
@@ -210,6 +211,7 @@ export function EffectsInspector({ history }) {
   const [filamentPreset,setFilamentPreset]=React.useState(filamentPresets[0].name);
   const [hybridPreset,setHybridPreset]=React.useState(filamentHybridPresets[0].name);
   const [materialPreset,setMaterialPreset]=React.useState(filamentMaterialPresets[0].name);
+  const [stitchPreset,setStitchPreset]=React.useState(filamentStitchPresets[0].name);
   // Find jumps to a section that might be filtered out: show everything.
   useReveal((detail) => {
     if (effectSections.some((x) => x.id === detail.id) && filter !== "All") setFilter("All");
@@ -261,6 +263,35 @@ export function EffectsInspector({ history }) {
           Hide threads
         </button>
       </div>
+      <details className="filament-crossbreeder filament-stitch-lab">
+        <summary>🪡 SELF-WEAVING LOOM — STITCH IN MOTION</summary>
+        <p className="control-note">Watch the threads sew themselves, chase a glowing needle, advance in running stitches, or unfurl and resew. The stitch travels along the generated geometry instead of fading an unrelated full-screen texture.</p>
+        <Select label="Stitch motion" value={s.filamentStitchMode}
+          onChange={mode=>history.change(x=>({...x,filamentStitchMode:mode,
+            filamentStitchAmount:Math.max(68,x.filamentStitchAmount),
+            filamentAmount:Math.max(55,x.filamentAmount)}))}>
+          {filamentStitchModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </Select>
+        <Parameter label="Self-weaving presence" name="filamentStitchAmount" history={history}/>
+        <Parameter label="Stitch travel speed" name="filamentStitchSpeed" history={history}/>
+        <Parameter label="Stitch tail length / spacing" name="filamentStitchLength" history={history}/>
+        <Parameter label="Traveling needle glow" name="filamentStitchGlow" history={history}/>
+        <Select label="Self-weaving recipe" value={stitchPreset} onChange={setStitchPreset}>
+          {filamentStitchPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>applyFilamentStitchPreset(x,stitchPreset))}>
+            Start weaving
+          </button>
+          <button type="button" className="button secondary"
+            disabled={s.filamentStitchAmount<=0}
+            onClick={()=>history.change(stopFilamentStitching)}>
+            Hold finished fabric
+          </button>
+        </div>
+        <p className="control-note">When disabled, your original geometry, colors, materials, beads and two-parent weave return unchanged. Runs on the same timeline as PNG, GIF and MP4 exports.</p>
+      </details>
       <details className="filament-crossbreeder filament-material-lab">
         <summary>✨ THREAD ALCHEMY — MATERIALS & BEADS</summary>
         <p className="control-note">Dress the actual stitch paths in iridescent silk, molten chrome, translucent opal, velvet fiber, or glowing twisted yarn. Both parents can wear different materials. Original Thread retains the old look.</p>

@@ -147,11 +147,58 @@ export function breedFilaments(state,rng=Math.random){
    filamentTwist:unit()*100,filamentPhase:unit()*100};
 }
 
+/**
+ * SELF-WEAVING LOOM — deterministic procedural stitch sequencing.
+ * The stitch reveal is driven by the same render clock in preview, PNG,
+ * GIF and MP4. No accumulated GPU state, feedback textures or random
+ * state can drift between captures.
+ */
+export const filamentStitchModes=[
+  "Needle chase",
+  "Loom sweep",
+  "Running stitch",
+  "Purl breathing",
+  "Unfurl & resew",
+];
+export const filamentStitchControls=[
+  "filamentStitchAmount","filamentStitchSpeed",
+  "filamentStitchLength","filamentStitchGlow"
+];
+export const filamentStitchPresets=[
+  {name:"Electric needle chase",filamentStitchMode:"Needle chase",
+    filamentStitchAmount:92,filamentStitchSpeed:62,
+    filamentStitchLength:31,filamentStitchGlow:95},
+  {name:"Witch's loom shuttle",filamentStitchMode:"Loom sweep",
+    filamentStitchAmount:94,filamentStitchSpeed:43,
+    filamentStitchLength:44,filamentStitchGlow:70},
+  {name:"Running stitch pulse",filamentStitchMode:"Running stitch",
+    filamentStitchAmount:89,filamentStitchSpeed:77,
+    filamentStitchLength:61,filamentStitchGlow:81},
+  {name:"Velvet breathing lattice",filamentStitchMode:"Purl breathing",
+    filamentStitchAmount:84,filamentStitchSpeed:36,
+    filamentStitchLength:73,filamentStitchGlow:61},
+  {name:"Unfurl the impossible",filamentStitchMode:"Unfurl & resew",
+    filamentStitchAmount:97,filamentStitchSpeed:47,
+    filamentStitchLength:55,filamentStitchGlow:91}
+];
+export function applyFilamentStitchPreset(state,name){
+ const preset=filamentStitchPresets.find(p=>p.name===name);
+ if(!preset)return state;
+ const {name:label,...stitch}=preset;
+ return {...state,...stitch,filamentAmount:Math.max(55,state.filamentAmount||0)};
+}
+export function stopFilamentStitching(state){
+ return {...state,filamentStitchAmount:0};
+}
+
 export const filamentGLSL = `
 // Independent structural geometry with stitched, shaded filament ribbons.
 uniform int filamentSpecies;
 uniform int filamentSecondSpecies;
 uniform int filamentMaterial,filamentSecondMaterial;
+uniform int filamentStitchMode;
+uniform float filamentStitchAmount,filamentStitchSpeed;
+uniform float filamentStitchLength,filamentStitchGlow;
 uniform float filamentNap,filamentLuster,filamentBeads,filamentBeadSize,filamentSecondHue;
 uniform float filamentCrossbreed,filamentInterlace,filamentTwist,filamentPhase;
 uniform float filamentAmount,filamentScale,filamentDensity,filamentMotion;
@@ -281,12 +328,63 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   maskCore=core;
   float halo=(1.0-smoothstep(width*2.0,width*5.5+aa,threadD))*mask;
   float edge=(1.0-smoothstep(width*.5,width*2.5+aa,abs(threadD-width*1.25)))*mask;
+#ifdef FILAMENT_STITCHING
+  // Continuous procedural arclength proxy. No sawtooth resets of accumulated
+  // geometry: periodic moving windows fade at both ends of their stitch.
+  // Secondary parent has its own phase offset and rotated thread coordinates.
+  float sewClock=time*(.08+filamentStitchSpeed*1.12);
+  float localProgress=phase*.27+q.x*.11+q.y*.07+
+    seedPhase*.093+phaseOffset*.14;
+  float span=mix(.055,.47,filamentStitchLength);
+  float travel=fract(localProgress-sewClock);
+  float movingWindow=smoothstep(.02,.105,travel)*
+    (1.0-smoothstep(span,span+.09,travel));
+  float visibleStitch=1.0;
+  float needle=0.0;
+  if(filamentStitchMode==0){ // Sharp migrating tip with short stitched tail.
+    visibleStitch=.12+.88*movingWindow;
+    needle=pow(clamp(1.0-abs(travel-.11)*10.0,0.0,1.0),2.0);
+  }else if(filamentStitchMode==1){ // Wide shuttle crossing the cloth.
+    float shuttle=fract(q.x*.093+q.y*.014-sewClock*.53+
+      phaseOffset*.08+seedPhase*.031);
+    visibleStitch=.08+.92*smoothstep(.025,.12,shuttle)*
+      (1.0-smoothstep(.45+span*.67,.58+span*.67,shuttle));
+    needle=pow(max(0.0,1.0-abs(shuttle-.13)*7.0),2.0);
+  }else if(filamentStitchMode==2){ // Classic separated running stitches.
+    float running=.5+.5*cos(6.2831853*travel);
+    visibleStitch=.08+.92*smoothstep(.42,.68,running);
+    needle=pow(running,14.0);
+  }else if(filamentStitchMode==3){ // Thread loops inhale and exhale.
+    float breathing=.5+.5*cos(6.2831853*travel);
+    visibleStitch=.25+.75*breathing;
+    needle=pow(breathing,7.0);
+  }else{ // Complete fabric assembles from one edge and reverses smoothly.
+    float build=.5+.5*cos(sewClock*.78+phaseOffset*.25);
+    float position=clamp(uv.x+.065*sin(uv.y*11.0+seedPhase*.18),0.0,1.0);
+    float reveal=1.0-smoothstep(build-.055,build+.055,position);
+    visibleStitch=.05+.95*reveal;
+    needle=pow(max(0.0,1.0-abs(position-build)*11.0),3.0);
+  }
+  // Apply to all three geometry masks, including crossbred contact. The
+  // underlying art remains visible where the stitch is not yet "sewn".
+  float reveal=mix(1.0,visibleStitch,filamentStitchAmount);
+  core*=reveal;
+  halo*=reveal;
+  edge*=reveal;
+  maskCore=core;
+#endif
   float pigmentPhase=fract(phase*.17+filamentHue*.88+hueOffset+
     seedPhase*.047+ct*(.023+.017*filamentMotion)+fieldV*.06);
   vec3 ink=palette(pigmentPhase);
   vec3 glimmer=palette(fract(pigmentPhase+.23+.16*filamentRelief));
   float sheen=(.38+.62*highlight)*(.3+.7*filamentRelief);
   vec3 thread=ink*(.75+.55*sheen)+glimmer*.21*filamentRelief;
+#ifdef FILAMENT_STITCHING
+  // Bright traveling needle tip follows the line's own local coordinates.
+  // It cannot paint into the background when the line mask is absent.
+  thread+=mix(ink,vec3(1.0,.98,.92),.71)*
+    needle*filamentStitchGlow*core*(.42+1.25*filamentStitchAmount);
+#endif
   // Raised fibers are described in thread-local coordinates, so relief,
   // anisotropic light, and fraying move WITH the stitch rather than sliding
   // over the finished picture as a separate texture.
@@ -345,6 +443,10 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   vec3 result=mix(background,background*.48+thread*1.06,core*amount*.91);
   result+=glimmer*halo*amount*(.045+.115*filamentRelief);
   result+=vec3(.89,.95,1.0)*edge*amount*filamentRelief*.11;
+#ifdef FILAMENT_STITCHING
+  result+=mix(ink,vec3(.94,.98,1.0),.65)*
+    needle*core*amount*filamentStitchGlow*.32;
+#endif
 #ifdef FILAMENT_FIBER_DETAIL
   result+=thread*fray*.36+glimmer*halo*amount*extraHalo;
   if(filamentBeads>.001){

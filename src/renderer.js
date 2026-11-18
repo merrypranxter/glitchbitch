@@ -551,8 +551,13 @@ export function createRenderer(canvas) {
       withPhoton = s.photonAmount>0,
       withFilament = s.filamentAmount>0,
       withHybrid = withFilament && s.filamentCrossbreed>0,
+      withFiberDetail = withFilament && (
+        s.filamentMaterial!=="Original thread" ||
+        withHybrid && s.filamentSecondMaterial!=="Original thread" ||
+        s.filamentNap>0 || s.filamentBeads>0
+      ),
       withTunnel = s.engine===5 || (blended && s.secondaryEngine===5),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withWiggle ? "wiggle" : "still"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withWiggle ? "wiggle" : "still"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -593,6 +598,7 @@ export function createRenderer(canvas) {
     // Do not compile the second geometry at all for old or single-parent art.
     const selectedFilament=withFilament
       ? (withHybrid ? "#define FILAMENT_HYBRID 1\n" : "") +
+        (withFiberDetail ? "#define FILAMENT_FIBER_DETAIL 1\n" : "") +
         filamentGLSL.replace("uniform int filamentSpecies;",
           "#define filamentSpecies "+Math.max(0,filamentSpecies.indexOf(s.filamentSpecies)))
           .replace("uniform int filamentSecondSpecies;",

@@ -14,7 +14,7 @@ import {
 import { palettes, parsePalette, paletteName } from "../data";
 import { pickDifferentPalette, generateRandomPalette, shuffleColorStops, reverseColorStops } from "../palette-actions";
 import { parsePaletteLibrary, paletteLibraryDocument } from "../palette-io";
-import { Parameter, Section, Select, Switch } from "./Controls";
+import { Parameter, Section, Segmented, Switch } from "./Controls";
 export function Swatches({ colors }) {
   return (
     <span className="swatches">
@@ -87,8 +87,9 @@ export default function ColorLab({
   return (
     <>
       <Section
-        title="PALETTE VAULT"
-        aside={<span>{palettes.length + customPalettes.length} PALETTES</span>}
+        id="palettes"
+        defaultOpen
+        aside={<span className="section-count">{palettes.length + customPalettes.length}</span>}
       >
         <div className="palette-action-grid" role="group" aria-label="Palette discovery">
           <button className="button secondary" type="button" onClick={shufflePalette}
@@ -108,17 +109,6 @@ export default function ColorLab({
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
-        <div className="palette-transfer">
-          <button className="button secondary" type="button" onClick={exportPalettes}>
-            Export palette library
-          </button>
-          <label className="button secondary" style={{cursor:"pointer"}}>
-            Import palette JSON
-            <input type="file" accept=".json,application/json" onChange={importPaletteFile} style={{display:"none"}}/>
-          </label>
-        </div>
-        {error && <p className="field-error" role="alert">{error}</p>}
-        <p className="control-note">Full 12-stop originals from the shared artist vault. Export and import compatible JSON between studio apps.</p>
         <div className="palette-list">
           {[...palettes, ...customPalettes]
             .map((p, i) => ({ ...p, index: i }))
@@ -157,10 +147,21 @@ export default function ColorLab({
               );
             })}
         </div>
+        <div className="palette-transfer">
+          <button className="button secondary" type="button" onClick={exportPalettes}>
+            Export palette library
+          </button>
+          <label className="button secondary" style={{cursor:"pointer"}}>
+            Import palette JSON
+            <input type="file" accept=".json,application/json" onChange={importPaletteFile} style={{display:"none"}}/>
+          </label>
+        </div>
+        {error && <p className="field-error" role="alert">{error}</p>}
       </Section>
       <Section
-        title="MAKE IT YOURS"
-        aside={<span>{paletteName(state).toUpperCase()}</span>}
+        id="stops"
+        defaultOpen
+        aside={<span className="section-count">{paletteName(state)}</span>}
       >
         <div className="palette-action-grid" role="group" aria-label="Color stop order">
           <button className="button secondary" type="button" onClick={shuffleStops}
@@ -276,19 +277,13 @@ export default function ColorLab({
           </form>
         </details>
       </Section>
-      <Section
-        title="COLOR CHOREOGRAPHY"
-        aside={<span>INDEPENDENT OF SHAPE</span>}
-      >
-        <Select
+      <Section id="rhythm" history={history}>
+        <Segmented
           label="Rhythm"
           value={state.colorMode}
+          options={[["Traveling wave", "Wave"], ["Color canon", "Canon"], ["Phase vortex", "Vortex"]]}
           onChange={(v) => history.change((s) => ({ ...s, colorMode: v }))}
-        >
-          {["Traveling wave", "Color canon", "Phase vortex"].map((x) => (
-            <option key={x}>{x}</option>
-          ))}
-        </Select>
+        />
         <p className="control-note">
           {state.colorMode === "Color canon"
             ? "Three harmonic voices in a 1:2:3 rhythm."
@@ -319,7 +314,7 @@ export default function ColorLab({
           history={history}
         />
       </Section>
-      <Section title="COLOR GRADE">
+      <Section id="grade" history={history}>
         <Parameter label="Saturation" name="saturation" history={history} />
         <Parameter label="Contrast" name="contrast" history={history} />
         <Parameter label="Brightness" name="brightness" history={history} />

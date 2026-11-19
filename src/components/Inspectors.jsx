@@ -56,6 +56,8 @@ import { colonyAnatomyModes, colonyAnatomyPresets, applyColonyAnatomyPreset,
   clearColonyAnatomy, shuffleColonyAnatomy } from "../colony-anatomy.js";
 import { colonyCortexModes, colonyCortexPresets, applyColonyCortexPreset,
   clearColonyCortex, shuffleColonyCortex } from "../colony-cortex.js";
+import { sporeModes, sporePresets, applySporePreset, shuffleSporeDynasty,
+  evolveSporeGeneration, stopSpores, sporeParticipatingCount } from "../spore-dynasties.js";
 import { ensureValidEcosystemState } from "../ecosystem-randomizer.js";
 import { shuffleColonies, shuffleColonyLife, shuffleEcosystem,
   fullWeirdShuffle, chaosLevels } from "../ecosystem-randomizer.js";
@@ -238,6 +240,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [colonyLifePreset,setColonyLifePreset]=React.useState(colonyLifePresets[0].name);
   const [colonyAnatomyPreset,setColonyAnatomyPreset]=React.useState(colonyAnatomyPresets[0].name);
   const [colonyCortexPreset,setColonyCortexPreset]=React.useState(colonyCortexPresets[0].name);
+  const [sporePreset,setSporePreset]=React.useState(sporePresets[0].name);
   const [chaosLevel,setChaosLevel]=React.useState("Wild");
   const [preserveColors,setPreserveColors]=React.useState(true);
   const [preserveText,setPreserveText]=React.useState(true);
@@ -298,6 +301,73 @@ export function EffectsInspector({ history, onTool, tool }) {
         Uncheck Preserve colors to randomize the palette too. Your text stays
         intact unless you explicitly uncheck its protection. Manual controls
         and all planted seeds remain editable afterward.
+      </p>
+    </>,
+    "spore-dynasty": <>
+      <p className="control-note">
+        SPORE DYNASTIES — reproductive particles emerge from colonies, travel
+        along a mathematically determined wind path, land, and grow temporary
+        daughter organisms. Evolve Generation commits the landing sites as
+        real, movable colonies you can keep breeding.
+      </p>
+      <Select label="Spore transport" value={s.sporeMode}
+        onChange={mode=>history.change(x=>mode==="Dormant"
+          ?stopSpores({...x,sporeMode:mode})
+          :ensureValidEcosystemState({
+            ...x,sporeMode:mode,sporeAmount:Math.max(70,x.sporeAmount),
+            atmoMaskMode:"Painted colonies",
+            atmoAmount:Math.max(70,x.atmoAmount),
+          }))}>
+        {sporeModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <Parameter label="Spore visibility" name="sporeAmount" history={history}/>
+      <Parameter label="Dispersal speed" name="sporeSpeed" history={history}/>
+      <Parameter label="Landing distance" name="sporeReach" history={history}/>
+      <Parameter label="Fertility / active parents" name="sporeFertility" history={history}/>
+      <Parameter label="Spore luminescence" name="sporeGlow" history={history}/>
+      <Select label="Spore specimen" value={sporePreset} onChange={setSporePreset}>
+        {sporePresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+      </Select>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>ensureValidEcosystemState({
+            ...applySporePreset(x,sporePreset),
+            atmoMaskMode:"Painted colonies",
+            atmoAmount:Math.max(74,x.atmoAmount),
+          }))}>
+          <Flower2 size={13}/> Awaken spores
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>ensureValidEcosystemState({
+            ...shuffleSporeDynasty(x),
+            atmoMaskMode:"Painted colonies",
+            atmoAmount:Math.max(74,x.atmoAmount),
+          }))}>
+          <Dices size={13}/> Shuffle spores
+        </button>
+        <button type="button" className="button secondary"
+          disabled={!s.habitatStamps?.length ||
+            s.habitatStamps.length>=MAX_HABITAT_STAMPS ||
+            s.sporeGeneration>=4095 ||
+            s.sporeMode==="Dormant" || s.sporeAmount<=0 ||
+            s.sporeFertility<=0}
+          onClick={()=>history.change(evolveSporeGeneration)}>
+          <Dna size={13}/> Evolve generation
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.sporeAmount<=0}
+          onClick={()=>history.change(stopSpores)}>
+          Stop flight (keep offspring)
+        </button>
+      </div>
+      <p className="control-note">
+        Living seeds: {(s.habitatStamps||[]).length}/{MAX_HABITAT_STAMPS}
+        {" · "}Saved generations: {s.sporeGeneration||0}
+        {" · "}Potential parents: {sporeParticipatingCount(s)}.
+        Flight and temporary daughters loop smoothly. Evolve Generation
+        permanently adds the current parents' offspring to the saved
+        document in one undoable action. When the 16-seed budget is full,
+        erase some colonies before evolving further.
       </p>
     </>,
     "colony-cortex": <>

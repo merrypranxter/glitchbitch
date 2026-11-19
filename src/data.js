@@ -10,6 +10,7 @@ import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.j
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
 import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
 import { colonyCortexModes, colonyCortexPresets } from "./colony-cortex.js";
+import { sporeModes, sporePresets } from "./spore-dynasties.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
@@ -366,6 +367,11 @@ export const numericRanges = {
   colonyCortexDetail: [0, 100],
   colonyCortexMotion: [0, 100],
   colonyCortexRelief: [0, 100],
+  sporeAmount: [0, 100],
+  sporeSpeed: [0, 100],
+  sporeReach: [0, 100],
+  sporeFertility: [0, 100],
+  sporeGlow: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -606,6 +612,13 @@ export const initial = {
   colonyCortexDetail: 55,
   colonyCortexMotion: 45,
   colonyCortexRelief: 50,
+  sporeMode: "Dormant",
+  sporeAmount: 0,
+  sporeSpeed: 57,
+  sporeReach: 58,
+  sporeFertility: 64,
+  sporeGlow: 73,
+  sporeGeneration: 0,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -705,6 +718,7 @@ export function validateRecipe(input) {
     colonyShapeB: colonyAnatomyModes,
     colonyCortexA: colonyCortexModes,
     colonyCortexB: colonyCortexModes,
+    sporeMode: sporeModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -810,6 +824,13 @@ export function validateRecipe(input) {
        /[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(x.lettering))
       throw Error("Your quote must be 280 characters or fewer (line breaks allowed).");
     s.lettering=x.lettering.replace(/\r\n?/g,"\n");
+  }
+  // This counter is not a randomizable visual slider: it is the version
+  // of committed, permanently editable biological offspring in this work.
+  if(x.sporeGeneration!==undefined){
+    if(!Number.isInteger(x.sporeGeneration)||x.sporeGeneration<0||
+      x.sporeGeneration>4095)throw Error("Invalid spore generation.");
+    s.sporeGeneration=x.sporeGeneration;
   }
   // Painted habitats are independent of touch deformation marks.
   // Bounded storage and strict validation prevent bogus GPU uniform arrays.
@@ -1004,6 +1025,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "colonyAnatomyPores","colonyAnatomyRim",
       "colonyCortexAmount","colonyCortexDetail",
       "colonyCortexMotion","colonyCortexRelief",
+      "sporeAmount","sporeSpeed","sporeReach","sporeFertility","sporeGlow",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -1013,6 +1035,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(["colonyAnatomyAmount","colonyAnatomyPores","colonyAnatomyRim"].includes(key)
         && state.colonyAnatomyAmount<=0)continue; // Morph stays opt-in.
       if(key==="colonyCortexAmount"&&state.colonyCortexAmount<=0)continue; // Cortex stays dormant.
+      if(key==="sporeAmount"&&state.sporeAmount<=0)continue; // Spores stay opt-in.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1248,6 +1271,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.colonyCortexA="Bare cortex";s.colonyCortexB="Bare cortex";
   s.colonyCortexAmount=0;s.colonyCortexDetail=55;
   s.colonyCortexMotion=45;s.colonyCortexRelief=50;
+  s.sporeMode="Dormant";s.sporeAmount=0;
+  s.sporeSpeed=57;s.sporeReach=58;s.sporeFertility=64;
+  s.sporeGlow=73;s.sporeGeneration=0;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;
@@ -2291,6 +2317,70 @@ export const looks = [
         colorAmount:[68,84,72,91][i],
         lightMotion:[81,74,88,96][i],
       },
+    };
+  }),
+
+  // Reproductive ecosystems with permanent, editable origin colonies and
+  // deterministic spore trajectories. Four ready-made genetics specimens.
+  ...sporePresets.map((preset,i)=>{
+    const {name,...repro}=preset;
+    const seed=[318471,726219,491380,852137][i];
+    const palette=[9,11,10,1][i];
+    return {
+      name,
+      note:[
+        "Electric reproductive dust drifts between lichen and coral colonies",
+        "Generations of spores slowly disperse over striped cortical thalli",
+        "Spiral spores flee opposite populations of violet crystal petals",
+        "Fruiting cups launch prismatic daughter colonies into a glowing microbial sky",
+      ][i],
+      family:"Spore Dynasties",
+      state:{
+        ...initial,...repro,seed,
+        engine:[19,18,7,11][i],
+        palette,colors:palettes[palette].colors,
+        complexity:[79,71,84,88][i],scale:[27,30,23,28][i],
+        warp:[68,54,77,69][i],
+        atmoMode:["Heartbeat phosphor","Prismatic mycelium",
+          "Mandala gas leak","Prismatic mycelium"][i],
+        atmoBMode:["Prismatic mycelium","Mandala gas leak",
+          "Prismatic mycelium","Misprint rosette"][i],
+        atmoAmount:90,atmoBAmount:77,
+        atmoScale:[55,67,40,72][i],atmoBScale:[75,44,70,52][i],
+        atmoDensity:88,atmoBDensity:80,
+        atmoMotion:72,atmoBMotion:63,
+        atmoGlow:95,atmoBGlow:89,
+        atmoHue:[23,77,41,87][i],atmoBHue:[71,32,78,30][i],
+        atmoBBlendMode:["Light bloom","Over","Spectral difference","Ink stain"][i],
+        atmoMaskMode:"Painted colonies",atmoBMaskMode:"Painted colonies",
+        atmoMaskFeather:[37,46,33,55][i],
+        atmoMaskMotion:[66,30,72,54][i],
+        atmoMaskVariation:[64,47,83,78][i],
+        colonyShapeA:["Lichen lobes","Lichen lobes","Crystal petals","Hyphal fans"][i],
+        colonyShapeB:["Coral fringe","Hyphal fans","Hyphal fans","Coral fringe"][i],
+        colonyAnatomyAmount:[89,93,90,86][i],
+        colonyAnatomyDetail:[78,67,88,81][i],
+        colonyAnatomyMotion:[56,39,75,57][i],
+        colonyAnatomyPores:[26,39,31,47][i],
+        colonyAnatomyRim:[84,75,93,88][i],
+        colonyCortexA:["Fruiting cups","Growth bands","Hyphal veins","Living cortex"][i],
+        colonyCortexB:["Living cortex","Hyphal veins","Fruiting cups","Fruiting cups"][i],
+        colonyCortexAmount:[89,78,94,97][i],
+        colonyCortexDetail:[68,54,86,90][i],
+        colonyCortexMotion:[71,30,73,66][i],
+        colonyCortexRelief:[88,65,91,96][i],
+        colonyLifeMode:["Germinate & bloom","Wither & return",
+          "Breathe","Territory war"][i],
+        colonyLifeAmount:[87,77,66,94][i],
+        colonyLifeSpeed:[75,27,63,82][i],
+        colonyFrontGlow:[75,64,91,84][i],
+        colonyCompetition:i===3?87:0,
+        habitatStamps:generateHabitatStamps({seed},
+          ()=>[.19,.38,.54,.72][i],
+          {layout:["Ring","Twin clusters","Diagonal invasion","Corner islands"][i],
+            count:[7,8,8,9][i],needA:true,needB:true}),
+        colorAmount:[87,68,79,92][i],lightMotion:[91,80,87,95][i],
+      }
     };
   }),
 

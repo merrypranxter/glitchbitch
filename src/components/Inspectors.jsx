@@ -50,6 +50,8 @@ import { atmosphereModes, atmospherePresets, applyAtmospherePreset,
 import { atmosphereHabitats, atmosphereSecondHabitats,
   atmosphereBlendModes } from "../atmosphere-habitats.js";
 import { habitatTools, MAX_HABITAT_STAMPS, clearColonies } from "../habitat-painter.js";
+import { colonyLifeModes, colonyLifePresets, applyColonyLifePreset,
+  stopColonyLife } from "../colony-lifecycle.js";
 export { TextInspector } from "./TextInspector";
 const icons = [
   Waves,
@@ -226,6 +228,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [underlayPreset,setUnderlayPreset]=React.useState(underlayPresets[0].name);
   const [atmoPreset,setAtmoPreset]=React.useState(atmospherePresets[0].name);
   const [hybridAtmoPreset,setHybridAtmoPreset]=React.useState(hybridAtmospherePresets[0].name);
+  const [colonyLifePreset,setColonyLifePreset]=React.useState(colonyLifePresets[0].name);
   // Find jumps to a section that might be filtered out: show everything.
   useReveal((detail) => {
     if (effectSections.some((x) => x.id === detail.id) && filter !== "All") setFilter("All");
@@ -238,6 +241,44 @@ export function EffectsInspector({ history, onTool, tool }) {
     return meta.group === filter;
   };
   const body = {
+    "colony-life": <>
+      <p className="control-note">
+        COLONY WARS — give your planted habitats lifecycles.
+        Seeds expand and retreat with continuous motion. No frame-history
+        textures, no stochastic frame jumps. The Glow slider illuminates
+        the moving territory boundaries in your own palette.
+      </p>
+      <Select label="Lifecycle" value={s.colonyLifeMode}
+        onChange={mode=>history.change(x=>({...x,colonyLifeMode:mode,
+          colonyLifeAmount:mode==="Still"?0:Math.max(70,x.colonyLifeAmount)}))}>
+        {colonyLifeModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <Parameter label="Growth / retreat intensity" name="colonyLifeAmount" history={history}/>
+      <Parameter label="Life-cycle speed" name="colonyLifeSpeed" history={history}/>
+      <Parameter label="Luminous territory edges" name="colonyFrontGlow" history={history}/>
+      <Parameter label="A versus B competition" name="colonyCompetition" history={history}/>
+      <Select label="Instant ecology" value={colonyLifePreset} onChange={setColonyLifePreset}>
+        {colonyLifePresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+      </Select>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applyColonyLifePreset(x,colonyLifePreset))}>
+          <Flower2 size={13}/> Awaken ecosystem
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.colonyLifeAmount<=0&&s.colonyFrontGlow<=0&&s.colonyCompetition<=0}
+          onClick={()=>history.change(stopColonyLife)}>
+          Stop ecology (keep seeds)
+        </button>
+      </div>
+      <p className="control-note">
+        Needs painted colony seeds and a parent set to Painted colonies.
+        Territory war only makes A/B fight when both use Painted colonies.
+        Speed and intensity affect the same timeline used for PNG/GIF/MP4.
+        Leave Life at Still and all these effects off to preserve the old art.
+        For ready-made experiments try Lookbook → Colony Wars.
+      </p>
+    </>,
     atmosphere: <>
       <p className="control-note">Four living shader-vault worlds you can stack, crossbreed and mask over any engine: stained-glass mycelium, mandala-constrained gas, double-beat phosphors, and living CMY print rosettes. They respond to your existing palette and keep moving in GIF/MP4 exports.</p>
       <Select label="Atmosphere" value={s.atmoMode}

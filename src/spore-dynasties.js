@@ -66,7 +66,7 @@ export function daughterSite(state,index){
 }
 export function evolveSporeGeneration(state){
   const before=state.habitatStamps||[];
-  if(!before.length||before.length>=16)return state;
+  if(!before.length||before.length>=16||state.sporeGeneration>=4095)return state;
   const n=sporeParticipatingCount(state);
   if(n<=0)return state;
   const available=Math.min(16-before.length,n);

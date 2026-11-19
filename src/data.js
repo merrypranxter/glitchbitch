@@ -7,6 +7,7 @@ import { photonSpecies } from "./photon-zoo.js";
 import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
 import { atmosphereModes } from "./mutant-atmospheres.js";
+import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
 export const engineInfo = [
   ["Plasma flow", "Liquid sine fields folded into neon ribbons.", "Fluid"],
@@ -336,6 +337,17 @@ export const numericRanges = {
   atmoGlow: [0, 100],
   atmoHue: [0, 100],
   atmoVariation: [0, 100],
+  atmoBAmount: [0, 100],
+  atmoBScale: [0, 100],
+  atmoBDensity: [0, 100],
+  atmoBMotion: [0, 100],
+  atmoBGlow: [0, 100],
+  atmoBHue: [0, 100],
+  atmoBVariation: [0, 100],
+  atmoMaskScale: [0, 100],
+  atmoMaskFeather: [0, 100],
+  atmoMaskMotion: [0, 100],
+  atmoMaskVariation: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -541,6 +553,21 @@ export const initial = {
   atmoGlow: 75,
   atmoHue: 43,
   atmoVariation: 38,
+  atmoBMode: "Mandala gas leak",
+  atmoBAmount: 0,
+  atmoBScale: 63,
+  atmoBDensity: 70,
+  atmoBMotion: 68,
+  atmoBGlow: 73,
+  atmoBHue: 69,
+  atmoBVariation: 53,
+  atmoMaskMode: "Everywhere",
+  atmoBMaskMode: "Everywhere",
+  atmoBBlendMode: "Over",
+  atmoMaskScale: 52,
+  atmoMaskFeather: 51,
+  atmoMaskMotion: 47,
+  atmoMaskVariation: 38,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -631,6 +658,10 @@ export function validateRecipe(input) {
     filamentSculptMode: filamentSculptModes,
     underlayMode: underlayModes,
     atmoMode: atmosphereModes,
+    atmoBMode: atmosphereModes,
+    atmoMaskMode: atmosphereHabitats,
+    atmoBMaskMode: atmosphereSecondHabitats,
+    atmoBBlendMode: atmosphereBlendModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -902,9 +933,13 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "substanceRelief","substanceEdge","substanceHue","substanceVariation",
       "atmoAmount","atmoScale","atmoDensity","atmoMotion",
       "atmoGlow","atmoHue","atmoVariation",
+      "atmoBAmount","atmoBScale","atmoBDensity","atmoBMotion",
+      "atmoBGlow","atmoBHue","atmoBVariation",
+      "atmoMaskScale","atmoMaskFeather","atmoMaskMotion","atmoMaskVariation",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
+      if(key==="atmoBAmount" && state.atmoBAmount<=0)continue; // Never wake a hidden second parent by mutating old art.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1106,6 +1141,24 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.atmoGlow=30+random()*69;
   s.atmoHue=random()*100;
   s.atmoVariation=random()*100;
+  s.atmoBMode=different(atmosphereModes,s.atmoMode,random);
+  s.atmoBAmount=s.atmoAmount>0&&random()<.38?30+random()*64:0;
+  s.atmoBScale=20+random()*77;
+  s.atmoBDensity=25+random()*74;
+  s.atmoBMotion=21+random()*76;
+  s.atmoBGlow=30+random()*69;
+  s.atmoBHue=random()*100;
+  s.atmoBVariation=random()*100;
+  s.atmoMaskMode=s.atmoAmount>0&&random()<.55
+    ?sample(atmosphereHabitats.slice(1),random):"Everywhere";
+  s.atmoBMaskMode=s.atmoBAmount>0&&s.atmoMaskMode!=="Everywhere"&&random()<.56
+    ?"Inverse first":s.atmoBAmount>0&&random()<.6
+    ?sample(atmosphereHabitats.slice(1),random):"Everywhere";
+  s.atmoBBlendMode=different(atmosphereBlendModes,state.atmoBBlendMode,random);
+  s.atmoMaskScale=20+random()*75;
+  s.atmoMaskFeather=16+random()*74;
+  s.atmoMaskMotion=18+random()*76;
+  s.atmoMaskVariation=random()*100;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;

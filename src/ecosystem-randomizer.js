@@ -4,6 +4,7 @@
 import { atmosphereModes } from "./mutant-atmospheres.js";
 import { atmosphereHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { colonyLifeModes } from "./colony-lifecycle.js";
+import { shuffleColonyAnatomy } from "./colony-anatomy.js";
 import { MAX_HABITAT_STAMPS } from "./habitat-painter.js";
 
 const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
@@ -208,6 +209,19 @@ export function shuffleEcosystem(state,rng=Math.random,opts={}){
     s.colonyLifeSpeed=range(22,80,rng);
     s.colonyFrontGlow=0;s.colonyCompetition=0;
   }
+  // Opt-in morphology is part of every full ecosystem spin: new plant
+  // species can have radically different outlines without hand-editing.
+  // Unplanted/analytic worlds stay free of dormant decorative shaders.
+  if(s.atmoMaskMode==="Painted colonies"||s.atmoBMaskMode==="Painted colonies"){
+    if(roll(.84,rng))Object.assign(s,shuffleColonyAnatomy(s,rng));
+    else{
+      s.colonyShapeA="Classic disks";s.colonyShapeB="Classic disks";
+      s.colonyAnatomyAmount=0;s.colonyAnatomyPores=0;s.colonyAnatomyRim=0;
+    }
+  }else{
+    s.colonyShapeA="Classic disks";s.colonyShapeB="Classic disks";
+    s.colonyAnatomyAmount=0;s.colonyAnatomyPores=0;s.colonyAnatomyRim=0;
+  }
   return ensureValidEcosystemState(s,rng);
 }
 // Old shader systems can be very costly together on mobile Safari. Explicit
@@ -286,6 +300,8 @@ export function mixEcosystemIntoSurprise(state,rng=Math.random,opts={}){
     s.habitatStamps=[];
     s.colonyLifeMode="Still";s.colonyLifeAmount=0;
     s.colonyFrontGlow=0;s.colonyCompetition=0;
+    s.colonyShapeA="Classic disks";s.colonyShapeB="Classic disks";
+    s.colonyAnatomyAmount=0;s.colonyAnatomyPores=0;s.colonyAnatomyRim=0;
     return s;
   }
   s=shuffleEcosystem(s,rng,{

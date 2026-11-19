@@ -17,6 +17,7 @@ import { photonGLSL, photonSpecies } from "./photon-zoo.js";
 import { filamentGLSL, filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes } from "./filament-forge.js";
 import { underlayGLSL, underlayModes } from "./living-underlay.js";
 import { tunnelGLSL } from "./tunnels.js";
+import { strangeFieldsGLSL } from "./strange-fields.js";
 
 const vertex = `attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
 const fragment = `precision highp float;
@@ -39,6 +40,7 @@ ${bioGLSL}
 /* WIGGLE_MODULE */
 /* STEREO_MODULE */
 /* TUNNEL_MODULE */
+/* STRANGE_FIELDS_MODULE */
 float field(vec2 p,int kind){float t=time*.3,f=0.;
 if(kind==0){for(int i=0;i<5;i++){float n=float(i)+1.;p+=warp*.32*vec2(sin(p.y*n+t/n),cos(p.x*n-t/n));f+=sin(p.x*n+cos(p.y*n+t))/n;}f=f*.25+length(p)*.12;}
 else if(kind==1){f=sin(length(p-vec2(sin(t),cos(t)))*12.)*sin(length(p+vec2(cos(t*.7),sin(t*.8)))*13.);f=f*.4+length(p)*.15;}
@@ -57,6 +59,7 @@ else if(kind==13){f=candyFractalPortal(p);}
 else if(kind==14){f=fivefoldDiffraction(p);}
 else if(kind==15){f=biologicalField(p);}
 else if(kind==16){f=.18*sin(length(p)*3.+time*.47)+.12*cos(atan(p.y,p.x)*5.-time*.22);}
+else if(kind==17 || kind==18 || kind==19){f=strangeField(p,kind);}
 else {f=0.;}
 return f;}
 float composed(vec2 p){float a=field(p,engine);if(blend<.001)return a;float b=field(rotate(.43)*p+vec2(.37,-.21),secondaryEngine);float c=b;if(blendMode==1)c=a*b*2.;if(blendMode==2)c=abs(a-b);return mix(a,c,blend);}
@@ -134,6 +137,7 @@ export function createRenderer(canvas) {
   const programs = new Map();
   let active, fence = null, memory = null, memoryShader = null, memoryDisabled = false;
   let stereoUnavailable = false, materialUnavailable = false,
+    strangeUnavailable = false,
     typeShaderUnavailable = false, compositionUnavailable = false,
     backdropUnavailable = false, microUnavailable = false,
     substanceUnavailable = false, wiggleUnavailable = false,
@@ -148,7 +152,8 @@ export function createRenderer(canvas) {
        !microUnavailable && !substanceUnavailable && !wiggleUnavailable &&
        !photonUnavailable && !filamentUnavailable && !filamentHybridUnavailable &&
        !filamentMaterialUnavailable && !filamentStitchUnavailable &&
-       !filamentSculptUnavailable && !underlayUnavailable)return source;
+       !filamentSculptUnavailable && !underlayUnavailable &&
+       !strangeUnavailable)return source;
     return {
       ...source,
       ...(materialUnavailable ? {filmAmount:0,opalAmount:0,prismAmount:0,foilRelief:0}:{}),
@@ -163,6 +168,10 @@ export function createRenderer(canvas) {
       ...(filamentStitchUnavailable ? {filamentStitchAmount:0}:{}),
       ...(filamentSculptUnavailable ? {filamentSculptAmount:0}:{}),
       ...(underlayUnavailable ? {underlayAmount:0}:{}),
+      ...(strangeUnavailable ? {
+        engine: source.engine>=17 && source.engine<=19 ? 0 : source.engine,
+        secondaryEngine: source.secondaryEngine>=17 && source.secondaryEngine<=19 ? 1 : source.secondaryEngine
+      }:{}),
       ...(filamentMaterialUnavailable ? {filamentMaterial:"Original thread",filamentSecondMaterial:"Original thread",
         filamentNap:0,filamentBeads:0}:{}),
       ...(wiggleUnavailable ? {wiggleAmount:0}:{})
@@ -569,6 +578,8 @@ export function createRenderer(canvas) {
         s.filamentNap>0 || s.filamentBeads>0
       ),
       withTunnel = s.engine===5 || (blended && s.secondaryEngine===5),
+      withStrange = (s.engine>=17 && s.engine<=19) ||
+        (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
       key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withWiggle ? "wiggle" : "still"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
@@ -584,6 +595,8 @@ export function createRenderer(canvas) {
     );
     if (!blended)
       source = source.replace("if(blend<.001)return a;", "return a;");
+    source = source.replace("/* STRANGE_FIELDS_MODULE */",withStrange ? strangeFieldsGLSL :
+      "float strangeField(vec2 p,int kind){return 0.;}");
     source = source.replace("/* WIGGLE_MODULE */", withWiggle ? wiggleGLSL : "");
     source = source.replace("/* WIGGLE_POST */", withWiggle ? "p=wiggleCoordinates(p);" : "");
     source = source.replace("/* STEREO_MODULE */", withStereo ? stereoGLSL : "");
@@ -806,6 +819,10 @@ export function createRenderer(canvas) {
             candidate.prismAmount>0 || candidate.foilRelief>0){
             materialUnavailable=true;
             console.warn("Prismatic material shader unavailable, preserving original art.",e);
+          }else if((candidate.engine>=17 && candidate.engine<=19) ||
+            (candidate.blend>0 && candidate.secondaryEngine>=17 && candidate.secondaryEngine<=19)){
+            strangeUnavailable=true;
+            console.warn("Shader-vault mathematical mutant unsupported by this GPU; showing safe original engine.",e);
           }else if(candidate.engine===16 ||
              (candidate.blend>0 && candidate.secondaryEngine===16) ||
              candidate.stereoAmount>0){

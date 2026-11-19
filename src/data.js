@@ -348,6 +348,7 @@ export const numericRanges = {
   atmoMaskFeather: [0, 100],
   atmoMaskMotion: [0, 100],
   atmoMaskVariation: [0, 100],
+  habitatBrushRadius: [5, 45],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -568,6 +569,8 @@ export const initial = {
   atmoMaskFeather: 51,
   atmoMaskMotion: 47,
   atmoMaskVariation: 38,
+  habitatBrushRadius: 19,
+  habitatStamps: [],
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -768,6 +771,25 @@ export function validateRecipe(input) {
       throw Error("Your quote must be 280 characters or fewer (line breaks allowed).");
     s.lettering=x.lettering.replace(/\r\n?/g,"\n");
   }
+  // Painted habitats are independent of touch deformation marks.
+  // Bounded storage and strict validation prevent bogus GPU uniform arrays.
+  if(x.habitatStamps!==undefined){
+    if(!Array.isArray(x.habitatStamps)||x.habitatStamps.length>16)
+      throw Error("Maximum 16 planted habitat colonies.");
+    const ids=new Set();
+    s.habitatStamps=x.habitatStamps.map((m,i)=>{
+      if(!m||!Number.isFinite(m.x)||m.x<0||m.x>1||
+         !Number.isFinite(m.y)||m.y<0||m.y>1||
+         !Number.isFinite(m.radius)||m.radius<.05||m.radius>.45||
+         !Number.isInteger(m.parent)||(m.parent!==0&&m.parent!==1))
+        throw Error("Invalid habitat colony.");
+      if(typeof m.id!=="string"||!m.id||m.id.length>80)
+        throw Error("Invalid habitat colony identity.");
+      if(ids.has(m.id))throw Error("Duplicate habitat colony.");
+      ids.add(m.id);
+      return {id:m.id,x:m.x,y:m.y,radius:m.radius,parent:m.parent};
+    });
+  }
   if (x.marks !== undefined) {
     if (!Array.isArray(x.marks) || x.marks.length > 32)
       throw Error("A recipe can hold up to 32 touch forces.");
@@ -936,6 +958,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "atmoBAmount","atmoBScale","atmoBDensity","atmoBMotion",
       "atmoBGlow","atmoBHue","atmoBVariation",
       "atmoMaskScale","atmoMaskFeather","atmoMaskMotion","atmoMaskVariation",
+      "habitatBrushRadius",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){

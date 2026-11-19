@@ -7,6 +7,7 @@ import { photonSpecies } from "./photon-zoo.js";
 import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
+import { colonyLifeModes } from "./colony-lifecycle.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
 export const engineInfo = [
@@ -349,6 +350,10 @@ export const numericRanges = {
   atmoMaskMotion: [0, 100],
   atmoMaskVariation: [0, 100],
   habitatBrushRadius: [5, 45],
+  colonyLifeAmount: [0, 100],
+  colonyLifeSpeed: [0, 100],
+  colonyFrontGlow: [0, 100],
+  colonyCompetition: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -571,6 +576,11 @@ export const initial = {
   atmoMaskVariation: 38,
   habitatBrushRadius: 19,
   habitatStamps: [],
+  colonyLifeMode: "Still",
+  colonyLifeAmount: 0,
+  colonyLifeSpeed: 47,
+  colonyFrontGlow: 0,
+  colonyCompetition: 0,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -665,6 +675,7 @@ export function validateRecipe(input) {
     atmoMaskMode: atmosphereHabitats,
     atmoBMaskMode: atmosphereSecondHabitats,
     atmoBBlendMode: atmosphereBlendModes,
+    colonyLifeMode: colonyLifeModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -958,11 +969,14 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "atmoBAmount","atmoBScale","atmoBDensity","atmoBMotion",
       "atmoBGlow","atmoBHue","atmoBVariation",
       "atmoMaskScale","atmoMaskFeather","atmoMaskMotion","atmoMaskVariation",
-      "habitatBrushRadius",
+      "habitatBrushRadius","colonyLifeAmount","colonyLifeSpeed",
+      "colonyFrontGlow","colonyCompetition",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
       if(key==="atmoBAmount" && state.atmoBAmount<=0)continue; // Never wake a hidden second parent by mutating old art.
+      if(["colonyLifeAmount","colonyFrontGlow","colonyCompetition"].includes(key)
+        && state.colonyLifeAmount<=0)continue; // Keep old artwork dormant.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1182,6 +1196,13 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.atmoMaskFeather=16+random()*74;
   s.atmoMaskMotion=18+random()*76;
   s.atmoMaskVariation=random()*100;
+  // Surprise makes new artwork, not unexpected infinite GPU ecology work.
+  // Life can be enabled explicitly or via a Painted Habitats Lookbook preset.
+  s.colonyLifeMode="Still";
+  s.colonyLifeAmount=0;
+  s.colonyLifeSpeed=47;
+  s.colonyFrontGlow=0;
+  s.colonyCompetition=0;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;

@@ -117,9 +117,14 @@ test("Cortex shaders reuse seed search and do not require new textures or GPU me
     "colonyCortexFieldA","colonyCortexFieldB","float band=",
     "float spokes=","float radialBelt=","vec3 tintColonyCortex"])
     assert.ok(colonyCortexGLSL.includes(marker),marker);
-  assert.match(habitatGLSL,/colonyCortexSample\(cortexCell,angle,cortexRadial,index,parent\)/);
-  assert.match(habitatGLSL,/colonyCortexFieldA=max/);
-  assert.match(habitatGLSL,/colonyCortexFieldB=max/);
+  assert.ok(habitatGLSL.includes("/* CORTEX_MODULE */"));
+  assert.ok(habitatGLSL.includes("/* CORTEX_SAMPLE */"));
+  assert.match(renderer,/colonyCortexSample\(cortexCell,angle,cortexRadial,index,parent\)/);
+  assert.match(renderer,/colonyCortexFieldA=max/);
+  assert.match(renderer,/colonyCortexFieldB=max/);
+  assert.match(renderer,/withCortex = s\.colonyCortexAmount>0/);
+  assert.match(renderer,/withCortex \? colonyCortexGLSL : ""/);
+  assert.match(renderer,/withCortex \? "cortex" : "no-cortex"/);
   assert.doesNotMatch(colonyCortexGLSL,/sampler|texture2D|uint\b|discard/);
   assert.match(renderer,/colonyCortexModes\.indexOf\(s\.colonyCortexA\)/);
   assert.match(renderer,/colonyCortexModes\.indexOf\(s\.colonyCortexB\)/);

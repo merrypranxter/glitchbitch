@@ -116,8 +116,10 @@ test("shared renderer grows masks before compositing both parents with palette e
   assert.match(habitatGLSL,/colonyLifeMode==1/);
   assert.match(habitatGLSL,/colonyLifeMode==4/);
   assert.match(renderer,/colonyLifeModes\.indexOf\(s\.colonyLifeMode\)/);
-  assert.match(renderer,/atmoAMask=atmosphereMaskForA/);
-  assert.match(renderer,/atmoBMask=atmosphereMaskForB/);
+  assert.match(renderer,/float atmoAMask=/);
+  assert.match(renderer,/maskedA\?"atmosphereMaskForA\(uv\)"/);
+  assert.match(renderer,/float atmoBMask=/);
+  assert.match(renderer,/maskedB\?"atmosphereMaskForB\(uv\)"/);
   assert.match(renderer,/float pressure=\.22\*sin/);
   assert.match(renderer,/vec3 atmoChild=livingMutantAtmosphereB/);
   assert.match(renderer,/palette\(atmoHue\+colorTime/);

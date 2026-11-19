@@ -5,6 +5,7 @@ import { atmosphereModes } from "./mutant-atmospheres.js";
 import { atmosphereHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { colonyLifeModes } from "./colony-lifecycle.js";
 import { shuffleColonyAnatomy } from "./colony-anatomy.js";
+import { shuffleColonyCortex } from "./colony-cortex.js";
 import { MAX_HABITAT_STAMPS } from "./habitat-painter.js";
 
 const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
@@ -222,6 +223,18 @@ export function shuffleEcosystem(state,rng=Math.random,opts={}){
     s.colonyShapeA="Classic disks";s.colonyShapeB="Classic disks";
     s.colonyAnatomyAmount=0;s.colonyAnatomyPores=0;s.colonyAnatomyRim=0;
   }
+  // Interior material is opt-in even when the silhouette has no anatomy.
+  // When a colony is planted, it can be ringed, vascular, fruiting or mixed.
+  if(s.atmoMaskMode==="Painted colonies"||s.atmoBMaskMode==="Painted colonies"){
+    if(roll(.72,rng))Object.assign(s,shuffleColonyCortex(s,rng));
+    else{
+      s.colonyCortexA="Bare cortex";s.colonyCortexB="Bare cortex";
+      s.colonyCortexAmount=0;
+    }
+  }else{
+    s.colonyCortexA="Bare cortex";s.colonyCortexB="Bare cortex";
+    s.colonyCortexAmount=0;
+  }
   return ensureValidEcosystemState(s,rng);
 }
 // Old shader systems can be very costly together on mobile Safari. Explicit
@@ -302,6 +315,8 @@ export function mixEcosystemIntoSurprise(state,rng=Math.random,opts={}){
     s.colonyFrontGlow=0;s.colonyCompetition=0;
     s.colonyShapeA="Classic disks";s.colonyShapeB="Classic disks";
     s.colonyAnatomyAmount=0;s.colonyAnatomyPores=0;s.colonyAnatomyRim=0;
+    s.colonyCortexA="Bare cortex";s.colonyCortexB="Bare cortex";
+    s.colonyCortexAmount=0;
     return s;
   }
   s=shuffleEcosystem(s,rng,{

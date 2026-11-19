@@ -52,6 +52,9 @@ import { atmosphereHabitats, atmosphereSecondHabitats,
 import { habitatTools, MAX_HABITAT_STAMPS, clearColonies } from "../habitat-painter.js";
 import { colonyLifeModes, colonyLifePresets, applyColonyLifePreset,
   stopColonyLife } from "../colony-lifecycle.js";
+import { colonyAnatomyModes, colonyAnatomyPresets, applyColonyAnatomyPreset,
+  clearColonyAnatomy, shuffleColonyAnatomy } from "../colony-anatomy.js";
+import { ensureValidEcosystemState } from "../ecosystem-randomizer.js";
 import { shuffleColonies, shuffleColonyLife, shuffleEcosystem,
   fullWeirdShuffle, chaosLevels } from "../ecosystem-randomizer.js";
 export { TextInspector } from "./TextInspector";
@@ -231,6 +234,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [atmoPreset,setAtmoPreset]=React.useState(atmospherePresets[0].name);
   const [hybridAtmoPreset,setHybridAtmoPreset]=React.useState(hybridAtmospherePresets[0].name);
   const [colonyLifePreset,setColonyLifePreset]=React.useState(colonyLifePresets[0].name);
+  const [colonyAnatomyPreset,setColonyAnatomyPreset]=React.useState(colonyAnatomyPresets[0].name);
   const [chaosLevel,setChaosLevel]=React.useState("Wild");
   const [preserveColors,setPreserveColors]=React.useState(true);
   const [preserveText,setPreserveText]=React.useState(true);
@@ -291,6 +295,63 @@ export function EffectsInspector({ history, onTool, tool }) {
         Uncheck Preserve colors to randomize the palette too. Your text stays
         intact unless you explicitly uncheck its protection. Manual controls
         and all planted seeds remain editable afterward.
+      </p>
+    </>,
+    "colony-anatomy": <>
+      <p className="control-note">
+        MUTANT ANATOMY — your hand-planted colonies can be foliose lichen
+        plates, coral fringes, crystalline petals or fan-shaped hyphae.
+        Both parents have independent geometry. You can keep the original
+        circular disks; the zero-strength setting restores them exactly.
+      </p>
+      <Select label="Parent A anatomy" value={s.colonyShapeA}
+        onChange={mode=>history.change(x=>({...x,colonyShapeA:mode}))}>
+        {colonyAnatomyModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <Select label="Parent B anatomy" value={s.colonyShapeB}
+        onChange={mode=>history.change(x=>({...x,colonyShapeB:mode}))}>
+        {colonyAnatomyModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <Parameter label="Shape mutation strength" name="colonyAnatomyAmount" history={history}/>
+      <Parameter label="Lobes, spikes and petal detail" name="colonyAnatomyDetail" history={history}/>
+      <Parameter label="Anatomy motion" name="colonyAnatomyMotion" history={history}/>
+      <Parameter label="Microscopic pores" name="colonyAnatomyPores" history={history}/>
+      <Parameter label="Luminous rim" name="colonyAnatomyRim" history={history}/>
+      <Select label="Anatomy specimen" value={colonyAnatomyPreset}
+        onChange={setColonyAnatomyPreset}>
+        {colonyAnatomyPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+      </Select>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>ensureValidEcosystemState({
+            ...applyColonyAnatomyPreset(x,colonyAnatomyPreset),
+            atmoMaskMode:"Painted colonies",
+            atmoBMaskMode:"Painted colonies",
+            atmoAmount:Math.max(70,x.atmoAmount),
+            atmoBAmount:Math.max(65,x.atmoBAmount),
+          }))}>
+          <Flower2 size={13}/> Spawn anatomy pair
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>ensureValidEcosystemState({
+            ...shuffleColonyAnatomy(x),
+            atmoMaskMode:"Painted colonies",
+            atmoAmount:Math.max(70,x.atmoAmount),
+          }))}>
+          <Dices size={13}/> Shuffle anatomy
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.colonyAnatomyAmount<=0&&s.colonyAnatomyPores<=0&&s.colonyAnatomyRim<=0}
+          onClick={()=>history.change(clearColonyAnatomy)}>
+          Restore classic outlines
+        </button>
+      </div>
+      <p className="control-note">
+        Anatomy is visible only for Painted colonies habitats. Spawn Anatomy
+        Pair enables and plants both species; Shuffle Anatomy plants A
+        without forcing a second GPU shader. All changes are reversible.
+        Your palette supplies the fluorescent edge color, and exports use
+        the same clock as the live preview.
       </p>
     </>,
     "colony-life": <>

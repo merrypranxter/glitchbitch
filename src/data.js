@@ -8,7 +8,8 @@ import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculpt
 import { underlayModes } from "./living-underlay.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
-import { mixEcosystemIntoSurprise } from "./ecosystem-randomizer.js";
+import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
+import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
 export const engineInfo = [
@@ -355,6 +356,11 @@ export const numericRanges = {
   colonyLifeSpeed: [0, 100],
   colonyFrontGlow: [0, 100],
   colonyCompetition: [0, 100],
+  colonyAnatomyAmount: [0, 100],
+  colonyAnatomyDetail: [0, 100],
+  colonyAnatomyMotion: [0, 100],
+  colonyAnatomyPores: [0, 100],
+  colonyAnatomyRim: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -582,6 +588,13 @@ export const initial = {
   colonyLifeSpeed: 47,
   colonyFrontGlow: 0,
   colonyCompetition: 0,
+  colonyShapeA: "Classic disks",
+  colonyShapeB: "Classic disks",
+  colonyAnatomyAmount: 0,
+  colonyAnatomyDetail: 57,
+  colonyAnatomyMotion: 47,
+  colonyAnatomyPores: 0,
+  colonyAnatomyRim: 0,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -677,6 +690,8 @@ export function validateRecipe(input) {
     atmoBMaskMode: atmosphereSecondHabitats,
     atmoBBlendMode: atmosphereBlendModes,
     colonyLifeMode: colonyLifeModes,
+    colonyShapeA: colonyAnatomyModes,
+    colonyShapeB: colonyAnatomyModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -972,12 +987,16 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "atmoMaskScale","atmoMaskFeather","atmoMaskMotion","atmoMaskVariation",
       "habitatBrushRadius","colonyLifeAmount","colonyLifeSpeed",
       "colonyFrontGlow","colonyCompetition",
+      "colonyAnatomyAmount","colonyAnatomyDetail","colonyAnatomyMotion",
+      "colonyAnatomyPores","colonyAnatomyRim",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
       if(key==="atmoBAmount" && state.atmoBAmount<=0)continue; // Never wake a hidden second parent by mutating old art.
       if(["colonyLifeAmount","colonyFrontGlow","colonyCompetition"].includes(key)
         && state.colonyLifeAmount<=0)continue; // Keep old artwork dormant.
+      if(["colonyAnatomyAmount","colonyAnatomyPores","colonyAnatomyRim"].includes(key)
+        && state.colonyAnatomyAmount<=0)continue; // Morph stays opt-in.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1205,6 +1224,11 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.colonyLifeSpeed=47;
   s.colonyFrontGlow=0;
   s.colonyCompetition=0;
+  // New anatomy is randomized in the ecosystem-aware pass only, avoiding
+  // dead morph sliders on ordinary non-planted Surprise artwork.
+  s.colonyShapeA="Classic disks";s.colonyShapeB="Classic disks";
+  s.colonyAnatomyAmount=0;s.colonyAnatomyDetail=57;
+  s.colonyAnatomyMotion=47;s.colonyAnatomyPores=0;s.colonyAnatomyRim=0;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;
@@ -2136,6 +2160,59 @@ export const looks = [
         habitatStamps:planted,
         seed:[821947,503196,772381,612944][i],
       },
+    };
+  }),
+
+  // Paintable morphology specimens. These are seed data plus maths,
+  // not baked image assets, so every lobe, territory and palette can change.
+  ...colonyAnatomyPresets.map((specimen,i)=>{
+    const {name,...anatomy}=specimen;
+    const seed=[637921,721883,194752,851609][i];
+    const palette=[9,11,10,1][i];
+    const layout=["Twin clusters","Ring","Corner islands","Diagonal invasion"][i];
+    const population=generateHabitatStamps({seed},
+      ()=>[.25,.38,.51,.68][i],
+      {layout,count:[8,9,8,10][i],needA:true,needB:true});
+    return {
+      name,
+      note:[
+        "Scalloped lichen thalli collide with faceted crystalline petals",
+        "Coral spines and slender fungal fans colonize a living phosphor reef",
+        "Prismatic glass petals perforated by luminous spores and lichen plates",
+        "Radiating hyphal filaments tear through energetic coral margins",
+      ][i],
+      family:"Mutant Anatomy",
+      state:{
+        ...initial,...anatomy,seed,
+        engine:[18,7,19,11][i],
+        palette,colors:palettes[palette].colors,
+        complexity:[78,87,65,82][i],warp:[59,73,47,82][i],
+        scale:[26,22,32,24][i],
+        atmoMode:["Prismatic mycelium","Mandala gas leak",
+          "Heartbeat phosphor","Prismatic mycelium"][i],
+        atmoBMode:["Mandala gas leak","Prismatic mycelium",
+          "Prismatic mycelium","Misprint rosette"][i],
+        atmoAmount:88,atmoBAmount:81,
+        atmoScale:[48,75,62,73][i],atmoBScale:[69,46,33,52][i],
+        atmoDensity:89,atmoBDensity:81,
+        atmoMotion:73,atmoBMotion:62,
+        atmoGlow:91,atmoBGlow:95,
+        atmoHue:[21,68,39,77][i],atmoBHue:[75,17,83,29][i],
+        atmoBBlendMode:["Light bloom","Spectral difference","Over","Ink stain"][i],
+        atmoMaskMode:"Painted colonies",atmoBMaskMode:"Painted colonies",
+        atmoMaskFeather:[45,61,36,42][i],
+        atmoMaskVariation:[74,93,51,85][i],
+        atmoMaskMotion:[43,77,64,81][i],
+        habitatStamps:population,
+        colonyLifeMode:["Germinate & bloom","Territory war","Breathe","Wither & return"][i],
+        colonyLifeAmount:[82,92,63,89][i],
+        colonyLifeSpeed:[48,72,34,81][i],
+        colonyFrontGlow:[81,72,62,89][i],
+        colonyCompetition:i===1?84:0,
+        lightMotion:[71,86,93,75][i],
+        motionAmount:[57,68,51,83][i],
+        colorAmount:[77,84,59,92][i],
+      }
     };
   }),
 

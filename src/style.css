@@ -766,6 +766,51 @@ main {
   color: var(--lime);
   box-shadow: 0 0 0 5px #d6ff6225;
 }
+/* Habitat seeds show an accurate, lightweight brush ring above the fixed
+   canvas. The overlay is DOM-only and does not contaminate pixel exports. */
+.habitat-handle {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border: 2px solid #ff64d4;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: #211027e8;
+  color: #ffcaed;
+  font: 700 11px var(--mono);
+  text-align: center;
+  cursor: grab;
+  box-shadow: 0 0 10px #000a, 0 0 11px #ff64d477;
+  touch-action: none;
+  z-index: 4;
+}
+.habitat-handle::after {
+  content: "";
+  position: absolute;
+  width: var(--habitat-halo, 64px);
+  height: var(--habitat-halo, 64px);
+  border-radius: 50%;
+  border: 1px dashed #ff64d48a;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  pointer-events: none;
+}
+.habitat-handle.habitat-b {
+  border-color: #57f2ff;
+  color: #c0fbff;
+  background: #082b35e8;
+  box-shadow: 0 0 10px #000a, 0 0 11px #57f2ff88;
+}
+.habitat-handle.habitat-b::after {
+  border-color: #57f2ff9c;
+}
+.habitat-handle.active,
+.habitat-handle:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
 .transport {
   display: flex;
   align-items: center;

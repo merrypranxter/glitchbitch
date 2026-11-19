@@ -177,7 +177,6 @@ export function shuffleEcosystem(state,rng=Math.random,opts={}){
     ?weighted([...atmoMaskWeights,["Inverse first",4]],rng):"Everywhere";
   s.atmoBBlendMode=choose(atmosphereBlendModes,rng);
   for(const prefix of ["atmo","atmoB"]){
-    const active=prefix==="atmo"||dual;
     s[prefix+"Scale"]=range(22,90,rng);
     s[prefix+"Density"]=range(32,98,rng);
     s[prefix+"Motion"]=range(20,92,rng);
@@ -275,6 +274,8 @@ export function fullWeirdShuffle(state,rng=Math.random,opts={}){
 export function mixEcosystemIntoSurprise(state,rng=Math.random,opts={}){
   let s={...state};
   if(!roll(.80,rng)){
+    if(opts.preserveColors===true)
+      copyKeys(opts.original||state,s,["palette","colors"]);
     s.atmoMaskMode="Everywhere";
     s.atmoBMaskMode="Everywhere";
     s.atmoBAmount=0;

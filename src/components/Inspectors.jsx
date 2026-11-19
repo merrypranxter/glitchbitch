@@ -860,7 +860,7 @@ export function TouchInspector({
           HABITAT GRAFFITI — paint pink A colonies or cyan B colonies on the live artwork.
           They are independent of warp/vortex forces and visible in PNG/GIF/MP4.
         </p>
-        <div className="touch-tools">
+        <div className="touch-tools habitat-tools">
           {[[Flower2,"Plant A"],[Orbit,"Plant B"],[Move,"Move Colony"],[Eraser,"Erase Colony"]]
             .map(([Icon,label])=><button type="button" key={label}
               className={tool===label?"selected":""}

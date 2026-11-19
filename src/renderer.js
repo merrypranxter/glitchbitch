@@ -19,6 +19,7 @@ import { underlayGLSL, underlayModes } from "./living-underlay.js";
 import { tunnelGLSL } from "./tunnels.js";
 import { strangeFieldsGLSL } from "./strange-fields.js";
 import { atmosphereGLSL, atmosphereModes, specializeAtmosphereVariant } from "./mutant-atmospheres.js";
+import { colonyLifeModes } from "./colony-lifecycle.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes,
   habitatGLSL, atmosphereHybridGLSL } from "./atmosphere-habitats.js";
 
@@ -689,15 +690,44 @@ export function createRenderer(canvas) {
       ? "#define ATM_BLEND_B "+Math.max(0,atmosphereBlendModes.indexOf(s.atmoBBlendMode))+
         "\n"+atmosphereHybridGLSL : "";
     source=source.replace("/* HABITAT_MODULE */",masks+"\n"+hybrid);
+    const maskedA=withAtmosphere && s.atmoMaskMode!=="Everywhere";
+    const maskedB=withAtmosphereB && s.atmoBMaskMode!=="Everywhere";
+    const rivalry=maskedA && maskedB &&
+      s.atmoMaskMode==="Painted colonies" &&
+      s.atmoBMaskMode==="Painted colonies";
+    // Evaluate each mask once per pixel; the same masks govern color and
+    // front-lighting. No extra texture pass or unstable frame-history buffer.
+    const maskPrelude=withHabitat
+      ? "float atmoAMask="+(maskedA?"atmosphereMaskForA(uv)":"1.")+";"+
+        "float atmoBMask="+(maskedB?"atmosphereMaskForB(uv)":"1.")+";"+
+        (rivalry ? `if(colonyLifeMode==4 && colonyLifeAmount>.001 && colonyCompetition>.001){
+            float pressure=.22*sin(time*(.19+colonyLifeSpeed*1.37)+uv.x*4.8-uv.y*3.7);
+            float aWins=smoothstep(-.2,.2,atmoAMask-atmoBMask+pressure);
+            float conflict=colonyCompetition*colonyLifeAmount;
+            atmoAMask*=mix(1.,aWins,conflict);
+            atmoBMask*=mix(1.,1.-aWins,conflict);
+          }` : "")
+      : "";
+    const glowA=maskedA
+      ? "col+=palette(atmoHue+colorTime*.009)*"+
+        "(4.*atmoAMask*(1.-atmoAMask))*colonyFrontGlow*.72;"
+      : "";
+    const glowB=maskedB
+      ? "col+=palette(atmoBHue+.28+colorTime*.009)*"+
+        "(4.*atmoBMask*(1.-atmoBMask))*colonyFrontGlow*.72;"
+      : "";
     source=source.replace("/* ATMOSPHERE_POST */",
-      withAtmosphere ? (withHabitat && s.atmoMaskMode!=="Everywhere"
-        ? "vec3 atmoParent=livingMutantAtmosphere(col,uv,p,v);col=mix(col,atmoParent,atmosphereMaskForA(uv));"
-        : "col=livingMutantAtmosphere(col,uv,p,v);") : "");
+      maskPrelude+(withAtmosphere
+        ? (maskedA
+          ? "vec3 atmoParent=livingMutantAtmosphere(col,uv,p,v);"+
+            "col=mix(col,atmoParent,atmoAMask);"+glowA
+          : "col=livingMutantAtmosphere(col,uv,p,v);")
+        : ""));
     source=source.replace("/* ATMOSPHERE_B_POST */",
       withAtmosphereB ? ("vec3 atmoChild=livingMutantAtmosphereB(col,uv,p,v);"+
         "vec3 atmoResult=crossbreedAtmospheres(col,atmoChild,uv,v);"+
-        (withHabitat && s.atmoBMaskMode!=="Everywhere"
-          ? "col=mix(col,atmoResult,atmosphereMaskForB(uv));"
+        (maskedB
+          ? "col=mix(col,atmoResult,atmoBMask);"+glowB
           : "col=atmoResult;")) : "");
     source=source.replace("/* MICRO_MODULE */",withMicro?microGLSL:"");
     source=source.replace("/* MICRO_POST */",withMicro?"col=movingMicrostructure(col,p,uv,v);":"");
@@ -994,6 +1024,7 @@ export function createRenderer(canvas) {
         "atmoBAmount","atmoBScale","atmoBDensity","atmoBMotion",
         "atmoBGlow","atmoBHue","atmoBVariation",
         "atmoMaskScale","atmoMaskFeather","atmoMaskMotion","atmoMaskVariation",
+        "colonyLifeAmount","colonyLifeSpeed","colonyFrontGlow","colonyCompetition",
         "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
         "tunnelAperture","tunnelVariation",
       ])
@@ -1023,6 +1054,7 @@ export function createRenderer(canvas) {
         habitatBuffer[j+2]=m.radius;
         habitatBuffer[j+3]=m.parent;
       }
+      gl.uniform1i(loc("colonyLifeMode"),colonyLifeModes.indexOf(s.colonyLifeMode));
       gl.uniform1i(loc("habitatStampCount"),plantedCount);
       gl.uniform4fv(loc("habitatStamps[0]"),habitatBuffer);
       gl.uniform1i(loc("tunnelMode"), [

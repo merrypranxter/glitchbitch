@@ -23,15 +23,19 @@ float paintedHabitat(vec2 uv,float parent){
       vec4 stamp=habitatStamps[i];
       if(abs(stamp.w-parent)<.1){
         vec2 delta=(uv-stamp.xy)*aspect;
-        float angle=atan(delta.y,delta.x);
-        float index=float(i);
         float r=max(stamp.z,.05);
-        float pulse=1.+(.03+.055*atmoMaskMotion)*sin(t+index*1.618);
-        float frill=.055*sin(angle*(5.+floor(atmoMaskVariation*9.))+t*.6+index*2.1);
-        float edge=r*(pulse+frill);
-        float softness=mix(.01,.38,atmoMaskFeather)*r;
-        float disk=1.-smoothstep(edge-softness,edge+softness,length(delta));
-        inside=max(inside,disk);
+        float distanceToSeed=length(delta);
+        // Far-away pixels skip expensive trigonometry; most seeds are local.
+        if(distanceToSeed<r*1.32){
+          float angle=atan(delta.y,delta.x);
+          float index=float(i);
+          float pulse=1.+(.03+.055*atmoMaskMotion)*sin(t+index*1.618);
+          float frill=.055*sin(angle*(5.+floor(atmoMaskVariation*9.))+t*.6+index*2.1);
+          float edge=r*(pulse+frill);
+          float softness=mix(.01,.38,atmoMaskFeather)*r;
+          float disk=1.-smoothstep(edge-softness,edge+softness,distanceToSeed);
+          inside=max(inside,disk);
+        }
       }
     }
   }

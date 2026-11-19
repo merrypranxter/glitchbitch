@@ -1,7 +1,7 @@
 // Spatial habitats let two moving atmospheres inhabit different canvas regions.
 // All masks are continuous-time and deterministic. No texture/FBO allocations.
 export const atmosphereHabitats = [
-  "Everywhere", "Bloom iris", "Cell colonies", "Flowing ribbons", "Fractured mosaic",
+  "Everywhere", "Bloom iris", "Cell colonies", "Flowing ribbons", "Fractured mosaic", "Painted colonies",
 ];
 export const atmosphereSecondHabitats = [...atmosphereHabitats, "Inverse first"];
 export const atmosphereBlendModes = ["Over", "Light bloom", "Ink stain", "Spectral difference"];
@@ -10,8 +10,36 @@ export const habitatGLSL = `
 #define ATM_MASK_A /* ATMO_MASK_A */
 #define ATM_MASK_B /* ATMO_MASK_B */
 uniform float atmoMaskScale,atmoMaskFeather,atmoMaskMotion,atmoMaskVariation;
+uniform int habitatStampCount;
+uniform vec4 habitatStamps[16];
+// Seeded, reversible growth masks: each four-vector is (UV x, UV y, radius, parent).
+// The mask moves but never introduces a frame-to-frame state or a seam.
+float paintedHabitat(vec2 uv,float parent){
+  vec2 aspect=vec2(res.x/res.y,1.);
+  float t=time*(.08+atmoMaskMotion*.48);
+  float inside=0.;
+  for(int i=0;i<16;i++){
+    if(i<habitatStampCount){
+      vec4 stamp=habitatStamps[i];
+      if(abs(stamp.w-parent)<.1){
+        vec2 delta=(uv-stamp.xy)*aspect;
+        float angle=atan(delta.y,delta.x);
+        float index=float(i);
+        float r=max(stamp.z,.05);
+        float pulse=1.+(.03+.055*atmoMaskMotion)*sin(t+index*1.618);
+        float frill=.055*sin(angle*(5.+floor(atmoMaskVariation*9.))+t*.6+index*2.1);
+        float edge=r*(pulse+frill);
+        float softness=mix(.01,.38,atmoMaskFeather)*r;
+        float disk=1.-smoothstep(edge-softness,edge+softness,length(delta));
+        inside=max(inside,disk);
+      }
+    }
+  }
+  return clamp(inside,0.,1.);
+}
 float atmosphereHabitat(vec2 uv,float phase,int kind){
   if(kind==0)return 1.;
+  if(kind==5)return paintedHabitat(uv,phase<.1?0.:1.);
   vec2 q=(uv-.5)*vec2(res.x/res.y,1.);
   float t=time*(.06+atmoMaskMotion*.66)+phase*TAU;
   float sc=1.4+atmoMaskScale*5.6;
@@ -52,7 +80,7 @@ float atmosphereMaskForA(vec2 uv){
   return atmosphereHabitat(uv,0.,ATM_MASK_A);
 }
 float atmosphereMaskForB(vec2 uv){
-  if(ATM_MASK_B==5)return 1.-atmosphereMaskForA(uv);
+  if(ATM_MASK_B==6)return 1.-atmosphereMaskForA(uv);
   return atmosphereHabitat(uv,.27,ATM_MASK_B);
 }
 `;

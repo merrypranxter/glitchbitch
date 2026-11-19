@@ -348,6 +348,7 @@ export const numericRanges = {
   atmoMaskFeather: [0, 100],
   atmoMaskMotion: [0, 100],
   atmoMaskVariation: [0, 100],
+  habitatBrushRadius: [5, 45],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -568,6 +569,8 @@ export const initial = {
   atmoMaskFeather: 51,
   atmoMaskMotion: 47,
   atmoMaskVariation: 38,
+  habitatBrushRadius: 19,
+  habitatStamps: [],
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -768,6 +771,25 @@ export function validateRecipe(input) {
       throw Error("Your quote must be 280 characters or fewer (line breaks allowed).");
     s.lettering=x.lettering.replace(/\r\n?/g,"\n");
   }
+  // Painted habitats are independent of touch deformation marks.
+  // Bounded storage and strict validation prevent bogus GPU uniform arrays.
+  if(x.habitatStamps!==undefined){
+    if(!Array.isArray(x.habitatStamps)||x.habitatStamps.length>16)
+      throw Error("Maximum 16 planted habitat colonies.");
+    const ids=new Set();
+    s.habitatStamps=x.habitatStamps.map((m,i)=>{
+      if(!m||!Number.isFinite(m.x)||m.x<0||m.x>1||
+         !Number.isFinite(m.y)||m.y<0||m.y>1||
+         !Number.isFinite(m.radius)||m.radius<.05||m.radius>.45||
+         !Number.isInteger(m.parent)||(m.parent!==0&&m.parent!==1))
+        throw Error("Invalid habitat colony.");
+      if(typeof m.id!=="string"||!m.id||m.id.length>80)
+        throw Error("Invalid habitat colony identity.");
+      if(ids.has(m.id))throw Error("Duplicate habitat colony.");
+      ids.add(m.id);
+      return {id:m.id,x:m.x,y:m.y,radius:m.radius,parent:m.parent};
+    });
+  }
   if (x.marks !== undefined) {
     if (!Array.isArray(x.marks) || x.marks.length > 32)
       throw Error("A recipe can hold up to 32 touch forces.");
@@ -936,6 +958,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "atmoBAmount","atmoBScale","atmoBDensity","atmoBMotion",
       "atmoBGlow","atmoBHue","atmoBVariation",
       "atmoMaskScale","atmoMaskFeather","atmoMaskMotion","atmoMaskVariation",
+      "habitatBrushRadius",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -1963,5 +1986,73 @@ export const looks = [
       },
     };
   }),
+
+  {
+    name:"Fungal Territory War",
+    note:"Hand-planted pink fungal colonies fight against cyan halftone invaders",
+    family:"Painted Habitats",
+    state:{...initial,engine:7,palette:9,colors:palettes[9].colors,
+      complexity:72,scale:28,warp:66,motionAmount:59,lightMotion:87,
+      atmoMode:"Prismatic mycelium",atmoAmount:92,atmoScale:55,atmoDensity:82,
+      atmoMotion:72,atmoGlow:95,atmoHue:18,atmoVariation:43,
+      atmoBMode:"Misprint rosette",atmoBAmount:86,atmoBScale:69,
+      atmoBDensity:78,atmoBMotion:60,atmoBGlow:75,atmoBHue:83,
+      atmoBVariation:56,atmoBBlendMode:"Spectral difference",
+      atmoMaskMode:"Painted colonies",atmoBMaskMode:"Painted colonies",
+      habitatStamps:[
+        {id:"painted-war-a1",x:.21,y:.29,radius:.21,parent:0},
+        {id:"painted-war-a2",x:.66,y:.74,radius:.29,parent:0},
+        {id:"painted-war-a3",x:.15,y:.83,radius:.15,parent:0},
+        {id:"painted-war-b1",x:.71,y:.23,radius:.20,parent:1},
+        {id:"painted-war-b2",x:.29,y:.66,radius:.20,parent:1},
+        {id:"painted-war-b3",x:.87,y:.87,radius:.13,parent:1},
+      ],atmoMaskFeather:45,atmoMaskMotion:70,atmoMaskVariation:68,
+      seed:482105},
+  },
+  {
+    name:"Phosphor Petri Sky",
+    note:"Eight celestial spore colonies pulse through an electric CRT night",
+    family:"Painted Habitats",
+    state:{...initial,engine:19,palette:10,colors:palettes[10].colors,
+      complexity:81,scale:19,warp:51,motionAmount:45,lightMotion:89,
+      atmoMode:"Heartbeat phosphor",atmoAmount:84,
+      atmoScale:43,atmoDensity:83,atmoMotion:83,atmoGlow:98,
+      atmoHue:60,atmoVariation:23,
+      atmoBMode:"Mandala gas leak",atmoBAmount:80,atmoBScale:57,
+      atmoBDensity:73,atmoBMotion:40,atmoBGlow:97,
+      atmoBHue:31,atmoBVariation:86,atmoBBlendMode:"Light bloom",
+      atmoMaskMode:"Painted colonies",atmoBMaskMode:"Inverse first",
+      habitatStamps:[
+        {id:"petri-a1",x:.17,y:.25,radius:.13,parent:0},
+        {id:"petri-a2",x:.36,y:.48,radius:.18,parent:0},
+        {id:"petri-a3",x:.57,y:.78,radius:.20,parent:0},
+        {id:"petri-a4",x:.81,y:.33,radius:.16,parent:0},
+        {id:"petri-a5",x:.79,y:.87,radius:.09,parent:0},
+      ],atmoMaskFeather:31,atmoMaskMotion:67,
+      atmoMaskVariation:74,seed:207914},
+  },
+  {
+    name:"Cathedral Colonization",
+    note:"Neon fungal platelets climb through separate stained-glass and gaseous chambers",
+    family:"Painted Habitats",
+    state:{...initial,engine:18,palette:11,colors:palettes[11].colors,
+      complexity:63,scale:27,warp:57,motionAmount:48,lightMotion:92,
+      atmoMode:"Prismatic mycelium",atmoAmount:90,atmoScale:73,
+      atmoDensity:90,atmoMotion:39,atmoGlow:91,
+      atmoHue:41,atmoVariation:79,
+      atmoBMode:"Mandala gas leak",atmoBAmount:86,atmoBScale:42,
+      atmoBDensity:79,atmoBMotion:72,atmoBGlow:92,
+      atmoBHue:83,atmoBVariation:51,atmoBBlendMode:"Over",
+      atmoMaskMode:"Painted colonies",atmoBMaskMode:"Painted colonies",
+      habitatStamps:[
+        {id:"cathedral-a1",x:.25,y:.24,radius:.23,parent:0},
+        {id:"cathedral-a2",x:.28,y:.57,radius:.28,parent:0},
+        {id:"cathedral-a3",x:.36,y:.88,radius:.16,parent:0},
+        {id:"cathedral-b1",x:.73,y:.19,radius:.19,parent:1},
+        {id:"cathedral-b2",x:.73,y:.54,radius:.25,parent:1},
+        {id:"cathedral-b3",x:.77,y:.86,radius:.20,parent:1},
+      ],atmoMaskFeather:61,atmoMaskMotion:46,
+      atmoMaskVariation:40,seed:819647},
+  },
 
 ];

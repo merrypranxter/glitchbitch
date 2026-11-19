@@ -49,6 +49,7 @@ import { atmosphereModes, atmospherePresets, applyAtmospherePreset,
   swapAtmosphereParents, hideAtmospherePair } from "../mutant-atmospheres.js";
 import { atmosphereHabitats, atmosphereSecondHabitats,
   atmosphereBlendModes } from "../atmosphere-habitats.js";
+import { habitatTools, MAX_HABITAT_STAMPS, clearColonies } from "../habitat-painter.js";
 export { TextInspector } from "./TextInspector";
 const icons = [
   Waves,
@@ -207,7 +208,7 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
 // ---- Effects ----------------------------------------------------------------
 const FILTER_KEY = "glitch-fx-filter-v1";
 const effectSections = sections.filter((s) => s.tab === "Effects" && s.id !== "fx-toggles");
-export function EffectsInspector({ history }) {
+export function EffectsInspector({ history, onTool, tool }) {
   const s = history.state;
   const [filter, setFilterState] = React.useState(() => {
     try { return localStorage.getItem(FILTER_KEY) || "All"; } catch { return "All"; }
@@ -340,6 +341,26 @@ export function EffectsInspector({ history }) {
         <Parameter label="Soft edges" name="atmoMaskFeather" history={history}/>
         <Parameter label="Habitat drift" name="atmoMaskMotion" history={history}/>
         <Parameter label="Habitat mutations" name="atmoMaskVariation" history={history}/>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            aria-pressed={tool==="Plant A"}
+            onClick={()=>onTool("Plant A")}>
+            <Paintbrush size={13}/> Plant A on image
+          </button>
+          <button type="button" className="button secondary"
+            aria-pressed={tool==="Plant B"}
+            onClick={()=>onTool("Plant B")}>
+            <Paintbrush size={13}/> Plant B on image
+          </button>
+          {habitatTools.includes(tool) && <button type="button" className="button secondary"
+            onClick={()=>onTool("Paint")}>Return to force brush</button>}
+        </div>
+        <p className="control-note">
+          Finger-paint habitats directly on the fixed canvas. Planting automatically
+          chooses Painted colonies and activates that parent; A seeds are pink,
+          B seeds cyan. Edit, move or erase them in Touch → Habitat Graffiti.
+          Up to {MAX_HABITAT_STAMPS} movable seeds per design; undo works.
+        </p>
         {s.atmoBMaskMode==="Inverse first"&&s.atmoMaskMode==="Everywhere"&&
           <p className="control-note">Inverse first is empty while the first habitat is Everywhere. Choose a shape for parent A to reveal parent B.</p>}
         <div className="pane-actions">
@@ -823,7 +844,8 @@ export function TouchInspector({
   onSelect,
 }) {
   const s = history.state,
-    mark = s.marks.find((m) => m.id === selected);
+    mark = s.marks.find((m) => m.id === selected),
+    colony = (s.habitatStamps||[]).find((m)=>m.id===selected);
   function edit(v) {
     history.preview((x) => ({
       ...x,
@@ -832,6 +854,71 @@ export function TouchInspector({
   }
   return (
     <>
+      <Section id="habitat-paint" history={history}
+        aside={<span className="section-count">{(s.habitatStamps||[]).length}/{MAX_HABITAT_STAMPS}</span>}>
+        <p className="control-note">
+          HABITAT GRAFFITI — paint pink A colonies or cyan B colonies on the live artwork.
+          They are independent of warp/vortex forces and visible in PNG/GIF/MP4.
+        </p>
+        <div className="touch-tools habitat-tools">
+          {[[Flower2,"Plant A"],[Orbit,"Plant B"],[Move,"Move Colony"],[Eraser,"Erase Colony"]]
+            .map(([Icon,label])=><button type="button" key={label}
+              className={tool===label?"selected":""}
+              aria-pressed={tool===label}
+              onClick={()=>onTool(label)}>
+              <Icon size={15}/>{label}
+            </button>)}
+        </div>
+        <Parameter label="New colony size" name="habitatBrushRadius" history={history}/>
+        <p className="control-note">
+          Tap or drag to plant. Drag a colony handle to move it.
+          Paint mode adds; Move mode drags; Erase mode removes.
+          Pink A and cyan B are touch guides only, not fixed pigment colors.
+        </p>
+        {(s.habitatStamps||[]).length>0&&<>
+          <Select label="Selected colony" value={colony?.id||""} onChange={onSelect}>
+            <option value="">Choose one…</option>
+            {s.habitatStamps.map((m,i)=><option key={m.id} value={m.id}>
+              {i+1}. {m.parent===0?"A":"B"} colony
+            </option>)}
+          </Select>
+          {colony&&<div className="source-editor">
+            <Select label="Belongs to" value={String(colony.parent)}
+              onChange={parent=>history.change(x=>({...x,
+                habitatStamps:x.habitatStamps.map(m=>m.id===colony.id
+                  ?{...m,parent:Number(parent)}:m)}))}>
+              <option value="0">Parent A</option>
+              <option value="1">Parent B</option>
+            </Select>
+            <Range label="Colony radius" value={Math.round(colony.radius*100)}
+              min={5} max={45}
+              onStart={history.begin}
+              onChange={radius=>history.preview(x=>({...x,
+                habitatStamps:x.habitatStamps.map(m=>m.id===colony.id
+                  ?{...m,radius:radius/100}:m)}))}
+              onEnd={history.end} onCancel={history.cancel}/>
+            <button type="button" className="subtle-button danger full"
+              onClick={()=>history.change(x=>({...x,
+                habitatStamps:x.habitatStamps.filter(m=>m.id!==colony.id)}))}>
+              <Trash2 size={13}/> Delete selected colony
+            </button>
+          </div>}
+          <div className="pane-actions">
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(x=>clearColonies(x,0))}>
+              Clear A seeds
+            </button>
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(x=>clearColonies(x,1))}>
+              Clear B seeds
+            </button>
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(x=>clearColonies(x))}>
+              Clear all seeds
+            </button>
+          </div>
+        </>}
+      </Section>
       <Section id="brush" defaultOpen>
         <div className="touch-tools">
           {[

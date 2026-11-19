@@ -162,7 +162,8 @@ export const sections = [
       "two-parent atmosphere","breed wild","swap parents","second parent",
       "fungal broadcast storm","printed cosmic rupture","riso fungal infestation",
       "living habitats","masks","territory","territories","bloom iris","cell colonies",
-      "flowing ribbons","fractured mosaic","inverse first","spatial mask"] },
+      "flowing ribbons","fractured mosaic","inverse first","spatial mask",
+      "painted colonies","finger paint","habitat graffiti","plant a","plant b"] },
 
   // ---- Text (sub-tabs, not collapsible sections) --------------------------
   { id: "text-words", tab: "Text", pane: null, title: "Your words",
@@ -183,6 +184,14 @@ export const sections = [
     keywords: ["choreography", "choreographer", "recipe", "preset", "surprise text", "remix", "mutate"] },
 
   // ---- Touch --------------------------------------------------------------
+  { id: "habitat-paint", tab: "Touch", title: "Habitat Graffiti",
+    reset: ["habitatBrushRadius","habitatStamps"],
+    keywords: ["habitat graffiti","habitat painter","plant a","plant b",
+      "plant colonies","finger paint","finger painting","plant fungal colonies",
+      "painted colonies","planted colonies","colonize","colonization",
+      "move colony","erase colony","colony size","colony radius",
+      "habitat seeds","paint habitat","touch painting","stamp colony",
+      "clear seeds","clear planted colonies","move planted habitat"] },
   { id: "brush", tab: "Touch", title: "Brush",
     keywords: ["brush", "paint", "move", "erase", "force", "warp", "vortex", "repel", "chroma", "strength", "radius", "handles", "add force"] },
   { id: "forces", tab: "Touch", title: "Placed forces",

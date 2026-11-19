@@ -40,7 +40,7 @@ test("single parent legacy work is unchanged, dual parent opt-in",()=>{
 test("every hybrid preset uses valid controls and editable, exportable recipes",()=>{
   assert.equal(hybridAtmospherePresets.length,5);
   assert.deepEqual(atmosphereHabitats,["Everywhere","Bloom iris",
-    "Cell colonies","Flowing ribbons","Fractured mosaic"]);
+    "Cell colonies","Flowing ribbons","Fractured mosaic","Painted colonies"]);
   assert.equal(atmosphereSecondHabitats.at(-1),"Inverse first");
   assert.deepEqual(atmosphereBlendModes,
     ["Over","Light bloom","Ink stain","Spectral difference"]);
@@ -120,7 +120,7 @@ test("both shader variants have independent uniforms and named functions",()=>{
   assert.match(habitatGLSL,/float atmosphereMaskForA/);
   assert.match(habitatGLSL,/float atmosphereMaskForB/);
   assert.match(habitatGLSL,/kind==0\)return 1/);
-  assert.match(habitatGLSL,/ATM_MASK_B==5/);
+  assert.match(habitatGLSL,/ATM_MASK_B==6/);
   assert.match(atmosphereHybridGLSL,/vec3 delta=child-base/);
   assert.doesNotMatch(habitatGLSL+atmosphereHybridGLSL,
     /sampler2D|texture2D|discard|uint\b/);

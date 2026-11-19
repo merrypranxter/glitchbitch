@@ -3,6 +3,7 @@ import { createRenderer, previewDimensions } from "./renderer";
 import { retroFontRevision } from "./retro-fonts";
 import LiveTextOverlay from "./LiveTextOverlay.jsx";
 import { TouchSession } from "./gestures";
+import { HabitatSession, habitatTools } from "./habitat-painter.js";
 import { ratios, touchModes } from "./data";
 
 export default function ArtCanvas({
@@ -222,12 +223,15 @@ export default function ArtCanvas({
     const s = session.current;
     if (!s) return;
     history.preview(s.draft);
-    if (s.target >= 0) onSelect(s.draft.marks[s.target]?.id || null);
+    if (s.target >= 0) onSelect(s instanceof HabitatSession
+      ? s.draft.habitatStamps?.[s.target]?.id || null
+      : s.draft.marks[s.target]?.id || null);
   }
   const textDrag = useRef(null);
   function down(e) {
     if (e.button !== 0) return;
-    if(history.state.letteringDrag && history.state.lettering.trim()){
+    if(history.state.letteringDrag && history.state.lettering.trim() &&
+       !habitatTools.includes(runtime.current.tool)){
       e.preventDefault();
       e.currentTarget.setPointerCapture(e.pointerId);
       history.begin();
@@ -245,6 +249,20 @@ export default function ArtCanvas({
     } else {
       history.begin();
       let activeTool = runtime.current.tool;
+      if(habitatTools.includes(activeTool)){
+        const colonyHandle=e.target.closest("[data-colony]");
+        let targetId=null;
+        if(colonyHandle && activeTool!=="Erase Colony"){
+          const seed=history.current.current.habitatStamps?.find(x=>x.id===colonyHandle.dataset.colony);
+          if(seed){
+            targetId=seed.id;
+            activeTool="Move Colony";
+            p.x=seed.x;p.y=seed.y;
+          }
+        }
+        session.current=new HabitatSession(
+          history.current.current,activeTool,p,ratio,targetId);
+      }else{
       const handle = e.target.closest("[data-force]");
       if (handle && activeTool !== "Erase") {
         const mark = history.current.current.marks.find(
@@ -262,6 +280,7 @@ export default function ArtCanvas({
         p,
         ratio,
       );
+      }
     }
     preview();
   }
@@ -288,7 +307,8 @@ export default function ArtCanvas({
       history.end();
     }
   }
-  const handles = showHandles || tool !== "Paint";
+  const handles = showHandles || (tool !== "Paint" && !habitatTools.includes(tool));
+  const colonyHandles=showHandles||habitatTools.includes(tool);
   return (
     <div className="art-stage" ref={stageRef}>
       <div
@@ -304,7 +324,7 @@ export default function ArtCanvas({
       >
         <canvas
           ref={canvasRef}
-          aria-label="Animated artwork. Drag to paint; pinch and twist to resize and rotate a force."
+          aria-label="Animated artwork. Plant living colonies using the habitat touch tools, or drag with the normal brush to warp the artwork."
         />
         <LiveTextOverlay state={history.state} width={size.width} height={size.height} playing={playing} timelineRef={timelineRef} />
         {handles &&
@@ -363,6 +383,32 @@ export default function ArtCanvas({
               <span>{i + 1}</span>
             </button>
           ))}
+        {colonyHandles && (history.state.habitatStamps||[]).map((m,i) => (
+          <button
+            type="button"
+            key={m.id}
+            data-colony={m.id}
+            className={"habitat-handle " +(m.parent===0?"habitat-a":"habitat-b")+
+              (selected===m.id?" active":"")}
+            style={{left:`${m.x*100}%`,top:`${(1-m.y)*100}%`,
+              "--habitat-halo":`${Math.max(20,m.radius*size.height*2)}px`}}
+            aria-label={`Habitat ${m.parent===0?"A":"B"} colony ${i+1}. Drag to move, arrow keys to nudge, plus/minus to resize.`}
+            title={`Colony ${i+1} · parent ${m.parent===0?"A":"B"}`}
+            onFocus={()=>onSelect(m.id)}
+            onKeyDown={e=>{
+              if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","+","=","-"].includes(e.key)){
+                e.preventDefault();
+                history.change(state=>({...state,
+                  habitatStamps:state.habitatStamps.map(x=>x.id===m.id?{
+                    ...x,
+                    x:Math.min(1,Math.max(0,x.x+(e.key==="ArrowLeft"?-.01:e.key==="ArrowRight"?.01:0))),
+                    y:Math.min(1,Math.max(0,x.y+(e.key==="ArrowDown"?-.01:e.key==="ArrowUp"?.01:0))),
+                    radius:Math.min(.45,Math.max(.05,x.radius+(e.key==="+"||e.key==="="? .01:e.key==="-"?-.01:0))),
+                  }:x)}));
+              }
+            }}
+          >{m.parent===0?"A":"B"}</button>
+        ))}
         <div className="canvas-tag">
           <i />
           {playing ? "LIVE GENERATIVE ART" : "A MOMENT, HELD STILL"}

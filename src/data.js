@@ -8,6 +8,7 @@ import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculpt
 import { underlayModes } from "./living-underlay.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
+import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
 import { mixEcosystemIntoSurprise } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
@@ -355,6 +356,11 @@ export const numericRanges = {
   colonyLifeSpeed: [0, 100],
   colonyFrontGlow: [0, 100],
   colonyCompetition: [0, 100],
+  colonyAnatomyAmount: [0, 100],
+  colonyAnatomyDetail: [0, 100],
+  colonyAnatomyMotion: [0, 100],
+  colonyAnatomyPores: [0, 100],
+  colonyAnatomyRim: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -582,6 +588,13 @@ export const initial = {
   colonyLifeSpeed: 47,
   colonyFrontGlow: 0,
   colonyCompetition: 0,
+  colonyShapeA: "Classic disks",
+  colonyShapeB: "Classic disks",
+  colonyAnatomyAmount: 0,
+  colonyAnatomyDetail: 57,
+  colonyAnatomyMotion: 47,
+  colonyAnatomyPores: 0,
+  colonyAnatomyRim: 0,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -677,6 +690,8 @@ export function validateRecipe(input) {
     atmoBMaskMode: atmosphereSecondHabitats,
     atmoBBlendMode: atmosphereBlendModes,
     colonyLifeMode: colonyLifeModes,
+    colonyShapeA: colonyAnatomyModes,
+    colonyShapeB: colonyAnatomyModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -972,12 +987,16 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "atmoMaskScale","atmoMaskFeather","atmoMaskMotion","atmoMaskVariation",
       "habitatBrushRadius","colonyLifeAmount","colonyLifeSpeed",
       "colonyFrontGlow","colonyCompetition",
+      "colonyAnatomyAmount","colonyAnatomyDetail","colonyAnatomyMotion",
+      "colonyAnatomyPores","colonyAnatomyRim",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
       if(key==="atmoBAmount" && state.atmoBAmount<=0)continue; // Never wake a hidden second parent by mutating old art.
       if(["colonyLifeAmount","colonyFrontGlow","colonyCompetition"].includes(key)
         && state.colonyLifeAmount<=0)continue; // Keep old artwork dormant.
+      if(["colonyAnatomyAmount","colonyAnatomyPores","colonyAnatomyRim"].includes(key)
+        && state.colonyAnatomyAmount<=0)continue; // Morph stays opt-in.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1205,6 +1224,11 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.colonyLifeSpeed=47;
   s.colonyFrontGlow=0;
   s.colonyCompetition=0;
+  // New anatomy is randomized in the ecosystem-aware pass only, avoiding
+  // dead morph sliders on ordinary non-planted Surprise artwork.
+  s.colonyShapeA="Classic disks";s.colonyShapeB="Classic disks";
+  s.colonyAnatomyAmount=0;s.colonyAnatomyDetail=57;
+  s.colonyAnatomyMotion=47;s.colonyAnatomyPores=0;s.colonyAnatomyRim=0;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;

@@ -263,9 +263,13 @@ test("full Surprise is a visual rebirth, with new marks and a different math fam
   const { engineInfo }=await import("../src/data.js");
   const old = {...initial,engine:10,palette:2,ratio:"9:16",marks:[makeMark(initial)],speed:0,colorSpeed:0,freezeGeometry:true,freezeColor:true};
   const fresh=randomize(old,{engine:true,color:true},false,()=>.7);
-  assert.notEqual(fresh.engine,old.engine);
-  assert.notEqual(engineInfo[fresh.engine].family,engineInfo[old.engine].family);
-  assert.notEqual(fresh.palette,old.palette);
+  assert.equal(fresh.engine,old.engine,"Locked engine must survive Surprise");
+  assert.equal(fresh.palette,old.palette,"Locked palette must survive Surprise");
+  assert.deepEqual(fresh.colors,old.colors,"Locked color stops must survive Surprise");
+  const unlocked=randomize(old,{},false,()=>.7);
+  assert.notEqual(unlocked.engine,old.engine);
+  assert.notEqual(engineInfo[unlocked.engine].family,engineInfo[old.engine].family);
+  assert.notEqual(unlocked.palette,old.palette);
   assert.notEqual(fresh.seed,old.seed);
   assert.equal(fresh.ratio,old.ratio);
   assert.ok(fresh.marks.every(m=>m.id!==old.marks[0].id));

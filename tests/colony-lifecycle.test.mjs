@@ -89,8 +89,12 @@ test("invalid ecology data is refused, and Mutate cannot activate dormant life",
   assert.equal(preserved.colonyCompetition,0);
   assert.equal(preserved.colonyLifeMode,"Still");
   const surprised=randomize(initial,{},false,()=>.53);
-  assert.equal(surprised.colonyLifeAmount,0);
   assert.doesNotThrow(()=>validateRecipe(surprised));
+  // New smart Surprise is ALLOWED to awaken ecology; Mutate above cannot.
+  if(surprised.colonyLifeAmount>0){
+    assert.ok(surprised.habitatStamps.length>0);
+    assert.ok(surprised.atmoAmount>0);
+  }
 });
 test("four live Colony Wars looks are unique, valid and preserve touch control",()=>{
   assert.equal(looks.length,118);

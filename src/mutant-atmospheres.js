@@ -42,6 +42,98 @@ export function hideAtmosphere(state) {
   return {...state,atmoAmount:0};
 }
 
+// Crossbreed options keep the first-parent workflow intact when second presence=0.
+export const hybridAtmosphereControls = [
+  "atmoBAmount","atmoBScale","atmoBDensity","atmoBMotion",
+  "atmoBGlow","atmoBHue","atmoBVariation",
+  "atmoMaskScale","atmoMaskFeather","atmoMaskMotion","atmoMaskVariation",
+];
+export const hybridAtmospherePresets = [
+  {
+    name:"Fungal Broadcast Storm",
+    atmoMode:"Prismatic mycelium",atmoAmount:88,atmoScale:54,atmoDensity:82,atmoMotion:43,atmoGlow:79,atmoHue:18,atmoVariation:42,
+    atmoBMode:"Heartbeat phosphor",atmoBAmount:81,atmoBScale:63,atmoBDensity:86,atmoBMotion:87,atmoBGlow:94,atmoBHue:68,atmoBVariation:71,
+    atmoMaskMode:"Cell colonies",atmoBMaskMode:"Inverse first",atmoBBlendMode:"Light bloom",
+    atmoMaskScale:58,atmoMaskFeather:32,atmoMaskMotion:67,atmoMaskVariation:54,
+  },
+  {
+    name:"Printed Cosmic Rupture",
+    atmoMode:"Mandala gas leak",atmoAmount:83,atmoScale:36,atmoDensity:67,atmoMotion:62,atmoGlow:85,atmoHue:41,atmoVariation:25,
+    atmoBMode:"Misprint rosette",atmoBAmount:92,atmoBScale:73,atmoBDensity:90,atmoBMotion:49,atmoBGlow:65,atmoBHue:79,atmoBVariation:81,
+    atmoMaskMode:"Bloom iris",atmoBMaskMode:"Inverse first",atmoBBlendMode:"Ink stain",
+    atmoMaskScale:42,atmoMaskFeather:41,atmoMaskMotion:38,atmoMaskVariation:81,
+  },
+  {
+    name:"Mycelium Inside The Moon",
+    atmoMode:"Mandala gas leak",atmoAmount:90,atmoScale:52,atmoDensity:78,atmoMotion:38,atmoGlow:72,atmoHue:66,atmoVariation:74,
+    atmoBMode:"Prismatic mycelium",atmoBAmount:88,atmoBScale:72,atmoBDensity:94,atmoBMotion:64,atmoBGlow:98,atmoBHue:20,atmoBVariation:43,
+    atmoMaskMode:"Bloom iris",atmoBMaskMode:"Bloom iris",atmoBBlendMode:"Light bloom",
+    atmoMaskScale:58,atmoMaskFeather:66,atmoMaskMotion:49,atmoMaskVariation:72,
+  },
+  {
+    name:"Riso Fungal Infestation",
+    atmoMode:"Misprint rosette",atmoAmount:95,atmoScale:65,atmoDensity:85,atmoMotion:40,atmoGlow:66,atmoHue:27,atmoVariation:63,
+    atmoBMode:"Prismatic mycelium",atmoBAmount:87,atmoBScale:45,atmoBDensity:90,atmoBMotion:91,atmoBGlow:98,atmoBHue:73,atmoBVariation:30,
+    atmoMaskMode:"Fractured mosaic",atmoBMaskMode:"Inverse first",atmoBBlendMode:"Spectral difference",
+    atmoMaskScale:76,atmoMaskFeather:22,atmoMaskMotion:52,atmoMaskVariation:85,
+  },
+  {
+    name:"Cardiac Moire Organism",
+    atmoMode:"Heartbeat phosphor",atmoAmount:88,atmoScale:48,atmoDensity:92,atmoMotion:69,atmoGlow:92,atmoHue:76,atmoVariation:14,
+    atmoBMode:"Misprint rosette",atmoBAmount:86,atmoBScale:68,atmoBDensity:88,atmoBMotion:47,atmoBGlow:91,atmoBHue:22,atmoBVariation:53,
+    atmoMaskMode:"Flowing ribbons",atmoBMaskMode:"Cell colonies",atmoBBlendMode:"Over",
+    atmoMaskScale:59,atmoMaskFeather:52,atmoMaskMotion:70,atmoMaskVariation:44,
+  },
+];
+export function applyAtmosphereHybridPreset(state,name){
+  const preset=hybridAtmospherePresets.find(x=>x.name===name);
+  if(!preset)return state;
+  const {name:ignored,...settings}=preset;
+  return {...state,...settings};
+}
+export function nextAtmosphereBMode(state,rng=Math.random){
+  const candidates=atmosphereModes.filter(x=>x!==state.atmoBMode);
+  const n=Number(rng());
+  const i=Math.max(0,Math.min(candidates.length-1,Math.floor((Number.isFinite(n)?n:0)*candidates.length)));
+  return {...state,atmoBMode:candidates[i],atmoBAmount:Math.max(62,state.atmoBAmount||0)};
+}
+export function breedAtmospheres(state,rng=Math.random){
+  const candidates=atmosphereModes.filter(x=>x!==state.atmoMode);
+  const choose=(low=0,high=1)=>{
+    const n=Number(rng());
+    return low+(high-low)*(Number.isFinite(n)?Math.min(1,Math.max(0,n)):0);
+  };
+  return {
+    ...state,
+    atmoAmount:Math.max(65,state.atmoAmount||0),
+    atmoBMode:candidates[Math.min(candidates.length-1,Math.floor(choose(0,candidates.length)))],
+    atmoBAmount:choose(60,97),atmoBScale:choose(19,91),atmoBDensity:choose(36,98),
+    atmoBMotion:choose(23,94),atmoBGlow:choose(43,100),atmoBHue:choose(0,100),
+    atmoBVariation:choose(0,100),
+  };
+}
+export function swapAtmosphereParents(state){
+  const fields=["Mode","Amount","Scale","Density","Motion","Glow","Hue","Variation"];
+  const out={...state};
+  for(const key of fields){
+    const a="atmo"+key,b="atmoB"+key;
+    out[a]=state[b];out[b]=state[a];
+  }
+  return out;
+}
+export function hideAtmospherePair(state){
+  return {...state,atmoAmount:0,atmoBAmount:0};
+}
+export function specializeAtmosphereVariant(mode,secondary=false){
+  const id=Math.max(0,atmosphereModes.indexOf(mode));
+  let shader=atmosphereGLSL.replace("/* ATMOSPHERE_VARIANT */","#define ATMO_MODE "+id);
+  if(secondary){
+    shader=shader.replace(/\\batmo(Amount|Scale|Density|Motion|Glow|Hue|Variation)\\b/g,
+      (_all,key)=>"atmoB"+key).replace(/\\blivingMutantAtmosphere\\b/g,"livingMutantAtmosphereB");
+  }
+  return shader;
+}
+
 export const atmosphereGLSL = `
 /* ATMOSPHERE_VARIANT */
 uniform float atmoAmount,atmoScale,atmoDensity,atmoMotion,atmoGlow,atmoHue,atmoVariation;

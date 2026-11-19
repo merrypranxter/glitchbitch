@@ -18,7 +18,9 @@ import { filamentGLSL, filamentSpecies, filamentMaterials, filamentStitchModes, 
 import { underlayGLSL, underlayModes } from "./living-underlay.js";
 import { tunnelGLSL } from "./tunnels.js";
 import { strangeFieldsGLSL } from "./strange-fields.js";
-import { atmosphereGLSL, atmosphereModes } from "./mutant-atmospheres.js";
+import { atmosphereGLSL, atmosphereModes, specializeAtmosphereVariant } from "./mutant-atmospheres.js";
+import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes,
+  habitatGLSL, atmosphereHybridGLSL } from "./atmosphere-habitats.js";
 
 const vertex = `attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
 const fragment = `precision highp float;
@@ -79,6 +81,7 @@ phase+=source;if(posterize)phase=floor(phase*7.)/7.;return phase;}
 /* FILAMENT_MODULE */
 /* MATERIAL_MODULE */
 /* ATMOSPHERE_MODULE */
+/* HABITAT_MODULE */
 /* LETTERING_MODULE */
 ${appearanceGLSL}
 void main(){vec2 uv=gl_FragCoord.xy/res;vec2 aspect=vec2(res.x/res.y,1.);vec2 sampleUV=uv;
@@ -113,6 +116,7 @@ float v=composed(p);vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*
 /* UNDERLAY_POST */
 /* FILAMENT_POST */
 /* ATMOSPHERE_POST */
+/* ATMOSPHERE_B_POST */
 col=animateLight(col,uv,v);
 col=stainWithBiology(col,uv,p);
 /* LETTERING_POST */
@@ -141,6 +145,7 @@ export function createRenderer(canvas) {
   let active, fence = null, memory = null, memoryShader = null, memoryDisabled = false;
   let stereoUnavailable = false, materialUnavailable = false,
     strangeUnavailable = false, atmosphereUnavailable = false,
+    atmosphereBUnavailable = false, habitatUnavailable = false,
     typeShaderUnavailable = false, compositionUnavailable = false,
     backdropUnavailable = false, microUnavailable = false,
     substanceUnavailable = false, wiggleUnavailable = false,
@@ -156,7 +161,8 @@ export function createRenderer(canvas) {
        !photonUnavailable && !filamentUnavailable && !filamentHybridUnavailable &&
        !filamentMaterialUnavailable && !filamentStitchUnavailable &&
        !filamentSculptUnavailable && !underlayUnavailable &&
-       !strangeUnavailable && !atmosphereUnavailable)return source;
+       !strangeUnavailable && !atmosphereUnavailable &&
+       !atmosphereBUnavailable && !habitatUnavailable)return source;
     return {
       ...source,
       ...(materialUnavailable ? {filmAmount:0,opalAmount:0,prismAmount:0,foilRelief:0}:{}),
@@ -172,6 +178,8 @@ export function createRenderer(canvas) {
       ...(filamentSculptUnavailable ? {filamentSculptAmount:0}:{}),
       ...(underlayUnavailable ? {underlayAmount:0}:{}),
       ...(atmosphereUnavailable ? {atmoAmount:0}:{}),
+      ...(atmosphereBUnavailable ? {atmoBAmount:0}:{}),
+      ...(habitatUnavailable ? {atmoMaskMode:"Everywhere",atmoBMaskMode:"Everywhere"}:{}),
       ...(strangeUnavailable ? {
         engine: source.engine>=17 && source.engine<=19 ? 0 : source.engine,
         secondaryEngine: source.secondaryEngine>=17 && source.secondaryEngine<=19 ? 1 : source.secondaryEngine
@@ -583,9 +591,12 @@ export function createRenderer(canvas) {
       ),
       withTunnel = s.engine===5 || (blended && s.secondaryEngine===5),
       withAtmosphere = s.atmoAmount>0,
+      withAtmosphereB = s.atmoBAmount>0,
+      withHabitat = (withAtmosphere && s.atmoMaskMode!=="Everywhere") ||
+        (withAtmosphereB && s.atmoBMaskMode!=="Everywhere"),
       withStrange = (s.engine>=17 && s.engine<=19) ||
         (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withWiggle ? "wiggle" : "still"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withWiggle ? "wiggle" : "still"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -660,9 +671,34 @@ export function createRenderer(canvas) {
       ? atmosphereGLSL.replace("/* ATMOSPHERE_VARIANT */",
           "#define ATMO_MODE "+Math.max(0,atmosphereModes.indexOf(s.atmoMode)))
       : "";
-    source=source.replace("/* ATMOSPHERE_MODULE */",chosenAtmosphere);
+    const chosenAtmosphereB=withAtmosphereB
+      ? specializeAtmosphereVariant(s.atmoBMode,true) : "";
+    // The second shader is a separately named function with its own normalized
+    // uniforms. Macro reset prevents the second variant from changing parent A.
+    source=source.replace("/* ATMOSPHERE_MODULE */",chosenAtmosphere+
+      (withAtmosphereB ? (withAtmosphere ? "\n#undef ATMO_MODE\n" : "")+
+        chosenAtmosphereB : ""));
+    const masks=withHabitat
+      ? habitatGLSL
+          .replace("/* ATMO_MASK_A */",
+            String(Math.max(0,atmosphereHabitats.indexOf(s.atmoMaskMode))))
+          .replace("/* ATMO_MASK_B */",
+            String(Math.max(0,atmosphereSecondHabitats.indexOf(s.atmoBMaskMode))))
+      : "";
+    const hybrid=withAtmosphereB
+      ? "#define ATM_BLEND_B "+Math.max(0,atmosphereBlendModes.indexOf(s.atmoBBlendMode))+
+        "\n"+atmosphereHybridGLSL : "";
+    source=source.replace("/* HABITAT_MODULE */",masks+"\n"+hybrid);
     source=source.replace("/* ATMOSPHERE_POST */",
-      withAtmosphere ? "col=livingMutantAtmosphere(col,uv,p,v);" : "");
+      withAtmosphere ? (withHabitat && s.atmoMaskMode!=="Everywhere"
+        ? "vec3 atmoParent=livingMutantAtmosphere(col,uv,p,v);col=mix(col,atmoParent,atmosphereMaskForA(uv));"
+        : "col=livingMutantAtmosphere(col,uv,p,v);") : "");
+    source=source.replace("/* ATMOSPHERE_B_POST */",
+      withAtmosphereB ? ("vec3 atmoChild=livingMutantAtmosphereB(col,uv,p,v);"+
+        "vec3 atmoResult=crossbreedAtmospheres(col,atmoChild,uv,v);"+
+        (withHabitat && s.atmoBMaskMode!=="Everywhere"
+          ? "col=mix(col,atmoResult,atmosphereMaskForB(uv));"
+          : "col=atmoResult;")) : "");
     source=source.replace("/* MICRO_MODULE */",withMicro?microGLSL:"");
     source=source.replace("/* MICRO_POST */",withMicro?"col=movingMicrostructure(col,p,uv,v);":"");
     source=source.replace("/* BACKDROP_MODULE */",withBackdrop?backdropGLSL:"");
@@ -785,7 +821,15 @@ export function createRenderer(canvas) {
           break;
         }catch(e){
           lastCompileError=e;
-          if(candidate.atmoAmount>0){
+          if((candidate.atmoAmount>0||candidate.atmoBAmount>0) &&
+            (candidate.atmoMaskMode!=="Everywhere"||candidate.atmoBMaskMode!=="Everywhere") &&
+            !habitatUnavailable){
+            habitatUnavailable=true;
+            console.warn("Atmospheric habitat mask too expensive for this GPU; preserving both full-canvas parents.",e);
+          }else if(candidate.atmoBAmount>0){
+            atmosphereBUnavailable=true;
+            console.warn("Second atmosphere shader unsupported by this GPU; keeping primary atmosphere and art.",e);
+          }else if(candidate.atmoAmount>0){
             atmosphereUnavailable=true;
             console.warn("Mutant Atmosphere unsupported by this GPU; protecting the original artwork.",e);
           }else if(candidate.underlayAmount>0){
@@ -946,6 +990,9 @@ export function createRenderer(canvas) {
         "substanceRelief","substanceEdge","substanceHue","substanceVariation",
         "atmoAmount","atmoScale","atmoDensity","atmoMotion",
         "atmoGlow","atmoHue","atmoVariation",
+        "atmoBAmount","atmoBScale","atmoBDensity","atmoBMotion",
+        "atmoBGlow","atmoBHue","atmoBVariation",
+        "atmoMaskScale","atmoMaskFeather","atmoMaskMotion","atmoMaskVariation",
         "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
         "tunnelAperture","tunnelVariation",
       ])

@@ -44,7 +44,11 @@ import { underlayModes, underlayPresets, applyUnderlayPreset,
   changeUnderlayMode, nextUnderlayMode, disableUnderlay } from "../living-underlay.js";
 import { sections, sectionActive, effectGroups } from "../ui-index";
 import { atmosphereModes, atmospherePresets, applyAtmospherePreset,
-  nextAtmosphereMode, hideAtmosphere } from "../mutant-atmospheres.js";
+  nextAtmosphereMode, hideAtmosphere, hybridAtmospherePresets,
+  applyAtmosphereHybridPreset, nextAtmosphereBMode, breedAtmospheres,
+  swapAtmosphereParents, hideAtmospherePair } from "../mutant-atmospheres.js";
+import { atmosphereHabitats, atmosphereSecondHabitats,
+  atmosphereBlendModes } from "../atmosphere-habitats.js";
 export { TextInspector } from "./TextInspector";
 const icons = [
   Waves,
@@ -220,6 +224,7 @@ export function EffectsInspector({ history }) {
   const [sculptPreset,setSculptPreset]=React.useState(filamentSculptPresets[0].name);
   const [underlayPreset,setUnderlayPreset]=React.useState(underlayPresets[0].name);
   const [atmoPreset,setAtmoPreset]=React.useState(atmospherePresets[0].name);
+  const [hybridAtmoPreset,setHybridAtmoPreset]=React.useState(hybridAtmospherePresets[0].name);
   // Find jumps to a section that might be filtered out: show everything.
   useReveal((detail) => {
     if (effectSections.some((x) => x.id === detail.id) && filter !== "All") setFilter("All");
@@ -233,7 +238,7 @@ export function EffectsInspector({ history }) {
   };
   const body = {
     atmosphere: <>
-      <p className="control-note">Four independent shader-vault worlds layered over any engine: stained-glass mycelium, mandala-constrained gas, double-beat phosphors, and living CMY print rosettes. They respond to your existing palette and keep moving in GIF/MP4 exports.</p>
+      <p className="control-note">Four living shader-vault worlds you can stack, crossbreed and mask over any engine: stained-glass mycelium, mandala-constrained gas, double-beat phosphors, and living CMY print rosettes. They respond to your existing palette and keep moving in GIF/MP4 exports.</p>
       <Select label="Atmosphere" value={s.atmoMode}
         onChange={mode=>history.change(x=>({...x,atmoMode:mode,
           atmoAmount:Math.max(62,x.atmoAmount)}))}>
@@ -266,10 +271,91 @@ export function EffectsInspector({ history }) {
         <button type="button" className="button secondary"
           disabled={s.atmoAmount<=0}
           onClick={()=>history.change(hideAtmosphere)}>
-          Hide atmosphere
+          Hide first parent
         </button>
       </div>
-      <p className="control-note">Independent and reversible. Presence 0 preserves your existing art, words, pigments, and other layers. Uses the same high-resolution export renderer.</p>
+      <details className="filament-crossbreeder">
+        <summary>🧬 TWO-PARENT ATMOSPHERE BREEDER</summary>
+        <p className="control-note">Breed two of the four living atmospheres. Parent B has its own geometry size, pulse/growth rate, palette phase, glow, and variation. Parent A keeps all its settings. Presence 0 costs no second shader.</p>
+        <Select label="Second parent" value={s.atmoBMode}
+          onChange={mode=>history.change(x=>({...x,atmoBMode:mode,
+            atmoBAmount:Math.max(62,x.atmoBAmount)}))}>
+          {atmosphereModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </Select>
+        <Parameter label="Second parent presence" name="atmoBAmount" history={history}/>
+        <Parameter label="Second parent pattern size" name="atmoBScale" history={history}/>
+        <Parameter label="Second parent density" name="atmoBDensity" history={history}/>
+        <Parameter label="Second parent motion" name="atmoBMotion" history={history}/>
+        <Parameter label="Second parent glow" name="atmoBGlow" history={history}/>
+        <Parameter label="Second parent palette shift" name="atmoBHue" history={history}/>
+        <Parameter label="Second parent variation" name="atmoBVariation" history={history}/>
+        <Select label="How the parents mix" value={s.atmoBBlendMode}
+          onChange={mode=>history.change(x=>({...x,atmoBBlendMode:mode}))}>
+          {atmosphereBlendModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </Select>
+        <Select label="Instant hybrid" value={hybridAtmoPreset} onChange={setHybridAtmoPreset}>
+          {hybridAtmospherePresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>applyAtmosphereHybridPreset(x,hybridAtmoPreset))}>
+            Spawn hybrid
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(breedAtmospheres)}>
+            <Dna size={13}/> Breed wild
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>nextAtmosphereBMode(x))}>
+            <Dices size={13}/> New second parent
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(swapAtmosphereParents)}>
+            <ArrowLeftRight size={13}/> Swap parents
+          </button>
+          <button type="button" className="button secondary"
+            disabled={s.atmoBAmount<=0}
+            onClick={()=>history.change(x=>({...x,atmoBAmount:0}))}>
+            Hide second
+          </button>
+          <button type="button" className="button secondary"
+            disabled={s.atmoAmount<=0&&s.atmoBAmount<=0}
+            onClick={()=>history.change(hideAtmospherePair)}>
+            Hide both
+          </button>
+        </div>
+      </details>
+      <details className="filament-crossbreeder">
+        <summary>🪩 LIVING HABITATS — MASKS & TERRITORIES</summary>
+        <p className="control-note">Let different species colonize different parts of the same image. The edges flow smoothly, and each mask has an independent placement mode. 'Inverse first' makes parent B fill the spaces parent A leaves.</p>
+        <Select label="First parent habitat" value={s.atmoMaskMode}
+          onChange={mode=>history.change(x=>({...x,atmoMaskMode:mode}))}>
+          {atmosphereHabitats.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </Select>
+        <Select label="Second parent habitat" value={s.atmoBMaskMode}
+          onChange={mode=>history.change(x=>({...x,atmoBMaskMode:mode}))}>
+          {atmosphereSecondHabitats.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </Select>
+        <Parameter label="Habitat coverage / scale" name="atmoMaskScale" history={history}/>
+        <Parameter label="Soft edges" name="atmoMaskFeather" history={history}/>
+        <Parameter label="Habitat drift" name="atmoMaskMotion" history={history}/>
+        <Parameter label="Habitat mutations" name="atmoMaskVariation" history={history}/>
+        {s.atmoBMaskMode==="Inverse first"&&s.atmoMaskMode==="Everywhere"&&
+          <p className="control-note">Inverse first is empty while the first habitat is Everywhere. Choose a shape for parent A to reveal parent B.</p>}
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>({...x,atmoMaskMode:"Everywhere",
+              atmoBMaskMode:"Everywhere"}))}>
+            Full canvas
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>({...x,atmoMaskVariation:
+              (x.atmoMaskVariation+15+Math.random()*73)%100}))}>
+            <Shuffle size={13}/> Reseed habitats
+          </button>
+        </div>
+      </details>
+      <p className="control-note">Fully reversible: both parents share your palette and export timeline. Your original engines, artwork, text and all other layers remain untouched when both presences are 0.</p>
     </>,
     underlay: <>
       <p className="control-note">Six mathematical textile grounds that fill the spaces behind the stitched lines. Moving jacquard, shifting moiré, fivefold twill, velvet pile, opaline damask and cellular gauze. Also works as stand-alone animated artwork with Filament Forge turned off.</p>

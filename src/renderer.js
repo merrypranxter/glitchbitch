@@ -22,6 +22,7 @@ import { atmosphereGLSL, atmosphereModes, specializeAtmosphereVariant } from "./
 import { colonyLifeModes } from "./colony-lifecycle.js";
 import { colonyAnatomyModes } from "./colony-anatomy.js";
 import { colonyCortexModes, colonyCortexGLSL } from "./colony-cortex.js";
+import { sporeModes, sporeDynastyGLSL } from "./spore-dynasties.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes,
   habitatGLSL, atmosphereHybridGLSL } from "./atmosphere-habitats.js";
 
@@ -597,13 +598,17 @@ export function createRenderer(canvas) {
       withAtmosphereB = s.atmoBAmount>0,
       withHabitat = (withAtmosphere && s.atmoMaskMode!=="Everywhere") ||
         (withAtmosphereB && s.atmoBMaskMode!=="Everywhere"),
+      withSpore = s.sporeAmount>0 && s.sporeMode!=="Dormant" && (
+        (withAtmosphere && s.atmoMaskMode==="Painted colonies") ||
+        (withAtmosphereB && s.atmoBMaskMode==="Painted colonies")
+      ),
       withCortex = s.colonyCortexAmount>0 && (
         (withAtmosphere && s.atmoMaskMode==="Painted colonies") ||
         (withAtmosphereB && s.atmoBMaskMode==="Painted colonies")
       ),
       withStrange = (s.engine>=17 && s.engine<=19) ||
         (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withWiggle ? "wiggle" : "still"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withWiggle ? "wiggle" : "still"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -696,6 +701,15 @@ export function createRenderer(canvas) {
           else colonyCortexFieldB=max(colonyCortexFieldB,tissue*disk);
         }`
       : "";
+    const sporeSample=withSpore
+      ? `if(sporeAmount>.001 &&
+           index<float(habitatStampCount)*sporeFertility){
+           vec2 baby=sporeSample(uv,stamp,index,parent,aspect.x);
+           inside=max(inside,baby.x);
+           if(parent<.5)sporeFlightA=max(sporeFlightA,baby.y);
+           else sporeFlightB=max(sporeFlightB,baby.y);
+         }`
+      : "";
     const masks=withHabitat
       ? habitatGLSL
           .replace("/* ATMO_MASK_A */",
@@ -704,6 +718,8 @@ export function createRenderer(canvas) {
             String(Math.max(0,atmosphereSecondHabitats.indexOf(s.atmoBMaskMode))))
           .replace("/* CORTEX_MODULE */",withCortex ? colonyCortexGLSL : "")
           .replace("/* CORTEX_SAMPLE */",cortexSample)
+          .replace("/* SPORE_MODULE */",withSpore ? sporeDynastyGLSL : "")
+          .replace("/* SPORE_SAMPLE */",sporeSample)
       : "";
     const hybrid=withAtmosphereB
       ? "#define ATM_BLEND_B "+Math.max(0,atmosphereBlendModes.indexOf(s.atmoBBlendMode))+
@@ -748,6 +764,9 @@ export function createRenderer(canvas) {
             "col=mix(col,atmoParent,atmoAMask);"+glowA+
             (withCortex && s.atmoMaskMode==="Painted colonies"
               ? "col=tintColonyCortex(col,atmoAMask,colonyCortexFieldA,atmoHue);"
+              : "")+
+            (withSpore && s.atmoMaskMode==="Painted colonies"
+              ? "col=tintSporeCloud(col,sporeFlightA,atmoHue);"
               : "")
           : "col=livingMutantAtmosphere(col,uv,p,v);")
         : ""));
@@ -758,6 +777,9 @@ export function createRenderer(canvas) {
           ? "col=mix(col,atmoResult,atmoBMask);"+glowB+
             (withCortex && s.atmoBMaskMode==="Painted colonies"
               ? "col=tintColonyCortex(col,atmoBMask,colonyCortexFieldB,atmoBHue);"
+              : "")+
+            (withSpore && s.atmoBMaskMode==="Painted colonies"
+              ? "col=tintSporeCloud(col,sporeFlightB,atmoBHue);"
               : "")
           : "col=atmoResult;")) : "");
     source=source.replace("/* MICRO_MODULE */",withMicro?microGLSL:"");
@@ -1060,6 +1082,7 @@ export function createRenderer(canvas) {
         "colonyAnatomyPores","colonyAnatomyRim",
         "colonyCortexAmount","colonyCortexDetail",
         "colonyCortexMotion","colonyCortexRelief",
+        "sporeAmount","sporeSpeed","sporeReach","sporeFertility","sporeGlow",
         "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
         "tunnelAperture","tunnelVariation",
       ])
@@ -1094,6 +1117,8 @@ export function createRenderer(canvas) {
       gl.uniform1i(loc("colonyShapeB"),colonyAnatomyModes.indexOf(s.colonyShapeB));
       gl.uniform1i(loc("colonyCortexA"),colonyCortexModes.indexOf(s.colonyCortexA));
       gl.uniform1i(loc("colonyCortexB"),colonyCortexModes.indexOf(s.colonyCortexB));
+      gl.uniform1i(loc("sporeMode"),sporeModes.indexOf(s.sporeMode));
+      gl.uniform1f(loc("sporeGeneration"),s.sporeGeneration);
       gl.uniform1i(loc("habitatStampCount"),plantedCount);
       gl.uniform4fv(loc("habitatStamps[0]"),habitatBuffer);
       gl.uniform1i(loc("tunnelMode"), [

@@ -8,6 +8,7 @@ import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculpt
 import { underlayModes } from "./living-underlay.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
+import { mixEcosystemIntoSurprise } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
 export const engineInfo = [
@@ -1229,7 +1230,12 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   // win; any newly added numeric field gets a safe, editable fallback.
   for (const [key,[min,max]] of Object.entries(numericRanges))
     if(!randomizedKeys.has(key))s[key]=min+random()*(max-min);
-  return {...s};
+  // Smart Surprise deliberately participates in the whole new ecology:
+  // seeded Painted colonies, actual A/B territory wars and weighted growth.
+  // The regular Mutate path above remains conservative and undo-friendly.
+  return mixEcosystemIntoSurprise({...s},random,{
+    preserveColors:!!locks.color,original:state
+  });
 }
 export const looks = [
   {

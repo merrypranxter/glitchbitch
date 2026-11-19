@@ -38,7 +38,7 @@ float paintedHabitat(vec2 uv,float parent){
           if(colonyLifeMode==1){
             target=.12+1.25*smoothWave; // seed -> swollen thallus -> seed
           }else if(colonyLifeMode==2){
-            target=1.+.22*sin(lifeTime*.78)+.085*sin(lifeTime*1.31+index*.9);
+            target=1.+.22*sin(lifeTime)+.085*sin(lifeTime*2.+index*.9);
           }else if(colonyLifeMode==3){
             target=.08+1.42*pow(smoothWave,1.7); // collapse -> return
           }else if(colonyLifeMode==4){

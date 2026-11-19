@@ -10,6 +10,7 @@ import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.j
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
 import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
 import { colonyCortexModes, colonyCortexPresets } from "./colony-cortex.js";
+import { sporeModes, sporePresets } from "./spore-dynasties.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
@@ -366,6 +367,11 @@ export const numericRanges = {
   colonyCortexDetail: [0, 100],
   colonyCortexMotion: [0, 100],
   colonyCortexRelief: [0, 100],
+  sporeAmount: [0, 100],
+  sporeSpeed: [0, 100],
+  sporeReach: [0, 100],
+  sporeFertility: [0, 100],
+  sporeGlow: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -606,6 +612,13 @@ export const initial = {
   colonyCortexDetail: 55,
   colonyCortexMotion: 45,
   colonyCortexRelief: 50,
+  sporeMode: "Dormant",
+  sporeAmount: 0,
+  sporeSpeed: 57,
+  sporeReach: 58,
+  sporeFertility: 64,
+  sporeGlow: 73,
+  sporeGeneration: 0,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -705,6 +718,7 @@ export function validateRecipe(input) {
     colonyShapeB: colonyAnatomyModes,
     colonyCortexA: colonyCortexModes,
     colonyCortexB: colonyCortexModes,
+    sporeMode: sporeModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -810,6 +824,13 @@ export function validateRecipe(input) {
        /[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(x.lettering))
       throw Error("Your quote must be 280 characters or fewer (line breaks allowed).");
     s.lettering=x.lettering.replace(/\r\n?/g,"\n");
+  }
+  // This counter is not a randomizable visual slider: it is the version
+  // of committed, permanently editable biological offspring in this work.
+  if(x.sporeGeneration!==undefined){
+    if(!Number.isInteger(x.sporeGeneration)||x.sporeGeneration<0||
+      x.sporeGeneration>4095)throw Error("Invalid spore generation.");
+    s.sporeGeneration=x.sporeGeneration;
   }
   // Painted habitats are independent of touch deformation marks.
   // Bounded storage and strict validation prevent bogus GPU uniform arrays.
@@ -1004,6 +1025,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "colonyAnatomyPores","colonyAnatomyRim",
       "colonyCortexAmount","colonyCortexDetail",
       "colonyCortexMotion","colonyCortexRelief",
+      "sporeAmount","sporeSpeed","sporeReach","sporeFertility","sporeGlow",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -1013,6 +1035,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(["colonyAnatomyAmount","colonyAnatomyPores","colonyAnatomyRim"].includes(key)
         && state.colonyAnatomyAmount<=0)continue; // Morph stays opt-in.
       if(key==="colonyCortexAmount"&&state.colonyCortexAmount<=0)continue; // Cortex stays dormant.
+      if(key==="sporeAmount"&&state.sporeAmount<=0)continue; // Spores stay opt-in.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1248,6 +1271,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.colonyCortexA="Bare cortex";s.colonyCortexB="Bare cortex";
   s.colonyCortexAmount=0;s.colonyCortexDetail=55;
   s.colonyCortexMotion=45;s.colonyCortexRelief=50;
+  s.sporeMode="Dormant";s.sporeAmount=0;
+  s.sporeSpeed=57;s.sporeReach=58;s.sporeFertility=64;
+  s.sporeGlow=73;s.sporeGeneration=0;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;

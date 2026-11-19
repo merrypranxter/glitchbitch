@@ -20,6 +20,7 @@ import { tunnelGLSL } from "./tunnels.js";
 import { strangeFieldsGLSL } from "./strange-fields.js";
 import { atmosphereGLSL, atmosphereModes, specializeAtmosphereVariant } from "./mutant-atmospheres.js";
 import { colonyLifeModes } from "./colony-lifecycle.js";
+import { colonyAnatomyModes } from "./colony-anatomy.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes,
   habitatGLSL, atmosphereHybridGLSL } from "./atmosphere-habitats.js";
 
@@ -710,11 +711,17 @@ export function createRenderer(canvas) {
       : "";
     const glowA=maskedA
       ? "col+=palette(atmoHue+colorTime*.009)*"+
-        "(4.*atmoAMask*(1.-atmoAMask))*colonyFrontGlow*.72;"
+        "(4.*atmoAMask*(1.-atmoAMask))*("+
+        (s.atmoMaskMode==="Painted colonies"
+          ? "colonyFrontGlow*.72+colonyAnatomyRim*colonyAnatomyAmount*.65"
+          : "colonyFrontGlow*.72")+");"
       : "";
     const glowB=maskedB
       ? "col+=palette(atmoBHue+.28+colorTime*.009)*"+
-        "(4.*atmoBMask*(1.-atmoBMask))*colonyFrontGlow*.72;"
+        "(4.*atmoBMask*(1.-atmoBMask))*("+
+        (s.atmoBMaskMode==="Painted colonies"
+          ? "colonyFrontGlow*.72+colonyAnatomyRim*colonyAnatomyAmount*.65"
+          : "colonyFrontGlow*.72")+");"
       : "";
     source=source.replace("/* ATMOSPHERE_POST */",
       maskPrelude+(withAtmosphere
@@ -1025,6 +1032,8 @@ export function createRenderer(canvas) {
         "atmoBGlow","atmoBHue","atmoBVariation",
         "atmoMaskScale","atmoMaskFeather","atmoMaskMotion","atmoMaskVariation",
         "colonyLifeAmount","colonyLifeSpeed","colonyFrontGlow","colonyCompetition",
+        "colonyAnatomyAmount","colonyAnatomyDetail","colonyAnatomyMotion",
+        "colonyAnatomyPores","colonyAnatomyRim",
         "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
         "tunnelAperture","tunnelVariation",
       ])
@@ -1055,6 +1064,8 @@ export function createRenderer(canvas) {
         habitatBuffer[j+3]=m.parent;
       }
       gl.uniform1i(loc("colonyLifeMode"),colonyLifeModes.indexOf(s.colonyLifeMode));
+      gl.uniform1i(loc("colonyShapeA"),colonyAnatomyModes.indexOf(s.colonyShapeA));
+      gl.uniform1i(loc("colonyShapeB"),colonyAnatomyModes.indexOf(s.colonyShapeB));
       gl.uniform1i(loc("habitatStampCount"),plantedCount);
       gl.uniform4fv(loc("habitatStamps[0]"),habitatBuffer);
       gl.uniform1i(loc("tunnelMode"), [

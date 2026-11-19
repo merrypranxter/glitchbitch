@@ -21,7 +21,7 @@ import { strangeFieldsGLSL } from "./strange-fields.js";
 import { atmosphereGLSL, atmosphereModes, specializeAtmosphereVariant } from "./mutant-atmospheres.js";
 import { colonyLifeModes } from "./colony-lifecycle.js";
 import { colonyAnatomyModes } from "./colony-anatomy.js";
-import { colonyCortexModes } from "./colony-cortex.js";
+import { colonyCortexModes, colonyCortexGLSL } from "./colony-cortex.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes,
   habitatGLSL, atmosphereHybridGLSL } from "./atmosphere-habitats.js";
 
@@ -597,9 +597,13 @@ export function createRenderer(canvas) {
       withAtmosphereB = s.atmoBAmount>0,
       withHabitat = (withAtmosphere && s.atmoMaskMode!=="Everywhere") ||
         (withAtmosphereB && s.atmoBMaskMode!=="Everywhere"),
+      withCortex = s.colonyCortexAmount>0 && (
+        (withAtmosphere && s.atmoMaskMode==="Painted colonies") ||
+        (withAtmosphereB && s.atmoBMaskMode==="Painted colonies")
+      ),
       withStrange = (s.engine>=17 && s.engine<=19) ||
         (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withWiggle ? "wiggle" : "still"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withWiggle ? "wiggle" : "still"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -681,12 +685,25 @@ export function createRenderer(canvas) {
     source=source.replace("/* ATMOSPHERE_MODULE */",chosenAtmosphere+
       (withAtmosphereB ? (withAtmosphere ? "\n#undef ATMO_MODE\n" : "")+
         chosenAtmosphereB : ""));
+    // Inline cortex ONLY for active planted material; old habitat shaders
+    // have no new sampling code or material math to compile on mobile GPUs.
+    const cortexSample=withCortex
+      ? `if(colonyCortexAmount>.001){
+          vec2 cortexCell=delta/max(r,.0001);
+          float cortexRadial=distanceToSeed/max(edge,.0001);
+          vec3 tissue=colonyCortexSample(cortexCell,angle,cortexRadial,index,parent);
+          if(parent<.5)colonyCortexFieldA=max(colonyCortexFieldA,tissue*disk);
+          else colonyCortexFieldB=max(colonyCortexFieldB,tissue*disk);
+        }`
+      : "";
     const masks=withHabitat
       ? habitatGLSL
           .replace("/* ATMO_MASK_A */",
             String(Math.max(0,atmosphereHabitats.indexOf(s.atmoMaskMode))))
           .replace("/* ATMO_MASK_B */",
             String(Math.max(0,atmosphereSecondHabitats.indexOf(s.atmoBMaskMode))))
+          .replace("/* CORTEX_MODULE */",withCortex ? colonyCortexGLSL : "")
+          .replace("/* CORTEX_SAMPLE */",cortexSample)
       : "";
     const hybrid=withAtmosphereB
       ? "#define ATM_BLEND_B "+Math.max(0,atmosphereBlendModes.indexOf(s.atmoBBlendMode))+
@@ -729,7 +746,7 @@ export function createRenderer(canvas) {
         ? (maskedA
           ? "vec3 atmoParent=livingMutantAtmosphere(col,uv,p,v);"+
             "col=mix(col,atmoParent,atmoAMask);"+glowA+
-            (s.atmoMaskMode==="Painted colonies"
+            (withCortex && s.atmoMaskMode==="Painted colonies"
               ? "col=tintColonyCortex(col,atmoAMask,colonyCortexFieldA,atmoHue);"
               : "")
           : "col=livingMutantAtmosphere(col,uv,p,v);")
@@ -739,7 +756,7 @@ export function createRenderer(canvas) {
         "vec3 atmoResult=crossbreedAtmospheres(col,atmoChild,uv,v);"+
         (maskedB
           ? "col=mix(col,atmoResult,atmoBMask);"+glowB+
-            (s.atmoBMaskMode==="Painted colonies"
+            (withCortex && s.atmoBMaskMode==="Painted colonies"
               ? "col=tintColonyCortex(col,atmoBMask,colonyCortexFieldB,atmoBHue);"
               : "")
           : "col=atmoResult;")) : "");

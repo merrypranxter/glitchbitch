@@ -221,11 +221,14 @@ export function enforceChaosBudget(state,rng=Math.random,opts={}){
   const s={...state};
   const max=opts.allowHeavy===false?2:(opts.level==="Maximum freakshow"?5:
     opts.level==="Feral"?4:opts.level==="Wild"?3:2);
-  const candidates=extras.filter(key=>(s[key]||0)>10);
-  while(candidates.length>max){
+  const protectedKeys=new Set(opts.protectedKeys||[]);
+  const candidates=extras.filter(key=>(s[key]||0)>10&&!protectedKeys.has(key));
+  let active=extras.filter(key=>(s[key]||0)>10).length;
+  while(active>max && candidates.length){
     const index=Math.floor(unit(rng)*candidates.length);
     const key=candidates.splice(index,1)[0];
     s[key]=0;
+    active--;
   }
   // The rasterized 3D mode + two atmospheric shaders can be expensive.
   if((s.atmoBAmount||0)>0 && (s.stereoAmount||0)>0 &&
@@ -265,7 +268,8 @@ export function fullWeirdShuffle(state,rng=Math.random,opts={}){
       "marks","compositionMode","compositionAmount","compositionScale"]);
   s.ratio=state.ratio;
   return ensureValidEcosystemState(enforceChaosBudget(s,rng,{
-    allowHeavy:opts.allowHeavy===true,level
+    allowHeavy:opts.allowHeavy===true,level,
+    protectedKeys:opts.preserveCore===true?["compositionAmount"]:[]
   }),rng);
 }
 // Called by the application's existing Surprise Me — unlike Mutate, it can

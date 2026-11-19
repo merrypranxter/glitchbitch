@@ -16,6 +16,7 @@ uniform vec4 habitatStamps[16];
 uniform int colonyLifeMode;
 uniform float colonyLifeAmount,colonyLifeSpeed,colonyFrontGlow,colonyCompetition;
 ${colonyAnatomyGLSL}
+/* CORTEX_MODULE */
 // Seeded, reversible growth masks: each four-vector is (UV x, UV y, radius, parent).
 // The mask moves but never introduces a frame-to-frame state or a seam.
 float paintedHabitat(vec2 uv,float parent){
@@ -74,6 +75,7 @@ float paintedHabitat(vec2 uv,float parent){
             disk*=1.-pore*colonyAnatomyPores*.76*
               colonyAnatomyAmount;
           }
+          /* CORTEX_SAMPLE */
           inside=max(inside,disk);
         }
       }

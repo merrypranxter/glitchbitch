@@ -9,6 +9,7 @@ import { underlayModes } from "./living-underlay.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
 import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
+import { colonyCortexModes, colonyCortexPresets } from "./colony-cortex.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
@@ -361,6 +362,10 @@ export const numericRanges = {
   colonyAnatomyMotion: [0, 100],
   colonyAnatomyPores: [0, 100],
   colonyAnatomyRim: [0, 100],
+  colonyCortexAmount: [0, 100],
+  colonyCortexDetail: [0, 100],
+  colonyCortexMotion: [0, 100],
+  colonyCortexRelief: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -595,6 +600,12 @@ export const initial = {
   colonyAnatomyMotion: 47,
   colonyAnatomyPores: 0,
   colonyAnatomyRim: 0,
+  colonyCortexA: "Bare cortex",
+  colonyCortexB: "Bare cortex",
+  colonyCortexAmount: 0,
+  colonyCortexDetail: 55,
+  colonyCortexMotion: 45,
+  colonyCortexRelief: 50,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -692,6 +703,8 @@ export function validateRecipe(input) {
     colonyLifeMode: colonyLifeModes,
     colonyShapeA: colonyAnatomyModes,
     colonyShapeB: colonyAnatomyModes,
+    colonyCortexA: colonyCortexModes,
+    colonyCortexB: colonyCortexModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -989,6 +1002,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "colonyFrontGlow","colonyCompetition",
       "colonyAnatomyAmount","colonyAnatomyDetail","colonyAnatomyMotion",
       "colonyAnatomyPores","colonyAnatomyRim",
+      "colonyCortexAmount","colonyCortexDetail",
+      "colonyCortexMotion","colonyCortexRelief",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -997,6 +1012,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
         && state.colonyLifeAmount<=0)continue; // Keep old artwork dormant.
       if(["colonyAnatomyAmount","colonyAnatomyPores","colonyAnatomyRim"].includes(key)
         && state.colonyAnatomyAmount<=0)continue; // Morph stays opt-in.
+      if(key==="colonyCortexAmount"&&state.colonyCortexAmount<=0)continue; // Cortex stays dormant.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1229,6 +1245,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.colonyShapeA="Classic disks";s.colonyShapeB="Classic disks";
   s.colonyAnatomyAmount=0;s.colonyAnatomyDetail=57;
   s.colonyAnatomyMotion=47;s.colonyAnatomyPores=0;s.colonyAnatomyRim=0;
+  s.colonyCortexA="Bare cortex";s.colonyCortexB="Bare cortex";
+  s.colonyCortexAmount=0;s.colonyCortexDetail=55;
+  s.colonyCortexMotion=45;s.colonyCortexRelief=50;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;
@@ -2213,6 +2232,65 @@ export const looks = [
         motionAmount:[57,68,51,83][i],
         colorAmount:[77,84,59,92][i],
       }
+    };
+  }),
+
+  // Material worlds: actual editable, planted colonies with tissue layers
+  // calculated in the same pixel path as their parent silhouettes.
+  ...colonyCortexPresets.map((specimen,i)=>{
+    const {name,...cortex}=specimen;
+    const seed=[278145,871693,349108,729853][i];
+    const palette=[9,11,10,1][i];
+    const layouts=["Ring","Twin clusters","Diagonal invasion","Corner islands"];
+    return {
+      name,
+      family:"Living Cortex",
+      note:[
+        "Concentric time-strata embedded in lichen sheets, rivaled by webbed fungal veins",
+        "Raised-looking fruiting discs crawl across a bright membranous fungal atmosphere",
+        "Vascular fungal branches twist through crystal lichen fronts and glowing borders",
+        "Full microanatomical relief: growth rings, veins and apothecia-like spore cups",
+      ][i],
+      state:{
+        ...initial,...cortex,seed,
+        engine:[18,19,7,11][i],
+        palette,colors:palettes[palette].colors,
+        complexity:[71,88,76,93][i],scale:[33,21,27,25][i],
+        warp:[62,74,59,84][i],
+        atmoMode:["Prismatic mycelium","Heartbeat phosphor",
+          "Prismatic mycelium","Mandala gas leak"][i],
+        atmoBMode:["Mandala gas leak","Prismatic mycelium",
+          "Misprint rosette","Prismatic mycelium"][i],
+        atmoAmount:91,atmoBAmount:83,
+        atmoScale:[61,38,74,54][i],atmoBScale:[49,73,44,79][i],
+        atmoDensity:85,atmoBDensity:87,
+        atmoMotion:69,atmoBMotion:61,
+        atmoGlow:91,atmoBGlow:90,
+        atmoHue:[17,79,36,85][i],atmoBHue:[72,30,83,44][i],
+        atmoBBlendMode:["Light bloom","Over","Spectral difference","Ink stain"][i],
+        atmoMaskMode:"Painted colonies",atmoBMaskMode:"Painted colonies",
+        atmoMaskFeather:[34,29,51,37][i],
+        atmoMaskMotion:[53,70,46,83][i],
+        atmoMaskVariation:[64,39,86,73][i],
+        colonyShapeA:["Lichen lobes","Coral fringe","Hyphal fans","Crystal petals"][i],
+        colonyShapeB:["Hyphal fans","Crystal petals","Lichen lobes","Coral fringe"][i],
+        colonyAnatomyAmount:[93,87,95,97][i],
+        colonyAnatomyDetail:[68,82,76,94][i],
+        colonyAnatomyMotion:[48,61,73,64][i],
+        colonyAnatomyPores:[26,38,17,62][i],
+        colonyAnatomyRim:[71,84,91,89][i],
+        colonyLifeMode:["Germinate & bloom","Breathe",
+          "Territory war","Wither & return"][i],
+        colonyLifeAmount:[86,67,93,82][i],
+        colonyLifeSpeed:[38,61,73,48][i],
+        colonyFrontGlow:[65,78,89,75][i],
+        colonyCompetition:i===2?81:0,
+        habitatStamps:generateHabitatStamps({seed},
+          ()=>[.22,.41,.58,.79][i],
+          {layout:layouts[i],count:[9,8,10,8][i],needA:true,needB:true}),
+        colorAmount:[68,84,72,91][i],
+        lightMotion:[81,74,88,96][i],
+      },
     };
   }),
 

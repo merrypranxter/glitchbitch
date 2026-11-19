@@ -54,6 +54,8 @@ import { colonyLifeModes, colonyLifePresets, applyColonyLifePreset,
   stopColonyLife } from "../colony-lifecycle.js";
 import { colonyAnatomyModes, colonyAnatomyPresets, applyColonyAnatomyPreset,
   clearColonyAnatomy, shuffleColonyAnatomy } from "../colony-anatomy.js";
+import { colonyCortexModes, colonyCortexPresets, applyColonyCortexPreset,
+  clearColonyCortex, shuffleColonyCortex } from "../colony-cortex.js";
 import { ensureValidEcosystemState } from "../ecosystem-randomizer.js";
 import { shuffleColonies, shuffleColonyLife, shuffleEcosystem,
   fullWeirdShuffle, chaosLevels } from "../ecosystem-randomizer.js";
@@ -235,6 +237,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [hybridAtmoPreset,setHybridAtmoPreset]=React.useState(hybridAtmospherePresets[0].name);
   const [colonyLifePreset,setColonyLifePreset]=React.useState(colonyLifePresets[0].name);
   const [colonyAnatomyPreset,setColonyAnatomyPreset]=React.useState(colonyAnatomyPresets[0].name);
+  const [colonyCortexPreset,setColonyCortexPreset]=React.useState(colonyCortexPresets[0].name);
   const [chaosLevel,setChaosLevel]=React.useState("Wild");
   const [preserveColors,setPreserveColors]=React.useState(true);
   const [preserveText,setPreserveText]=React.useState(true);
@@ -295,6 +298,60 @@ export function EffectsInspector({ history, onTool, tool }) {
         Uncheck Preserve colors to randomize the palette too. Your text stays
         intact unless you explicitly uncheck its protection. Manual controls
         and all planted seeds remain editable afterward.
+      </p>
+    </>,
+    "colony-cortex": <>
+      <p className="control-note">
+        LIVING CORTEX — not just the edge! Give planted colonies their own
+        inner tissue: years of growth bands, radial fungal veins, or little
+        clustered fruiting cups. Parent A and B can grow different materials.
+      </p>
+      <Select label="Parent A cortex" value={s.colonyCortexA}
+        onChange={mode=>history.change(x=>({...x,colonyCortexA:mode}))}>
+        {colonyCortexModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <Select label="Parent B cortex" value={s.colonyCortexB}
+        onChange={mode=>history.change(x=>({...x,colonyCortexB:mode}))}>
+        {colonyCortexModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <Parameter label="Cortex visibility" name="colonyCortexAmount" history={history}/>
+      <Parameter label="Growth ring / branching detail" name="colonyCortexDetail" history={history}/>
+      <Parameter label="Inner tissue movement" name="colonyCortexMotion" history={history}/>
+      <Parameter label="Pigment depth and relief" name="colonyCortexRelief" history={history}/>
+      <Select label="Instant cortex" value={colonyCortexPreset}
+        onChange={setColonyCortexPreset}>
+        {colonyCortexPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+      </Select>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>ensureValidEcosystemState({
+            ...applyColonyCortexPreset(x,colonyCortexPreset),
+            atmoMaskMode:"Painted colonies",
+            atmoBMaskMode:"Painted colonies",
+            atmoAmount:Math.max(70,x.atmoAmount),
+            atmoBAmount:Math.max(65,x.atmoBAmount),
+          }))}>
+          <Flower2 size={13}/> Spawn cortex pair
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>ensureValidEcosystemState({
+            ...shuffleColonyCortex(x),
+            atmoMaskMode:"Painted colonies",
+            atmoAmount:Math.max(70,x.atmoAmount),
+          }))}>
+          <Dices size={13}/> Shuffle cortex
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.colonyCortexAmount<=0}
+          onClick={()=>history.change(clearColonyCortex)}>
+          Hide cortex (keep seeds)
+        </button>
+      </div>
+      <p className="control-note">
+        Internal markings use each planted seed's local coordinates and its
+        living silhouette, not a fixed image texture. These are biological
+        motifs interpreted as generative art, not literal 3D lichen anatomy.
+        Restoring visibility to zero leaves every older artwork unchanged.
       </p>
     </>,
     "colony-anatomy": <>

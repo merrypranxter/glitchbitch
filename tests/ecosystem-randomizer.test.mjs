@@ -148,13 +148,14 @@ test("full weird shuffles preserve artist words/colors by default, change old ef
     assert.ok(keys.filter(k=>next[k]>10).length<=2,level+" GPU budget");
     assert.equal(next.engine===art.engine||next.engine!==art.engine,true);
   }
-  const locked=fullWeirdShuffle(art,stubborn(.58),{
+  const protectedArt={...art,compositionAmount:82};
+  const locked=fullWeirdShuffle(protectedArt,stubborn(.58),{
     level:"Feral",preserveCore:true,preserveText:true,preserveColors:true,
     baseRandomizer:(source,rng)=>randomize(source,{},false,rng)
   });
   for(const key of ["engine","seed","marks","complexity","scale","warp",
-    "lettering","colors","palette"])
-    assert.deepEqual(locked[key],art[key],key);
+    "lettering","colors","palette","compositionAmount"])
+    assert.deepEqual(locked[key],protectedArt[key],key);
   valid(locked);
   const fresh=fullWeirdShuffle(art,stubborn(.52),{
     preserveColors:false,preserveText:false,

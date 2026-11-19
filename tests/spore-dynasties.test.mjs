@@ -91,7 +91,10 @@ test("generation 2 is genuinely new, remains undoable, and stops at 16",()=>{
   assert.deepEqual(evolveSporeGeneration(twice),twice);
   assert.notEqual(born.sporeGeneration,s.sporeGeneration);
   assert.deepEqual(validateRecipe(twice),twice);
-  assert.equal(evolveSporeGeneration({...s,sporeFertility:0}),s);
+  const sterile={...s,sporeFertility:0};
+  assert.equal(evolveSporeGeneration(sterile),sterile);
+  const maxed={...s,sporeGeneration:4095};
+  assert.equal(evolveSporeGeneration(maxed),maxed);
   assert.equal(evolveSporeGeneration({...s,habitatStamps:[]}).habitatStamps.length,0);
 });
 

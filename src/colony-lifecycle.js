@@ -45,7 +45,7 @@ export function colonyGrowthMultiplier(state,time,index=0,parent=0){
   const smooth=wave*wave*(3-2*wave);
   let target=1;
   if(mode===1)target=.12+1.25*smooth;
-  else if(mode===2)target=1+.22*Math.sin(t*.78)+.085*Math.sin(t*1.31+index*.9);
+  else if(mode===2)target=1+.22*Math.sin(t)+.085*Math.sin(t*2+index*.9);
   else if(mode===3)target=.08+1.42*Math.pow(smooth,1.7);
   else if(mode===4)target=.58+.92*smooth;
   return Math.max(.045,1+(target-1)*amount);

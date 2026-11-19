@@ -1,4 +1,5 @@
 import { colonyAnatomyGLSL } from "./colony-anatomy.js";
+import { colonyCortexGLSL } from "./colony-cortex.js";
 // Spatial habitats let two moving atmospheres inhabit different canvas regions.
 // All masks are continuous-time and deterministic. No texture/FBO allocations.
 export const atmosphereHabitats = [
@@ -16,6 +17,7 @@ uniform vec4 habitatStamps[16];
 uniform int colonyLifeMode;
 uniform float colonyLifeAmount,colonyLifeSpeed,colonyFrontGlow,colonyCompetition;
 ${colonyAnatomyGLSL}
+${colonyCortexGLSL}
 // Seeded, reversible growth masks: each four-vector is (UV x, UV y, radius, parent).
 // The mask moves but never introduces a frame-to-frame state or a seam.
 float paintedHabitat(vec2 uv,float parent){
@@ -73,6 +75,16 @@ float paintedHabitat(vec2 uv,float parent){
             float pore=smoothstep(.78,.96,spots);
             disk*=1.-pore*colonyAnatomyPores*.76*
               colonyAnatomyAmount;
+          }
+          if(colonyCortexAmount>.001){
+            // Extract cortical structures from the same seed-distance and
+            // anatomy edge used by the living territory. No second 16-seed
+            // texture search is needed for the surface coloration.
+            vec2 cortexCell=delta/max(r,.0001);
+            float cortexRadial=distanceToSeed/max(edge,.0001);
+            vec3 tissue=colonyCortexSample(cortexCell,angle,cortexRadial,index,parent);
+            if(parent<.5)colonyCortexFieldA=max(colonyCortexFieldA,tissue*disk);
+            else colonyCortexFieldB=max(colonyCortexFieldB,tissue*disk);
           }
           inside=max(inside,disk);
         }

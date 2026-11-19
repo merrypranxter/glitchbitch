@@ -52,6 +52,7 @@ vec3 livingMutantAtmosphere(vec3 original,vec2 uv,vec2 p,float fieldValue){
   vec2 q=(uv-.5)*aspect*(2.6+atmoScale*8.4);
   q+=vec2(sin(atmoVariation*8.3),cos(atmoVariation*6.1))*.37;
   float body=0.,rims=0.,spark=0.,shadow=0.;
+  vec3 displayMask=vec3(1.);
 #if ATMO_MODE == 0
   // Prismatic mycelium: mathematical gyroid section, capillary network and
   // spore pearls. Animating the coordinates keeps growth continuous.
@@ -105,6 +106,9 @@ vec3 livingMutantAtmosphere(vec3 original,vec2 uv,vec2 p,float fieldValue){
   float moire=(pulseR*pulseG+pulseG*pulseB+pulseR*pulseB)/3.;
   float pitch=max(1.,res.y/(95.+atmoDensity*175.));
   float triad=mod(floor(gl_FragCoord.x/pitch),3.);
+  displayMask=vec3(triad<.5?1.:.25,
+    triad>.5&&triad<1.5?1.:.25,
+    triad>1.5?1.:.25);
   float screenStripe=.65+.35*sin(gl_FragCoord.y/pitch*PI);
   float mask=mix(.38,1.,step(.5,triad))*screenStripe;
   body=clamp((.5+.45*moire)*mask*(.78+beat*.43),0.,1.);
@@ -134,6 +138,7 @@ vec3 livingMutantAtmosphere(vec3 original,vec2 uv,vec2 p,float fieldValue){
   vec3 pigment=palette(fract(atmoHue+.17*fieldValue+
     .08*dot(q,vec2(.43,-.27))+.012*t+atmoVariation*.27));
   vec3 highlight=palette(fract(atmoHue+.25+atmoVariation*.21+.02*t));
+  pigment*=mix(vec3(1.),displayMask,(atmoDensity*.46+.25));
   float amount=clamp(atmoAmount,0.,1.);
   vec3 veiled=original*(1.-body*.38-shadow*.25)
     +pigment*body*(.35+.42*atmoGlow);

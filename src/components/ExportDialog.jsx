@@ -6,6 +6,9 @@ import { ratios, recipeDocument } from "../data";
 import { dimensions, videoDimensions, renderImage, download, recordClip, videoFormat } from "../export";
 import { hasVisibleLettering } from "../text-compositor.js";
 import { normalTextBlendState } from "../text-blend-proof.js";
+import { canvasImageFiltersWork } from "../lettering-filter-fallback.js";
+import { withoutTextForExport, exportBlobPixels, analyzeTextExportFrames,
+  exportDiagnosticReport } from "../text-export-diagnostics.js";
 export default function ExportDialog({ state, title, timelineRef, onClose, onNotice }) {
   const [tab,setTab]=useState("Image"),
     [longEdge,setLongEdge]=useState(2160),
@@ -21,6 +24,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     [error,setError]=useState(""),
     [proof,setProof]=useState(null),
     [blendProof,setBlendProof]=useState(null),
+    [diagnostics,setDiagnostics]=useState(null),
     [ready,setReady]=useState(null);
   const controller=useRef(null), mounted=useRef(true), proofUrl=useRef(null), blendUrls=useRef([]);
   const capability=videoFormat();
@@ -35,7 +39,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
   const clipDuration=clipFormat==="gif"?Math.min(duration,10):duration;
   async function makeProof(){
     if(busy)return;
-    setBusy(true);setError("");
+    setBusy(true);setError("");setProof(null);
     const snapshot={...state,ratio},timeline={...timelineRef.current};
     try {
       // This is the SAME compositing function used by the PNG and video
@@ -45,7 +49,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       const url=URL.createObjectURL(blob);
       if(proofUrl.current)URL.revokeObjectURL(proofUrl.current);
       proofUrl.current=url;
-      setProof({url,ratio,seed:state.seed});
+      setProof({url,ratio,seed:state.seed,stateAt:state});
     }catch(e){
       if(mounted.current)setError("Export proof could not render: "+e.message);
     }finally{
@@ -54,7 +58,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
   }
   async function compareBlends(){
     if(busy||!hasVisibleLettering(state))return;
-    setBusy(true);setError("");
+    setBusy(true);setError("");setDiagnostics(null);setBlendProof(null);
     const snapshot={...state,ratio},timeline={...timelineRef.current};
     const temporary=[];
     try{
@@ -62,21 +66,53 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       // use the identical timeline and Canvas compositor used by actual MP4.
       const normal=await renderImage(normalTextBlendState(snapshot),timeline,480);
       const selected=await renderImage(snapshot,timeline,480);
+      // Third reference frame: same math artwork and clock, with text
+      // hidden. It allows us to measure ONLY what composited lettering did.
+      const background=await renderImage(withoutTextForExport(snapshot),timeline,480);
+      if(!mounted.current)return;
+      let metrics=null,analysisError="";
+      try{
+        const basePixels=await exportBlobPixels(background);
+        const normalPixels=await exportBlobPixels(normal);
+        const selectedPixels=await exportBlobPixels(selected);
+        metrics=analyzeTextExportFrames({
+          background:basePixels,normal:normalPixels,selected:selectedPixels
+        });
+      }catch(e){
+        // Pixel inspection may be blocked on certain iPhones, but the
+        // visual A/B comparison must still work even if statistics cannot.
+        analysisError=e.message||"Pixel inspection is unavailable.";
+      }
       if(!mounted.current)return;
       const normalUrl=URL.createObjectURL(normal);
       const selectedUrl=URL.createObjectURL(selected);
-      temporary.push(normalUrl,selectedUrl);
+      const backgroundUrl=URL.createObjectURL(background);
+      temporary.push(normalUrl,selectedUrl,backgroundUrl);
       blendUrls.current.forEach(url=>URL.revokeObjectURL(url));
-      blendUrls.current=[normalUrl,selectedUrl];
-      setBlendProof({normal:normalUrl,selected:selectedUrl,
-        ratio,seed:state.seed,
+      blendUrls.current=[normalUrl,selectedUrl,backgroundUrl];
+      setBlendProof({normal:normalUrl,selected:selectedUrl,background:backgroundUrl,
+        ratio,seed:state.seed,stateAt:state,
         mode:state.letteringBlendMode||"Normal"});
+      setDiagnostics({...exportDiagnosticReport({
+        state:snapshot,ratio,timeline,metrics,
+        canvasFilterSupported:canvasImageFiltersWork(),
+        mp4Available:!!capability,
+        userAgent:typeof navigator!=="undefined"?navigator.userAgent:"unavailable"
+      }),analysisError});
     }catch(e){
       if(mounted.current)setError("Blend comparison failed: "+e.message);
     }finally{
       if(!mounted.current)temporary.forEach(url=>URL.revokeObjectURL(url));
       if(mounted.current)setBusy(false);
     }
+  }
+  function saveDiagnostics(){
+    if(!diagnostics)return;
+    const {analysisError,...report}=diagnostics;
+    download(new Blob([JSON.stringify({
+      ...report,analysisError:analysisError||undefined
+    },null,2)],{type:"application/json"}),
+      `glitchbitch-export-truth-${state.seed}.json`);
   }
   async function run() {
     setError("");setProgress(0);setBusy(true);setReady(null);
@@ -190,19 +226,55 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       {tab!=="Recipe"&&<div className="export-proof-panel">
         <button type="button" className="button secondary" disabled={busy}
           onClick={makeProof}>See flattened export proof (480px)</button>
-        {proof&&proof.ratio===ratio&&proof.seed===state.seed&&
+        {proof&&proof.ratio===ratio&&proof.seed===state.seed&&proof.stateAt===state&&
           <img src={proof.url}
             alt="Flattened frame from the actual PNG/GIF/MP4 compositing engine" />}
         {hasVisibleLettering(state)&&<>
           <button type="button" className="button secondary" disabled={busy}
             onClick={compareBlends}>Compare actual blend vs Normal (A/B)</button>
-          {blendProof&&blendProof.ratio===ratio&&blendProof.seed===state.seed&&
+          {blendProof&&blendProof.ratio===ratio&&blendProof.seed===state.seed&&blendProof.stateAt===state&&
             <div className="blend-proof-grid" aria-label="Export blend A/B comparison">
               <figure><img src={blendProof.normal} alt="Same artwork with all text layers set to Normal blend"/>
                 <figcaption>A · Normal</figcaption></figure>
               <figure><img src={blendProof.selected} alt="Same artwork with the actual selected text blend modes"/>
                 <figcaption>B · Selected blends</figcaption></figure>
             </div>}
+          {blendProof&&blendProof.ratio===ratio&&blendProof.seed===state.seed&&
+            blendProof.stateAt===state&&diagnostics&&
+            <details className="export-truth-panel">
+              <summary>🧪 Export Truth Serum — measurements & device</summary>
+              <p className="export-note">Three matching 480px frames: background only, Normal text,
+                and selected blends. This measures the PNG compositor's pixels—not the
+                browser's live CSS preview or MP4 compression.</p>
+              <div className="export-truth-metrics">
+                {diagnostics.measurements?<>
+                  <div><strong>{diagnostics.measurements.textCoveragePercent}%</strong>
+                    <span>Pixels visibly affected by text</span></div>
+                  <div><strong>{diagnostics.measurements.blendChangedPercent}%</strong>
+                    <span>Text-region pixels changed by the blend</span></div>
+                  <div><strong>{diagnostics.measurements.meanBlendDifference}</strong>
+                    <span>Mean blend color difference / 255</span></div>
+                  <div><strong>{diagnostics.measurements.chromaChange>0?"+":""}{diagnostics.measurements.chromaChange}</strong>
+                    <span>Colorfulness change vs Normal</span></div>
+                </>:<p className="export-note">Pixel analysis unavailable: {diagnostics.analysisError}</p>}
+              </div>
+              <p className="export-note">Canvas 2D filters: <b>{diagnostics.browser.canvas2dFilter}</b>.
+                MP4 available: <b>{diagnostics.browser.mp4Available?"yes":"no"}</b>.
+                {diagnostics.browser.canvas2dFilter==="fallback"&&
+                  " This browser uses the cached-color fallback for native text blends."}
+              </p>
+              <p className="export-note">Some blends legitimately resemble Normal over certain colors.
+                A small difference is evidence to investigate—not automatic proof of a bug.</p>
+              <figure className="export-truth-background">
+                <img src={blendProof.background} alt="Reference frame with every text layer disabled"/>
+                <figcaption>Background-only reference</figcaption>
+              </figure>
+              <button type="button" className="button secondary" disabled={busy}
+                onClick={saveDiagnostics}>Save diagnostic report (JSON)</button>
+              <p className="export-note">The report includes browser capabilities, blend settings,
+                and aggregate color measurements—but no artwork pixels or text wording.
+                Attach it here if the export still looks wrong.</p>
+            </details>}
         </>}
         <p className="export-note">These previews are rendered by the actual PNG/GIF/MP4
           compositor, not by the browser text overlay. The A/B pair uses the

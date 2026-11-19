@@ -21,6 +21,7 @@ import { strangeFieldsGLSL } from "./strange-fields.js";
 import { atmosphereGLSL, atmosphereModes, specializeAtmosphereVariant } from "./mutant-atmospheres.js";
 import { colonyLifeModes } from "./colony-lifecycle.js";
 import { colonyAnatomyModes } from "./colony-anatomy.js";
+import { colonyCortexModes } from "./colony-cortex.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes,
   habitatGLSL, atmosphereHybridGLSL } from "./atmosphere-habitats.js";
 
@@ -727,14 +728,20 @@ export function createRenderer(canvas) {
       maskPrelude+(withAtmosphere
         ? (maskedA
           ? "vec3 atmoParent=livingMutantAtmosphere(col,uv,p,v);"+
-            "col=mix(col,atmoParent,atmoAMask);"+glowA
+            "col=mix(col,atmoParent,atmoAMask);"+glowA+
+            (s.atmoMaskMode==="Painted colonies"
+              ? "col=tintColonyCortex(col,atmoAMask,colonyCortexFieldA,atmoHue);"
+              : "")
           : "col=livingMutantAtmosphere(col,uv,p,v);")
         : ""));
     source=source.replace("/* ATMOSPHERE_B_POST */",
       withAtmosphereB ? ("vec3 atmoChild=livingMutantAtmosphereB(col,uv,p,v);"+
         "vec3 atmoResult=crossbreedAtmospheres(col,atmoChild,uv,v);"+
         (maskedB
-          ? "col=mix(col,atmoResult,atmoBMask);"+glowB
+          ? "col=mix(col,atmoResult,atmoBMask);"+glowB+
+            (s.atmoBMaskMode==="Painted colonies"
+              ? "col=tintColonyCortex(col,atmoBMask,colonyCortexFieldB,atmoBHue);"
+              : "")
           : "col=atmoResult;")) : "");
     source=source.replace("/* MICRO_MODULE */",withMicro?microGLSL:"");
     source=source.replace("/* MICRO_POST */",withMicro?"col=movingMicrostructure(col,p,uv,v);":"");
@@ -1034,6 +1041,8 @@ export function createRenderer(canvas) {
         "colonyLifeAmount","colonyLifeSpeed","colonyFrontGlow","colonyCompetition",
         "colonyAnatomyAmount","colonyAnatomyDetail","colonyAnatomyMotion",
         "colonyAnatomyPores","colonyAnatomyRim",
+        "colonyCortexAmount","colonyCortexDetail",
+        "colonyCortexMotion","colonyCortexRelief",
         "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
         "tunnelAperture","tunnelVariation",
       ])
@@ -1066,6 +1075,8 @@ export function createRenderer(canvas) {
       gl.uniform1i(loc("colonyLifeMode"),colonyLifeModes.indexOf(s.colonyLifeMode));
       gl.uniform1i(loc("colonyShapeA"),colonyAnatomyModes.indexOf(s.colonyShapeA));
       gl.uniform1i(loc("colonyShapeB"),colonyAnatomyModes.indexOf(s.colonyShapeB));
+      gl.uniform1i(loc("colonyCortexA"),colonyCortexModes.indexOf(s.colonyCortexA));
+      gl.uniform1i(loc("colonyCortexB"),colonyCortexModes.indexOf(s.colonyCortexB));
       gl.uniform1i(loc("habitatStampCount"),plantedCount);
       gl.uniform4fv(loc("habitatStamps[0]"),habitatBuffer);
       gl.uniform1i(loc("tunnelMode"), [

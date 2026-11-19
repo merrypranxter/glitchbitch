@@ -37,7 +37,7 @@ test("six editable looks round-trip, inherit palette, and never generate caption
     assert.equal(look.state.lettering, "");
     assert.ok(look.state.engine >= 17);
   }
-  assert.equal(looks.length, 111);
+  assert.equal(looks.length, 114);
   const surprised = randomize(initial, {}, false, () => 0.6);
   assert.ok(engines.includes(engines[surprised.engine]));
   assert.equal(surprised.lettering, "");

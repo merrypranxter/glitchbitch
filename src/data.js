@@ -7,7 +7,7 @@ import { photonSpecies } from "./photon-zoo.js";
 import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
-import { colonyLifeModes } from "./colony-lifecycle.js";
+import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
 export const engineInfo = [
@@ -2075,5 +2075,61 @@ export const looks = [
       ],atmoMaskFeather:61,atmoMaskMotion:46,
       atmoMaskVariation:40,seed:819647},
   },
+
+  // Every colony is editable touch data, not baked art; lifecycle is just
+  // deterministic time and mask geometry on the shared export renderer.
+  ...colonyLifePresets.slice(0,4).map((preset,i)=>{
+    const {name:ignored,...life}=preset;
+    const palette=[9,11,10,1][i];
+    const planted=[
+      [[.22,.28,.26,0],[.57,.72,.24,0],[.82,.44,.20,0],
+        [.65,.30,.22,1],[.37,.54,.21,1],[.78,.84,.16,1]],
+      [[.17,.19,.13,0],[.31,.50,.21,0],[.65,.63,.22,0],
+        [.83,.26,.19,0],[.54,.88,.15,0]],
+      [[.21,.24,.19,0],[.31,.69,.23,0],[.69,.76,.25,0],
+        [.76,.34,.20,1],[.56,.54,.22,1],[.87,.92,.12,1]],
+      [[.18,.32,.18,0],[.46,.67,.25,0],[.82,.24,.21,0],
+        [.27,.83,.17,1],[.69,.61,.24,1],[.85,.89,.14,1]],
+    ][i].map(([x,y,radius,parent],j)=>({
+      id:"colony-wars-"+i+"-"+j,x,y,radius,parent,
+    }));
+    return {
+      name:["Fungal Border Apocalypse","Germination Cathedral",
+        "Breathing Petri Quilt","Withering Neon Reef"][i],
+      note:[
+        "Six planted thalli wage glowing territorial war across their live boundaries",
+        "Tiny colony seeds unfurl across stained-glass sigils; the nebula claims the gaps",
+        "Optical organisms swell and exhale beneath a living RGB petri sky",
+        "Prismatic ink colonies collapse to spores and regenerate through crystal screens",
+      ][i],
+      family:"Colony Wars",
+      state:{
+        ...initial,...life,engine:[7,18,19,11][i],
+        palette,colors:palettes[palette].colors,
+        complexity:[79,63,83,71][i],scale:[27,24,21,29][i],
+        warp:[62,47,73,59][i],
+        atmoMode:["Prismatic mycelium","Prismatic mycelium",
+          "Heartbeat phosphor","Misprint rosette"][i],
+        atmoBMode:["Misprint rosette","Mandala gas leak",
+          "Prismatic mycelium","Prismatic mycelium"][i],
+        atmoAmount:90,atmoBAmount:[90,72,75,84][i],
+        atmoScale:[58,72,44,66][i],atmoBScale:[74,39,58,46][i],
+        atmoDensity:88,atmoBDensity:83,atmoMotion:67,atmoBMotion:52,
+        atmoGlow:88,atmoBGlow:92,atmoHue:[18,46,83,36][i],
+        atmoBHue:[80,16,45,76][i],
+        atmoBBlendMode:["Spectral difference","Light bloom","Over","Ink stain"][i],
+        atmoMaskMode:"Painted colonies",
+        atmoBMaskMode:i===1?"Inverse first":"Painted colonies",
+        atmoMaskFeather:[31,57,53,48][i],
+        atmoMaskMotion:[72,41,63,48][i],
+        atmoMaskVariation:[51,87,23,67][i],
+        motionAmount:[59,48,71,62][i],
+        lightMotion:[88,94,86,92][i],
+        colorAmount:[74,51,82,64][i],
+        habitatStamps:planted,
+        seed:[821947,503196,772381,612944][i],
+      },
+    };
+  }),
 
 ];

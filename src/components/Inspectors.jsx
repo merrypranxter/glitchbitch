@@ -43,6 +43,8 @@ import { filamentSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpec
 import { underlayModes, underlayPresets, applyUnderlayPreset,
   changeUnderlayMode, nextUnderlayMode, disableUnderlay } from "../living-underlay.js";
 import { sections, sectionActive, effectGroups } from "../ui-index";
+import { atmosphereModes, atmospherePresets, applyAtmospherePreset,
+  nextAtmosphereMode, hideAtmosphere } from "../mutant-atmospheres.js";
 export { TextInspector } from "./TextInspector";
 const icons = [
   Waves,
@@ -217,6 +219,7 @@ export function EffectsInspector({ history }) {
   const [stitchPreset,setStitchPreset]=React.useState(filamentStitchPresets[0].name);
   const [sculptPreset,setSculptPreset]=React.useState(filamentSculptPresets[0].name);
   const [underlayPreset,setUnderlayPreset]=React.useState(underlayPresets[0].name);
+  const [atmoPreset,setAtmoPreset]=React.useState(atmospherePresets[0].name);
   // Find jumps to a section that might be filtered out: show everything.
   useReveal((detail) => {
     if (effectSections.some((x) => x.id === detail.id) && filter !== "All") setFilter("All");
@@ -229,6 +232,45 @@ export function EffectsInspector({ history }) {
     return meta.group === filter;
   };
   const body = {
+    atmosphere: <>
+      <p className="control-note">Four independent shader-vault worlds layered over any engine: stained-glass mycelium, mandala-constrained gas, double-beat phosphors, and living CMY print rosettes. They respond to your existing palette and keep moving in GIF/MP4 exports.</p>
+      <Select label="Atmosphere" value={s.atmoMode}
+        onChange={mode=>history.change(x=>({...x,atmoMode:mode,
+          atmoAmount:Math.max(62,x.atmoAmount)}))}>
+        {atmosphereModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <Parameter label="Presence" name="atmoAmount" history={history}/>
+      <Parameter label="Pattern size" name="atmoScale" history={history}/>
+      <Parameter label="Structure density" name="atmoDensity" history={history}/>
+      <Parameter label="Living motion" name="atmoMotion" history={history}/>
+      <Parameter label="Glow / radiance" name="atmoGlow" history={history}/>
+      <Parameter label="Palette phase" name="atmoHue" history={history}/>
+      <Parameter label="Variation" name="atmoVariation" history={history}/>
+      <Select label="Instant atmosphere" value={atmoPreset} onChange={setAtmoPreset}>
+        {atmospherePresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+      </Select>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applyAtmospherePreset(x,atmoPreset))}>
+          Spawn atmosphere
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>nextAtmosphereMode(x))}>
+          <Dices size={13}/> New species
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>({...x,atmoVariation:
+            (x.atmoVariation+21+Math.random()*61)%100}))}>
+          <Shuffle size={13}/> Reseed
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.atmoAmount<=0}
+          onClick={()=>history.change(hideAtmosphere)}>
+          Hide atmosphere
+        </button>
+      </div>
+      <p className="control-note">Independent and reversible. Presence 0 preserves your existing art, words, pigments, and other layers. Uses the same high-resolution export renderer.</p>
+    </>,
     underlay: <>
       <p className="control-note">Six mathematical textile grounds that fill the spaces behind the stitched lines. Moving jacquard, shifting moiré, fivefold twill, velvet pile, opaline damask and cellular gauze. Also works as stand-alone animated artwork with Filament Forge turned off.</p>
       <Select label="Fabric ground" value={s.underlayMode}

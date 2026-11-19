@@ -18,6 +18,7 @@ import { filamentGLSL, filamentSpecies, filamentMaterials, filamentStitchModes, 
 import { underlayGLSL, underlayModes } from "./living-underlay.js";
 import { tunnelGLSL } from "./tunnels.js";
 import { strangeFieldsGLSL } from "./strange-fields.js";
+import { atmosphereGLSL, atmosphereModes } from "./mutant-atmospheres.js";
 
 const vertex = `attribute vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
 const fragment = `precision highp float;
@@ -77,6 +78,7 @@ phase+=source;if(posterize)phase=floor(phase*7.)/7.;return phase;}
 /* UNDERLAY_MODULE */
 /* FILAMENT_MODULE */
 /* MATERIAL_MODULE */
+/* ATMOSPHERE_MODULE */
 /* LETTERING_MODULE */
 ${appearanceGLSL}
 void main(){vec2 uv=gl_FragCoord.xy/res;vec2 aspect=vec2(res.x/res.y,1.);vec2 sampleUV=uv;
@@ -110,6 +112,7 @@ float v=composed(p);vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*
 /* PHOTON_POST */
 /* UNDERLAY_POST */
 /* FILAMENT_POST */
+/* ATMOSPHERE_POST */
 col=animateLight(col,uv,v);
 col=stainWithBiology(col,uv,p);
 /* LETTERING_POST */
@@ -137,7 +140,7 @@ export function createRenderer(canvas) {
   const programs = new Map();
   let active, fence = null, memory = null, memoryShader = null, memoryDisabled = false;
   let stereoUnavailable = false, materialUnavailable = false,
-    strangeUnavailable = false,
+    strangeUnavailable = false, atmosphereUnavailable = false,
     typeShaderUnavailable = false, compositionUnavailable = false,
     backdropUnavailable = false, microUnavailable = false,
     substanceUnavailable = false, wiggleUnavailable = false,
@@ -153,7 +156,7 @@ export function createRenderer(canvas) {
        !photonUnavailable && !filamentUnavailable && !filamentHybridUnavailable &&
        !filamentMaterialUnavailable && !filamentStitchUnavailable &&
        !filamentSculptUnavailable && !underlayUnavailable &&
-       !strangeUnavailable)return source;
+       !strangeUnavailable && !atmosphereUnavailable)return source;
     return {
       ...source,
       ...(materialUnavailable ? {filmAmount:0,opalAmount:0,prismAmount:0,foilRelief:0}:{}),
@@ -168,6 +171,7 @@ export function createRenderer(canvas) {
       ...(filamentStitchUnavailable ? {filamentStitchAmount:0}:{}),
       ...(filamentSculptUnavailable ? {filamentSculptAmount:0}:{}),
       ...(underlayUnavailable ? {underlayAmount:0}:{}),
+      ...(atmosphereUnavailable ? {atmoAmount:0}:{}),
       ...(strangeUnavailable ? {
         engine: source.engine>=17 && source.engine<=19 ? 0 : source.engine,
         secondaryEngine: source.secondaryEngine>=17 && source.secondaryEngine<=19 ? 1 : source.secondaryEngine
@@ -578,9 +582,10 @@ export function createRenderer(canvas) {
         s.filamentNap>0 || s.filamentBeads>0
       ),
       withTunnel = s.engine===5 || (blended && s.secondaryEngine===5),
+      withAtmosphere = s.atmoAmount>0,
       withStrange = (s.engine>=17 && s.engine<=19) ||
         (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withWiggle ? "wiggle" : "still"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withWiggle ? "wiggle" : "still"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -651,6 +656,13 @@ export function createRenderer(canvas) {
     source=source.replace("/* FILAMENT_MODULE */",selectedFilament);
     source=source.replace("/* FILAMENT_POST */",
       withFilament?"col=livingFilamentForge(col,uv,p,v);":"");
+    const chosenAtmosphere = withAtmosphere
+      ? atmosphereGLSL.replace("/* ATMOSPHERE_VARIANT */",
+          "#define ATMO_MODE "+Math.max(0,atmosphereModes.indexOf(s.atmoMode)))
+      : "";
+    source=source.replace("/* ATMOSPHERE_MODULE */",chosenAtmosphere);
+    source=source.replace("/* ATMOSPHERE_POST */",
+      withAtmosphere ? "col=livingMutantAtmosphere(col,uv,p,v);" : "");
     source=source.replace("/* MICRO_MODULE */",withMicro?microGLSL:"");
     source=source.replace("/* MICRO_POST */",withMicro?"col=movingMicrostructure(col,p,uv,v);":"");
     source=source.replace("/* BACKDROP_MODULE */",withBackdrop?backdropGLSL:"");
@@ -773,7 +785,10 @@ export function createRenderer(canvas) {
           break;
         }catch(e){
           lastCompileError=e;
-          if(candidate.underlayAmount>0){
+          if(candidate.atmoAmount>0){
+            atmosphereUnavailable=true;
+            console.warn("Mutant Atmosphere unsupported by this GPU; protecting the original artwork.",e);
+          }else if(candidate.underlayAmount>0){
             underlayUnavailable=true;
             console.warn("Living textile underlay unsupported by this GPU; preserving the original artwork and filaments.",e);
           }else if(candidate.filamentAmount>0 && candidate.filamentSculptAmount>0){
@@ -929,6 +944,8 @@ export function createRenderer(canvas) {
         "photonRelief","photonHue","photonVariation",
         "substanceAmount","substanceScale","substanceMotion",
         "substanceRelief","substanceEdge","substanceHue","substanceVariation",
+        "atmoAmount","atmoScale","atmoDensity","atmoMotion",
+        "atmoGlow","atmoHue","atmoVariation",
         "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
         "tunnelAperture","tunnelVariation",
       ])

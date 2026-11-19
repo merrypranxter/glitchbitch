@@ -348,6 +348,7 @@ export function EffectsInspector({ history, onTool, tool }) {
         <button type="button" className="button secondary"
           disabled={!s.habitatStamps?.length ||
             s.habitatStamps.length>=MAX_HABITAT_STAMPS ||
+            s.sporeGeneration>=4095 ||
             s.sporeMode==="Dormant" || s.sporeAmount<=0 ||
             s.sporeFertility<=0}
           onClick={()=>history.change(evolveSporeGeneration)}>

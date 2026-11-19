@@ -39,7 +39,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
   const clipDuration=clipFormat==="gif"?Math.min(duration,10):duration;
   async function makeProof(){
     if(busy)return;
-    setBusy(true);setError("");
+    setBusy(true);setError("");setProof(null);
     const snapshot={...state,ratio},timeline={...timelineRef.current};
     try {
       // This is the SAME compositing function used by the PNG and video
@@ -49,7 +49,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       const url=URL.createObjectURL(blob);
       if(proofUrl.current)URL.revokeObjectURL(proofUrl.current);
       proofUrl.current=url;
-      setProof({url,ratio,seed:state.seed});
+      setProof({url,ratio,seed:state.seed,stateAt:state});
     }catch(e){
       if(mounted.current)setError("Export proof could not render: "+e.message);
     }finally{
@@ -226,7 +226,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       {tab!=="Recipe"&&<div className="export-proof-panel">
         <button type="button" className="button secondary" disabled={busy}
           onClick={makeProof}>See flattened export proof (480px)</button>
-        {proof&&proof.ratio===ratio&&proof.seed===state.seed&&
+        {proof&&proof.ratio===ratio&&proof.seed===state.seed&&proof.stateAt===state&&
           <img src={proof.url}
             alt="Flattened frame from the actual PNG/GIF/MP4 compositing engine" />}
         {hasVisibleLettering(state)&&<>

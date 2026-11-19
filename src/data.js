@@ -6,6 +6,7 @@ import { letteringMotionPaths } from "./lettering-motion.js";
 import { photonSpecies } from "./photon-zoo.js";
 import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
+import { atmosphereModes } from "./mutant-atmospheres.js";
 import { normalizeTextFormats } from "./text-formatting.js";
 export const engineInfo = [
   ["Plasma flow", "Liquid sine fields folded into neon ribbons.", "Fluid"],
@@ -328,6 +329,13 @@ export const numericRanges = {
   substanceEdge: [0, 100],
   substanceHue: [0, 100],
   substanceVariation: [0, 100],
+  atmoAmount: [0, 100],
+  atmoScale: [0, 100],
+  atmoDensity: [0, 100],
+  atmoMotion: [0, 100],
+  atmoGlow: [0, 100],
+  atmoHue: [0, 100],
+  atmoVariation: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -525,6 +533,14 @@ export const initial = {
   substanceEdge: 68,
   substanceHue: 43,
   substanceVariation: 41,
+  atmoMode: "Prismatic mycelium",
+  atmoAmount: 0,
+  atmoScale: 57,
+  atmoDensity: 66,
+  atmoMotion: 51,
+  atmoGlow: 75,
+  atmoHue: 43,
+  atmoVariation: 38,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -614,6 +630,7 @@ export function validateRecipe(input) {
     filamentStitchMode: filamentStitchModes,
     filamentSculptMode: filamentSculptModes,
     underlayMode: underlayModes,
+    atmoMode: atmosphereModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -883,6 +900,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "photonRelief","photonHue","photonVariation",
       "substanceAmount","substanceScale","substanceMotion",
       "substanceRelief","substanceEdge","substanceHue","substanceVariation",
+      "atmoAmount","atmoScale","atmoDensity","atmoMotion",
+      "atmoGlow","atmoHue","atmoVariation",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -1079,6 +1098,14 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.substanceEdge=19+random()*79;
   s.substanceHue=10+random()*88;
   s.substanceVariation=random()*100;
+  s.atmoMode=different(atmosphereModes,state.atmoMode,random);
+  s.atmoAmount=random()<.63 ? 38+random()*61 : 0;
+  s.atmoScale=20+random()*77;
+  s.atmoDensity=25+random()*74;
+  s.atmoMotion=21+random()*76;
+  s.atmoGlow=30+random()*69;
+  s.atmoHue=random()*100;
+  s.atmoVariation=random()*100;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;

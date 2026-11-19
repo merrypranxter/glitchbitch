@@ -854,7 +854,7 @@ export function TouchInspector({
   }
   return (
     <>
-      <Section id="habitat-paint" defaultOpen
+      <Section id="habitat-paint" history={history}
         aside={<span className="section-count">{(s.habitatStamps||[]).length}/{MAX_HABITAT_STAMPS}</span>}>
         <p className="control-note">
           HABITAT GRAFFITI — paint pink A colonies or cyan B colonies on the live artwork.

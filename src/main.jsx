@@ -4,6 +4,7 @@ import {
   Asterisk,
   Download,
   Shuffle,
+  Dices,
   Pause,
   Play,
   Undo2,
@@ -46,6 +47,7 @@ import Collection from "./components/Collection";
 import FindControl from "./components/FindControl";
 import { requestReveal } from "./components/Controls";
 import { engines, engineInfo, ratios, parseDocument, randomize } from "./data";
+import { fullWeirdShuffle } from "./ecosystem-randomizer.js";
 import useHistory from "./useHistory";
 import {
   loadDraft,
@@ -244,6 +246,15 @@ function App() {
         ? "A small mutation. A new direction."
         : "Complete rebirth. New math, colors, strokes and motion. Undo takes you back.",
     );
+  }
+  function freakshow() {
+    history.change(s=>fullWeirdShuffle(s,Math.random,{
+      level:"Wild", preserveColors:!!locks.color,
+      preserveText:true, preserveCore:false,
+      allowDual:true, allowHeavy:false,
+      baseRandomizer:(original,rng)=>randomize(original,locks,false,rng),
+    }));
+    toast("Freakshow! Weird ecosystems + old effects reshuffled. Your words survive. Undo is ready.");
   }
   async function saveWork() {
     if (savingRef.current) return;
@@ -675,6 +686,9 @@ function App() {
                 <button title="Mutate design" onClick={() => surprise(true)}>
                   <Shuffle size={14} />
                 </button>
+                <button title="Full weird shuffle, preserve your words" onClick={freakshow}>
+                  <Dices size={14} /> Weird
+                </button>
                 <button onClick={() => surprise()}>
                   <Sparkles size={13} />
                   Surprise me
@@ -777,7 +791,10 @@ function App() {
               <button className="dock-mutate" title="Small random nudge to the current design" onClick={() => surprise(true)}>
                 <Shuffle size={13} /> Mutate
               </button>
-              <button className="surprise" title="Randomize everything except aspect ratio. Undo always works." onClick={() => surprise()}>
+              <button className="dock-mutate" title="Full weird shuffle: old effects + living colonies, preserves your text" onClick={freakshow}>
+                <Dices size={13} /> Freakshow
+              </button>
+              <button className="surprise" title="Randomize math, palettes and now the new living ecosystems. Undo always works." onClick={() => surprise()}>
                 <Sparkles size={16} />
                 <span>Surprise me</span>
               </button>

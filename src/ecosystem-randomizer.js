@@ -6,6 +6,7 @@ import { atmosphereHabitats, atmosphereBlendModes } from "./atmosphere-habitats.
 import { colonyLifeModes } from "./colony-lifecycle.js";
 import { shuffleColonyAnatomy } from "./colony-anatomy.js";
 import { shuffleColonyCortex } from "./colony-cortex.js";
+import { shuffleSporeDynasty } from "./spore-dynasties.js";
 import { MAX_HABITAT_STAMPS } from "./habitat-painter.js";
 
 const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
@@ -145,6 +146,7 @@ export function shuffleColonies(state,rng=Math.random,opts={}){
   s.habitatStamps=generateHabitatStamps(s,rng,{
     ...opts,needA:true,needB:second,
   });
+  s.sporeGeneration=0;
   return ensureValidEcosystemState(s,rng);
 }
 export function shuffleColonyLife(state,rng=Math.random){
@@ -192,6 +194,7 @@ export function shuffleEcosystem(state,rng=Math.random,opts={}){
   s.atmoMaskVariation=range(0,100,rng);
   s.habitatBrushRadius=range(11,32,rng);
   s.habitatStamps=[];
+  s.sporeGeneration=0;
   const lifeChance=opts.lifeChance??(.27+.55*intensity);
   const live=roll(lifeChance,rng);
   if(live){
@@ -235,6 +238,12 @@ export function shuffleEcosystem(state,rng=Math.random,opts={}){
     s.colonyCortexA="Bare cortex";s.colonyCortexB="Bare cortex";
     s.colonyCortexAmount=0;
   }
+  // Bounded animated dispersal joins the breeding system only when there's
+  // a real planted habitat. Otherwise no spore shader is compiled or run.
+  if(s.atmoMaskMode==="Painted colonies"||s.atmoBMaskMode==="Painted colonies"){
+    if(roll(.68,rng))Object.assign(s,shuffleSporeDynasty(s,rng));
+    else{s.sporeMode="Dormant";s.sporeAmount=0;}
+  }else{s.sporeMode="Dormant";s.sporeAmount=0;}
   return ensureValidEcosystemState(s,rng);
 }
 // Old shader systems can be very costly together on mobile Safari. Explicit
@@ -317,6 +326,7 @@ export function mixEcosystemIntoSurprise(state,rng=Math.random,opts={}){
     s.colonyAnatomyAmount=0;s.colonyAnatomyPores=0;s.colonyAnatomyRim=0;
     s.colonyCortexA="Bare cortex";s.colonyCortexB="Bare cortex";
     s.colonyCortexAmount=0;
+    s.sporeMode="Dormant";s.sporeAmount=0;s.sporeGeneration=0;
     return s;
   }
   s=shuffleEcosystem(s,rng,{

@@ -9,6 +9,7 @@ import { underlayModes } from "./living-underlay.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
 import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
+import { colonyCortexModes, colonyCortexPresets } from "./colony-cortex.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
@@ -361,6 +362,10 @@ export const numericRanges = {
   colonyAnatomyMotion: [0, 100],
   colonyAnatomyPores: [0, 100],
   colonyAnatomyRim: [0, 100],
+  colonyCortexAmount: [0, 100],
+  colonyCortexDetail: [0, 100],
+  colonyCortexMotion: [0, 100],
+  colonyCortexRelief: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -595,6 +600,12 @@ export const initial = {
   colonyAnatomyMotion: 47,
   colonyAnatomyPores: 0,
   colonyAnatomyRim: 0,
+  colonyCortexA: "Bare cortex",
+  colonyCortexB: "Bare cortex",
+  colonyCortexAmount: 0,
+  colonyCortexDetail: 55,
+  colonyCortexMotion: 45,
+  colonyCortexRelief: 50,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -692,6 +703,8 @@ export function validateRecipe(input) {
     colonyLifeMode: colonyLifeModes,
     colonyShapeA: colonyAnatomyModes,
     colonyShapeB: colonyAnatomyModes,
+    colonyCortexA: colonyCortexModes,
+    colonyCortexB: colonyCortexModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -989,6 +1002,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "colonyFrontGlow","colonyCompetition",
       "colonyAnatomyAmount","colonyAnatomyDetail","colonyAnatomyMotion",
       "colonyAnatomyPores","colonyAnatomyRim",
+      "colonyCortexAmount","colonyCortexDetail",
+      "colonyCortexMotion","colonyCortexRelief",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -997,6 +1012,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
         && state.colonyLifeAmount<=0)continue; // Keep old artwork dormant.
       if(["colonyAnatomyAmount","colonyAnatomyPores","colonyAnatomyRim"].includes(key)
         && state.colonyAnatomyAmount<=0)continue; // Morph stays opt-in.
+      if(key==="colonyCortexAmount"&&state.colonyCortexAmount<=0)continue; // Cortex stays dormant.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1229,6 +1245,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.colonyShapeA="Classic disks";s.colonyShapeB="Classic disks";
   s.colonyAnatomyAmount=0;s.colonyAnatomyDetail=57;
   s.colonyAnatomyMotion=47;s.colonyAnatomyPores=0;s.colonyAnatomyRim=0;
+  s.colonyCortexA="Bare cortex";s.colonyCortexB="Bare cortex";
+  s.colonyCortexAmount=0;s.colonyCortexDetail=55;
+  s.colonyCortexMotion=45;s.colonyCortexRelief=50;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;

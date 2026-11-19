@@ -770,7 +770,8 @@ export function createRenderer(canvas) {
   };
   const colorBuffer = new Float32Array(36),
     marksBuffer = new Float32Array(128),
-    shapeBuffer = new Float32Array(64);
+    shapeBuffer = new Float32Array(64),
+    habitatBuffer = new Float32Array(64); // 16 planted habitat seeds, 4 floats per stamp
   const maxSize = Math.min(
     gl.getParameter(gl.MAX_RENDERBUFFER_SIZE),
     gl.getParameter(gl.MAX_TEXTURE_SIZE),
@@ -1010,6 +1011,20 @@ export function createRenderer(canvas) {
         ["Traveling wave", "Color canon", "Phase vortex"].indexOf(s.colorMode),
       );
       gl.uniform1i(loc("colorCount"), s.colors.length);
+      // No framebuffer readbacks and no per-frame allocations. The same
+      // normalized stamp geometry is used by preview and export renders.
+      const planted=s.habitatStamps||[];
+      const plantedCount=Math.min(16,planted.length);
+      habitatBuffer.fill(0);
+      for(let i=0;i<plantedCount;i++){
+        const m=planted[i],j=i*4;
+        habitatBuffer[j]=m.x;
+        habitatBuffer[j+1]=m.y;
+        habitatBuffer[j+2]=m.radius;
+        habitatBuffer[j+3]=m.parent;
+      }
+      gl.uniform1i(loc("habitatStampCount"),plantedCount);
+      gl.uniform4fv(loc("habitatStamps[0]"),habitatBuffer);
       gl.uniform1i(loc("tunnelMode"), [
         "Infinite spiral","Conch cathedral","Braided wormhole",
         "Moiré throat","Living iris","Liquid vortex"

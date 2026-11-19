@@ -128,8 +128,8 @@ export function specializeAtmosphereVariant(mode,secondary=false){
   const id=Math.max(0,atmosphereModes.indexOf(mode));
   let shader=atmosphereGLSL.replace("/* ATMOSPHERE_VARIANT */","#define ATMO_MODE "+id);
   if(secondary){
-    shader=shader.replace(/\\batmo(Amount|Scale|Density|Motion|Glow|Hue|Variation)\\b/g,
-      (_all,key)=>"atmoB"+key).replace(/\\blivingMutantAtmosphere\\b/g,"livingMutantAtmosphereB");
+    shader=shader.replace(/\batmo(Amount|Scale|Density|Motion|Glow|Hue|Variation)\b/g,
+      (_all,key)=>"atmoB"+key).replace(/\blivingMutantAtmosphere\b/g,"livingMutantAtmosphereB");
   }
   return shader;
 }

@@ -6,7 +6,7 @@ import { letteringMotionPaths } from "./lettering-motion.js";
 import { photonSpecies } from "./photon-zoo.js";
 import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
-import { atmosphereModes } from "./mutant-atmospheres.js";
+import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
 export const engineInfo = [
@@ -1934,4 +1934,34 @@ export const looks = [
       filamentSpecies:"Fivefold brocade",filamentMotion:77,
       colorAmount:73,motionAmount:69,lightMotion:79,seed:730624},
   },
+  // Five fully editable two-parent composites, derived from the artist's own
+  // shader-vault references rather than image backgrounds.
+  ...hybridAtmospherePresets.map((preset,i)=>{
+    const {name,...atmosphere}=preset;
+    const palette=[9,10,1,7,11][i];
+    return {
+      name,
+      note:[
+        "Fungal lattice trades territories with a heartbeat CRT storm",
+        "CMY registration ink colonizes an opening cosmic flower",
+        "Glowing capillaries thread the atmosphere inside a constrained lunar nebula",
+        "Riso interference cracks into neon fungal stained glass",
+        "Pulsing optical rings entwine with drifting multicolor print screens",
+      ][i],
+      family:"Atmospheric Hybrids",
+      state:{
+        ...initial,...atmosphere,
+        engine:[7,8,11,3,6][i],
+        palette,colors:palettes[palette].colors,
+        complexity:[68,72,49,87,64][i],
+        scale:[28,19,26,24,30][i],
+        warp:[63,74,56,38,77][i],
+        motionAmount:[63,70,47,54,62][i],
+        lightMotion:[81,88,92,73,95][i],
+        colorAmount:[59,78,45,64,85][i],
+        seed:[348172,647913,511284,907338,225173][i],
+      },
+    };
+  }),
+
 ];

@@ -31,7 +31,7 @@ import {
   Shuffle,
   ArrowLeftRight,
 } from "lucide-react";
-import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, compositionModes, backdropModes, microModes, substanceModes, wiggleModes } from "../data";
+import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, compositionModes, backdropModes, microModes, substanceModes, wiggleModes, randomize } from "../data";
 import { Parameter, Range, Toggle, Switch, Select, Section, Segmented, Pill, useReveal } from "./Controls";
 import { photonSpecies, photonPresets, photonPresetState, nextPhotonSpecies } from "../photon-zoo.js";
 import { filamentSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies,
@@ -52,6 +52,8 @@ import { atmosphereHabitats, atmosphereSecondHabitats,
 import { habitatTools, MAX_HABITAT_STAMPS, clearColonies } from "../habitat-painter.js";
 import { colonyLifeModes, colonyLifePresets, applyColonyLifePreset,
   stopColonyLife } from "../colony-lifecycle.js";
+import { shuffleColonies, shuffleColonyLife, shuffleEcosystem,
+  fullWeirdShuffle, chaosLevels } from "../ecosystem-randomizer.js";
 export { TextInspector } from "./TextInspector";
 const icons = [
   Waves,
@@ -229,6 +231,20 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [atmoPreset,setAtmoPreset]=React.useState(atmospherePresets[0].name);
   const [hybridAtmoPreset,setHybridAtmoPreset]=React.useState(hybridAtmospherePresets[0].name);
   const [colonyLifePreset,setColonyLifePreset]=React.useState(colonyLifePresets[0].name);
+  const [chaosLevel,setChaosLevel]=React.useState("Wild");
+  const [preserveColors,setPreserveColors]=React.useState(true);
+  const [preserveText,setPreserveText]=React.useState(true);
+  const [preserveCore,setPreserveCore]=React.useState(false);
+  const [allowDual,setAllowDual]=React.useState(true);
+  const [allowHeavy,setAllowHeavy]=React.useState(false);
+  const spinEcosystem=()=>history.change(x=>shuffleEcosystem(x,Math.random,{
+    allowDual,intensity:chaosLevels.indexOf(chaosLevel)/3,
+  }));
+  const spinFullWeird=()=>history.change(x=>fullWeirdShuffle(x,Math.random,{
+    level:chaosLevel,preserveColors,preserveText,preserveCore,
+    allowDual,allowHeavy,
+    baseRandomizer:(original,rng)=>randomize(original,{},false,rng)
+  }));
   // Find jumps to a section that might be filtered out: show everything.
   useReveal((detail) => {
     if (effectSections.some((x) => x.id === detail.id) && filter !== "All") setFilter("All");
@@ -241,6 +257,42 @@ export function EffectsInspector({ history, onTool, tool }) {
     return meta.group === filter;
   };
   const body = {
+    "chaos-lab": <>
+      <p className="control-note">
+        THE BEAUTIFUL RANDOMIZER PROBLEM IS SOLVED. Spin living colonies,
+        rival atmosphere species and all the other weird modules together
+        without playing 900-slider whack-a-mole. All changes are one Undo.
+      </p>
+      <Select label="Chaos intensity" value={chaosLevel} onChange={setChaosLevel}>
+        {chaosLevels.map(level=><option key={level} value={level}>{level}</option>)}
+      </Select>
+      <Toggle label="Preserve my colors" checked={preserveColors}
+        onChange={setPreserveColors}/>
+      <Toggle label="Preserve my words and text styling" checked={preserveText}
+        onChange={setPreserveText}/>
+      <Toggle label="Preserve core math and touch forces" checked={preserveCore}
+        onChange={setPreserveCore}/>
+      <Toggle label="Allow two atmosphere parents" checked={allowDual}
+        onChange={setAllowDual}/>
+      <Toggle label="Allow extra heavyweight GPU combinations" checked={allowHeavy}
+        onChange={setAllowHeavy}/>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={spinEcosystem}>
+          <Shuffle size={13}/> Shuffle ecosystem
+        </button>
+        <button type="button" className="button secondary"
+          onClick={spinFullWeird}>
+          <Dices size={13}/> Full weird shuffle
+        </button>
+      </div>
+      <p className="control-note">
+        Full weird shuffle remixes old and new effects with a mobile GPU budget.
+        Uncheck Preserve colors to randomize the palette too. Your text stays
+        intact unless you explicitly uncheck its protection. Manual controls
+        and all planted seeds remain editable afterward.
+      </p>
+    </>,
     "colony-life": <>
       <p className="control-note">
         COLONY WARS — give your planted habitats lifecycles.
@@ -264,6 +316,10 @@ export function EffectsInspector({ history, onTool, tool }) {
         <button type="button" className="button secondary"
           onClick={()=>history.change(x=>applyColonyLifePreset(x,colonyLifePreset))}>
           <Flower2 size={13}/> Awaken ecosystem
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleColonyLife(x))}>
+          <Shuffle size={13}/> Shuffle colony wars
         </button>
         <button type="button" className="button secondary"
           disabled={s.colonyLifeAmount<=0&&s.colonyFrontGlow<=0&&s.colonyCompetition<=0}
@@ -414,6 +470,10 @@ export function EffectsInspector({ history, onTool, tool }) {
             onClick={()=>history.change(x=>({...x,atmoMaskVariation:
               (x.atmoMaskVariation+15+Math.random()*73)%100}))}>
             <Shuffle size={13}/> Reseed habitats
+          </button>
+          <button type="button" className="button secondary"
+            onClick={spinEcosystem}>
+            <Dices size={13}/> Shuffle ecosystem
           </button>
         </div>
       </details>
@@ -911,6 +971,10 @@ export function TouchInspector({
             </button>)}
         </div>
         <Parameter label="New colony size" name="habitatBrushRadius" history={history}/>
+        <button type="button" className="subtle-button full"
+          onClick={()=>history.change(x=>shuffleColonies(x))}>
+          <Shuffle size={13}/> Shuffle colonies
+        </button>
         <p className="control-note">
           Tap or drag to plant. Drag a colony handle to move it.
           Paint mode adds; Move mode drags; Erase mode removes.

@@ -983,8 +983,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
     }
     return s;
   }
-  // A full Surprise is a replacement, not a mutation. Ratio is the sole
-  // retained visual constraint. Paused transport lives outside recipe state.
+  // A full Surprise is a replacement, not a mutation. Ratio and the
+  // explicitly locked engine/palette are preserved; transport stays separate.
   // Instrument explicit assignments, then randomize any new numeric sliders
   // automatically. No future feature gets accidentally left out of Surprise Me.
   const randomizedKeys = new Set();
@@ -994,7 +994,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   // Rotate to a different mathematical FAMILY, even with a fixed RNG test stub.
   const family=engineInfo[state.engine]?.family;
   const otherFamilies=engineInfo.filter(e=>e.id!==state.engine && e.family!==family);
-  s.engine=sample(otherFamilies.length?otherFamilies:engineInfo.filter(e=>e.id!==state.engine),random).id;
+  s.engine=locks.engine ? state.engine :
+    sample(otherFamilies.length?otherFamilies:engineInfo.filter(e=>e.id!==state.engine),random).id;
   s.secondaryEngine=sample(engineInfo.filter(e=>e.id!==s.engine && e.id!==state.secondaryEngine),random).id;
   s.seed=Math.floor(random()*1000000000);
   if(s.seed===state.seed)s.seed=(s.seed+1)%1000000000;

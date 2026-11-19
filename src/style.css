@@ -3270,3 +3270,24 @@ main { grid-template-columns: 264px minmax(320px, 1fr) 300px; }
   color:var(--muted,#bfc2dc); }
 .text-blend-compare { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:10px; }
 .text-blend-compare .button { min-height:40px;min-width:0;white-space:normal; }
+
+/* Truth Serum: compact enough for portrait iPhone Export modal. */
+.export-truth-panel{margin-top:10px;padding:9px 11px;
+  border:1px solid rgba(171,226,254,.28);border-radius:9px;
+  background:rgba(34,37,48,.45);min-width:0;}
+.export-truth-panel summary{cursor:pointer;min-height:35px;
+  display:list-item;align-content:center;font-weight:650;font-size:12px;
+  color:#e5dff8;touch-action:manipulation;}
+.export-truth-panel summary:focus-visible{outline:2px solid var(--lime);outline-offset:3px;}
+.export-truth-panel .export-note{font-size:11px;line-height:1.55;margin:9px 0;}
+.export-truth-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:9px 0;}
+.export-truth-metrics>div{min-width:0;border-radius:7px;background:rgba(14,15,22,.62);
+  padding:9px 10px;display:flex;flex-direction:column;gap:4px;}
+.export-truth-metrics strong{font-variant-numeric:tabular-nums;font-size:18px;
+  line-height:1.2;color:#e4ff98;}
+.export-truth-metrics span{font-size:10px;line-height:1.35;color:#b7b8c8;}
+.export-truth-background{margin:8px 0 10px;display:flex;align-items:center;gap:10px;}
+.export-truth-background img{display:block;width:95px;max-width:33%;height:auto;
+  border-radius:6px;border:1px solid rgba(190,225,250,.25);}
+.export-truth-background figcaption{font-size:11px;color:#b8b8c7;}
+.export-truth-panel>.button{min-height:40px;width:100%;margin-top:5px;}

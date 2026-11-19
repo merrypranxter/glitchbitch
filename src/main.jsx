@@ -749,7 +749,7 @@ function App() {
             </div>
             <div className="inspector-scroll">
               {rightTab === "Effects" ? (
-                <EffectsInspector history={history} />
+                <EffectsInspector history={history} onTool={setTool} tool={tool} />
               ) : rightTab === "Text" ? (
                 <TextInspector history={history} />
               ) : rightTab === "Layers" ? (

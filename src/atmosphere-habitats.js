@@ -12,6 +12,8 @@ export const habitatGLSL = `
 uniform float atmoMaskScale,atmoMaskFeather,atmoMaskMotion,atmoMaskVariation;
 uniform int habitatStampCount;
 uniform vec4 habitatStamps[16];
+uniform int colonyLifeMode;
+uniform float colonyLifeAmount,colonyLifeSpeed,colonyFrontGlow,colonyCompetition;
 // Seeded, reversible growth masks: each four-vector is (UV x, UV y, radius, parent).
 // The mask moves but never introduces a frame-to-frame state or a seam.
 float paintedHabitat(vec2 uv,float parent){
@@ -25,10 +27,29 @@ float paintedHabitat(vec2 uv,float parent){
         vec2 delta=(uv-stamp.xy)*aspect;
         float r=max(stamp.z,.05);
         float distanceToSeed=length(delta);
-        // Far-away pixels skip expensive trigonometry; most seeds are local.
-        if(distanceToSeed<r*1.32){
+        float index=float(i);
+        // Entirely continuous periodic growth — no frame history, time jumps
+        // or once-per-cycle resets to cause GIF and MP4 seams.
+        if(colonyLifeAmount>.001 && colonyLifeMode>0){
+          float lifeTime=time*(.2+colonyLifeSpeed*1.8)+index*.53+parent*PI;
+          float wave=.5+.5*sin(lifeTime-PI*.5);
+          float smoothWave=wave*wave*(3.-2.*wave);
+          float target=1.;
+          if(colonyLifeMode==1){
+            target=.12+1.25*smoothWave; // seed -> swollen thallus -> seed
+          }else if(colonyLifeMode==2){
+            target=1.+.22*sin(lifeTime)+.085*sin(lifeTime*2.+index*.9);
+          }else if(colonyLifeMode==3){
+            target=.08+1.42*pow(smoothWave,1.7); // collapse -> return
+          }else if(colonyLifeMode==4){
+            target=.58+.92*smoothWave; // adversarial A/B antiphase
+          }
+          r*=max(.045,mix(1.,target,colonyLifeAmount));
+        }
+        // Only nearby pixels pay for fractal-edged boundary trig. Gate
+        // accounts for max frill and feather even during swollen growth.
+        if(distanceToSeed<r*1.65){
           float angle=atan(delta.y,delta.x);
-          float index=float(i);
           float pulse=1.+(.03+.055*atmoMaskMotion)*sin(t+index*1.618);
           float frill=.055*sin(angle*(5.+floor(atmoMaskVariation*9.))+t*.6+index*2.1);
           float edge=r*(pulse+frill);

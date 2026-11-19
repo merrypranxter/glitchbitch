@@ -1199,6 +1199,13 @@ kbd {
   border: 1px solid #464651;
   border-radius: 4px;
 }
+.touch-tools.habitat-tools {
+  flex-wrap: wrap;
+}
+.touch-tools.habitat-tools button {
+  flex: 1 1 calc(50% - 6px);
+  min-width: 0;
+}
 .touch-tools .selected {
   border-color: #acc85b;
   background: #d6ff620d;

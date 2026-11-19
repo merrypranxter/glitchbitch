@@ -1,3 +1,4 @@
+import { colonyAnatomyGLSL } from "./colony-anatomy.js";
 // Spatial habitats let two moving atmospheres inhabit different canvas regions.
 // All masks are continuous-time and deterministic. No texture/FBO allocations.
 export const atmosphereHabitats = [
@@ -14,6 +15,7 @@ uniform int habitatStampCount;
 uniform vec4 habitatStamps[16];
 uniform int colonyLifeMode;
 uniform float colonyLifeAmount,colonyLifeSpeed,colonyFrontGlow,colonyCompetition;
+${colonyAnatomyGLSL}
 // Seeded, reversible growth masks: each four-vector is (UV x, UV y, radius, parent).
 // The mask moves but never introduces a frame-to-frame state or a seam.
 float paintedHabitat(vec2 uv,float parent){
@@ -48,13 +50,30 @@ float paintedHabitat(vec2 uv,float parent){
         }
         // Only nearby pixels pay for fractal-edged boundary trig. Gate
         // accounts for max frill and feather even during swollen growth.
-        if(distanceToSeed<r*1.65){
+        if(distanceToSeed<r*(colonyAnatomyAmount>.001?2.10:1.65)){
           float angle=atan(delta.y,delta.x);
           float pulse=1.+(.03+.055*atmoMaskMotion)*sin(t+index*1.618);
           float frill=.055*sin(angle*(5.+floor(atmoMaskVariation*9.))+t*.6+index*2.1);
           float edge=r*(pulse+frill);
+          // Original smooth disk remains mathematically identical while
+          // anatomy strength is zero, even if a shape was preselected.
+          if(colonyAnatomyAmount>.001){
+            edge*=mix(1.,mutantColonyRadius(angle,index,parent),
+              colonyAnatomyAmount);
+          }
           float softness=mix(.01,.38,atmoMaskFeather)*r;
           float disk=1.-smoothstep(edge-softness,edge+softness,distanceToSeed);
+          if(colonyAnatomyAmount>.001&&colonyAnatomyPores>.001){
+            // Intracellular pores: analytic perforations in the pigment
+            // territory, with extra detail concentrated inside the shape.
+            vec2 cell=delta/max(r,.0001);
+            float freq=18.+colonyAnatomyDetail*19.;
+            float spots=sin(cell.x*freq+index*2.17+t*.11)*
+              cos(cell.y*(freq*1.09)-index*.83-t*.09);
+            float pore=smoothstep(.78,.96,spots);
+            disk*=1.-pore*colonyAnatomyPores*.76*
+              colonyAnatomyAmount;
+          }
           inside=max(inside,disk);
         }
       }

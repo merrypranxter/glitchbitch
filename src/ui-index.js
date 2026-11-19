@@ -143,6 +143,19 @@ export const sections = [
     hint: "Animated background behind the math. Presence 0 = off.",
     keywords: ["background", "backdrop", "nebula", "negative space", "parallax depth", "luminous"] },
 
+  { id: "atmosphere", tab: "Effects", group: "Scene", title: "Mutant atmospheres",
+    on: ["atmoAmount"],
+    reset: ["atmoMode","atmoAmount","atmoScale","atmoDensity",
+      "atmoMotion","atmoGlow","atmoHue","atmoVariation"],
+    hint: "Four palette-linked living atmospheres. Presence 0 = off; existing art stays intact.",
+    keywords: ["mutant atmosphere","atmospheres","atmosphere","prismatic mycelium",
+      "fungal stained glass","fungus","hyphae","stained glass",
+      "mandala gas leak","nebula","gas leak","lotus",
+      "heartbeat phosphor","led","heartbeat","double pulse","moire",
+      "misprint rosette","cmy print","misregistration","ink rosette",
+      "background overlay","living scene","shader vault","ambient world",
+      "reseed atmosphere","spawn atmosphere"] },
+
   // ---- Text (sub-tabs, not collapsible sections) --------------------------
   { id: "text-words", tab: "Text", pane: null, title: "Your words",
     keywords: ["text", "words", "quote", "message", "type", "bold", "italic", "underline", "strike", "caps",

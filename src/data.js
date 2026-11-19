@@ -2235,4 +2235,63 @@ export const looks = [
     };
   }),
 
+  // Material worlds: actual editable, planted colonies with tissue layers
+  // calculated in the same pixel path as their parent silhouettes.
+  ...colonyCortexPresets.map((specimen,i)=>{
+    const {name,...cortex}=specimen;
+    const seed=[278145,871693,349108,729853][i];
+    const palette=[9,11,10,1][i];
+    const layouts=["Ring","Twin clusters","Diagonal invasion","Corner islands"];
+    return {
+      name,
+      family:"Living Cortex",
+      note:[
+        "Concentric time-strata embedded in lichen sheets, rivaled by webbed fungal veins",
+        "Raised-looking fruiting discs crawl across a bright membranous fungal atmosphere",
+        "Vascular fungal branches twist through crystal lichen fronts and glowing borders",
+        "Full microanatomical relief: growth rings, veins and apothecia-like spore cups",
+      ][i],
+      state:{
+        ...initial,...cortex,seed,
+        engine:[18,19,7,11][i],
+        palette,colors:palettes[palette].colors,
+        complexity:[71,88,76,93][i],scale:[33,21,27,25][i],
+        warp:[62,74,59,84][i],
+        atmoMode:["Prismatic mycelium","Heartbeat phosphor",
+          "Prismatic mycelium","Mandala gas leak"][i],
+        atmoBMode:["Mandala gas leak","Prismatic mycelium",
+          "Misprint rosette","Prismatic mycelium"][i],
+        atmoAmount:91,atmoBAmount:83,
+        atmoScale:[61,38,74,54][i],atmoBScale:[49,73,44,79][i],
+        atmoDensity:85,atmoBDensity:87,
+        atmoMotion:69,atmoBMotion:61,
+        atmoGlow:91,atmoBGlow:90,
+        atmoHue:[17,79,36,85][i],atmoBHue:[72,30,83,44][i],
+        atmoBBlendMode:["Light bloom","Over","Spectral difference","Ink stain"][i],
+        atmoMaskMode:"Painted colonies",atmoBMaskMode:"Painted colonies",
+        atmoMaskFeather:[34,29,51,37][i],
+        atmoMaskMotion:[53,70,46,83][i],
+        atmoMaskVariation:[64,39,86,73][i],
+        colonyShapeA:["Lichen lobes","Coral fringe","Hyphal fans","Crystal petals"][i],
+        colonyShapeB:["Hyphal fans","Crystal petals","Lichen lobes","Coral fringe"][i],
+        colonyAnatomyAmount:[93,87,95,97][i],
+        colonyAnatomyDetail:[68,82,76,94][i],
+        colonyAnatomyMotion:[48,61,73,64][i],
+        colonyAnatomyPores:[26,38,17,62][i],
+        colonyAnatomyRim:[71,84,91,89][i],
+        colonyLifeMode:["Germinate & bloom","Breathe",
+          "Territory war","Wither & return"][i],
+        colonyLifeAmount:[86,67,93,82][i],
+        colonyLifeSpeed:[38,61,73,48][i],
+        colonyFrontGlow:[65,78,89,75][i],
+        colonyCompetition:i===2?81:0,
+        habitatStamps:generateHabitatStamps({seed},
+          ()=>[.22,.41,.58,.79][i],
+          {layout:layouts[i],count:[9,8,10,8][i],needA:true,needB:true}),
+        colorAmount:[68,84,72,91][i],
+        lightMotion:[81,74,88,96][i],
+      },
+    };
+  }),
+
 ];

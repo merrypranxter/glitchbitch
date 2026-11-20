@@ -317,7 +317,11 @@ test("renderer geology hook is opt-in, before selection and compatible with expo
   assert.match(renderer,/withFossil\?"fossilResource\(uv,":""/);
   assert.match(renderer,/withFossil\?"col=shadeFossilRelics\(col,uv\);":""/);
   assert.match(renderer,/fossilBuffer = new Float32Array\(32\)/);
-  assert.match(renderer,/packedFossil\(m\)/);
+  assert.match(renderer,/packedFossil\\(m\\)/);
+  assert.match(renderer,/fossilUnavailable = false/);
+  assert.match(renderer,/if\\(fossilEnabled\\(candidate\\)&&!fossilUnavailable\\)/);
+  assert.match(renderer,/fossilUnavailable \\? \\{fossilAmount:0\\}/);
+  assert.match(renderer,/daughterSite\\(compiledState,i\\)/);
   assert.match(renderer,/gl\.uniform4fv\(loc\("fossilStamps\[0\]"\),fossilBuffer\)/);
   assert.match(substrateGLSL,/\/\* FOSSIL_RESOURCE \*\/ \/\* APOCALYPSE_RESOURCE \*\/n \/\* FOSSIL_RESOURCE_END \*\//);
   assert.match(fossilGLSL,/uniform vec4 fossilStamps\[8\]/);

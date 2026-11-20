@@ -62,6 +62,8 @@ import { substrateModes, substratePresets, applySubstratePreset,
   clearSubstrate, shuffleSubstrate } from "../substrate-alchemy.js";
 import { symbiosisModes, symbiosisPresets, applySymbiosisPreset,
   shuffleSymbiosis, stopSymbiosis, ensureSymbioticContact } from "../symbiosis-lab.js";
+import { genePresets, seedGenePool, mutateGenePool, mutateSelectedGene,
+  applyGenePreset, hideGenetics } from "../colony-genetics.js";
 import { ensureValidEcosystemState } from "../ecosystem-randomizer.js";
 import { shuffleColonies, shuffleColonyLife, shuffleEcosystem,
   fullWeirdShuffle, chaosLevels } from "../ecosystem-randomizer.js";
@@ -247,6 +249,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [sporePreset,setSporePreset]=React.useState(sporePresets[0].name);
   const [substratePreset,setSubstratePreset]=React.useState(substratePresets[0].name);
   const [symbiosisPreset,setSymbiosisPreset]=React.useState(symbiosisPresets[0].name);
+  const [genePreset,setGenePreset]=React.useState(genePresets[0].name);
   const [chaosLevel,setChaosLevel]=React.useState("Wild");
   const [preserveColors,setPreserveColors]=React.useState(true);
   const [preserveText,setPreserveText]=React.useState(true);
@@ -307,6 +310,56 @@ export function EffectsInspector({ history, onTool, tool }) {
         Uncheck Preserve colors to randomize the palette too. Your text stays
         intact unless you explicitly uncheck its protection. Manual controls
         and all planted seeds remain editable afterward.
+      </p>
+    </>,
+    "mutation-bloodlines": <>
+      <p className="control-note">
+        MUTATION BLOODLINES — every planted colony can carry a unique
+        heritable DNA allele (0–100). Its gene changes its actual silhouette
+        and palette reaction. Daughter colonies inherit their parent's
+        gene, mutate, and can recombine with a nearby opposing population.
+      </p>
+      <Parameter label="Gene expression strength" name="geneAmount" history={history}/>
+      <Parameter label="Offspring mutation rate" name="geneMutation" history={history}/>
+      <Parameter label="Nearby A/B gene recombination" name="geneCrossbreed" history={history}/>
+      <Parameter label="Gene-specific pigment glow" name="geneGlow" history={history}/>
+      <Select label="Bloodline specimen" value={genePreset}
+        onChange={setGenePreset}>
+        {genePresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+      </Select>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applyGenePreset(
+            ensureValidEcosystemState({...x,
+              atmoMaskMode:"Painted colonies",
+              atmoAmount:Math.max(70,x.atmoAmount)}),
+            genePreset))}>
+          <Dna size={13}/> Seed this gene pool
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>seedGenePool(
+            ensureValidEcosystemState({...x,
+              atmoMaskMode:"Painted colonies",
+              atmoAmount:Math.max(70,x.atmoAmount)})))}>
+          <Dices size={13}/> Shuffle all DNA
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(mutateGenePool)}
+          disabled={!s.habitatStamps?.length}>
+          <Shuffle size={13}/> Mutate existing genes
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.geneAmount<=0}
+          onClick={()=>history.change(hideGenetics)}>
+          Hide DNA (keep ancestry)
+        </button>
+      </div>
+      <p className="control-note">
+        Use Touch → Habitat Graffiti → Selected colony to edit one
+        organism's allele and inspect its ancestry. Gene mutations are
+        inherited only when you press Evolve Generation. The existing
+        16-colony limit stays intact, and enabling DNA adds no new GPU
+        uniform arrays or textures. All changes are undoable.
       </p>
     </>,
     "symbiosis-lab": <>
@@ -1298,6 +1351,26 @@ export function TouchInspector({
               <option value="0">Parent A</option>
               <option value="1">Parent B</option>
             </Select>
+            <Range label="Individual DNA allele"
+              value={Number.isInteger(colony.gene)?colony.gene:50}
+              min={0} max={100}
+              onStart={history.begin}
+              onChange={gene=>history.preview(x=>({...x,
+                geneAmount:Math.max(67,x.geneAmount),
+                habitatStamps:x.habitatStamps.map(m=>m.id===colony.id
+                  ?{...m,gene:Math.round(gene),
+                     generation:m.generation??0}:m)}))}
+              onEnd={history.end} onCancel={history.cancel}/>
+            <button type="button" className="subtle-button full"
+              onClick={()=>history.change(x=>mutateSelectedGene(x,colony.id))}>
+              <Dna size={13}/> Mutate this colony
+            </button>
+            <p className="control-note">
+              Gen {colony.generation??0}
+              {" · "}DNA {Number.isInteger(colony.gene)?colony.gene:"unassigned"}
+              {" · "}Ancestor: {colony.ancestor||"founder"}
+              {colony.mate ? " · Second contributor: "+colony.mate : ""}
+            </p>
             <Range label="Colony radius" value={Math.round(colony.radius*100)}
               min={5} max={45}
               onStart={history.begin}

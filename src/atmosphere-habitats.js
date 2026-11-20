@@ -16,6 +16,7 @@ uniform vec4 habitatStamps[16];
 uniform int colonyLifeMode;
 uniform float colonyLifeAmount,colonyLifeSpeed,colonyFrontGlow,colonyCompetition;
 ${colonyAnatomyGLSL}
+/* GENE_MODULE */
 /* CORTEX_MODULE */
 /* SPORE_MODULE */
 // Seeded, reversible growth masks: each four-vector is (UV x, UV y, radius, parent).
@@ -52,7 +53,7 @@ float paintedHabitat(vec2 uv,float parent){
         }
         // Only nearby pixels pay for fractal-edged boundary trig. Gate
         // accounts for max frill and feather even during swollen growth.
-        if(distanceToSeed<r*(colonyAnatomyAmount>.001?2.10:1.65) /* SUBSTRATE_GATE */){
+        if(distanceToSeed<r*(colonyAnatomyAmount>.001?2.10:1.65) /* SUBSTRATE_GATE */ /* GENE_GATE */){
           float angle=atan(delta.y,delta.x);
           float pulse=1.+(.03+.055*atmoMaskMotion)*sin(t+index*1.618);
           float frill=.055*sin(angle*(5.+floor(atmoMaskVariation*9.))+t*.6+index*2.1);
@@ -63,6 +64,7 @@ float paintedHabitat(vec2 uv,float parent){
             edge*=mix(1.,mutantColonyRadius(angle,index,parent),
               colonyAnatomyAmount);
           }
+          /* GENE_EDGE */
           /* SUBSTRATE_EDGE */
           float softness=mix(.01,.38,atmoMaskFeather)*r;
           float disk=1.-smoothstep(edge-softness,edge+softness,distanceToSeed);
@@ -77,6 +79,7 @@ float paintedHabitat(vec2 uv,float parent){
             disk*=1.-pore*colonyAnatomyPores*.76*
               colonyAnatomyAmount;
           }
+          /* GENE_SAMPLE */
           /* CORTEX_SAMPLE */
           inside=max(inside,disk);
         }

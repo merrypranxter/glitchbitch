@@ -9,6 +9,7 @@ import { shuffleColonyCortex } from "./colony-cortex.js";
 import { shuffleSporeDynasty } from "./spore-dynasties.js";
 import { shuffleSubstrate } from "./substrate-alchemy.js";
 import { shuffleSymbiosis } from "./symbiosis-lab.js";
+import { seedGenePool } from "./colony-genetics.js";
 import { MAX_HABITAT_STAMPS } from "./habitat-painter.js";
 
 const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
@@ -149,7 +150,8 @@ export function shuffleColonies(state,rng=Math.random,opts={}){
     ...opts,needA:true,needB:second,
   });
   s.sporeGeneration=0;
-  return ensureValidEcosystemState(s,rng);
+  const settled=ensureValidEcosystemState(s,rng);
+  return settled.geneAmount>0 ? seedGenePool(settled,rng) : settled;
 }
 export function shuffleColonyLife(state,rng=Math.random){
   const s={...state};
@@ -258,7 +260,21 @@ export function shuffleEcosystem(state,rng=Math.random,opts={}){
   }else{
     s.symbiosisMode="Dormant";s.symbiosisAmount=0;
   }
-  return ensureValidEcosystemState(s,rng);
+  const settled=ensureValidEcosystemState(s,rng);
+  // Every selectable environment can breed individual genetic differences.
+  // Gene pool activation comes AFTER contact pairing, so newborn contact
+  // seeds also carry alleles instead of being visually identical.
+  if(roll(.73,rng) &&
+     (settled.atmoMaskMode==="Painted colonies"||
+      settled.atmoBMaskMode==="Painted colonies")){
+    settled.geneAmount=range(66,100,rng);
+    settled.geneMutation=range(27,91,rng);
+    settled.geneCrossbreed=range(18,94,rng);
+    settled.geneGlow=range(38,99,rng);
+    return seedGenePool(settled,rng);
+  }
+  settled.geneAmount=0;
+  return settled;
 }
 // Old shader systems can be very costly together on mobile Safari. Explicit
 // freakshow randomization samples a capped set, never turns ALL on at once.
@@ -343,6 +359,7 @@ export function mixEcosystemIntoSurprise(state,rng=Math.random,opts={}){
     s.sporeMode="Dormant";s.sporeAmount=0;s.sporeGeneration=0;
     s.substrateMode="Bare canvas";s.substrateAmount=0;s.substratePressure=0;
     s.symbiosisMode="Dormant";s.symbiosisAmount=0;
+    s.geneAmount=0;
     return s;
   }
   s=shuffleEcosystem(s,rng,{

@@ -188,9 +188,9 @@ test("Freakshow and Surprise breed genes, Mutate never awakens legacy DNA",()=>{
   assert.deepEqual(validateRecipe(randomize(base,{},false,r(.43))),
     randomize(base,{},false,r(.43)));
 });
-test("all 147 Lookbook states stay valid including four actual genetic worlds",()=>{
-  assert.equal(looks.length,147);
-  assert.equal(new Set(looks.map(l=>l.name)).size,147);
+test("all 152 Lookbook states stay valid including four actual genetic worlds",()=>{
+  assert.equal(looks.length,152);
+  assert.equal(new Set(looks.map(l=>l.name)).size,152);
   assert.equal(genePresets.length,4);
   const family=looks.filter(l=>l.family==="Mutation Bloodlines");
   assert.equal(family.length,4);

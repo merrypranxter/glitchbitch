@@ -11,6 +11,7 @@ import { shuffleSubstrate } from "./substrate-alchemy.js";
 import { shuffleSymbiosis } from "./symbiosis-lab.js";
 import { seedGenePool } from "./colony-genetics.js";
 import {shuffleSelection} from "./selection-chamber.js";
+import {shuffleApocalypse} from "./apocalypse-clock.js";
 import { MAX_HABITAT_STAMPS } from "./habitat-painter.js";
 
 const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
@@ -262,6 +263,15 @@ export function shuffleEcosystem(state,rng=Math.random,opts={}){
     s.symbiosisMode="Dormant";s.symbiosisAmount=0;
   }
   const settled=ensureValidEcosystemState(s,rng);
+  // Catastrophes are sampled only for an actual mineral world; chemistry
+  // cannot become invisible/active on a bare canvas.
+  if(settled.substrateAmount>0&&settled.substrateMode!=="Bare canvas"&&
+     roll(.61,rng))Object.assign(settled,shuffleApocalypse(settled,rng));
+  else{
+    settled.apocalypseMode="Dormant";
+    settled.apocalypseAmount=0;
+    settled.apocalypseEpoch=0;
+  }
   // Every selectable environment can breed individual genetic differences.
   // Gene pool activation comes AFTER contact pairing, so newborn contact
   // seeds also carry alleles instead of being visually identical.
@@ -371,6 +381,7 @@ export function mixEcosystemIntoSurprise(state,rng=Math.random,opts={}){
     s.symbiosisMode="Dormant";s.symbiosisAmount=0;
     s.geneAmount=0;
     s.selectionMode="Dormant";s.selectionPressure=0;
+    s.apocalypseMode="Dormant";s.apocalypseAmount=0;s.apocalypseEpoch=0;
     return s;
   }
   s=shuffleEcosystem(s,rng,{

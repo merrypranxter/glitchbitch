@@ -68,6 +68,9 @@ import {selectionModes,selectionPresets,selectionActive,
   applySelectionPreset,prepareSelection,shuffleSelection,
   rankSelection,colonyFitness,cullWeakest,breedFittest,
   selectionCycle,stopSelection} from "../selection-chamber.js";
+import {apocalypseModes,apocalypsePresets,apocalypseActive,
+  applyApocalypsePreset,shuffleApocalypse,advanceApocalypseEpoch,
+  haltApocalypse} from "../apocalypse-clock.js";
 import { ensureValidEcosystemState } from "../ecosystem-randomizer.js";
 import { shuffleColonies, shuffleColonyLife, shuffleEcosystem,
   fullWeirdShuffle, chaosLevels } from "../ecosystem-randomizer.js";
@@ -255,6 +258,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [symbiosisPreset,setSymbiosisPreset]=React.useState(symbiosisPresets[0].name);
   const [genePreset,setGenePreset]=React.useState(genePresets[0].name);
   const [selectionPreset,setSelectionPreset]=React.useState(selectionPresets[0].name);
+  const [apocalypsePreset,setApocalypsePreset]=React.useState(apocalypsePresets[0].name);
   const [chaosLevel,setChaosLevel]=React.useState("Wild");
   const [preserveColors,setPreserveColors]=React.useState(true);
   const [preserveText,setPreserveText]=React.useState(true);
@@ -315,6 +319,79 @@ export function EffectsInspector({ history, onTool, tool }) {
         Uncheck Preserve colors to randomize the palette too. Your text stays
         intact unless you explicitly uncheck its protection. Manual controls
         and all planted seeds remain editable afterward.
+      </p>
+    </>,
+    "apocalypse-clock": <>
+      <p className="control-note">
+        APOCALYPSE CLOCK — geological epochs reshape the living nutrient
+        map. Crystal freezes, acid rains, solar flares, tectonic fissures
+        and glowing radiation gardens can change which DNA thrives.
+        Time-based shimmer animates continuously; resource chemistry only
+        changes when you advance the saved epoch.
+      </p>
+      <Select label="Geological catastrophe" value={s.apocalypseMode}
+        onChange={mode=>history.change(x=>mode==="Dormant"
+          ?haltApocalypse({...x,apocalypseMode:mode})
+          :{...x,apocalypseMode:mode,
+             apocalypseAmount:Math.max(72,x.apocalypseAmount),
+             substrateMode:x.substrateMode==="Bare canvas"
+               ?"Nutrient rivers":x.substrateMode,
+             substrateAmount:Math.max(72,x.substrateAmount)})}>
+        {apocalypseModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <Parameter label="Cataclysm visibility" name="apocalypseAmount" history={history}/>
+      <Parameter label="Disaster texture density" name="apocalypseScale" history={history}/>
+      <Parameter label="Heat / rain / mineral shimmer" name="apocalypseMotion" history={history}/>
+      <Parameter label="Ecological shock intensity" name="apocalypsePressure" history={history}/>
+      <Parameter label="Ionized mineral radiance" name="apocalypseGlow" history={history}/>
+      <Parameter label="Cataclysm pigment offset" name="apocalypseHue" history={history}/>
+      <Select label="Catastrophe specimen" value={apocalypsePreset}
+        onChange={setApocalypsePreset}>
+        {apocalypsePresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+      </Select>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applyApocalypsePreset({
+            ...x,substrateMode:x.substrateMode==="Bare canvas"
+              ?"Nutrient rivers":x.substrateMode,
+            substrateAmount:Math.max(75,x.substrateAmount),
+          },apocalypsePreset))}>
+          <Flower2 size={13}/> Summon catastrophe
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleApocalypse({
+            ...x,substrateMode:x.substrateMode==="Bare canvas"
+              ?"Nutrient rivers":x.substrateMode,
+            substrateAmount:Math.max(75,x.substrateAmount),
+          }))}>
+          <Dices size={13}/> Shuffle disasters
+        </button>
+        <button type="button" className="button secondary"
+          disabled={!apocalypseActive(s)||s.apocalypseEpoch>=4095}
+          onClick={()=>history.change(advanceApocalypseEpoch)}>
+          <Orbit size={13}/> Advance epoch
+        </button>
+        <button type="button" className="button secondary"
+          disabled={!apocalypseActive(s)||!selectionActive(s)||
+            s.apocalypseEpoch>=4095}
+          onClick={()=>{if(window.confirm(
+            "Advance geological time, then apply natural selection? Weaker colonies may be removed. This entire change can be undone."
+          ))history.change(x=>selectionCycle(advanceApocalypseEpoch(x)));}}>
+          <Shuffle size={13}/> Epoch + selection cycle (confirm)
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.apocalypseAmount<=0}
+          onClick={()=>history.change(haltApocalypse)}>
+          Hide catastrophe (keep history)
+        </button>
+      </div>
+      <p className="control-note">
+        Saved geological epoch: {s.apocalypseEpoch||0} / 4095.
+        Advancing an epoch changes the mineral resource field, future
+        spore destinations, individual fitness and adaptive growth.
+        It NEVER kills, moves or reproduces existing seeds automatically.
+        Epoch + Selection Cycle is the only combined destructive action,
+        and it always asks you first. All actions support Undo.
       </p>
     </>,
     "selection-chamber": <>

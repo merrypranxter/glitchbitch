@@ -15,6 +15,7 @@ import { substrateModes, substratePresets } from "./substrate-alchemy.js";
 import { symbiosisModes, symbiosisPresets, ensureSymbioticContact } from "./symbiosis-lab.js";
 import { genePresets } from "./colony-genetics.js";
 import {selectionModes,selectionPresets} from "./selection-chamber.js";
+import {apocalypseModes,apocalypsePresets} from "./apocalypse-clock.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
@@ -397,6 +398,12 @@ export const numericRanges = {
   selectionSeverity: [0, 100],
   selectionBrood: [0, 100],
   selectionGlow: [0, 100],
+  apocalypseAmount: [0, 100],
+  apocalypseScale: [0, 100],
+  apocalypseMotion: [0, 100],
+  apocalypsePressure: [0, 100],
+  apocalypseGlow: [0, 100],
+  apocalypseHue: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -668,6 +675,14 @@ export const initial = {
   selectionSeverity: 35,
   selectionBrood: 58,
   selectionGlow: 80,
+  apocalypseMode: "Dormant",
+  apocalypseAmount: 0,
+  apocalypseScale: 54,
+  apocalypseMotion: 58,
+  apocalypsePressure: 66,
+  apocalypseGlow: 85,
+  apocalypseHue: 47,
+  apocalypseEpoch: 0,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -771,6 +786,7 @@ export function validateRecipe(input) {
     substrateMode: substrateModes,
     symbiosisMode: symbiosisModes,
     selectionMode: selectionModes,
+    apocalypseMode: apocalypseModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -876,6 +892,12 @@ export function validateRecipe(input) {
        /[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(x.lettering))
       throw Error("Your quote must be 280 characters or fewer (line breaks allowed).");
     s.lettering=x.lettering.replace(/\r\n?/g,"\n");
+  }
+  if(x.apocalypseEpoch!==undefined){
+    if(!Number.isInteger(x.apocalypseEpoch)||
+       x.apocalypseEpoch<0||x.apocalypseEpoch>4095)
+      throw Error("Invalid geological epoch.");
+    s.apocalypseEpoch=x.apocalypseEpoch;
   }
   // This counter is not a randomizable visual slider: it is the version
   // of committed, permanently editable biological offspring in this work.
@@ -1103,6 +1125,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "symbiosisGlow","symbiosisDominance",
       "geneAmount","geneMutation","geneCrossbreed","geneGlow",
       "selectionPressure","selectionSeverity","selectionBrood","selectionGlow",
+      "apocalypseAmount","apocalypseScale","apocalypseMotion",
+      "apocalypsePressure","apocalypseGlow","apocalypseHue",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -1117,6 +1141,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key==="symbiosisAmount"&&state.symbiosisAmount<=0)continue; // Contact chemistry stays dormant.
       if(key==="geneAmount"&&state.geneAmount<=0)continue; // No spontaneous ancestry on old art.
       if(key==="selectionPressure"&&state.selectionPressure<=0)continue; // No silent Darwin on old art.
+      if(key==="apocalypseAmount"&&state.apocalypseAmount<=0)continue; // Geology stays stable on old art.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1366,6 +1391,10 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.geneCrossbreed=44;s.geneGlow=72;
   s.selectionMode="Dormant";s.selectionPressure=0;
   s.selectionSeverity=35;s.selectionBrood=58;s.selectionGlow=80;
+  s.apocalypseMode="Dormant";s.apocalypseAmount=0;
+  s.apocalypseScale=54;s.apocalypseMotion=58;
+  s.apocalypsePressure=66;s.apocalypseGlow=85;
+  s.apocalypseHue=47;s.apocalypseEpoch=0;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;
@@ -2809,6 +2838,118 @@ export const looks = [
         symbiosisGlow:[79,68,87,99][i],
         habitatStamps,
         colorAmount:[87,80,92,98][i],lightMotion:[91,78,95,89][i],
+      }
+    };
+  }),
+
+  // Epoch-driven ecosystems with 5 different chemical catastrophes.
+  // The event changes the real mineral resource field; the individual
+  // genes, spores and selection chamber respond to that same field.
+  ...apocalypsePresets.map((preset,i)=>{
+    const {name,...disaster}=preset;
+    const seed=[630471,792638,416927,953108,274165][i];
+    const palette=[9,11,10,1,9][i];
+    const habitatStamps=generateHabitatStamps({seed},
+      ()=>[.17,.32,.47,.61,.78][i],
+      {layout:["Twin clusters","Ring","Diagonal invasion",
+        "Corner islands","Spore field"][i],
+        count:[8,9,10,8,11][i],needA:true,needB:true})
+      .map((m,j)=>({...m,gene:(j*29+i*17+13)%101,generation:0}));
+    return {
+      name,
+      family:"Apocalypse Clock",
+      note:[
+        "Frozen crystalline chemistry starves some opal-thallus colonies while luminescent specialists persist",
+        "Iridescent acidic rains rewrite nutrient channels and breed corrosion-resistant fungal lace",
+        "A radiant mineral solar burn creates alternating survival zones for two luminous populations",
+        "Tectonic faults open mineral pathways through which altered lichen colonies and spores spread",
+        "Radiation-like rings create blooming niches that favor unusual genes inside a violet fungal nursery",
+      ][i],
+      state:{
+        ...initial,...disaster,seed,
+        apocalypseEpoch:[0,2,1,3,4][i],
+        engine:[19,18,7,11,17][i],
+        palette,colors:palettes[palette].colors,
+        complexity:[87,92,82,89,93][i],
+        scale:[28,24,30,25,21][i],
+        warp:[69,77,85,72,91][i],
+        atmoMode:["Prismatic mycelium","Heartbeat phosphor",
+          "Mandala gas leak","Prismatic mycelium","Misprint rosette"][i],
+        atmoBMode:["Mandala gas leak","Prismatic mycelium",
+          "Heartbeat phosphor","Misprint rosette","Prismatic mycelium"][i],
+        atmoAmount:92,atmoBAmount:[76,82,79,85,77][i],
+        atmoScale:[55,67,44,61,72][i],
+        atmoBScale:[71,49,81,55,46][i],
+        atmoDensity:85,atmoBDensity:79,
+        atmoMotion:[67,78,59,81,74][i],atmoBMotion:[71,55,84,65,81][i],
+        atmoGlow:93,atmoBGlow:84,
+        atmoHue:[19,82,39,71,94][i],
+        atmoBHue:[79,24,86,32,18][i],
+        atmoBBlendMode:["Light bloom","Ink stain",
+          "Spectral difference","Over","Light bloom"][i],
+        atmoMaskMode:"Painted colonies",
+        atmoBMaskMode:"Painted colonies",
+        atmoMaskFeather:[32,44,37,51,34][i],
+        atmoMaskVariation:[73,89,65,82,94][i],
+        colonyShapeA:["Crystal petals","Lichen lobes",
+          "Hyphal fans","Coral fringe","Lichen lobes"][i],
+        colonyShapeB:["Lichen lobes","Hyphal fans",
+          "Coral fringe","Crystal petals","Hyphal fans"][i],
+        colonyAnatomyAmount:[94,87,90,97,91][i],
+        colonyAnatomyDetail:[82,77,68,91,86][i],
+        colonyAnatomyMotion:[41,71,64,80,55][i],
+        colonyAnatomyPores:[49,28,57,34,61][i],
+        colonyAnatomyRim:[94,87,91,85,98][i],
+        colonyCortexA:["Growth bands","Fruiting cups",
+          "Hyphal veins","Living cortex","Fruiting cups"][i],
+        colonyCortexB:["Hyphal veins","Living cortex",
+          "Fruiting cups","Growth bands","Hyphal veins"][i],
+        colonyCortexAmount:[72,88,0,82,91][i],
+        colonyCortexDetail:[81,73,49,92,86][i],
+        colonyCortexMotion:[38,67,55,81,74][i],
+        colonyCortexRelief:[84,93,75,89,95][i],
+        colonyLifeMode:["Wither & return","Germinate & bloom",
+          "Breathe","Territory war","Germinate & bloom"][i],
+        colonyLifeAmount:[74,89,70,92,83][i],
+        colonyLifeSpeed:[31,73,59,82,67][i],
+        colonyCompetition:i===3?85:0,
+        colonyFrontGlow:[82,94,88,91,96][i],
+        sporeMode:["Dormant","Windborne","Helical drift",
+          "Burst scatter","Windborne"][i],
+        sporeAmount:[0,87,72,81,92][i],
+        sporeSpeed:[58,73,62,90,79][i],
+        sporeReach:[63,81,70,89,67][i],
+        sporeFertility:[64,83,71,87,94][i],
+        sporeGlow:[74,92,88,94,97][i],
+        substrateMode:["Quartz tesserae","Chemical tidepools",
+          "Fractured basalt","Petrified mycelium","Nutrient rivers"][i],
+        substrateAmount:[97,92,95,89,98][i],
+        substrateScale:[79,63,85,71,58][i],
+        substrateMotion:[36,80,74,57,71][i],
+        substratePressure:[89,92,88,94,83][i],
+        substrateAffinityA:[85,12,89,78,39][i],
+        substrateAffinityB:[14,92,23,17,94][i],
+        substrateGlow:[92,85,96,91,97][i],
+        substrateHue:[27,82,43,68,91][i],
+        symbiosisMode:["Dormant","Parasitic rot","Dormant",
+          "Electric synapse","Hybrid membrane"][i],
+        symbiosisAmount:[0,76,0,84,73][i],
+        symbiosisDetail:[67,83,57,91,79][i],
+        symbiosisMotion:[43,78,52,87,74][i],
+        symbiosisGlow:[79,88,73,95,91][i],
+        geneAmount:[91,94,83,98,96][i],
+        geneMutation:[69,84,62,92,81][i],
+        geneCrossbreed:[31,76,43,81,95][i],
+        geneGlow:[85,96,88,94,100][i],
+        selectionMode:["Specialist advantage","Adversarial niche",
+          "Nutrient matching","Hybrid vigor","Nutrient matching"][i],
+        selectionPressure:[87,93,84,95,91][i],
+        selectionSeverity:[31,44,28,39,47][i],
+        selectionBrood:[61,82,58,78,91][i],
+        selectionGlow:[89,92,85,95,100][i],
+        habitatStamps,
+        colorAmount:[88,93,84,96,99][i],
+        lightMotion:[86,94,82,91,96][i],
       }
     };
   }),

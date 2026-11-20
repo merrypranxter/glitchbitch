@@ -1369,6 +1369,7 @@ export function TouchInspector({
               Gen {colony.generation??0}
               {" · "}DNA {Number.isInteger(colony.gene)?colony.gene:"unassigned"}
               {" · "}Ancestor: {colony.ancestor||"founder"}
+              {colony.mate ? " · Second contributor: "+colony.mate : ""}
             </p>
             <Range label="Colony radius" value={Math.round(colony.radius*100)}
               min={5} max={45}

@@ -11,6 +11,7 @@ import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
 import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
 import { colonyCortexModes, colonyCortexPresets } from "./colony-cortex.js";
 import { sporeModes, sporePresets } from "./spore-dynasties.js";
+import { substrateModes, substratePresets } from "./substrate-alchemy.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
@@ -372,6 +373,14 @@ export const numericRanges = {
   sporeReach: [0, 100],
   sporeFertility: [0, 100],
   sporeGlow: [0, 100],
+  substrateAmount: [0, 100],
+  substrateScale: [0, 100],
+  substrateMotion: [0, 100],
+  substratePressure: [0, 100],
+  substrateAffinityA: [0, 100],
+  substrateAffinityB: [0, 100],
+  substrateGlow: [0, 100],
+  substrateHue: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -619,6 +628,15 @@ export const initial = {
   sporeFertility: 64,
   sporeGlow: 73,
   sporeGeneration: 0,
+  substrateMode: "Bare canvas",
+  substrateAmount: 0,
+  substrateScale: 55,
+  substrateMotion: 50,
+  substratePressure: 0,
+  substrateAffinityA: 90,
+  substrateAffinityB: 10,
+  substrateGlow: 67,
+  substrateHue: 48,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -719,6 +737,7 @@ export function validateRecipe(input) {
     colonyCortexA: colonyCortexModes,
     colonyCortexB: colonyCortexModes,
     sporeMode: sporeModes,
+    substrateMode: substrateModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -1026,6 +1045,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "colonyCortexAmount","colonyCortexDetail",
       "colonyCortexMotion","colonyCortexRelief",
       "sporeAmount","sporeSpeed","sporeReach","sporeFertility","sporeGlow",
+      "substrateAmount","substrateScale","substrateMotion","substratePressure",
+      "substrateAffinityA","substrateAffinityB","substrateGlow","substrateHue",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -1036,6 +1057,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
         && state.colonyAnatomyAmount<=0)continue; // Morph stays opt-in.
       if(key==="colonyCortexAmount"&&state.colonyCortexAmount<=0)continue; // Cortex stays dormant.
       if(key==="sporeAmount"&&state.sporeAmount<=0)continue; // Spores stay opt-in.
+      if(key==="substrateAmount"&&state.substrateAmount<=0)continue; // Terrain stays dormant.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1274,6 +1296,10 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.sporeMode="Dormant";s.sporeAmount=0;
   s.sporeSpeed=57;s.sporeReach=58;s.sporeFertility=64;
   s.sporeGlow=73;s.sporeGeneration=0;
+  s.substrateMode="Bare canvas";s.substrateAmount=0;
+  s.substrateScale=55;s.substrateMotion=50;s.substratePressure=0;
+  s.substrateAffinityA=90;s.substrateAffinityB=10;
+  s.substrateGlow=67;s.substrateHue=48;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;

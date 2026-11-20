@@ -15,6 +15,7 @@ import { substrateModes, substratePresets } from "./substrate-alchemy.js";
 import { symbiosisModes, symbiosisPresets, ensureSymbioticContact } from "./symbiosis-lab.js";
 import { genePresets } from "./colony-genetics.js";
 import {selectionModes,selectionPresets} from "./selection-chamber.js";
+import {apocalypseModes,apocalypsePresets} from "./apocalypse-clock.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
@@ -397,6 +398,12 @@ export const numericRanges = {
   selectionSeverity: [0, 100],
   selectionBrood: [0, 100],
   selectionGlow: [0, 100],
+  apocalypseAmount: [0, 100],
+  apocalypseScale: [0, 100],
+  apocalypseMotion: [0, 100],
+  apocalypsePressure: [0, 100],
+  apocalypseGlow: [0, 100],
+  apocalypseHue: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -668,6 +675,14 @@ export const initial = {
   selectionSeverity: 35,
   selectionBrood: 58,
   selectionGlow: 80,
+  apocalypseMode: "Dormant",
+  apocalypseAmount: 0,
+  apocalypseScale: 54,
+  apocalypseMotion: 58,
+  apocalypsePressure: 66,
+  apocalypseGlow: 85,
+  apocalypseHue: 47,
+  apocalypseEpoch: 0,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -771,6 +786,7 @@ export function validateRecipe(input) {
     substrateMode: substrateModes,
     symbiosisMode: symbiosisModes,
     selectionMode: selectionModes,
+    apocalypseMode: apocalypseModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -876,6 +892,12 @@ export function validateRecipe(input) {
        /[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(x.lettering))
       throw Error("Your quote must be 280 characters or fewer (line breaks allowed).");
     s.lettering=x.lettering.replace(/\r\n?/g,"\n");
+  }
+  if(x.apocalypseEpoch!==undefined){
+    if(!Number.isInteger(x.apocalypseEpoch)||
+       x.apocalypseEpoch<0||x.apocalypseEpoch>4095)
+      throw Error("Invalid geological epoch.");
+    s.apocalypseEpoch=x.apocalypseEpoch;
   }
   // This counter is not a randomizable visual slider: it is the version
   // of committed, permanently editable biological offspring in this work.
@@ -1103,6 +1125,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "symbiosisGlow","symbiosisDominance",
       "geneAmount","geneMutation","geneCrossbreed","geneGlow",
       "selectionPressure","selectionSeverity","selectionBrood","selectionGlow",
+      "apocalypseAmount","apocalypseScale","apocalypseMotion",
+      "apocalypsePressure","apocalypseGlow","apocalypseHue",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -1117,6 +1141,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key==="symbiosisAmount"&&state.symbiosisAmount<=0)continue; // Contact chemistry stays dormant.
       if(key==="geneAmount"&&state.geneAmount<=0)continue; // No spontaneous ancestry on old art.
       if(key==="selectionPressure"&&state.selectionPressure<=0)continue; // No silent Darwin on old art.
+      if(key==="apocalypseAmount"&&state.apocalypseAmount<=0)continue; // Geology stays stable on old art.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1366,6 +1391,10 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.geneCrossbreed=44;s.geneGlow=72;
   s.selectionMode="Dormant";s.selectionPressure=0;
   s.selectionSeverity=35;s.selectionBrood=58;s.selectionGlow=80;
+  s.apocalypseMode="Dormant";s.apocalypseAmount=0;
+  s.apocalypseScale=54;s.apocalypseMotion=58;
+  s.apocalypsePressure=66;s.apocalypseGlow=85;
+  s.apocalypseHue=47;s.apocalypseEpoch=0;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;

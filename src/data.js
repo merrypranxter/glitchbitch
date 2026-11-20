@@ -16,6 +16,7 @@ import { symbiosisModes, symbiosisPresets, ensureSymbioticContact } from "./symb
 import { genePresets } from "./colony-genetics.js";
 import {selectionModes,selectionPresets} from "./selection-chamber.js";
 import {apocalypseModes,apocalypsePresets} from "./apocalypse-clock.js";
+import {fossilModes,fossilPresets,MAX_FOSSILS} from "./fossil-record.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
@@ -404,6 +405,12 @@ export const numericRanges = {
   apocalypsePressure: [0, 100],
   apocalypseGlow: [0, 100],
   apocalypseHue: [0, 100],
+  fossilAmount: [0, 100],
+  fossilDepth: [0, 100],
+  fossilMotion: [0, 100],
+  fossilGlow: [0, 100],
+  fossilHue: [0, 100],
+  fossilBurial: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -683,6 +690,14 @@ export const initial = {
   apocalypseGlow: 85,
   apocalypseHue: 47,
   apocalypseEpoch: 0,
+  fossilMode: "Dormant",
+  fossilAmount: 0,
+  fossilDepth: 73,
+  fossilMotion: 54,
+  fossilGlow: 80,
+  fossilHue: 46,
+  fossilBurial: 58,
+  fossilRecords: [],
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -787,6 +802,7 @@ export function validateRecipe(input) {
     symbiosisMode: symbiosisModes,
     selectionMode: selectionModes,
     apocalypseMode: apocalypseModes,
+    fossilMode: fossilModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -942,6 +958,35 @@ export function validateRecipe(input) {
         ...(m.generation!==undefined?{generation:m.generation}:{}),
         ...(m.ancestor!==undefined?{ancestor:m.ancestor}:{}),
         ...(m.mate!==undefined?{mate:m.mate}:{})};
+    });
+  }
+  // Historical impressions are independent of the live 16-seed limit.
+  // The fossil archive is compact, validated, and saved with each document.
+  if(x.fossilRecords!==undefined){
+    if(!Array.isArray(x.fossilRecords)||
+       x.fossilRecords.length>MAX_FOSSILS)
+      throw Error("Maximum eight geological fossils.");
+    const ids=new Set();
+    s.fossilRecords=x.fossilRecords.map(record=>{
+      if(!record||typeof record!=="object"||
+         typeof record.id!=="string"||!record.id||
+         record.id.length>120||ids.has(record.id)||
+         typeof record.origin!=="string"||!record.origin||
+         record.origin.length>80||
+         !Number.isFinite(record.x)||record.x<0||record.x>1||
+         !Number.isFinite(record.y)||record.y<0||record.y>1||
+         !Number.isFinite(record.radius)||record.radius<.05||
+         record.radius>.45||
+         (record.parent!==0&&record.parent!==1)||
+         !Number.isInteger(record.epoch)||record.epoch<0||
+         record.epoch>4095||
+         !Number.isInteger(record.gene)||record.gene<0||
+         record.gene>100)
+        throw Error("Invalid fossil record.");
+      ids.add(record.id);
+      return {id:record.id,origin:record.origin,x:record.x,y:record.y,
+        radius:record.radius,parent:record.parent,epoch:record.epoch,
+        gene:record.gene};
     });
   }
   if (x.marks !== undefined) {
@@ -1127,6 +1172,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "selectionPressure","selectionSeverity","selectionBrood","selectionGlow",
       "apocalypseAmount","apocalypseScale","apocalypseMotion",
       "apocalypsePressure","apocalypseGlow","apocalypseHue",
+      "fossilAmount","fossilDepth","fossilMotion",
+      "fossilGlow","fossilHue","fossilBurial",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -1142,6 +1189,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key==="geneAmount"&&state.geneAmount<=0)continue; // No spontaneous ancestry on old art.
       if(key==="selectionPressure"&&state.selectionPressure<=0)continue; // No silent Darwin on old art.
       if(key==="apocalypseAmount"&&state.apocalypseAmount<=0)continue; // Geology stays stable on old art.
+      if(key==="fossilAmount"&&state.fossilAmount<=0)continue; // Burying the past remains opt-in.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1395,6 +1443,10 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.apocalypseScale=54;s.apocalypseMotion=58;
   s.apocalypsePressure=66;s.apocalypseGlow=85;
   s.apocalypseHue=47;s.apocalypseEpoch=0;
+  s.fossilMode="Dormant";s.fossilAmount=0;
+  s.fossilDepth=73;s.fossilMotion=54;
+  s.fossilGlow=80;s.fossilHue=46;s.fossilBurial=58;
+  s.fossilRecords=[];
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;

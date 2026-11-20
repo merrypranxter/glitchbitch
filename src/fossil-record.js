@@ -125,10 +125,14 @@ export function archiveFossils(state){
   return {...state,fossilRecords:[...existing,...born]};
 }
 export function archiveAndAdvance(state){
-  if((state.apocalypseEpoch||0)>=4095)return state;
+  const epoch=state.apocalypseEpoch||0;
+  if(epoch>=4095)return state;
+  // Once a generation is archived, advancing time remains possible even
+  // if no fresh record can be added. Never duplicate an archived organism.
+  if(!(state.habitatStamps||[]).length&&!(state.fossilRecords||[]).length)
+    return state;
   const buried=archiveFossils(state);
-  if(buried===state)return state;
-  return {...buried,apocalypseEpoch:(state.apocalypseEpoch||0)+1};
+  return {...buried,apocalypseEpoch:epoch+1};
 }
 export const clearFossilArchive=state=>({...state,fossilRecords:[]});
 

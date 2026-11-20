@@ -236,9 +236,9 @@ test("bad selection settings never enter the GPU or saved recipes",()=>{
   assert.equal(selectionActive({...sample,habitatStamps:[]}),false);
 });
 
-test("all 152 Lookbook specimens are genuine saved ecology with preserved history",()=>{
-  assert.equal(looks.length,152);
-  assert.equal(new Set(looks.map(l=>l.name)).size,152);
+test("all 157 Lookbook specimens are genuine saved ecology with preserved history",()=>{
+  assert.equal(looks.length,157);
+  assert.equal(new Set(looks.map(l=>l.name)).size,157);
   const selections=looks.filter(x=>x.family==="Selection Chamber");
   assert.equal(selections.length,4);
   for(const look of looks){

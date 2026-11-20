@@ -17,6 +17,7 @@ uniform int colonyLifeMode;
 uniform float colonyLifeAmount,colonyLifeSpeed,colonyFrontGlow,colonyCompetition;
 ${colonyAnatomyGLSL}
 /* GENE_MODULE */
+/* SELECTION_MODULE */
 /* CORTEX_MODULE */
 /* SPORE_MODULE */
 // Seeded, reversible growth masks: each four-vector is (UV x, UV y, radius, parent).
@@ -65,6 +66,7 @@ float paintedHabitat(vec2 uv,float parent){
               colonyAnatomyAmount);
           }
           /* GENE_EDGE */
+          /* SELECTION_EDGE */
           /* SUBSTRATE_EDGE */
           float softness=mix(.01,.38,atmoMaskFeather)*r;
           float disk=1.-smoothstep(edge-softness,edge+softness,distanceToSeed);
@@ -80,6 +82,7 @@ float paintedHabitat(vec2 uv,float parent){
               colonyAnatomyAmount;
           }
           /* GENE_SAMPLE */
+          /* SELECTION_SAMPLE */
           /* CORTEX_SAMPLE */
           inside=max(inside,disk);
         }

@@ -51,7 +51,7 @@ export function ensureSymbioticContact(state){
   const pair=String(result.ratio||"1:1").split(":").map(Number);
   const aspect=pair[0]>0&&pair[1]>0?pair[0]/pair[1]:1;
   if(hasContact(stamps,aspect))return result;
-  if(stamps.length>=15)return result;
+  if(stamps.length>=16)return result;
   const hasA=stamps.some(s=>s.parent===0);
   const hasB=stamps.some(s=>s.parent===1);
   // Put the contact site near the canvas center; on very wide formats,

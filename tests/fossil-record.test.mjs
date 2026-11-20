@@ -116,6 +116,15 @@ test("archive never duplicates an ancestor in one epoch; later epochs create dis
   const empty={...populated,habitatStamps:[]};
   assert.equal(archiveFossils(empty),empty);
   assert.equal(archiveAndAdvance(empty),empty);
+  // Already-archived organisms still allow geological time to pass.
+  const already=archiveAndAdvance(third);
+  assert.equal(already.apocalypseEpoch,third.apocalypseEpoch+1);
+  assert.deepEqual(already.fossilRecords,third.fossilRecords);
+  const full={...third,fossilRecords:[...third.fossilRecords,
+    ...Array.from({length:MAX_FOSSILS-third.fossilRecords.length},(_,i)=>({
+      ...third.fossilRecords[0],id:"older-"+i,
+    }))]};
+  assert.equal(archiveAndAdvance(full).apocalypseEpoch,full.apocalypseEpoch+1);
 });
 
 test("hard archive cap of eight does not evict ancient impressions",()=>{
@@ -321,7 +330,7 @@ test("renderer geology hook is opt-in, before selection and compatible with expo
   assert.match(renderer,/fossilUnavailable = false/);
   assert.match(renderer,/if\(fossilEnabled\(candidate\)&&!fossilUnavailable\)/);
   assert.match(renderer,/fossilUnavailable \? \{fossilAmount:0\}/);
-  assert.match(renderer,/daughterSite\(compiledState,i\)/);
+  assert.match(renderer,/daughterSite\(s,i\)/);
   assert.match(renderer,/gl\.uniform4fv\(loc\("fossilStamps\[0\]"\),fossilBuffer\)/);
   assert.match(substrateGLSL,/\/\* FOSSIL_RESOURCE \*\/ \/\* APOCALYPSE_RESOURCE \*\/n \/\* FOSSIL_RESOURCE_END \*\//);
   assert.match(fossilGLSL,/uniform vec4 fossilStamps\[8\]/);

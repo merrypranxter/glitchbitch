@@ -74,6 +74,8 @@ import {apocalypseModes,apocalypsePresets,apocalypseActive,
 import {MAX_FOSSILS,fossilModes,fossilPresets,applyFossilPreset,
   shuffleFossils,archiveFossils,archiveAndAdvance,hideFossils,
   clearFossilArchive} from "../fossil-record.js";
+import {resurrectionModes,canResurrectRecord,resurrectFossil,
+  resurrectOldest,resurrectWholeArchive} from "../ancestral-resurrection.js";
 import { ensureValidEcosystemState } from "../ecosystem-randomizer.js";
 import { shuffleColonies, shuffleColonyLife, shuffleEcosystem,
   fullWeirdShuffle, chaosLevels } from "../ecosystem-randomizer.js";
@@ -263,6 +265,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [selectionPreset,setSelectionPreset]=React.useState(selectionPresets[0].name);
   const [apocalypsePreset,setApocalypsePreset]=React.useState(apocalypsePresets[0].name);
   const [fossilPreset,setFossilPreset]=React.useState(fossilPresets[0].name);
+  const [resurrectionMode,setResurrectionMode]=React.useState(resurrectionModes[0]);
   const [chaosLevel,setChaosLevel]=React.useState("Wild");
   const [preserveColors,setPreserveColors]=React.useState(true);
   const [preserveText,setPreserveText]=React.useState(true);
@@ -378,9 +381,8 @@ export function EffectsInspector({ history, onTool, tool }) {
           <Gem size={13}/> Archive this generation
         </button>
         <button type="button" className="button secondary"
-          disabled={!s.habitatStamps?.length ||
-            s.fossilRecords.length>=MAX_FOSSILS ||
-            s.fossilBurial<=0||s.apocalypseEpoch>=4095}
+          disabled={(!s.habitatStamps?.length&&!s.fossilRecords.length)||
+            s.apocalypseEpoch>=4095}
           onClick={()=>history.change(archiveAndAdvance)}>
           <Orbit size={13}/> Bury and advance epoch
         </button>
@@ -398,6 +400,38 @@ export function EffectsInspector({ history, onTool, tool }) {
         </button>
       </div>
       <details className="filament-crossbreeder">
+        <summary>Resurrection Chamber · raise ancient bloodlines</summary>
+        <p className="control-note">
+          Fossil DNA can become real editable colonies again, even after a
+          population goes extinct. Each ancestor may be revived once per
+          geological epoch. Their original historical records stay buried.
+        </p>
+        <Select label="Revival method" value={resurrectionMode}
+          onChange={setResurrectionMode}>
+          {resurrectionModes.map(mode=>
+            <option key={mode} value={mode}>{mode}</option>)}
+        </Select>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            disabled={!s.fossilRecords.some(record=>canResurrectRecord(s,record))}
+            onClick={()=>history.change(x=>resurrectOldest(x,resurrectionMode))}>
+            <Dna size={13}/> Revive oldest ancestor
+          </button>
+          <button type="button" className="button secondary"
+            disabled={!s.fossilRecords.some(record=>canResurrectRecord(s,record))}
+            onClick={()=>history.change(x=>resurrectWholeArchive(x,resurrectionMode))}>
+            <Flower2 size={13}/> Raise the whole graveyard
+          </button>
+        </div>
+        <p className="control-note">
+          Faithful echo preserves ancestral DNA. Ancestral crossover grafts
+          it with a living relative. Adaptive comeback seeks a viable new
+          mineral niche. Kingdom inversion swaps A/B and flips the allele.
+          All four honor the sixteen-colony limit, your colors and your
+          artwork. One Undo restores the prior population.
+        </p>
+      </details>
+      <details className="filament-crossbreeder">
         <summary>Geological archive · {s.fossilRecords.length}/{MAX_FOSSILS}</summary>
         <p className="control-note">
           Each impression stores the original individual, its DNA,
@@ -409,6 +443,13 @@ export function EffectsInspector({ history, onTool, tool }) {
               Epoch {record.epoch} · {record.parent===0?"A":"B"}
               {" · "}DNA {record.gene}
               {" · "}Ancestor {record.origin}
+              {" "}
+              <button type="button" className="subtle-button"
+                disabled={!canResurrectRecord(s,record)}
+                onClick={()=>history.change(x=>resurrectFossil(
+                  x,record.id,resurrectionMode))}>
+                <Dna size={12}/> Revive
+              </button>
             </li>)}
         </ol>
       </details>

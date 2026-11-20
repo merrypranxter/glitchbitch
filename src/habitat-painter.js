@@ -1,3 +1,4 @@
+import { founderGene } from "./colony-genetics.js";
 // Habitat Graffiti: a bounded, non-destructive second touch system.
 // Painted colony seeds are recipe data. They never mutate warp-force marks.
 // Coordinates are bottom-up normalized UV to match the GL and export canvases.
@@ -20,9 +21,14 @@ export function nearestColony(stamps,p,aspect=1){
 export function makeColony(state,p,parent=0){
   const id=globalThis.crypto?.randomUUID?.()||
     "colony-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,9);
-  return {id,x:clamp(p.x,0,1),y:clamp(p.y,0,1),
+  const colony={id,x:clamp(p.x,0,1),y:clamp(p.y,0,1),
     radius:clamp((state.habitatBrushRadius??20)/100,.05,.45),
     parent:parent===1?1:0};
+  if((state.geneAmount||0)>0){
+    colony.gene=founderGene(state,colony);
+    colony.generation=0;
+  }
+  return colony;
 }
 export function plantColony(state,p,parent=0){
   const stamps=state.habitatStamps||[];

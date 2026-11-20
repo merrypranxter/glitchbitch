@@ -76,6 +76,7 @@ import {MAX_FOSSILS,fossilModes,fossilPresets,applyFossilPreset,
   clearFossilArchive} from "../fossil-record.js";
 import {resurrectionModes,canResurrectRecord,resurrectFossil,
   resurrectOldest,resurrectWholeArchive} from "../ancestral-resurrection.js";
+import {echoModes,evolveAncestralGeneration,evolveAncestralEpochs} from "../ancestral-echoes.js";
 import { ensureValidEcosystemState } from "../ecosystem-randomizer.js";
 import { shuffleColonies, shuffleColonyLife, shuffleEcosystem,
   fullWeirdShuffle, chaosLevels } from "../ecosystem-randomizer.js";
@@ -266,6 +267,8 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [apocalypsePreset,setApocalypsePreset]=React.useState(apocalypsePresets[0].name);
   const [fossilPreset,setFossilPreset]=React.useState(fossilPresets[0].name);
   const [resurrectionMode,setResurrectionMode]=React.useState(resurrectionModes[0]);
+  const [echoMode,setEchoMode]=React.useState(echoModes[0]);
+  const [echoIntensity,setEchoIntensity]=React.useState(65);
   const [chaosLevel,setChaosLevel]=React.useState("Wild");
   const [preserveColors,setPreserveColors]=React.useState(true);
   const [preserveText,setPreserveText]=React.useState(true);
@@ -429,6 +432,47 @@ export function EffectsInspector({ history, onTool, tool }) {
           mineral niche. Kingdom inversion swaps A/B and flips the allele.
           All four honor the sixteen-colony limit, your colors and your
           artwork. One Undo restores the prior population.
+        </p>
+      </details>
+      <details className="filament-crossbreeder">
+        <summary>Ancestral Echoes · evolve civilizations</summary>
+        <p className="control-note">
+          Fossil genes can influence new generations of real offspring.
+          Revive ancestors first, then evolve them. This uses the existing
+          spore landing engine and never changes the fossil archive.
+        </p>
+        <Select label="Evolutionary pressure" value={echoMode}
+          onChange={setEchoMode}>
+          {echoModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </Select>
+        <label className="control-note" htmlFor="ancestral-echo-intensity">
+          Ancestral influence · {echoIntensity}%
+        </label>
+        <input id="ancestral-echo-intensity" type="range" min="0" max="100"
+          value={echoIntensity} onChange={event=>
+            setEchoIntensity(Number(event.target.value))}/>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            disabled={!s.habitatStamps?.length||s.habitatStamps.length>=16||
+              s.sporeGeneration>=4095||s.sporeFertility<=0}
+            onClick={()=>history.change(x=>evolveAncestralGeneration(
+              x,echoMode,echoIntensity))}>
+            <Dna size={13}/> Evolve ancestral generation
+          </button>
+          <button type="button" className="button secondary"
+            disabled={!s.habitatStamps?.length||s.habitatStamps.length>=16||
+              s.sporeGeneration>=4095||s.sporeFertility<=0}
+            onClick={()=>history.change(x=>evolveAncestralEpochs(
+              x,3,echoMode,echoIntensity))}>
+            <Orbit size={13}/> Evolve three generations
+          </button>
+        </div>
+        <p className="control-note">
+          Atavism recalls old genes; Mutation bloom makes them unstable;
+          Adaptive memory blends ancestral and mineral affinities;
+          Rebel descendants invert ancestral traits. The three-generation
+          button is one Undo. Existing organisms and saved history stay put.
+          The living-colony limit of sixteen still applies.
         </p>
       </details>
       <details className="filament-crossbreeder">

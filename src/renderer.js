@@ -24,6 +24,7 @@ import { colonyAnatomyModes } from "./colony-anatomy.js";
 import { colonyCortexModes, colonyCortexGLSL } from "./colony-cortex.js";
 import { sporeModes, sporeDynastyGLSL, daughterSite } from "./spore-dynasties.js";
 import { substrateModes, substrateGLSL, substrateEnabled } from "./substrate-alchemy.js";
+import { symbiosisModes, symbiosisGLSL, symbiosisActive } from "./symbiosis-lab.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes,
   habitatGLSL, atmosphereHybridGLSL } from "./atmosphere-habitats.js";
 
@@ -86,6 +87,7 @@ phase+=source;if(posterize)phase=floor(phase*7.)/7.;return phase;}
 /* FILAMENT_MODULE */
 /* MATERIAL_MODULE */
 /* ATMOSPHERE_MODULE */
+/* SYMBIOSIS_MODULE */
 /* SUBSTRATE_MODULE */
 /* HABITAT_MODULE */
 /* LETTERING_MODULE */
@@ -600,6 +602,7 @@ export function createRenderer(canvas) {
       withAtmosphere = s.atmoAmount>0,
       withAtmosphereB = s.atmoBAmount>0,
       withSubstrate = substrateEnabled(s),
+      withSymbiosis = symbiosisActive(s),
       withHabitat = (withAtmosphere && s.atmoMaskMode!=="Everywhere") ||
         (withAtmosphereB && s.atmoBMaskMode!=="Everywhere"),
       withSpore = s.sporeAmount>0 && s.sporeMode!=="Dormant" && (
@@ -612,7 +615,7 @@ export function createRenderer(canvas) {
       ),
       withStrange = (s.engine>=17 && s.engine<=19) ||
         (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withWiggle ? "wiggle" : "still"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withWiggle ? "wiggle" : "still"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -694,6 +697,7 @@ export function createRenderer(canvas) {
     source=source.replace("/* ATMOSPHERE_MODULE */",chosenAtmosphere+
       (withAtmosphereB ? (withAtmosphere ? "\n#undef ATMO_MODE\n" : "")+
         chosenAtmosphereB : ""));
+    source=source.replace("/* SYMBIOSIS_MODULE */",withSymbiosis?symbiosisGLSL:"");
     source=source.replace("/* SUBSTRATE_MODULE */",withSubstrate?substrateGLSL:"");
     source=source.replace("/* SUBSTRATE_POST */",
       withSubstrate?"col=shadeSubstrate(col,uv);":"");
@@ -749,6 +753,9 @@ export function createRenderer(canvas) {
     const maskPrelude=withHabitat
       ? "float atmoAMask="+(maskedA?"atmosphereMaskForA(uv)":"1.")+";"+
         "float atmoBMask="+(maskedB?"atmosphereMaskForB(uv)":"1.")+";"+
+        (withSymbiosis
+          ? "float symbioticAMask=atmoAMask;float symbioticBMask=atmoBMask;"
+          : "")+
         (rivalry ? `if(colonyLifeMode==4 && colonyLifeAmount>.001 && colonyCompetition>.001){
             float pressure=.22*sin(time*(.19+colonyLifeSpeed*1.37)+uv.x*4.8-uv.y*3.7);
             float aWins=smoothstep(-.2,.2,atmoAMask-atmoBMask+pressure);
@@ -795,7 +802,10 @@ export function createRenderer(canvas) {
             (withSpore && s.atmoBMaskMode==="Painted colonies"
               ? "col=tintSporeCloud(col,sporeFlightB,atmoBHue);"
               : "")
-          : "col=atmoResult;")) : "");
+          : "col=atmoResult;")+
+        (withSymbiosis
+          ? "col=livingSymbiosis(col,uv,symbioticAMask,symbioticBMask);"
+          : "")) : "");
     source=source.replace("/* MICRO_MODULE */",withMicro?microGLSL:"");
     source=source.replace("/* MICRO_POST */",withMicro?"col=movingMicrostructure(col,p,uv,v);":"");
     source=source.replace("/* BACKDROP_MODULE */",withBackdrop?backdropGLSL:"");
@@ -1100,6 +1110,8 @@ export function createRenderer(canvas) {
         "sporeAmount","sporeSpeed","sporeReach","sporeFertility","sporeGlow",
         "substrateAmount","substrateScale","substrateMotion","substratePressure",
         "substrateAffinityA","substrateAffinityB","substrateGlow","substrateHue",
+        "symbiosisAmount","symbiosisDetail","symbiosisMotion",
+        "symbiosisGlow","symbiosisDominance",
         "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
         "tunnelAperture","tunnelVariation",
       ])
@@ -1136,6 +1148,7 @@ export function createRenderer(canvas) {
       gl.uniform1i(loc("colonyCortexB"),colonyCortexModes.indexOf(s.colonyCortexB));
       gl.uniform1i(loc("sporeMode"),sporeModes.indexOf(s.sporeMode));
       gl.uniform1i(loc("substrateMode"),substrateModes.indexOf(s.substrateMode));
+      gl.uniform1i(loc("symbiosisMode"),symbiosisModes.indexOf(s.symbiosisMode));
       gl.uniform1f(loc("sporeGeneration"),s.sporeGeneration);
       gl.uniform1i(loc("habitatStampCount"),plantedCount);
       gl.uniform4fv(loc("habitatStamps[0]"),habitatBuffer);

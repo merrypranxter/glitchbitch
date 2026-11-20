@@ -1,3 +1,4 @@
+import { optimizeLandingSite } from "./substrate-alchemy.js";
 // SPORE DYNASTIES — reversible, deterministic dispersal and real descendants.
 // Animation is computed from continuous time. Clicking "Evolve generation"
 // copies its landing coordinates into the recipe as permanently editable seeds.
@@ -59,10 +60,13 @@ export function daughterSite(state,index){
   const drift=(.10+(state.sporeReach||0)/100*.34)*
     (.72+.24*((index*.37+gen*.23)%1));
   const aspect=aspectRatio(state);
-  return {
+  const base={
     x:clamp(stamp.x+Math.cos(angle)*drift/aspect,.055,.945),
     y:clamp(stamp.y+Math.sin(angle)*drift,.055,.945),
   };
+  // One authoritative CPU landing rule for both GPU preview and the
+  // persisted offspring, including optional nutrient-site preference.
+  return optimizeLandingSite(state,stamp,index,gen,base);
 }
 export function evolveSporeGeneration(state){
   const before=state.habitatStamps||[];
@@ -99,12 +103,11 @@ uniform float sporeAmount,sporeSpeed,sporeReach,sporeFertility,sporeGlow;
 uniform float sporeGeneration;
 float sporeFlightA=0.;
 float sporeFlightB=0.;
+uniform vec2 daughterLandings[16];
 vec2 daughterLanding(vec2 origin,float index,float aspect){
-  float angle=index*2.399963229728653+sporeGeneration*1.133;
-  float radial=(.10+sporeReach*.34)*
-    (.72+.24*fract(index*.37+sporeGeneration*.23));
-  return clamp(origin+vec2(cos(angle)/aspect,sin(angle))*radial,
-    vec2(.055),vec2(.945));
+  // The JS nutrient/landing law is evaluated only 16 times per frame,
+  // not for every pixel. These coordinates also become permanent offspring.
+  return daughterLandings[int(index)];
 }
 vec2 sporeSample(vec2 uv,vec4 stamp,float index,float parent,
                 float canvasAspect){

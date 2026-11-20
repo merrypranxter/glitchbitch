@@ -91,9 +91,9 @@ test("unknown cortex modes and invalid numbers cannot enter the WebGL renderer",
     ["colonyCortexMotion",NaN],["colonyCortexRelief",Infinity]
   ])assert.throws(()=>validateRecipe({...base,[key]:value}),undefined,key);
 });
-test("all 152 Lookbook artworks including the four new cortex specimens survive JSON",()=>{
-  assert.equal(looks.length,152);
-  assert.equal(new Set(looks.map(l=>l.name)).size,152);
+test("all 157 Lookbook artworks including the four new cortex specimens survive JSON",()=>{
+  assert.equal(looks.length,157);
+  assert.equal(new Set(looks.map(l=>l.name)).size,157);
   const cortex=looks.filter(l=>l.family==="Living Cortex");
   assert.equal(cortex.length,4);
   for(const look of looks){

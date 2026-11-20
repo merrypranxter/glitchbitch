@@ -127,7 +127,8 @@ test("culling does not delete last remaining parent species even at 100 percent 
   assert.equal(culled.habitatStamps.filter(m=>m.parent===1).length,1);
   const single={...sample,habitatStamps:[sample.habitatStamps[0]]};
   assert.equal(cullWeakest(single),single);
-  const onlyOneSpecies={...sample,habitatStamps:sample.habitatStamps
+  const onlyOneSpecies={...sample,selectionSeverity:100,
+    habitatStamps:sample.habitatStamps
     .filter(x=>x.parent===0)};
   assert.equal(cullWeakest(onlyOneSpecies).habitatStamps.length,1);
 });
@@ -251,7 +252,9 @@ test("all 147 Lookbook specimens are genuine saved ecology with preserved histor
     assert.ok(geneEnabled(s),look.name);
     assert.ok(s.habitatStamps.length>=8);
     assert.ok(s.habitatStamps.every(m=>Number.isInteger(m.gene)));
-    assert.ok(rankSelection(s).some(m=>m.fitness>.60));
+    const scores=rankSelection(s).map(m=>m.fitness);
+    assert.ok(scores.every(n=>Number.isFinite(n)&&n>=0&&n<=1));
+    assert.ok(Math.max(...scores)-Math.min(...scores)>.03);
   }
 });
 

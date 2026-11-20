@@ -79,17 +79,19 @@ export function inheritColonyGene(state,parent,index,site){
     if(d<near){partner=potential;near=d;}
   }
   let inherited=source;
+  let mate=null;
   if(partner && near<=.29){
     const other=Number.isInteger(partner.gene)
       ?partner.gene:founderGene(state,partner);
     const physicalContact=clamp((.29-near)/.29,0,1);
     inherited+=(other-inherited)*partnerWeight*physicalContact*.82;
+    if(partnerWeight*physicalContact>.001)mate=partner.id;
   }
   const roll=hashText(parent.id+":"+String(index)+":"+
     String(state.sporeGeneration||0)+":"+String(state.seed||0));
   inherited+=(roll*2-1)*(3+mutation*43);
   return {gene:clamp(Math.round(inherited),0,100),
-    generation,ancestor:parent.id};
+    generation,ancestor:parent.id,...(mate?{mate}:{})};
 }
 export function applyGenePreset(state,name,rng=Math.random){
   const p=genePresets.find(x=>x.name===name);

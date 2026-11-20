@@ -12,6 +12,7 @@ import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
 import { colonyCortexModes, colonyCortexPresets } from "./colony-cortex.js";
 import { sporeModes, sporePresets } from "./spore-dynasties.js";
 import { substrateModes, substratePresets } from "./substrate-alchemy.js";
+import { symbiosisModes, symbiosisPresets } from "./symbiosis-lab.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
@@ -381,6 +382,11 @@ export const numericRanges = {
   substrateAffinityB: [0, 100],
   substrateGlow: [0, 100],
   substrateHue: [0, 100],
+  symbiosisAmount: [0, 100],
+  symbiosisDetail: [0, 100],
+  symbiosisMotion: [0, 100],
+  symbiosisGlow: [0, 100],
+  symbiosisDominance: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -637,6 +643,12 @@ export const initial = {
   substrateAffinityB: 10,
   substrateGlow: 67,
   substrateHue: 48,
+  symbiosisMode: "Dormant",
+  symbiosisAmount: 0,
+  symbiosisDetail: 62,
+  symbiosisMotion: 47,
+  symbiosisGlow: 71,
+  symbiosisDominance: 50,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -738,6 +750,7 @@ export function validateRecipe(input) {
     colonyCortexB: colonyCortexModes,
     sporeMode: sporeModes,
     substrateMode: substrateModes,
+    symbiosisMode: symbiosisModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -1047,6 +1060,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "sporeAmount","sporeSpeed","sporeReach","sporeFertility","sporeGlow",
       "substrateAmount","substrateScale","substrateMotion","substratePressure",
       "substrateAffinityA","substrateAffinityB","substrateGlow","substrateHue",
+      "symbiosisAmount","symbiosisDetail","symbiosisMotion",
+      "symbiosisGlow","symbiosisDominance",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -1058,6 +1073,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key==="colonyCortexAmount"&&state.colonyCortexAmount<=0)continue; // Cortex stays dormant.
       if(key==="sporeAmount"&&state.sporeAmount<=0)continue; // Spores stay opt-in.
       if(key==="substrateAmount"&&state.substrateAmount<=0)continue; // Terrain stays dormant.
+      if(key==="symbiosisAmount"&&state.symbiosisAmount<=0)continue; // Contact chemistry stays dormant.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1300,6 +1316,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.substrateScale=55;s.substrateMotion=50;s.substratePressure=0;
   s.substrateAffinityA=90;s.substrateAffinityB=10;
   s.substrateGlow=67;s.substrateHue=48;
+  s.symbiosisMode="Dormant";s.symbiosisAmount=0;
+  s.symbiosisDetail=62;s.symbiosisMotion=47;
+  s.symbiosisGlow=71;s.symbiosisDominance=50;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;

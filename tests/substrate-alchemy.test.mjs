@@ -154,9 +154,9 @@ test("validator rejects unknown mineral modes and invalid ecological numbers",()
   ])assert.throws(()=>validateRecipe({...base,[key]:val}),undefined,key);
 });
 
-test("all 143 Lookbook designs including five mineral worlds validate and round-trip",()=>{
-  assert.equal(looks.length,143);
-  assert.equal(new Set(looks.map(l=>l.name)).size,143);
+test("all 147 Lookbook designs including five mineral worlds validate and round-trip",()=>{
+  assert.equal(looks.length,147);
+  assert.equal(new Set(looks.map(l=>l.name)).size,147);
   const rocks=looks.filter(l=>l.family==="Substrate Alchemy");
   assert.equal(rocks.length,5);
   for(const look of looks){

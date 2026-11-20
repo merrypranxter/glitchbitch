@@ -1270,7 +1270,9 @@ export function createRenderer(canvas) {
       if(s.sporeAmount>0&&s.sporeMode!=="Dormant"){
         sporeLandingBuffer.fill(0);
         for(let i=0;i<plantedCount;i++){
-          const landing=daughterSite(compiledState,i);
+          // CPU evolution uses the saved ecology, not a device-dependent
+          // graphical fallback. Preview and persisted offspring must agree.
+          const landing=daughterSite(s,i);
           if(!landing)continue;
           sporeLandingBuffer[i*2]=landing.x;
           sporeLandingBuffer[i*2+1]=landing.y;

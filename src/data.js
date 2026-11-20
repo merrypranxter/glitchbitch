@@ -12,7 +12,7 @@ import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
 import { colonyCortexModes, colonyCortexPresets } from "./colony-cortex.js";
 import { sporeModes, sporePresets } from "./spore-dynasties.js";
 import { substrateModes, substratePresets } from "./substrate-alchemy.js";
-import { symbiosisModes, symbiosisPresets } from "./symbiosis-lab.js";
+import { symbiosisModes, symbiosisPresets, ensureSymbioticContact } from "./symbiosis-lab.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
@@ -2507,6 +2507,87 @@ export const looks = [
         colorAmount:[84,91,72,88,97][i],
         lightMotion:[78,96,81,94,91][i],
       },
+    };
+  }),
+
+  // Every new third-kingdom specimen starts with BOTH populated habitats
+  // in actual contact. Nothing is baked: all seeds and effect genes remain
+  // draggable, shuffleable, reversible and independently colorable.
+  ...symbiosisPresets.map((specimen,i)=>{
+    const {name,...relationship}=specimen;
+    const seed=[613284,937151,275908,826441][i];
+    const palette=[9,11,10,1][i];
+    const originalStamps=generateHabitatStamps({seed},
+      ()=>[.19,.37,.55,.73][i],
+      {layout:["Twin clusters","Diagonal invasion","Ring","Corner islands"][i],
+        count:[8,9,8,10][i],needA:true,needB:true});
+    const living=ensureSymbioticContact({
+      ...initial,...relationship,seed,
+      engine:[18,19,7,11][i],palette,colors:palettes[palette].colors,
+      complexity:[84,91,79,88][i],scale:[26,23,29,21][i],
+      warp:[68,81,74,91][i],
+      atmoMode:["Prismatic mycelium","Heartbeat phosphor",
+        "Mandala gas leak","Prismatic mycelium"][i],
+      atmoBMode:["Mandala gas leak","Prismatic mycelium",
+        "Prismatic mycelium","Misprint rosette"][i],
+      atmoAmount:92,atmoBAmount:88,
+      atmoScale:[56,72,41,63][i],
+      atmoBScale:[68,43,75,49][i],
+      atmoDensity:87,atmoBDensity:85,atmoMotion:72,atmoBMotion:59,
+      atmoGlow:93,atmoBGlow:89,
+      atmoHue:[16,79,34,85][i],atmoBHue:[75,25,82,33][i],
+      atmoBBlendMode:["Light bloom","Ink stain","Spectral difference","Over"][i],
+      atmoMaskMode:"Painted colonies",atmoBMaskMode:"Painted colonies",
+      atmoMaskFeather:[34,27,46,39][i],
+      atmoMaskVariation:[67,83,94,78][i],atmoMaskMotion:[64,76,45,85][i],
+      colonyShapeA:["Lichen lobes","Coral fringe","Crystal petals","Hyphal fans"][i],
+      colonyShapeB:["Hyphal fans","Crystal petals","Lichen lobes","Coral fringe"][i],
+      colonyAnatomyAmount:[94,97,88,95][i],
+      colonyAnatomyDetail:[75,84,68,91][i],
+      colonyAnatomyMotion:[48,67,54,78][i],
+      colonyAnatomyPores:[28,57,39,45][i],
+      colonyAnatomyRim:[93,86,96,91][i],
+      colonyCortexA:["Hyphal veins","Fruiting cups","Living cortex","Growth bands"][i],
+      colonyCortexB:["Living cortex","Hyphal veins","Growth bands","Fruiting cups"][i],
+      colonyCortexAmount:[89,93,83,95][i],
+      colonyCortexDetail:[83,79,64,91][i],
+      colonyCortexMotion:[62,81,53,77][i],
+      colonyCortexRelief:[88,95,84,91][i],
+      colonyLifeMode:["Germinate & bloom","Territory war","Breathe","Wither & return"][i],
+      colonyLifeAmount:[77,92,70,89][i],
+      colonyLifeSpeed:[48,74,39,83][i],
+      colonyCompetition:i===1?84:0,
+      colonyFrontGlow:[77,87,73,93][i],
+      substrateMode:["Nutrient rivers","Fractured basalt",
+        "Quartz tesserae","Chemical tidepools"][i],
+      substrateAmount:[72,84,78,91][i],
+      substrateScale:[61,83,53,67][i],
+      substrateMotion:[48,72,39,81][i],
+      substratePressure:[41,82,69,76][i],
+      substrateAffinityA:[83,95,54,23][i],
+      substrateAffinityB:[21,9,87,97][i],
+      substrateGlow:[73,81,94,88][i],
+      substrateHue:[16,71,39,91][i],
+      sporeMode:["Windborne","Burst scatter","Helical drift","Windborne"][i],
+      sporeAmount:[70,89,75,82][i],
+      sporeSpeed:[43,87,58,72][i],
+      sporeReach:[64,81,54,73][i],
+      sporeFertility:[62,81,73,91][i],
+      sporeGlow:[83,94,86,91][i],
+      habitatStamps:originalStamps,
+      colorAmount:[81,94,84,92][i],
+      lightMotion:[86,93,81,95][i],
+    });
+    return {
+      name,
+      family:"Symbiosis Lab",
+      note:[
+        "Interlocking lichen mycelium grows a prismatic lace membrane where two species meet",
+        "Black crystalline parasites breach fluorescent coral borders across fractured basalt",
+        "A third chromatic tissue emerges from two incompatible parents on quartz islands",
+        "Synaptic bioelectric arcs ignite at every touching fungal-coral boundary",
+      ][i],
+      state:living,
     };
   }),
 

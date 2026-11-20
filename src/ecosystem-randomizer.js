@@ -10,6 +10,7 @@ import { shuffleSporeDynasty } from "./spore-dynasties.js";
 import { shuffleSubstrate } from "./substrate-alchemy.js";
 import { shuffleSymbiosis } from "./symbiosis-lab.js";
 import { seedGenePool } from "./colony-genetics.js";
+import {shuffleSelection} from "./selection-chamber.js";
 import { MAX_HABITAT_STAMPS } from "./habitat-painter.js";
 
 const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
@@ -271,9 +272,18 @@ export function shuffleEcosystem(state,rng=Math.random,opts={}){
     settled.geneMutation=range(27,91,rng);
     settled.geneCrossbreed=range(18,94,rng);
     settled.geneGlow=range(38,99,rng);
-    return seedGenePool(settled,rng);
+    const genePool=seedGenePool(settled,rng);
+    if(genePool.substrateAmount>0 &&
+       genePool.substrateMode!=="Bare canvas"&&roll(.66,rng)){
+      return shuffleSelection(genePool,rng);
+    }
+    genePool.selectionMode="Dormant";
+    genePool.selectionPressure=0;
+    return genePool;
   }
   settled.geneAmount=0;
+  settled.selectionMode="Dormant";
+  settled.selectionPressure=0;
   return settled;
 }
 // Old shader systems can be very costly together on mobile Safari. Explicit
@@ -360,6 +370,7 @@ export function mixEcosystemIntoSurprise(state,rng=Math.random,opts={}){
     s.substrateMode="Bare canvas";s.substrateAmount=0;s.substratePressure=0;
     s.symbiosisMode="Dormant";s.symbiosisAmount=0;
     s.geneAmount=0;
+    s.selectionMode="Dormant";s.selectionPressure=0;
     return s;
   }
   s=shuffleEcosystem(s,rng,{

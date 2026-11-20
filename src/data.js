@@ -14,6 +14,7 @@ import { sporeModes, sporePresets } from "./spore-dynasties.js";
 import { substrateModes, substratePresets } from "./substrate-alchemy.js";
 import { symbiosisModes, symbiosisPresets, ensureSymbioticContact } from "./symbiosis-lab.js";
 import { genePresets } from "./colony-genetics.js";
+import {selectionModes,selectionPresets} from "./selection-chamber.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
@@ -392,6 +393,10 @@ export const numericRanges = {
   geneMutation: [0, 100],
   geneCrossbreed: [0, 100],
   geneGlow: [0, 100],
+  selectionPressure: [0, 100],
+  selectionSeverity: [0, 100],
+  selectionBrood: [0, 100],
+  selectionGlow: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -658,6 +663,11 @@ export const initial = {
   geneMutation: 57,
   geneCrossbreed: 44,
   geneGlow: 72,
+  selectionMode: "Dormant",
+  selectionPressure: 0,
+  selectionSeverity: 35,
+  selectionBrood: 58,
+  selectionGlow: 80,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -760,6 +770,7 @@ export function validateRecipe(input) {
     sporeMode: sporeModes,
     substrateMode: substrateModes,
     symbiosisMode: symbiosisModes,
+    selectionMode: selectionModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -1091,6 +1102,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "symbiosisAmount","symbiosisDetail","symbiosisMotion",
       "symbiosisGlow","symbiosisDominance",
       "geneAmount","geneMutation","geneCrossbreed","geneGlow",
+      "selectionPressure","selectionSeverity","selectionBrood","selectionGlow",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -1104,6 +1116,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key==="substrateAmount"&&state.substrateAmount<=0)continue; // Terrain stays dormant.
       if(key==="symbiosisAmount"&&state.symbiosisAmount<=0)continue; // Contact chemistry stays dormant.
       if(key==="geneAmount"&&state.geneAmount<=0)continue; // No spontaneous ancestry on old art.
+      if(key==="selectionPressure"&&state.selectionPressure<=0)continue; // No silent Darwin on old art.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1351,6 +1364,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.symbiosisGlow=71;s.symbiosisDominance=50;
   s.geneAmount=0;s.geneMutation=57;
   s.geneCrossbreed=44;s.geneGlow=72;
+  s.selectionMode="Dormant";s.selectionPressure=0;
+  s.selectionSeverity=35;s.selectionBrood=58;s.selectionGlow=80;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;

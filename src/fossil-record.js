@@ -82,7 +82,7 @@ export function applyFossilPreset(state,name){
   return {...state,...fields};
 }
 export function shuffleFossils(state,rng=Math.random){
-  const next=()=>unit(rng());
+  const next=()=>unit(rng);
   return {...state,
     fossilMode:fossilModes[1+Math.floor(next()*(fossilModes.length-1))],
     fossilAmount:63+next()*37,

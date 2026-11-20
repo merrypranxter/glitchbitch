@@ -97,7 +97,7 @@ test("invalid ecology data is refused, and Mutate cannot activate dormant life",
   }
 });
 test("four live Colony Wars looks are unique, valid and preserve touch control",()=>{
-  assert.equal(looks.length,152);
+  assert.equal(looks.length,157);
   const wars=looks.filter(l=>l.family==="Colony Wars");
   assert.equal(wars.length,4);
   assert.equal(new Set(wars.map(w=>w.name)).size,4);

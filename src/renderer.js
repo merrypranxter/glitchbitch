@@ -975,10 +975,14 @@ export function createRenderer(canvas) {
       // Progressive shader fallback: the newest optional effects are disabled
       // one at a time if the driver cannot compile them. Legacy fields stay visible.
       let lastCompileError = null;
+      // Keep the exact state used by the successfully compiled shader.
+      // programFor() has its own withGene local; draw() cannot access it.
+      let compiledState=s;
       for(let attempt=0;attempt<16;attempt++){
         const candidate=compatibleShaderState(s);
         try {
           active=programFor(candidate);
+          compiledState=candidate;
           lastCompileError=null;
           break;
         }catch(e){
@@ -1186,6 +1190,7 @@ export function createRenderer(canvas) {
       gl.uniform1i(loc("colorCount"), s.colors.length);
       // No framebuffer readbacks and no per-frame allocations. The same
       // normalized stamp geometry is used by preview and export renders.
+      const geneMarkersEnabled=geneEnabled(compiledState);
       const planted=s.habitatStamps||[];
       const plantedCount=Math.min(16,planted.length);
       habitatBuffer.fill(0);
@@ -1194,7 +1199,7 @@ export function createRenderer(canvas) {
         habitatBuffer[j]=m.x;
         habitatBuffer[j+1]=m.y;
         habitatBuffer[j+2]=m.radius;
-        habitatBuffer[j+3]=packGeneMarker(m,withGene);
+        habitatBuffer[j+3]=packGeneMarker(m,geneMarkersEnabled);
       }
       gl.uniform1i(loc("colonyLifeMode"),colonyLifeModes.indexOf(s.colonyLifeMode));
       gl.uniform1i(loc("colonyShapeA"),colonyAnatomyModes.indexOf(s.colonyShapeA));

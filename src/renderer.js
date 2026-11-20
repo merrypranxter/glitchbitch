@@ -754,6 +754,7 @@ export function createRenderer(canvas) {
           .replace("/* SUBSTRATE_GATE */",withSubstrate?"*1.24":"")
           .replace("/* SUBSTRATE_EDGE */",substrateEdge)
           .replace("/* GENE_MODULE */",withGene ? geneGLSL : "")
+          .replace("/* GENE_GATE */",withGene?"*1.34":"")
           .replace("/* GENE_EDGE */",geneEdge)
           .replace("/* GENE_SAMPLE */",geneSample)
       : "";

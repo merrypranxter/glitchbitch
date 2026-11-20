@@ -14,6 +14,7 @@ import { sporeModes, sporePresets } from "./spore-dynasties.js";
 import { substrateModes, substratePresets } from "./substrate-alchemy.js";
 import { symbiosisModes, symbiosisPresets, ensureSymbioticContact } from "./symbiosis-lab.js";
 import { genePresets } from "./colony-genetics.js";
+import {selectionModes,selectionPresets} from "./selection-chamber.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
@@ -392,6 +393,10 @@ export const numericRanges = {
   geneMutation: [0, 100],
   geneCrossbreed: [0, 100],
   geneGlow: [0, 100],
+  selectionPressure: [0, 100],
+  selectionSeverity: [0, 100],
+  selectionBrood: [0, 100],
+  selectionGlow: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -658,6 +663,11 @@ export const initial = {
   geneMutation: 57,
   geneCrossbreed: 44,
   geneGlow: 72,
+  selectionMode: "Dormant",
+  selectionPressure: 0,
+  selectionSeverity: 35,
+  selectionBrood: 58,
+  selectionGlow: 80,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -760,6 +770,7 @@ export function validateRecipe(input) {
     sporeMode: sporeModes,
     substrateMode: substrateModes,
     symbiosisMode: symbiosisModes,
+    selectionMode: selectionModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -1091,6 +1102,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "symbiosisAmount","symbiosisDetail","symbiosisMotion",
       "symbiosisGlow","symbiosisDominance",
       "geneAmount","geneMutation","geneCrossbreed","geneGlow",
+      "selectionPressure","selectionSeverity","selectionBrood","selectionGlow",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -1104,6 +1116,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key==="substrateAmount"&&state.substrateAmount<=0)continue; // Terrain stays dormant.
       if(key==="symbiosisAmount"&&state.symbiosisAmount<=0)continue; // Contact chemistry stays dormant.
       if(key==="geneAmount"&&state.geneAmount<=0)continue; // No spontaneous ancestry on old art.
+      if(key==="selectionPressure"&&state.selectionPressure<=0)continue; // No silent Darwin on old art.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1351,6 +1364,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.symbiosisGlow=71;s.symbiosisDominance=50;
   s.geneAmount=0;s.geneMutation=57;
   s.geneCrossbreed=44;s.geneGlow=72;
+  s.selectionMode="Dormant";s.selectionPressure=0;
+  s.selectionSeverity=35;s.selectionBrood=58;s.selectionGlow=80;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;
@@ -2704,6 +2719,96 @@ export const looks = [
         symbiosisGlow:[80,97,71,91][i],
         habitatStamps,
         colorAmount:[82,96,69,91][i],lightMotion:[85,96,75,91][i],
+      }
+    };
+  }),
+
+  // Genuine individual evolutionary fitness: alive, editable bloodlines
+  // standing in resource-specific mineral environments. No automatic cull.
+  ...selectionPresets.map((preset,i)=>{
+    const {name,...selection}=preset;
+    const seed=[581273,907162,243795,716842][i];
+    const palette=[9,11,10,1][i];
+    const habitatStamps=generateHabitatStamps({seed},
+      ()=>[.18,.37,.54,.72][i],
+      {layout:["Ring","Twin clusters","Diagonal invasion","Corner islands"][i],
+        count:[10,8,9,11][i],needA:true,needB:true})
+      .map((m,j)=>({...m,gene:(i*19+j*37)%101,generation:0}));
+    return {
+      name,
+      family:"Selection Chamber",
+      note:[
+        "A fluorescent reef of individually adapted genes grows preferentially across winding nutrient rivers",
+        "Crystalline specialist organisms compete for nutrient-rich and nutrient-poor mineral niches",
+        "Opposing alleles exploit toxic mineral conditions under luminous chemical tides",
+        "Crossbred midrange alleles radiate through a symbiotic third-kingdom nursery on prismatic quartz",
+      ][i],
+      state:{
+        ...initial,...selection,seed,
+        engine:[19,18,7,11][i],palette,colors:palettes[palette].colors,
+        complexity:[89,75,93,84][i],scale:[24,31,21,27][i],
+        warp:[79,68,87,71][i],
+        atmoMode:["Prismatic mycelium","Mandala gas leak",
+          "Heartbeat phosphor","Prismatic mycelium"][i],
+        atmoBMode:["Heartbeat phosphor","Prismatic mycelium",
+          "Misprint rosette","Mandala gas leak"][i],
+        atmoAmount:94,atmoBAmount:88,
+        atmoScale:[59,73,44,64][i],
+        atmoBScale:[70,48,81,53][i],
+        atmoDensity:87,atmoBDensity:85,
+        atmoMotion:[72,49,83,61][i],atmoBMotion:[61,74,56,79][i],
+        atmoGlow:92,atmoBGlow:90,
+        atmoHue:[17,77,39,84][i],atmoBHue:[81,24,89,30][i],
+        atmoBBlendMode:["Light bloom","Over","Ink stain","Spectral difference"][i],
+        atmoMaskMode:"Painted colonies",atmoBMaskMode:"Painted colonies",
+        atmoMaskFeather:[32,41,35,49][i],
+        atmoMaskVariation:[71,63,89,76][i],
+        colonyShapeA:["Lichen lobes","Crystal petals","Coral fringe","Hyphal fans"][i],
+        colonyShapeB:["Hyphal fans","Lichen lobes","Crystal petals","Coral fringe"][i],
+        colonyAnatomyAmount:[89,95,97,91][i],
+        colonyAnatomyDetail:[79,84,89,75][i],
+        colonyAnatomyMotion:[61,48,81,67][i],
+        colonyAnatomyPores:[34,49,26,57][i],
+        colonyAnatomyRim:[85,92,94,89][i],
+        colonyCortexA:["Hyphal veins","Growth bands","Fruiting cups","Living cortex"][i],
+        colonyCortexB:["Fruiting cups","Hyphal veins","Living cortex","Growth bands"][i],
+        colonyCortexAmount:[85,91,95,92][i],
+        colonyCortexDetail:[77,84,89,72][i],
+        colonyCortexMotion:[58,44,81,68][i],
+        colonyCortexRelief:[87,92,95,81][i],
+        colonyLifeMode:["Germinate & bloom","Breathe","Territory war","Wither & return"][i],
+        colonyLifeAmount:[84,70,91,78][i],
+        colonyLifeSpeed:[57,69,81,41][i],
+        colonyCompetition:i===2?87:0,
+        colonyFrontGlow:[85,78,92,87][i],
+        geneAmount:[93,88,100,97][i],
+        geneMutation:[62,84,71,91][i],
+        geneCrossbreed:[39,48,27,96][i],
+        geneGlow:[91,86,95,100][i],
+        substrateMode:["Nutrient rivers","Quartz tesserae",
+          "Chemical tidepools","Petrified mycelium"][i],
+        substrateAmount:[93,97,95,86][i],
+        substrateScale:[58,83,69,76][i],
+        substrateMotion:[59,47,84,64][i],
+        substratePressure:[75,91,88,77][i],
+        substrateAffinityA:[83,92,17,57][i],
+        substrateAffinityB:[21,11,91,67][i],
+        substrateGlow:[93,84,91,96][i],
+        substrateHue:[32,66,81,21][i],
+        sporeMode:["Windborne","Helical drift","Burst scatter","Windborne"][i],
+        sporeAmount:[82,91,87,95][i],
+        sporeSpeed:[47,73,89,62][i],
+        sporeReach:[67,81,53,75][i],
+        sporeFertility:[78,85,68,94][i],
+        sporeGlow:[92,81,94,97][i],
+        symbiosisMode:["Mutualistic lace","Dormant",
+          "Parasitic rot","Hybrid membrane"][i],
+        symbiosisAmount:[74,0,85,93][i],
+        symbiosisDetail:[71,55,89,95][i],
+        symbiosisMotion:[64,48,76,91][i],
+        symbiosisGlow:[79,68,87,99][i],
+        habitatStamps,
+        colorAmount:[87,80,92,98][i],lightMotion:[91,78,95,89][i],
       }
     };
   }),

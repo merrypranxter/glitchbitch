@@ -64,6 +64,10 @@ import { symbiosisModes, symbiosisPresets, applySymbiosisPreset,
   shuffleSymbiosis, stopSymbiosis, ensureSymbioticContact } from "../symbiosis-lab.js";
 import { genePresets, seedGenePool, mutateGenePool, mutateSelectedGene,
   applyGenePreset, hideGenetics } from "../colony-genetics.js";
+import {selectionModes,selectionPresets,selectionActive,
+  applySelectionPreset,prepareSelection,shuffleSelection,
+  rankSelection,colonyFitness,cullWeakest,breedFittest,
+  selectionCycle,stopSelection} from "../selection-chamber.js";
 import { ensureValidEcosystemState } from "../ecosystem-randomizer.js";
 import { shuffleColonies, shuffleColonyLife, shuffleEcosystem,
   fullWeirdShuffle, chaosLevels } from "../ecosystem-randomizer.js";
@@ -250,6 +254,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [substratePreset,setSubstratePreset]=React.useState(substratePresets[0].name);
   const [symbiosisPreset,setSymbiosisPreset]=React.useState(symbiosisPresets[0].name);
   const [genePreset,setGenePreset]=React.useState(genePresets[0].name);
+  const [selectionPreset,setSelectionPreset]=React.useState(selectionPresets[0].name);
   const [chaosLevel,setChaosLevel]=React.useState("Wild");
   const [preserveColors,setPreserveColors]=React.useState(true);
   const [preserveText,setPreserveText]=React.useState(true);
@@ -310,6 +315,99 @@ export function EffectsInspector({ history, onTool, tool }) {
         Uncheck Preserve colors to randomize the palette too. Your text stays
         intact unless you explicitly uncheck its protection. Manual controls
         and all planted seeds remain editable afterward.
+      </p>
+    </>,
+    "selection-chamber": <>
+      <p className="control-note">
+        SELECTION CHAMBER — inherited DNA now determines which organisms
+        flourish on a specific mineral landscape. Nutrient compatibility
+        controls REAL growth margins and bioluminescence. Actions to cull
+        or reproduce are explicit, saved and undoable — no surprise deaths.
+      </p>
+      <Select label="Evolutionary fitness model" value={s.selectionMode}
+        onChange={mode=>history.change(x=>mode==="Dormant"
+          ?stopSelection({...x,selectionMode:mode})
+          :prepareSelection(ensureValidEcosystemState({
+            ...x,selectionMode:mode,atmoMaskMode:"Painted colonies",
+            atmoAmount:Math.max(70,x.atmoAmount)
+          })))}>
+        {selectionModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <Parameter label="Fitness effect on growth" name="selectionPressure" history={history}/>
+      <Parameter label="Remove weakest percentage" name="selectionSeverity" history={history}/>
+      <Parameter label="Survivor offspring proportion" name="selectionBrood" history={history}/>
+      <Parameter label="Adapted-organism radiance" name="selectionGlow" history={history}/>
+      <Select label="Selection specimen" value={selectionPreset}
+        onChange={setSelectionPreset}>
+        {selectionPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+      </Select>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applySelectionPreset(
+            prepareSelection(ensureValidEcosystemState({...x,
+              atmoMaskMode:"Painted colonies",
+              atmoAmount:Math.max(75,x.atmoAmount)})),
+            selectionPreset))}>
+          <Flower2 size={13}/> Awaken selection
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleSelection(
+            prepareSelection(ensureValidEcosystemState({...x,
+              atmoMaskMode:"Painted colonies",
+              atmoAmount:Math.max(75,x.atmoAmount)}))))}>
+          <Dices size={13}/> Shuffle selection
+        </button>
+        <button type="button" className="button secondary"
+          disabled={!selectionActive(s)||s.habitatStamps.length>=MAX_HABITAT_STAMPS ||
+            s.sporeGeneration>=4095 || s.selectionBrood<=0}
+          onClick={()=>history.change(breedFittest)}>
+          <Dna size={13}/> Breed the fittest
+        </button>
+        <button type="button" className="button secondary"
+          disabled={!selectionActive(s)||s.selectionSeverity<=0 ||
+            s.habitatStamps.length<=2}
+          onClick={()=>{if(window.confirm(
+            "Remove the least-adapted colonies? This is one undoable change, and at least one of each existing parent population survives."
+          ))history.change(cullWeakest);}}>
+          <Trash2 size={13}/> Cull weakest (confirm)
+        </button>
+        <button type="button" className="button secondary"
+          disabled={!selectionActive(s)||s.selectionSeverity<=0 ||
+            s.habitatStamps.length<=2}
+          onClick={()=>{if(window.confirm(
+            "Run one selection cycle: remove poorly adapted colonies and breed fitter survivors? You can Undo."
+          ))history.change(selectionCycle);}}>
+          <Orbit size={13}/> Select + reproduce (confirm)
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.selectionPressure<=0}
+          onClick={()=>history.change(stopSelection)}>
+          Stop selection (keep bloodlines)
+        </button>
+      </div>
+      <details className="filament-crossbreeder">
+        <summary>Fitness scoreboard · {s.habitatStamps.length} organisms</summary>
+        <p className="control-note">
+          Higher scores are better matches between each seed's inherited
+          DNA and the local mineral nutrients. Scores are evaluated at
+          each colony center, not inferred from how much it glows.
+        </p>
+        <ol>
+          {rankSelection(s).map(({stamp,index,fitness})=>
+            <li key={stamp.id}>
+              {index+1}. {stamp.parent===0?"A":"B"} colony
+              {" · "}DNA {stamp.gene??"unassigned"}
+              {" · "}Fitness {Math.round(fitness*100)}%
+              {" · "}Gen {stamp.generation??0}
+            </li>)}
+        </ol>
+      </details>
+      <p className="control-note">
+        Awaken starts the nutrient field and assigns genes only to
+        unassigned seeds; existing custom DNA is never overwritten.
+        The cull action preserves at least one living seed from each
+        population present. Breed adds real editable descendants up to
+        the existing 16-colony limit. No automatic extinction on playback.
       </p>
     </>,
     "mutation-bloodlines": <>
@@ -1368,6 +1466,7 @@ export function TouchInspector({
             <p className="control-note">
               Gen {colony.generation??0}
               {" · "}DNA {Number.isInteger(colony.gene)?colony.gene:"unassigned"}
+              {selectionActive(s)?" · Fitness "+Math.round(colonyFitness(s,colony)*100)+"%":""}
               {" · "}Ancestor: {colony.ancestor||"founder"}
               {colony.mate ? " · Second contributor: "+colony.mate : ""}
             </p>

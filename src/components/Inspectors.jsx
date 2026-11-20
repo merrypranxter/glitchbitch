@@ -60,6 +60,8 @@ import { sporeModes, sporePresets, applySporePreset, shuffleSporeDynasty,
   evolveSporeGeneration, stopSpores, sporeParticipatingCount } from "../spore-dynasties.js";
 import { substrateModes, substratePresets, applySubstratePreset,
   clearSubstrate, shuffleSubstrate } from "../substrate-alchemy.js";
+import { symbiosisModes, symbiosisPresets, applySymbiosisPreset,
+  shuffleSymbiosis, stopSymbiosis, ensureSymbioticContact } from "../symbiosis-lab.js";
 import { ensureValidEcosystemState } from "../ecosystem-randomizer.js";
 import { shuffleColonies, shuffleColonyLife, shuffleEcosystem,
   fullWeirdShuffle, chaosLevels } from "../ecosystem-randomizer.js";
@@ -244,6 +246,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [colonyCortexPreset,setColonyCortexPreset]=React.useState(colonyCortexPresets[0].name);
   const [sporePreset,setSporePreset]=React.useState(sporePresets[0].name);
   const [substratePreset,setSubstratePreset]=React.useState(substratePresets[0].name);
+  const [symbiosisPreset,setSymbiosisPreset]=React.useState(symbiosisPresets[0].name);
   const [chaosLevel,setChaosLevel]=React.useState("Wild");
   const [preserveColors,setPreserveColors]=React.useState(true);
   const [preserveText,setPreserveText]=React.useState(true);
@@ -304,6 +307,57 @@ export function EffectsInspector({ history, onTool, tool }) {
         Uncheck Preserve colors to randomize the palette too. Your text stays
         intact unless you explicitly uncheck its protection. Manual controls
         and all planted seeds remain editable afterward.
+      </p>
+    </>,
+    "symbiosis-lab": <>
+      <p className="control-note">
+        SYMBIOSIS LAB — when two painted populations meet, their contact
+        zone can become an illuminated third organism, linked fungal lace,
+        parasitic corrosion or an electrical synapse. This effect only
+        develops where parent A and B actually overlap.
+      </p>
+      <Select label="Relationship between A and B" value={s.symbiosisMode}
+        onChange={mode=>history.change(x=>mode==="Dormant"
+          ?stopSymbiosis({...x,symbiosisMode:mode})
+          :ensureSymbioticContact({...x,symbiosisMode:mode,
+             symbiosisAmount:Math.max(70,x.symbiosisAmount)}))}>
+        {symbiosisModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <Parameter label="Contact chemistry strength" name="symbiosisAmount" history={history}/>
+      <Parameter label="Filigree, lesions and arcs" name="symbiosisDetail" history={history}/>
+      <Parameter label="Interface motion" name="symbiosisMotion" history={history}/>
+      <Parameter label="Bioluminescent reaction glow" name="symbiosisGlow" history={history}/>
+      <Parameter label="Parasitic dominance (A → B)" name="symbiosisDominance" history={history}/>
+      <Select label="Relationship specimen" value={symbiosisPreset}
+        onChange={setSymbiosisPreset}>
+        {symbiosisPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+      </Select>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applySymbiosisPreset(x,symbiosisPreset))}>
+          <Flower2 size={13}/> Spawn symbiosis
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleSymbiosis(x))}>
+          <Dices size={13}/> Shuffle symbiosis
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>ensureSymbioticContact(x))}>
+          <Orbit size={13}/> Plant contact pair
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.symbiosisAmount<=0}
+          onClick={()=>history.change(stopSymbiosis)}>
+          Disable reaction (keep colonies)
+        </button>
+      </div>
+      <p className="control-note">
+        The relationship depends on both painted habitats being visible
+        and physically touching. Plant contact pair adds only missing
+        interaction seeds, never deletes hand-painted colonies.
+        At the 16-colony limit, use Touch to move existing seeds together.
+        All changes save and undo normally, and the reaction uses the same
+        timeline as high-resolution exports.
       </p>
     </>,
     "substrate-alchemy": <>

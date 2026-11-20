@@ -12,6 +12,7 @@ import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
 import { colonyCortexModes, colonyCortexPresets } from "./colony-cortex.js";
 import { sporeModes, sporePresets } from "./spore-dynasties.js";
 import { substrateModes, substratePresets } from "./substrate-alchemy.js";
+import { symbiosisModes, symbiosisPresets, ensureSymbioticContact } from "./symbiosis-lab.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
@@ -381,6 +382,11 @@ export const numericRanges = {
   substrateAffinityB: [0, 100],
   substrateGlow: [0, 100],
   substrateHue: [0, 100],
+  symbiosisAmount: [0, 100],
+  symbiosisDetail: [0, 100],
+  symbiosisMotion: [0, 100],
+  symbiosisGlow: [0, 100],
+  symbiosisDominance: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -637,6 +643,12 @@ export const initial = {
   substrateAffinityB: 10,
   substrateGlow: 67,
   substrateHue: 48,
+  symbiosisMode: "Dormant",
+  symbiosisAmount: 0,
+  symbiosisDetail: 62,
+  symbiosisMotion: 47,
+  symbiosisGlow: 71,
+  symbiosisDominance: 50,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -738,6 +750,7 @@ export function validateRecipe(input) {
     colonyCortexB: colonyCortexModes,
     sporeMode: sporeModes,
     substrateMode: substrateModes,
+    symbiosisMode: symbiosisModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -1047,6 +1060,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "sporeAmount","sporeSpeed","sporeReach","sporeFertility","sporeGlow",
       "substrateAmount","substrateScale","substrateMotion","substratePressure",
       "substrateAffinityA","substrateAffinityB","substrateGlow","substrateHue",
+      "symbiosisAmount","symbiosisDetail","symbiosisMotion",
+      "symbiosisGlow","symbiosisDominance",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -1058,6 +1073,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key==="colonyCortexAmount"&&state.colonyCortexAmount<=0)continue; // Cortex stays dormant.
       if(key==="sporeAmount"&&state.sporeAmount<=0)continue; // Spores stay opt-in.
       if(key==="substrateAmount"&&state.substrateAmount<=0)continue; // Terrain stays dormant.
+      if(key==="symbiosisAmount"&&state.symbiosisAmount<=0)continue; // Contact chemistry stays dormant.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1300,6 +1316,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.substrateScale=55;s.substrateMotion=50;s.substratePressure=0;
   s.substrateAffinityA=90;s.substrateAffinityB=10;
   s.substrateGlow=67;s.substrateHue=48;
+  s.symbiosisMode="Dormant";s.symbiosisAmount=0;
+  s.symbiosisDetail=62;s.symbiosisMotion=47;
+  s.symbiosisGlow=71;s.symbiosisDominance=50;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;
@@ -2488,6 +2507,87 @@ export const looks = [
         colorAmount:[84,91,72,88,97][i],
         lightMotion:[78,96,81,94,91][i],
       },
+    };
+  }),
+
+  // Every new third-kingdom specimen starts with BOTH populated habitats
+  // in actual contact. Nothing is baked: all seeds and effect genes remain
+  // draggable, shuffleable, reversible and independently colorable.
+  ...symbiosisPresets.map((specimen,i)=>{
+    const {name,...relationship}=specimen;
+    const seed=[613284,937151,275908,826441][i];
+    const palette=[9,11,10,1][i];
+    const originalStamps=generateHabitatStamps({seed},
+      ()=>[.19,.37,.55,.73][i],
+      {layout:["Twin clusters","Diagonal invasion","Ring","Corner islands"][i],
+        count:[8,9,8,10][i],needA:true,needB:true});
+    const living=ensureSymbioticContact({
+      ...initial,...relationship,seed,
+      engine:[18,19,7,11][i],palette,colors:palettes[palette].colors,
+      complexity:[84,91,79,88][i],scale:[26,23,29,21][i],
+      warp:[68,81,74,91][i],
+      atmoMode:["Prismatic mycelium","Heartbeat phosphor",
+        "Mandala gas leak","Prismatic mycelium"][i],
+      atmoBMode:["Mandala gas leak","Prismatic mycelium",
+        "Prismatic mycelium","Misprint rosette"][i],
+      atmoAmount:92,atmoBAmount:88,
+      atmoScale:[56,72,41,63][i],
+      atmoBScale:[68,43,75,49][i],
+      atmoDensity:87,atmoBDensity:85,atmoMotion:72,atmoBMotion:59,
+      atmoGlow:93,atmoBGlow:89,
+      atmoHue:[16,79,34,85][i],atmoBHue:[75,25,82,33][i],
+      atmoBBlendMode:["Light bloom","Ink stain","Spectral difference","Over"][i],
+      atmoMaskMode:"Painted colonies",atmoBMaskMode:"Painted colonies",
+      atmoMaskFeather:[34,27,46,39][i],
+      atmoMaskVariation:[67,83,94,78][i],atmoMaskMotion:[64,76,45,85][i],
+      colonyShapeA:["Lichen lobes","Coral fringe","Crystal petals","Hyphal fans"][i],
+      colonyShapeB:["Hyphal fans","Crystal petals","Lichen lobes","Coral fringe"][i],
+      colonyAnatomyAmount:[94,97,88,95][i],
+      colonyAnatomyDetail:[75,84,68,91][i],
+      colonyAnatomyMotion:[48,67,54,78][i],
+      colonyAnatomyPores:[28,57,39,45][i],
+      colonyAnatomyRim:[93,86,96,91][i],
+      colonyCortexA:["Hyphal veins","Fruiting cups","Living cortex","Growth bands"][i],
+      colonyCortexB:["Living cortex","Hyphal veins","Growth bands","Fruiting cups"][i],
+      colonyCortexAmount:[89,93,83,95][i],
+      colonyCortexDetail:[83,79,64,91][i],
+      colonyCortexMotion:[62,81,53,77][i],
+      colonyCortexRelief:[88,95,84,91][i],
+      colonyLifeMode:["Germinate & bloom","Territory war","Breathe","Wither & return"][i],
+      colonyLifeAmount:[77,92,70,89][i],
+      colonyLifeSpeed:[48,74,39,83][i],
+      colonyCompetition:i===1?84:0,
+      colonyFrontGlow:[77,87,73,93][i],
+      substrateMode:["Nutrient rivers","Fractured basalt",
+        "Quartz tesserae","Chemical tidepools"][i],
+      substrateAmount:[72,84,78,91][i],
+      substrateScale:[61,83,53,67][i],
+      substrateMotion:[48,72,39,81][i],
+      substratePressure:[41,82,69,76][i],
+      substrateAffinityA:[83,95,54,23][i],
+      substrateAffinityB:[21,9,87,97][i],
+      substrateGlow:[73,81,94,88][i],
+      substrateHue:[16,71,39,91][i],
+      sporeMode:["Windborne","Burst scatter","Helical drift","Windborne"][i],
+      sporeAmount:[70,89,75,82][i],
+      sporeSpeed:[43,87,58,72][i],
+      sporeReach:[64,81,54,73][i],
+      sporeFertility:[62,81,73,91][i],
+      sporeGlow:[83,94,86,91][i],
+      habitatStamps:originalStamps,
+      colorAmount:[81,94,84,92][i],
+      lightMotion:[86,93,81,95][i],
+    });
+    return {
+      name,
+      family:"Symbiosis Lab",
+      note:[
+        "Interlocking lichen mycelium grows a prismatic lace membrane where two species meet",
+        "Black crystalline parasites breach fluorescent coral borders across fractured basalt",
+        "A third chromatic tissue emerges from two incompatible parents on quartz islands",
+        "Synaptic bioelectric arcs ignite at every touching fungal-coral boundary",
+      ][i],
+      state:living,
     };
   }),
 

@@ -8,6 +8,7 @@ import { shuffleColonyAnatomy } from "./colony-anatomy.js";
 import { shuffleColonyCortex } from "./colony-cortex.js";
 import { shuffleSporeDynasty } from "./spore-dynasties.js";
 import { shuffleSubstrate } from "./substrate-alchemy.js";
+import { shuffleSymbiosis } from "./symbiosis-lab.js";
 import { MAX_HABITAT_STAMPS } from "./habitat-painter.js";
 
 const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
@@ -250,6 +251,13 @@ export function shuffleEcosystem(state,rng=Math.random,opts={}){
     if(roll(.68,rng))Object.assign(s,shuffleSporeDynasty(s,rng));
     else{s.sporeMode="Dormant";s.sporeAmount=0;}
   }else{s.sporeMode="Dormant";s.sporeAmount=0;}
+  // A genuine A/B overlap may birth third-kingdom chemistry. The
+  // no-dual switch is absolute: never override it to force a second GPU.
+  if(dual && roll(.69,rng)){
+    Object.assign(s,shuffleSymbiosis(s,rng));
+  }else{
+    s.symbiosisMode="Dormant";s.symbiosisAmount=0;
+  }
   return ensureValidEcosystemState(s,rng);
 }
 // Old shader systems can be very costly together on mobile Safari. Explicit
@@ -334,6 +342,7 @@ export function mixEcosystemIntoSurprise(state,rng=Math.random,opts={}){
     s.colonyCortexAmount=0;
     s.sporeMode="Dormant";s.sporeAmount=0;s.sporeGeneration=0;
     s.substrateMode="Bare canvas";s.substrateAmount=0;s.substratePressure=0;
+    s.symbiosisMode="Dormant";s.symbiosisAmount=0;
     return s;
   }
   s=shuffleEcosystem(s,rng,{

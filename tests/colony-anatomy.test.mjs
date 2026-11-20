@@ -10,7 +10,7 @@ import { shuffleEcosystem,fullWeirdShuffle,ensureValidEcosystemState }
   from "../src/ecosystem-randomizer.js";
 import { habitatGLSL } from "../src/atmosphere-habitats.js";
 import { sectionMeta,sectionActive,findControls } from "../src/ui-index.js";
-const base={...initial,engine:18,seed:691392,ratio:"9:16",
+const base={...initial,engine:18,seed:691432,ratio:"9:16",
   colors:["#ff008e","#00eaff","#d4ff00"],palette:-1,
   lettering:"DO NOT ERASE MY WEIRD WORDS"};
 const planted=looks.find(l=>l.family==="Painted Habitats").state;
@@ -97,9 +97,9 @@ test("invalid morphology names and values are refused before WebGL",()=>{
     ["colonyAnatomyPores",NaN],["colonyAnatomyRim",Infinity]
   ])assert.throws(()=>validateRecipe({...base,[key]:value}),undefined,key);
 });
-test("all 139 Lookbook states, including four new specimens, survive JSON round trip",()=>{
-  assert.equal(looks.length,139);
-  assert.equal(new Set(looks.map(l=>l.name)).size,139);
+test("all 143 Lookbook states, including four new specimens, survive JSON round trip",()=>{
+  assert.equal(looks.length,143);
+  assert.equal(new Set(looks.map(l=>l.name)).size,143);
   const specimens=looks.filter(l=>l.family==="Mutant Anatomy");
   assert.equal(specimens.length,4);
   for(const look of looks){

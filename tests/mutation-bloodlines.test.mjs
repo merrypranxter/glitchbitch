@@ -212,7 +212,8 @@ test("shader gates + one-touch DNA inspector preserve old source path",()=>{
   const ui=readFileSync(new URL("../src/components/Inspectors.jsx",import.meta.url),"utf8");
   assert.match(renderer,/withGene = geneEnabled\(s\)/);
   assert.match(renderer,/withGene \? geneGLSL : ""/);
-  assert.match(renderer,/packGeneMarker\(m,withGene\)/);
+  assert.match(renderer,/packGeneMarker\(m,geneMarkersEnabled\)/);
+  assert.match(renderer,/const geneMarkersEnabled=geneEnabled\(compiledState\)/);
   assert.match(renderer,/withGene \? "bloodlines" : "no-bloodlines"/);
   assert.match(renderer,/tintColonyGenome\(col,atmoAMask,genomeSignalA/);
   assert.match(renderer,/tintColonyGenome\(col,atmoBMask,genomeSignalB/);

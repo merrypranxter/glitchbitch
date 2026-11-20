@@ -27,6 +27,7 @@ import { substrateModes, substrateGLSL, substrateEnabled } from "./substrate-alc
 import { symbiosisModes, symbiosisGLSL, symbiosisActive } from "./symbiosis-lab.js";
 import { geneGLSL, geneEnabled, packGeneMarker } from "./colony-genetics.js";
 import {selectionModes,selectionGLSL,selectionActive} from "./selection-chamber.js";
+import {apocalypseModes,apocalypseGLSL,apocalypseActive} from "./apocalypse-clock.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes,
   habitatGLSL, atmosphereHybridGLSL } from "./atmosphere-habitats.js";
 
@@ -90,6 +91,7 @@ phase+=source;if(posterize)phase=floor(phase*7.)/7.;return phase;}
 /* MATERIAL_MODULE */
 /* ATMOSPHERE_MODULE */
 /* SYMBIOSIS_MODULE */
+/* APOCALYPSE_MODULE */
 /* SUBSTRATE_MODULE */
 /* HABITAT_MODULE */
 /* LETTERING_MODULE */
@@ -126,6 +128,7 @@ float v=composed(p);vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*
 /* UNDERLAY_POST */
 /* FILAMENT_POST */
 /* SUBSTRATE_POST */
+/* APOCALYPSE_POST */
 /* ATMOSPHERE_POST */
 /* ATMOSPHERE_B_POST */
 col=animateLight(col,uv,v);
@@ -604,6 +607,7 @@ export function createRenderer(canvas) {
       withAtmosphere = s.atmoAmount>0,
       withAtmosphereB = s.atmoBAmount>0,
       withSubstrate = substrateEnabled(s),
+      withApocalypse = apocalypseActive(s),
       withSymbiosis = symbiosisActive(s),
       withGene = geneEnabled(s),
       withSelection = selectionActive(s),
@@ -619,7 +623,7 @@ export function createRenderer(canvas) {
       ),
       withStrange = (s.engine>=17 && s.engine<=19) ||
         (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withWiggle ? "wiggle" : "still"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withWiggle ? "wiggle" : "still"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -702,9 +706,17 @@ export function createRenderer(canvas) {
       (withAtmosphereB ? (withAtmosphere ? "\n#undef ATMO_MODE\n" : "")+
         chosenAtmosphereB : ""));
     source=source.replace("/* SYMBIOSIS_MODULE */",withSymbiosis?symbiosisGLSL:"");
-    source=source.replace("/* SUBSTRATE_MODULE */",withSubstrate?substrateGLSL:"");
+    source=source.replace("/* APOCALYPSE_MODULE */",
+      withApocalypse?apocalypseGLSL:"");
+    source=source.replace("/* SUBSTRATE_MODULE */",
+      withSubstrate
+        ? substrateGLSL.replace("/* APOCALYPSE_RESOURCE */",
+            withApocalypse?"apocalypseResource(uv,n)":"")
+        : "");
     source=source.replace("/* SUBSTRATE_POST */",
       withSubstrate?"col=shadeSubstrate(col,uv);":"");
+    source=source.replace("/* APOCALYPSE_POST */",
+      withApocalypse?"col=shadeApocalypse(col,uv);":"");
     // Inline cortex ONLY for active planted material; old habitat shaders
     // have no new sampling code or material math to compile on mobile GPUs.
     const cortexSample=withCortex
@@ -1171,6 +1183,8 @@ export function createRenderer(canvas) {
         "symbiosisGlow","symbiosisDominance",
         "geneAmount","geneGlow",
         "selectionPressure","selectionGlow",
+        "apocalypseAmount","apocalypseScale","apocalypseMotion",
+        "apocalypsePressure","apocalypseGlow","apocalypseHue",
         "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
         "tunnelAperture","tunnelVariation",
       ])
@@ -1210,6 +1224,8 @@ export function createRenderer(canvas) {
       gl.uniform1i(loc("substrateMode"),substrateModes.indexOf(s.substrateMode));
       gl.uniform1i(loc("symbiosisMode"),symbiosisModes.indexOf(s.symbiosisMode));
       gl.uniform1i(loc("selectionMode"),selectionModes.indexOf(s.selectionMode));
+      gl.uniform1i(loc("apocalypseMode"),apocalypseModes.indexOf(s.apocalypseMode));
+      gl.uniform1f(loc("apocalypseEpoch"),s.apocalypseEpoch);
       gl.uniform1f(loc("sporeGeneration"),s.sporeGeneration);
       gl.uniform1i(loc("habitatStampCount"),plantedCount);
       gl.uniform4fv(loc("habitatStamps[0]"),habitatBuffer);

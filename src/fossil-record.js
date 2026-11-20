@@ -30,7 +30,7 @@ export const fossilPresets=[
 ];
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const unit=rng=>{
-  const x=Number(rng);
+  const x=Number(rng());
   return Number.isFinite(x)?clamp(x,0,1-Number.EPSILON):0;
 };
 export const fossilEnabled=state=>

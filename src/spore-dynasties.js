@@ -1,4 +1,5 @@
 import { optimizeLandingSite } from "./substrate-alchemy.js";
+import { inheritColonyGene } from "./colony-genetics.js";
 // SPORE DYNASTIES — reversible, deterministic dispersal and real descendants.
 // Animation is computed from continuous time. Clicking "Evolve generation"
 // copies its landing coordinates into the recipe as permanently editable seeds.
@@ -88,6 +89,7 @@ export function evolveSporeGeneration(state){
       id,x:pos.x,y:pos.y,
       radius:clamp(parent.radius*(.43+.19*((i*.43+gen*.13)%1)),.05,.28),
       parent:parent.parent,
+      ...inheritColonyGene(state,parent,i,pos),
     });
   }
   if(!babies.length)return state;

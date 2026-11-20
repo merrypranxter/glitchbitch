@@ -154,9 +154,9 @@ test("invalid generation/mode/settings are rejected",()=>{
   ])assert.throws(()=>validateRecipe({...base,[key]:value}),undefined,key);
 });
 
-test("all 130 saved Looks including four reproductive worlds have valid serializable states",()=>{
-  assert.equal(looks.length,130);
-  assert.equal(new Set(looks.map(x=>x.name)).size,130);
+test("all 135 saved Looks including four reproductive worlds have valid serializable states",()=>{
+  assert.equal(looks.length,135);
+  assert.equal(new Set(looks.map(x=>x.name)).size,135);
   const family=looks.filter(x=>x.family==="Spore Dynasties");
   assert.equal(family.length,4);
   for(const look of looks){

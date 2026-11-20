@@ -13,6 +13,7 @@ import { colonyCortexModes, colonyCortexPresets } from "./colony-cortex.js";
 import { sporeModes, sporePresets } from "./spore-dynasties.js";
 import { substrateModes, substratePresets } from "./substrate-alchemy.js";
 import { symbiosisModes, symbiosisPresets, ensureSymbioticContact } from "./symbiosis-lab.js";
+import { genePresets } from "./colony-genetics.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
@@ -387,6 +388,10 @@ export const numericRanges = {
   symbiosisMotion: [0, 100],
   symbiosisGlow: [0, 100],
   symbiosisDominance: [0, 100],
+  geneAmount: [0, 100],
+  geneMutation: [0, 100],
+  geneCrossbreed: [0, 100],
+  geneGlow: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -649,6 +654,10 @@ export const initial = {
   symbiosisMotion: 47,
   symbiosisGlow: 71,
   symbiosisDominance: 50,
+  geneAmount: 0,
+  geneMutation: 57,
+  geneCrossbreed: 44,
+  geneGlow: 72,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -880,7 +889,22 @@ export function validateRecipe(input) {
         throw Error("Invalid habitat colony identity.");
       if(ids.has(m.id))throw Error("Duplicate habitat colony.");
       ids.add(m.id);
-      return {id:m.id,x:m.x,y:m.y,radius:m.radius,parent:m.parent};
+      // Optional bloodline fields: old seeds stay byte-for-byte identical.
+      // Each new offspring retains a real, human-readable ancestor ID.
+      if(m.gene!==undefined&&(!Number.isInteger(m.gene)||
+         m.gene<0||m.gene>100))
+        throw Error("Invalid colony DNA allele.");
+      if(m.generation!==undefined&&(!Number.isInteger(m.generation)||
+         m.generation<0||m.generation>4095))
+        throw Error("Invalid colony genetic generation.");
+      if(m.ancestor!==undefined&&
+         (typeof m.ancestor!=="string"||!m.ancestor||
+          m.ancestor.length>80))
+        throw Error("Invalid colony ancestor.");
+      return {id:m.id,x:m.x,y:m.y,radius:m.radius,parent:m.parent,
+        ...(m.gene!==undefined?{gene:m.gene}:{}),
+        ...(m.generation!==undefined?{generation:m.generation}:{}),
+        ...(m.ancestor!==undefined?{ancestor:m.ancestor}:{})};
     });
   }
   if (x.marks !== undefined) {
@@ -1062,6 +1086,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "substrateAffinityA","substrateAffinityB","substrateGlow","substrateHue",
       "symbiosisAmount","symbiosisDetail","symbiosisMotion",
       "symbiosisGlow","symbiosisDominance",
+      "geneAmount","geneMutation","geneCrossbreed","geneGlow",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -1074,6 +1099,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key==="sporeAmount"&&state.sporeAmount<=0)continue; // Spores stay opt-in.
       if(key==="substrateAmount"&&state.substrateAmount<=0)continue; // Terrain stays dormant.
       if(key==="symbiosisAmount"&&state.symbiosisAmount<=0)continue; // Contact chemistry stays dormant.
+      if(key==="geneAmount"&&state.geneAmount<=0)continue; // No spontaneous ancestry on old art.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1319,6 +1345,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.symbiosisMode="Dormant";s.symbiosisAmount=0;
   s.symbiosisDetail=62;s.symbiosisMotion=47;
   s.symbiosisGlow=71;s.symbiosisDominance=50;
+  s.geneAmount=0;s.geneMutation=57;
+  s.geneCrossbreed=44;s.geneGlow=72;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;

@@ -169,7 +169,7 @@ export function createRenderer(canvas) {
     photonUnavailable = false, filamentUnavailable = false,
     filamentHybridUnavailable = false, filamentMaterialUnavailable = false,
     filamentStitchUnavailable = false, filamentSculptUnavailable = false,
-    underlayUnavailable = false;
+    underlayUnavailable = false, fossilUnavailable = false;
   function compatibleShaderState(s){
     const source = stereoUnavailable ? safe2DSelection(s) : s;
     if(!materialUnavailable && !typeShaderUnavailable &&
@@ -178,7 +178,7 @@ export function createRenderer(canvas) {
        !photonUnavailable && !filamentUnavailable && !filamentHybridUnavailable &&
        !filamentMaterialUnavailable && !filamentStitchUnavailable &&
        !filamentSculptUnavailable && !underlayUnavailable &&
-       !strangeUnavailable && !atmosphereUnavailable &&
+       !strangeUnavailable && !fossilUnavailable && !atmosphereUnavailable &&
        !atmosphereBUnavailable && !habitatUnavailable)return source;
     return {
       ...source,
@@ -194,6 +194,7 @@ export function createRenderer(canvas) {
       ...(filamentStitchUnavailable ? {filamentStitchAmount:0}:{}),
       ...(filamentSculptUnavailable ? {filamentSculptAmount:0}:{}),
       ...(underlayUnavailable ? {underlayAmount:0}:{}),
+      ...(fossilUnavailable ? {fossilAmount:0}:{}),
       ...(atmosphereUnavailable ? {atmoAmount:0}:{}),
       ...(atmosphereBUnavailable ? {atmoBAmount:0}:{}),
       ...(habitatUnavailable ? {atmoMaskMode:"Everywhere",atmoBMaskMode:"Everywhere"}:{}),
@@ -1012,7 +1013,10 @@ export function createRenderer(canvas) {
           break;
         }catch(e){
           lastCompileError=e;
-          if((candidate.atmoAmount>0||candidate.atmoBAmount>0) &&
+          if(fossilEnabled(candidate)&&!fossilUnavailable){
+            fossilUnavailable=true;
+            console.warn("Historical fossil material too expensive for this GPU; preserving living colonies and baseline mineral art.",e);
+          }else if((candidate.atmoAmount>0||candidate.atmoBAmount>0) &&
             (candidate.atmoMaskMode!=="Everywhere"||candidate.atmoBMaskMode!=="Everywhere") &&
             !habitatUnavailable){
             habitatUnavailable=true;
@@ -1241,8 +1245,8 @@ export function createRenderer(canvas) {
       gl.uniform1i(loc("selectionMode"),selectionModes.indexOf(s.selectionMode));
       gl.uniform1i(loc("apocalypseMode"),apocalypseModes.indexOf(s.apocalypseMode));
       gl.uniform1f(loc("apocalypseEpoch"),s.apocalypseEpoch);
-      if(fossilEnabled(s)){
-        const relics=s.fossilRecords||[];
+      if(fossilEnabled(compiledState)){
+        const relics=compiledState.fossilRecords||[];
         const count=Math.min(MAX_FOSSILS,relics.length);
         fossilBuffer.fill(0);
         for(let i=0;i<count;i++){
@@ -1266,7 +1270,7 @@ export function createRenderer(canvas) {
       if(s.sporeAmount>0&&s.sporeMode!=="Dormant"){
         sporeLandingBuffer.fill(0);
         for(let i=0;i<plantedCount;i++){
-          const landing=daughterSite(s,i);
+          const landing=daughterSite(compiledState,i);
           if(!landing)continue;
           sporeLandingBuffer[i*2]=landing.x;
           sporeLandingBuffer[i*2+1]=landing.y;

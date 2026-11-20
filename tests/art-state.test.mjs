@@ -119,8 +119,8 @@ test("appearance sliders round trip, reject invalid numbers and keep vintage rec
   for (const key of appearanceKeys) delete old[key];
   assert.deepEqual(appearanceKeys.map(key => parseDocument(old).state[key]), appearanceKeys.map(() => 0));
 });
-test("lookbook contains 147 distinct entries including mutants, painted habitats and colony wars", () => {
-  assert.equal(looks.length, 147);
+test("lookbook contains 152 distinct entries including mutants, painted habitats and colony wars", () => {
+  assert.equal(looks.length, 152);
   assert.equal(looks.filter(l=>l.family==="Atmospheric Hybrids").length,5);
   assert.equal(looks.filter(l=>l.family==="Painted Habitats").length,3);
   assert.equal(looks.filter(l=>l.family==="Colony Wars").length,4);
@@ -131,6 +131,7 @@ test("lookbook contains 147 distinct entries including mutants, painted habitats
   assert.equal(looks.filter(l=>l.family==="Symbiosis Lab").length,4);
   assert.equal(looks.filter(l=>l.family==="Mutation Bloodlines").length,4);
   assert.equal(looks.filter(l=>l.family==="Selection Chamber").length,4);
+  assert.equal(looks.filter(l=>l.family==="Apocalypse Clock").length,5);
   assert.equal(new Set(looks.map(look => look.name)).size, looks.length);
   for (const look of looks) assert.deepEqual(parseDocument(look.state).state, look.state);
   assert.ok(looks.some(look => look.state.windowCascade > 0));

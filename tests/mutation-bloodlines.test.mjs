@@ -97,6 +97,8 @@ test("daughter inherits actual alleles and nearby opposite parent can recombine"
   assert.ok(alone.gene>=0&&alone.gene<=100);
   assert.ok(crossed.gene>alone.gene);
   assert.equal(crossed.ancestor,"A");
+  assert.equal(crossed.mate,"B");
+  assert.equal(alone.mate,undefined);
   assert.equal(crossed.generation,3);
   assert.deepEqual(inheritColonyGene({...state,geneAmount:0},parent,0,site),{});
   assert.deepEqual(crossed,
@@ -157,7 +159,9 @@ test("invalid allele, ancestor and generation are rejected",()=>{
     {...original,generation:-1},{...original,generation:4096},
     {...original,generation:1.2},
     {...original,ancestor:""},{...original,ancestor:"x".repeat(81)},
-    {...original,ancestor:44}
+    {...original,ancestor:44},
+    {...original,mate:""},{...original,mate:22},
+    {...original,mate:"x".repeat(81)}
   ])assert.throws(()=>validateRecipe({
     ...painted,habitatStamps:[bad]
   }));

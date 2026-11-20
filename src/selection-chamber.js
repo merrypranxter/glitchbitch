@@ -4,7 +4,7 @@
 // response uses the same analytic fitness equation as these CPU scores.
 import {substrateEnabled,substrateResourceAt} from "./substrate-alchemy.js";
 import {daughterSite} from "./spore-dynasties.js";
-import {inheritColonyGene} from "./colony-genetics.js";
+import {inheritColonyGene,founderGene} from "./colony-genetics.js";
 
 export const selectionModes=[
   "Dormant","Nutrient matching","Specialist advantage",
@@ -58,6 +58,24 @@ export function rankSelection(state){
   return (state.habitatStamps||[]).map((stamp,index)=>({
     stamp,index,fitness:colonyFitness(state,stamp),
   })).sort((a,b)=>b.fitness-a.fitness||a.index-b.index);
+}
+export function prepareSelection(state){
+  const terrain=state.substrateMode==="Bare canvas"
+    ? "Nutrient rivers":state.substrateMode;
+  const ready={...state,
+    substrateMode:terrain,
+    substrateAmount:Math.max(72,state.substrateAmount||0),
+    geneAmount:Math.max(75,state.geneAmount||0),
+    selectionMode:state.selectionMode==="Dormant"?
+      "Nutrient matching":state.selectionMode,
+    selectionPressure:Math.max(70,state.selectionPressure||0),
+    habitatStamps:(state.habitatStamps||[]).map(stamp=>
+      Number.isInteger(stamp.gene)?stamp:{
+        ...stamp,gene:founderGene(state,stamp),
+        generation:stamp.generation??0,
+      }),
+  };
+  return ready;
 }
 export function applySelectionPreset(state,name){
   const preset=selectionPresets.find(p=>p.name===name);

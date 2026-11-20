@@ -157,7 +157,7 @@ float substrateResource(vec2 uv){
     n=.5+.5*sin(u*f*TAU+.9*cos(v*7.))*
       cos(v*f*TAU-.7*sin(u*9.));
   }
-  return clamp(/* APOCALYPSE_RESOURCE */ n,0.,1.);
+  return clamp(/* APOCALYPSE_RESOURCE */n,0.,1.);
 }
 vec3 shadeSubstrate(vec3 col,vec2 uv){
   substrateNutrient=substrateResource(uv);

@@ -901,10 +901,14 @@ export function validateRecipe(input) {
          (typeof m.ancestor!=="string"||!m.ancestor||
           m.ancestor.length>80))
         throw Error("Invalid colony ancestor.");
+      if(m.mate!==undefined&&
+         (typeof m.mate!=="string"||!m.mate||m.mate.length>80))
+        throw Error("Invalid colony genetic mate.");
       return {id:m.id,x:m.x,y:m.y,radius:m.radius,parent:m.parent,
         ...(m.gene!==undefined?{gene:m.gene}:{}),
         ...(m.generation!==undefined?{generation:m.generation}:{}),
-        ...(m.ancestor!==undefined?{ancestor:m.ancestor}:{})};
+        ...(m.ancestor!==undefined?{ancestor:m.ancestor}:{}),
+        ...(m.mate!==undefined?{mate:m.mate}:{})};
     });
   }
   if (x.marks !== undefined) {

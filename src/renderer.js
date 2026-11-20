@@ -710,8 +710,8 @@ export function createRenderer(canvas) {
       withApocalypse?apocalypseGLSL:"");
     source=source.replace("/* SUBSTRATE_MODULE */",
       withSubstrate
-        ? substrateGLSL.replace("/* APOCALYPSE_RESOURCE */",
-            withApocalypse?"apocalypseResource(uv,n)":"")
+        ? substrateGLSL.replace("/* APOCALYPSE_RESOURCE */n",
+            withApocalypse?"apocalypseResource(uv,n)":"n")
         : "");
     source=source.replace("/* SUBSTRATE_POST */",
       withSubstrate?"col=shadeSubstrate(col,uv);":"");

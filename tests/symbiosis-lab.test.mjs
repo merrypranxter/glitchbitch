@@ -77,7 +77,7 @@ test("contact spawning preserves ALL hand-painted seeds and does not invent a 17
   assert.deepEqual(capped.habitatStamps,full.habitatStamps);
   const nearly={...base,habitatStamps:[
     ...first,...Array.from({length:13},(_,i)=>({
-      id:"extra-"+i,x:.20+i*.04,y:.8,radius:.06,parent:0,
+      id:"extra-"+i,x:.20+i*.015,y:.60,radius:.06,parent:0,
     }))
   ]};
   assert.equal(ensureSymbioticContact(nearly).habitatStamps.length,16);

@@ -12,6 +12,7 @@ import { shuffleSymbiosis } from "./symbiosis-lab.js";
 import { seedGenePool } from "./colony-genetics.js";
 import {shuffleSelection} from "./selection-chamber.js";
 import {shuffleApocalypse} from "./apocalypse-clock.js";
+import {archiveFossils,shuffleFossils} from "./fossil-record.js";
 import { MAX_HABITAT_STAMPS } from "./habitat-painter.js";
 
 const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
@@ -174,6 +175,14 @@ const atmoMaskWeights=[
   ["Painted colonies",6],["Bloom iris",2],["Cell colonies",2],
   ["Flowing ribbons",2],["Fractured mosaic",2],["Everywhere",1],
 ];
+const spawnFossilMemory=(world,rng,opts={})=>{
+  if(opts.allowHeavy!==false &&
+     world.substrateAmount>0&&world.substrateMode!=="Bare canvas"&&
+     world.habitatStamps.length>0 &&roll(.42,rng)){
+    return archiveFossils(shuffleFossils(world,rng));
+  }
+  return {...world,fossilMode:"Dormant",fossilAmount:0,fossilRecords:[]};
+};
 export function shuffleEcosystem(state,rng=Math.random,opts={}){
   const s={...state};
   const dual=opts.allowDual!==false&&roll(opts.dualChance??.63,rng);
@@ -206,6 +215,8 @@ export function shuffleEcosystem(state,rng=Math.random,opts={}){
   else{s.substrateMode="Bare canvas";s.substrateAmount=0;s.substratePressure=0;}
   s.habitatStamps=[];
   s.sporeGeneration=0;
+  s.fossilRecords=[];
+  s.fossilAmount=0;s.fossilMode="Dormant";
   const lifeChance=opts.lifeChance??(.27+.55*intensity);
   const live=roll(lifeChance,rng);
   if(live){
@@ -285,16 +296,16 @@ export function shuffleEcosystem(state,rng=Math.random,opts={}){
     const genePool=seedGenePool(settled,rng);
     if(genePool.substrateAmount>0 &&
        genePool.substrateMode!=="Bare canvas"&&roll(.66,rng)){
-      return shuffleSelection(genePool,rng);
+      return spawnFossilMemory(shuffleSelection(genePool,rng),rng,opts);
     }
     genePool.selectionMode="Dormant";
     genePool.selectionPressure=0;
-    return genePool;
+    return spawnFossilMemory(genePool,rng,opts);
   }
   settled.geneAmount=0;
   settled.selectionMode="Dormant";
   settled.selectionPressure=0;
-  return settled;
+  return spawnFossilMemory(settled,rng,opts);
 }
 // Old shader systems can be very costly together on mobile Safari. Explicit
 // freakshow randomization samples a capped set, never turns ALL on at once.
@@ -336,7 +347,8 @@ export function fullWeirdShuffle(state,rng=Math.random,opts={}){
     allowDual:opts.allowDual!==false,
     intensity,
     dualChance:.25+intensity*.58,
-    lifeChance:.38+intensity*.54
+    lifeChance:.38+intensity*.54,
+    allowHeavy:opts.allowHeavy===true
   });
   const participation=.20+intensity*.66;
   for(const key of extras){
@@ -382,6 +394,7 @@ export function mixEcosystemIntoSurprise(state,rng=Math.random,opts={}){
     s.geneAmount=0;
     s.selectionMode="Dormant";s.selectionPressure=0;
     s.apocalypseMode="Dormant";s.apocalypseAmount=0;s.apocalypseEpoch=0;
+    s.fossilMode="Dormant";s.fossilAmount=0;s.fossilRecords=[];
     return s;
   }
   s=shuffleEcosystem(s,rng,{

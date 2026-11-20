@@ -97,9 +97,9 @@ test("invalid morphology names and values are refused before WebGL",()=>{
     ["colonyAnatomyPores",NaN],["colonyAnatomyRim",Infinity]
   ])assert.throws(()=>validateRecipe({...base,[key]:value}),undefined,key);
 });
-test("all 130 Lookbook states, including four new specimens, survive JSON round trip",()=>{
-  assert.equal(looks.length,130);
-  assert.equal(new Set(looks.map(l=>l.name)).size,130);
+test("all 135 Lookbook states, including four new specimens, survive JSON round trip",()=>{
+  assert.equal(looks.length,135);
+  assert.equal(new Set(looks.map(l=>l.name)).size,135);
   const specimens=looks.filter(l=>l.family==="Mutant Anatomy");
   assert.equal(specimens.length,4);
   for(const look of looks){

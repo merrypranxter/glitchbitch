@@ -58,6 +58,8 @@ import { colonyCortexModes, colonyCortexPresets, applyColonyCortexPreset,
   clearColonyCortex, shuffleColonyCortex } from "../colony-cortex.js";
 import { sporeModes, sporePresets, applySporePreset, shuffleSporeDynasty,
   evolveSporeGeneration, stopSpores, sporeParticipatingCount } from "../spore-dynasties.js";
+import { substrateModes, substratePresets, applySubstratePreset,
+  clearSubstrate, shuffleSubstrate } from "../substrate-alchemy.js";
 import { ensureValidEcosystemState } from "../ecosystem-randomizer.js";
 import { shuffleColonies, shuffleColonyLife, shuffleEcosystem,
   fullWeirdShuffle, chaosLevels } from "../ecosystem-randomizer.js";
@@ -241,6 +243,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [colonyAnatomyPreset,setColonyAnatomyPreset]=React.useState(colonyAnatomyPresets[0].name);
   const [colonyCortexPreset,setColonyCortexPreset]=React.useState(colonyCortexPresets[0].name);
   const [sporePreset,setSporePreset]=React.useState(sporePresets[0].name);
+  const [substratePreset,setSubstratePreset]=React.useState(substratePresets[0].name);
   const [chaosLevel,setChaosLevel]=React.useState("Wild");
   const [preserveColors,setPreserveColors]=React.useState(true);
   const [preserveText,setPreserveText]=React.useState(true);
@@ -301,6 +304,64 @@ export function EffectsInspector({ history, onTool, tool }) {
         Uncheck Preserve colors to randomize the palette too. Your text stays
         intact unless you explicitly uncheck its protection. Manual controls
         and all planted seeds remain editable afterward.
+      </p>
+    </>,
+    "substrate-alchemy": <>
+      <p className="control-note">
+        SUBSTRATE ALCHEMY — give the organisms somewhere to live:
+        mineral fissures, nutrient rivers, faceted quartz beds and
+        slow chemical tides. The mineral network changes the actual
+        growing territory, not just the background. A and B can favor
+        opposite nutrient conditions.
+      </p>
+      <Select label="Living geological substrate" value={s.substrateMode}
+        onChange={mode=>history.change(x=>mode==="Bare canvas"
+          ?clearSubstrate({...x,substrateMode:mode})
+          :{...x,substrateMode:mode,
+             substrateAmount:Math.max(65,x.substrateAmount)})}>
+        {substrateModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <Parameter label="Mineral visibility" name="substrateAmount" history={history}/>
+      <Parameter label="Fracture/vein density" name="substrateScale" history={history}/>
+      <Parameter label="Living mineral shimmer" name="substrateMotion" history={history}/>
+      <Parameter label="Nutrient pressure on growth" name="substratePressure" history={history}/>
+      <Parameter label="Parent A prefers high nutrients" name="substrateAffinityA" history={history}/>
+      <Parameter label="Parent B prefers high nutrients" name="substrateAffinityB" history={history}/>
+      <Parameter label="Luminous mineral edges" name="substrateGlow" history={history}/>
+      <Parameter label="Mineral palette offset" name="substrateHue" history={history}/>
+      <Select label="Geological specimen" value={substratePreset}
+        onChange={setSubstratePreset}>
+        {substratePresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+      </Select>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applySubstratePreset(x,substratePreset))}>
+          <Flower2 size={13}/> Summon terrain
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleSubstrate(x))}>
+          <Dices size={13}/> Shuffle geology
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>ensureValidEcosystemState({
+            ...applySubstratePreset(x,substratePreset),
+            atmoMaskMode:"Painted colonies",
+            atmoAmount:Math.max(72,x.atmoAmount),
+          }))}>
+          <Orbit size={13}/> Colonize rock
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.substrateAmount<=0}
+          onClick={()=>history.change(clearSubstrate)}>
+          Hide substrate
+        </button>
+      </div>
+      <p className="control-note">
+        High affinity favors nutrient-rich veins; low affinity favors
+        nutrient-poor areas. Pressure changes the actual living outlines.
+        Spores evaluate prospective landing sites on the CPU, upload the
+        chosen destination to the renderer, and save that exact location
+        when you Evolve Generation. All changes are undoable.
       </p>
     </>,
     "spore-dynasty": <>

@@ -11,6 +11,7 @@ import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
 import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
 import { colonyCortexModes, colonyCortexPresets } from "./colony-cortex.js";
 import { sporeModes, sporePresets } from "./spore-dynasties.js";
+import { substrateModes, substratePresets } from "./substrate-alchemy.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
@@ -372,6 +373,14 @@ export const numericRanges = {
   sporeReach: [0, 100],
   sporeFertility: [0, 100],
   sporeGlow: [0, 100],
+  substrateAmount: [0, 100],
+  substrateScale: [0, 100],
+  substrateMotion: [0, 100],
+  substratePressure: [0, 100],
+  substrateAffinityA: [0, 100],
+  substrateAffinityB: [0, 100],
+  substrateGlow: [0, 100],
+  substrateHue: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -619,6 +628,15 @@ export const initial = {
   sporeFertility: 64,
   sporeGlow: 73,
   sporeGeneration: 0,
+  substrateMode: "Bare canvas",
+  substrateAmount: 0,
+  substrateScale: 55,
+  substrateMotion: 50,
+  substratePressure: 0,
+  substrateAffinityA: 90,
+  substrateAffinityB: 10,
+  substrateGlow: 67,
+  substrateHue: 48,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -719,6 +737,7 @@ export function validateRecipe(input) {
     colonyCortexA: colonyCortexModes,
     colonyCortexB: colonyCortexModes,
     sporeMode: sporeModes,
+    substrateMode: substrateModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -1026,6 +1045,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "colonyCortexAmount","colonyCortexDetail",
       "colonyCortexMotion","colonyCortexRelief",
       "sporeAmount","sporeSpeed","sporeReach","sporeFertility","sporeGlow",
+      "substrateAmount","substrateScale","substrateMotion","substratePressure",
+      "substrateAffinityA","substrateAffinityB","substrateGlow","substrateHue",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -1036,6 +1057,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
         && state.colonyAnatomyAmount<=0)continue; // Morph stays opt-in.
       if(key==="colonyCortexAmount"&&state.colonyCortexAmount<=0)continue; // Cortex stays dormant.
       if(key==="sporeAmount"&&state.sporeAmount<=0)continue; // Spores stay opt-in.
+      if(key==="substrateAmount"&&state.substrateAmount<=0)continue; // Terrain stays dormant.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1274,6 +1296,10 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.sporeMode="Dormant";s.sporeAmount=0;
   s.sporeSpeed=57;s.sporeReach=58;s.sporeFertility=64;
   s.sporeGlow=73;s.sporeGeneration=0;
+  s.substrateMode="Bare canvas";s.substrateAmount=0;
+  s.substrateScale=55;s.substrateMotion=50;s.substratePressure=0;
+  s.substrateAffinityA=90;s.substrateAffinityB=10;
+  s.substrateGlow=67;s.substrateHue=48;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;
@@ -2381,6 +2407,87 @@ export const looks = [
             count:[7,8,8,9][i],needA:true,needB:true}),
         colorAmount:[87,68,79,92][i],lightMotion:[91,80,87,95][i],
       }
+    };
+  }),
+
+  // Lithobiological petri worlds: geology really shapes the planted
+  // territory fronts and serves as the nutrient map for future generations.
+  ...substratePresets.map((specimen,i)=>{
+    const {name,...geology}=specimen;
+    const seed=[382714,926051,491283,615927,738260][i];
+    const palette=[9,11,10,1,9][i];
+    const layouts=["Diagonal invasion","Twin clusters","Corner islands",
+      "Ring","Spore field"];
+    return {
+      name,
+      family:"Substrate Alchemy",
+      note:[
+        "Fissured mineral veins carry fluorescent A/B colonies into an ancient basalt world",
+        "Rivers of chemical nutrients feed competing lichen organisms and reproductive pollen",
+        "Crystal tesserae form faceted nutrient islands under spore-filled growing thalli",
+        "Glowing acidic pools select opposing fluorescent species across a moving chemical bed",
+        "The stone itself contains fossil-looking fungal veins, guiding renewed lichen reproduction",
+      ][i],
+      state:{
+        ...initial,...geology,seed,
+        engine:[18,19,7,11,17][i],
+        palette,colors:palettes[palette].colors,
+        complexity:[76,91,82,79,89][i],
+        scale:[28,22,30,26,23][i],warp:[68,77,61,82,73][i],
+        atmoMode:["Prismatic mycelium","Heartbeat phosphor",
+          "Mandala gas leak","Prismatic mycelium","Misprint rosette"][i],
+        atmoBMode:["Heartbeat phosphor","Prismatic mycelium",
+          "Misprint rosette","Mandala gas leak","Prismatic mycelium"][i],
+        atmoAmount:91,atmoBAmount:[76,88,79,87,82][i],
+        atmoScale:[61,44,72,58,39][i],
+        atmoBScale:[49,79,42,72,66][i],
+        atmoDensity:89,atmoBDensity:82,
+        atmoMotion:[54,68,48,74,62][i],
+        atmoBMotion:[69,45,78,61,70][i],
+        atmoGlow:93,atmoBGlow:87,
+        atmoHue:[29,73,19,84,36][i],
+        atmoBHue:[79,21,84,33,91][i],
+        atmoBBlendMode:["Light bloom","Spectral difference",
+          "Over","Ink stain","Light bloom"][i],
+        atmoMaskMode:"Painted colonies",atmoBMaskMode:"Painted colonies",
+        atmoMaskFeather:[33,55,38,47,39][i],
+        atmoMaskVariation:[75,48,66,91,73][i],
+        colonyShapeA:["Lichen lobes","Coral fringe",
+          "Crystal petals","Hyphal fans","Lichen lobes"][i],
+        colonyShapeB:["Hyphal fans","Lichen lobes",
+          "Coral fringe","Crystal petals","Hyphal fans"][i],
+        colonyAnatomyAmount:[89,95,84,97,93][i],
+        colonyAnatomyDetail:[77,84,72,91,89][i],
+        colonyAnatomyMotion:[40,61,43,74,57][i],
+        colonyAnatomyPores:[43,29,51,30,62][i],
+        colonyAnatomyRim:[89,95,82,91,85][i],
+        colonyCortexA:["Growth bands","Hyphal veins",
+          "Fruiting cups","Living cortex","Living cortex"][i],
+        colonyCortexB:["Hyphal veins","Fruiting cups",
+          "Growth bands","Growth bands","Fruiting cups"][i],
+        colonyCortexAmount:[87,95,78,92,97][i],
+        colonyCortexDetail:[78,85,64,91,82][i],
+        colonyCortexMotion:[48,62,39,67,59][i],
+        colonyCortexRelief:[84,94,79,91,88][i],
+        colonyLifeMode:["Territory war","Germinate & bloom",
+          "Wither & return","Territory war","Breathe"][i],
+        colonyLifeAmount:[92,85,80,94,72][i],
+        colonyLifeSpeed:[57,78,44,85,61][i],
+        colonyCompetition:[84,0,0,87,0][i],
+        colonyFrontGlow:[80,93,84,88,92][i],
+        sporeMode:["Windborne","Helical drift","Burst scatter",
+          "Windborne","Helical drift"][i],
+        sporeAmount:[80,96,88,91,94][i],
+        sporeSpeed:[36,78,67,52,81][i],
+        sporeReach:[66,83,54,78,91][i],
+        sporeFertility:[66,83,73,92,86][i],
+        sporeGlow:[79,95,87,93,89][i],
+        habitatStamps:generateHabitatStamps({seed},
+          ()=>[.14,.33,.48,.62,.79][i],
+          {layout:layouts[i],count:[8,9,7,8,10][i],needA:true,needB:true}),
+        colorAmount:[84,91,72,88,97][i],
+        lightMotion:[78,96,81,94,91][i],
+      },
     };
   }),
 

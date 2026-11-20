@@ -7,6 +7,7 @@ import { colonyLifeModes } from "./colony-lifecycle.js";
 import { shuffleColonyAnatomy } from "./colony-anatomy.js";
 import { shuffleColonyCortex } from "./colony-cortex.js";
 import { shuffleSporeDynasty } from "./spore-dynasties.js";
+import { shuffleSubstrate } from "./substrate-alchemy.js";
 import { MAX_HABITAT_STAMPS } from "./habitat-painter.js";
 
 const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
@@ -193,6 +194,11 @@ export function shuffleEcosystem(state,rng=Math.random,opts={}){
   s.atmoMaskMotion=range(16,88,rng);
   s.atmoMaskVariation=range(0,100,rng);
   s.habitatBrushRadius=range(11,32,rng);
+  // Minerals and nutrients create an independent, optional living ground.
+  // A and B receive different affinities, so the same rock favors different
+  // colonization fronts rather than just decorating the background.
+  if(roll(.76,rng))Object.assign(s,shuffleSubstrate(s,rng));
+  else{s.substrateMode="Bare canvas";s.substrateAmount=0;s.substratePressure=0;}
   s.habitatStamps=[];
   s.sporeGeneration=0;
   const lifeChance=opts.lifeChance??(.27+.55*intensity);
@@ -327,6 +333,7 @@ export function mixEcosystemIntoSurprise(state,rng=Math.random,opts={}){
     s.colonyCortexA="Bare cortex";s.colonyCortexB="Bare cortex";
     s.colonyCortexAmount=0;
     s.sporeMode="Dormant";s.sporeAmount=0;s.sporeGeneration=0;
+    s.substrateMode="Bare canvas";s.substrateAmount=0;s.substratePressure=0;
     return s;
   }
   s=shuffleEcosystem(s,rng,{

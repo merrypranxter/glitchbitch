@@ -3,14 +3,14 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { initial, wiggleModes, numericRanges, parseDocument, recipeDocument, randomize, looks } from "../src/data.js";
 
-test("pseudo-stereo remains off for legacy art and all 106 lookbook recipes", () => {
+test("pseudo-stereo remains off for legacy art and all 135 lookbook recipes", () => {
   const old={...initial};
   for(const key of ["wiggleAmount","wiggleDepth","wiggleSpeed","wiggleLayers","wiggleMode"])
     delete old[key];
   const migrated=parseDocument(old).state;
   assert.equal(migrated.wiggleAmount,0);
   assert.equal(migrated.wiggleMode,"Flipbook");
-  assert.equal(looks.length,106);
+  assert.equal(looks.length,135);
   assert.ok(looks.every(look=>parseDocument(look.state).state.wiggleAmount>=0));
 });
 

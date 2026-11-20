@@ -16,6 +16,7 @@ import { symbiosisModes, symbiosisPresets, ensureSymbioticContact } from "./symb
 import { genePresets } from "./colony-genetics.js";
 import {selectionModes,selectionPresets} from "./selection-chamber.js";
 import {apocalypseModes,apocalypsePresets} from "./apocalypse-clock.js";
+import {fossilModes,fossilPresets,MAX_FOSSILS} from "./fossil-record.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes } from "./atmosphere-habitats.js";
 import { normalizeTextFormats } from "./text-formatting.js";
@@ -404,6 +405,12 @@ export const numericRanges = {
   apocalypsePressure: [0, 100],
   apocalypseGlow: [0, 100],
   apocalypseHue: [0, 100],
+  fossilAmount: [0, 100],
+  fossilDepth: [0, 100],
+  fossilMotion: [0, 100],
+  fossilGlow: [0, 100],
+  fossilHue: [0, 100],
+  fossilBurial: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -683,6 +690,14 @@ export const initial = {
   apocalypseGlow: 85,
   apocalypseHue: 47,
   apocalypseEpoch: 0,
+  fossilMode: "Dormant",
+  fossilAmount: 0,
+  fossilDepth: 73,
+  fossilMotion: 54,
+  fossilGlow: 80,
+  fossilHue: 46,
+  fossilBurial: 58,
+  fossilRecords: [],
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -787,6 +802,7 @@ export function validateRecipe(input) {
     symbiosisMode: symbiosisModes,
     selectionMode: selectionModes,
     apocalypseMode: apocalypseModes,
+    fossilMode: fossilModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -942,6 +958,35 @@ export function validateRecipe(input) {
         ...(m.generation!==undefined?{generation:m.generation}:{}),
         ...(m.ancestor!==undefined?{ancestor:m.ancestor}:{}),
         ...(m.mate!==undefined?{mate:m.mate}:{})};
+    });
+  }
+  // Historical impressions are independent of the live 16-seed limit.
+  // The fossil archive is compact, validated, and saved with each document.
+  if(x.fossilRecords!==undefined){
+    if(!Array.isArray(x.fossilRecords)||
+       x.fossilRecords.length>MAX_FOSSILS)
+      throw Error("Maximum eight geological fossils.");
+    const ids=new Set();
+    s.fossilRecords=x.fossilRecords.map(record=>{
+      if(!record||typeof record!=="object"||
+         typeof record.id!=="string"||!record.id||
+         record.id.length>120||ids.has(record.id)||
+         typeof record.origin!=="string"||!record.origin||
+         record.origin.length>80||
+         !Number.isFinite(record.x)||record.x<0||record.x>1||
+         !Number.isFinite(record.y)||record.y<0||record.y>1||
+         !Number.isFinite(record.radius)||record.radius<.05||
+         record.radius>.45||
+         (record.parent!==0&&record.parent!==1)||
+         !Number.isInteger(record.epoch)||record.epoch<0||
+         record.epoch>4095||
+         !Number.isInteger(record.gene)||record.gene<0||
+         record.gene>100)
+        throw Error("Invalid fossil record.");
+      ids.add(record.id);
+      return {id:record.id,origin:record.origin,x:record.x,y:record.y,
+        radius:record.radius,parent:record.parent,epoch:record.epoch,
+        gene:record.gene};
     });
   }
   if (x.marks !== undefined) {
@@ -1127,6 +1172,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "selectionPressure","selectionSeverity","selectionBrood","selectionGlow",
       "apocalypseAmount","apocalypseScale","apocalypseMotion",
       "apocalypsePressure","apocalypseGlow","apocalypseHue",
+      "fossilAmount","fossilDepth","fossilMotion",
+      "fossilGlow","fossilHue","fossilBurial",
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -1142,6 +1189,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key==="geneAmount"&&state.geneAmount<=0)continue; // No spontaneous ancestry on old art.
       if(key==="selectionPressure"&&state.selectionPressure<=0)continue; // No silent Darwin on old art.
       if(key==="apocalypseAmount"&&state.apocalypseAmount<=0)continue; // Geology stays stable on old art.
+      if(key==="fossilAmount"&&state.fossilAmount<=0)continue; // Burying the past remains opt-in.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1395,6 +1443,10 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.apocalypseScale=54;s.apocalypseMotion=58;
   s.apocalypsePressure=66;s.apocalypseGlow=85;
   s.apocalypseHue=47;s.apocalypseEpoch=0;
+  s.fossilMode="Dormant";s.fossilAmount=0;
+  s.fossilDepth=73;s.fossilMotion=54;
+  s.fossilGlow=80;s.fossilHue=46;s.fossilBurial=58;
+  s.fossilRecords=[];
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;
@@ -2951,6 +3003,133 @@ export const looks = [
         colorAmount:[88,93,84,96,99][i],
         lightMotion:[86,94,82,91,96][i],
       }
+    };
+  }),
+
+  // Geological imprints from earlier epochs, with individual archived
+  // genetic ancestry. All five worlds show actual archive-derived nutrient
+  // changes, not just ancient-looking color palettes.
+  ...fossilPresets.map((specimen,i)=>{
+    const {name,...burial}=specimen;
+    const seed=[384710,592816,715243,927654,263981][i];
+    const palette=[9,11,10,1,9][i];
+    const epoch=[3,4,2,5,6][i];
+    const habitatStamps=generateHabitatStamps({seed},
+      ()=>[.18,.33,.52,.68,.81][i],
+      {layout:["Ring","Twin clusters","Corner islands",
+        "Diagonal invasion","Spore field"][i],
+        count:[9,10,8,11,12][i],needA:true,needB:true})
+      .map((m,j)=>({...m,gene:(31*j+17*i+13)%101,generation:0}));
+    const archive=habitatStamps.slice(0,[4,5,4,6,5][i])
+      .map((m,j)=>({
+        id:"relic-"+seed+"-"+j,
+        origin:m.id,x:m.x,y:m.y,radius:m.radius,
+        parent:m.parent,epoch:Math.max(0,epoch-1-(j%3)),
+        gene:m.gene,
+      }));
+    return {
+      name,
+      family:"Fossil Record",
+      note:[
+        "Ancestral lichen remains enrich future mycelium through shimmering, nutrient-rich fossil plates",
+        "A buried generation leaves toxic mineral scars that alter descendants' fitness and spore settlement",
+        "Opalescent gene-bearing fossils preserve ancient pigment information inside fluorescent stone",
+        "Ghost root systems turn two vanished fungal families into opposing fertile and barren chemical zones",
+        "Alternating fossil layers reverse environmental nutrients as a new biosphere grows through geological time",
+      ][i],
+      state:{
+        ...initial,...burial,seed,
+        fossilRecords:archive,
+        apocalypseEpoch:epoch,
+        engine:[18,19,7,11,17][i],
+        palette,colors:palettes[palette].colors,
+        complexity:[85,94,82,89,97][i],
+        scale:[29,22,31,24,21][i],warp:[76,91,68,83,94][i],
+        atmoMode:["Prismatic mycelium","Heartbeat phosphor",
+          "Mandala gas leak","Prismatic mycelium","Misprint rosette"][i],
+        atmoBMode:["Mandala gas leak","Prismatic mycelium",
+          "Heartbeat phosphor","Misprint rosette","Prismatic mycelium"][i],
+        atmoAmount:92,atmoBAmount:[83,88,76,91,86][i],
+        atmoScale:[61,75,43,69,55][i],
+        atmoBScale:[78,45,81,53,73][i],
+        atmoDensity:86,atmoBDensity:83,
+        atmoMotion:[58,76,52,81,69][i],atmoBMotion:[71,47,84,60,77][i],
+        atmoGlow:91,atmoBGlow:86,
+        atmoHue:[23,79,38,84,52][i],
+        atmoBHue:[79,24,86,31,89][i],
+        atmoBBlendMode:["Light bloom","Ink stain","Over",
+          "Spectral difference","Light bloom"][i],
+        atmoMaskMode:"Painted colonies",atmoBMaskMode:"Painted colonies",
+        atmoMaskFeather:[43,29,55,37,47][i],
+        atmoMaskVariation:[72,89,61,95,83][i],
+        colonyShapeA:["Lichen lobes","Hyphal fans",
+          "Crystal petals","Coral fringe","Lichen lobes"][i],
+        colonyShapeB:["Hyphal fans","Coral fringe",
+          "Lichen lobes","Crystal petals","Hyphal fans"][i],
+        colonyAnatomyAmount:[89,94,83,95,90][i],
+        colonyAnatomyDetail:[73,92,63,86,79][i],
+        colonyAnatomyMotion:[55,81,39,76,66][i],
+        colonyAnatomyPores:[31,48,39,59,43][i],
+        colonyAnatomyRim:[85,91,83,96,92][i],
+        colonyCortexA:["Growth bands","Fruiting cups",
+          "Hyphal veins","Living cortex","Growth bands"][i],
+        colonyCortexB:["Hyphal veins","Living cortex",
+          "Growth bands","Fruiting cups","Hyphal veins"][i],
+        colonyCortexAmount:[72,82,0,87,73][i],
+        colonyCortexDetail:[76,90,54,89,83][i],
+        colonyCortexMotion:[45,71,39,81,59][i],
+        colonyCortexRelief:[84,92,71,95,86][i],
+        colonyLifeMode:["Germinate & bloom","Wither & return",
+          "Breathe","Territory war","Germinate & bloom"][i],
+        colonyLifeAmount:[84,91,68,89,94][i],
+        colonyLifeSpeed:[57,77,43,82,65][i],
+        colonyCompetition:i===3?86:0,
+        colonyFrontGlow:[89,95,81,97,88][i],
+        sporeMode:["Windborne","Helical drift","Dormant",
+          "Burst scatter","Windborne"][i],
+        sporeAmount:[75,88,0,91,84][i],
+        sporeSpeed:[57,79,56,87,71][i],
+        sporeReach:[72,86,58,65,91][i],
+        sporeFertility:[69,85,61,92,78][i],
+        sporeGlow:[83,94,78,97,91][i],
+        substrateMode:["Nutrient rivers","Fractured basalt",
+          "Quartz tesserae","Petrified mycelium","Chemical tidepools"][i],
+        substrateAmount:[95,91,98,89,97][i],
+        substrateScale:[73,85,61,76,68][i],
+        substrateMotion:[54,73,42,68,82][i],
+        substratePressure:[82,91,73,89,96][i],
+        substrateAffinityA:[83,16,78,97,42][i],
+        substrateAffinityB:[27,94,37,12,91][i],
+        substrateGlow:[93,84,97,88,94][i],
+        substrateHue:[28,82,43,67,94][i],
+        symbiosisMode:["Mutualistic lace","Parasitic rot",
+          "Dormant","Electric synapse","Hybrid membrane"][i],
+        symbiosisAmount:[67,89,0,91,78][i],
+        symbiosisDetail:[72,87,52,94,81][i],
+        symbiosisMotion:[64,83,45,75,67][i],
+        symbiosisGlow:[84,91,71,96,87][i],
+        geneAmount:[89,97,84,95,93][i],
+        geneMutation:[61,83,49,91,78][i],
+        geneCrossbreed:[42,76,25,94,87][i],
+        geneGlow:[87,96,78,94,91][i],
+        selectionMode:["Nutrient matching","Adversarial niche",
+          "Hybrid vigor","Specialist advantage","Nutrient matching"][i],
+        selectionPressure:[85,93,76,97,89][i],
+        selectionSeverity:[34,46,27,43,38][i],
+        selectionBrood:[62,84,57,91,77][i],
+        selectionGlow:[89,95,83,96,92][i],
+        apocalypseMode:["Crystal winter","Acid monsoon",
+          "Dormant","Tectonic rupture","Radiation garden"][i],
+        apocalypseAmount:[70,85,0,77,91][i],
+        apocalypseScale:[67,79,54,83,62][i],
+        apocalypsePressure:[72,89,64,86,93][i],
+        apocalypseMotion:[46,78,41,71,64][i],
+        apocalypseGlow:[80,95,71,92,96][i],
+        apocalypseHue:[34,83,42,68,97][i],
+        habitatStamps,
+        colorAmount:[86,95,79,92,97][i],
+        lightMotion:[91,97,81,94,99][i],
+      },
     };
   }),
 

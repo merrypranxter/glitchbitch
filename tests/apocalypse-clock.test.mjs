@@ -204,9 +204,9 @@ test("epoch validation rejects invalid modes, counters and toxic slider values",
   ])assert.throws(()=>validateRecipe({...base,[key]:value}),undefined,key);
 });
 
-test("all 152 unique Lookbook recipes survive unchanged, including five epoched worlds",()=>{
-  assert.equal(looks.length,152);
-  assert.equal(new Set(looks.map(x=>x.name)).size,152);
+test("all 157 unique Lookbook recipes survive unchanged, including five epoched worlds",()=>{
+  assert.equal(looks.length,157);
+  assert.equal(new Set(looks.map(x=>x.name)).size,157);
   const family=looks.filter(x=>x.family==="Apocalypse Clock");
   assert.equal(family.length,5);
   for(const look of looks){

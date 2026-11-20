@@ -183,7 +183,7 @@ test("ordinary Surprise enters ecology, preserves actual locks; Mutate stays con
   assert.ok(full.habitatStamps.length>0);
   assert.equal(full.lettering,""); // Surprise never invents words
   // All existing Lookbook entries remain untouched by global randomization.
-  assert.equal(looks.length,152);
+  assert.equal(looks.length,157);
   assert.ok(looks.every(l=>!l.name.startsWith("eco-")));
 });
 test("one-step UI buttons and global Freakshow are actually wired",()=>{

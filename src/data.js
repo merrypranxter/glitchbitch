@@ -2619,4 +2619,89 @@ export const looks = [
     };
   }),
 
+  // Heritable genomes are stored on INDIVIDUAL editable habitat stamps.
+  // Ancient looks retain their original naked seeds and byte-identical DNA.
+  ...genePresets.map((specimen,i)=>{
+    const {name,...genes}=specimen;
+    const seed=[327194,718026,493137,851742][i];
+    const palette=[9,11,10,1][i];
+    const habitatStamps=generateHabitatStamps({seed},
+      ()=>[.16,.31,.52,.74][i],
+      {layout:["Ring","Twin clusters","Corner islands","Diagonal invasion"][i],
+        count:[8,10,9,11][i],needA:true,needB:true})
+      .map((m,j)=>({...m,gene:(13+j*31+i*23)%101,generation:0}));
+    return {
+      name,
+      family:"Mutation Bloodlines",
+      note:[
+        "Sibling colonies grow wildly different scalloped outlines, sharing a fluorescent ancestral gene pool",
+        "A/B organisms exchange traits in chemical symbiosis and inherit spectacular pigment changes",
+        "Crystalline Petri-dish lichen evolves variable edges and glowing cortical bands on mineral rock",
+        "Fungal spores carry hereditary pigment and fringe variation through a living reproductive civilization",
+      ][i],
+      state:{
+        ...initial,...genes,seed,
+        engine:[18,19,7,11][i],
+        palette,colors:palettes[palette].colors,
+        complexity:[82,93,76,88][i],scale:[27,20,31,24][i],
+        warp:[74,86,58,91][i],
+        atmoMode:["Prismatic mycelium","Heartbeat phosphor",
+          "Mandala gas leak","Prismatic mycelium"][i],
+        atmoBMode:["Mandala gas leak","Prismatic mycelium",
+          "Prismatic mycelium","Misprint rosette"][i],
+        atmoAmount:93,atmoBAmount:86,
+        atmoScale:[56,74,43,65][i],atmoBScale:[70,42,78,51][i],
+        atmoDensity:87,atmoBDensity:88,atmoMotion:71,atmoBMotion:65,
+        atmoGlow:94,atmoBGlow:91,
+        atmoHue:[21,76,38,83][i],atmoBHue:[78,26,87,35][i],
+        atmoBBlendMode:["Light bloom","Spectral difference",
+          "Over","Ink stain"][i],
+        atmoMaskMode:"Painted colonies",atmoBMaskMode:"Painted colonies",
+        atmoMaskFeather:[32,38,51,43][i],
+        atmoMaskVariation:[74,88,67,91][i],
+        colonyShapeA:["Lichen lobes","Coral fringe","Crystal petals","Hyphal fans"][i],
+        colonyShapeB:["Hyphal fans","Lichen lobes","Coral fringe","Crystal petals"][i],
+        colonyAnatomyAmount:[94,99,89,96][i],
+        colonyAnatomyDetail:[77,92,68,87][i],
+        colonyAnatomyMotion:[57,78,41,84][i],
+        colonyAnatomyPores:[31,47,52,29][i],
+        colonyAnatomyRim:[83,96,92,88][i],
+        colonyCortexA:["Hyphal veins","Living cortex","Growth bands","Fruiting cups"][i],
+        colonyCortexB:["Growth bands","Fruiting cups","Hyphal veins","Living cortex"][i],
+        colonyCortexAmount:[84,96,78,93][i],
+        colonyCortexDetail:[75,89,61,87][i],
+        colonyCortexMotion:[48,73,35,82][i],
+        colonyCortexRelief:[85,94,78,89][i],
+        colonyLifeMode:["Germinate & bloom","Territory war",
+          "Breathe","Wither & return"][i],
+        colonyLifeAmount:[85,92,74,90][i],
+        colonyLifeSpeed:[49,76,42,81][i],
+        colonyCompetition:i===1?86:0,
+        colonyFrontGlow:[72,91,81,94][i],
+        sporeMode:["Windborne","Helical drift","Burst scatter","Windborne"][i],
+        sporeAmount:[86,93,80,91][i],
+        sporeSpeed:[47,83,58,74][i],
+        sporeReach:[57,76,69,84][i],
+        sporeFertility:[76,88,65,94][i],
+        sporeGlow:[84,97,83,96][i],
+        substrateMode:["Nutrient rivers","Chemical tidepools",
+          "Quartz tesserae","Petrified mycelium"][i],
+        substrateAmount:[65,89,74,81][i],
+        substrateScale:[58,69,81,63][i],
+        substrateMotion:[39,87,42,67][i],
+        substratePressure:[46,74,61,87][i],
+        substrateGlow:[81,96,87,92][i],
+        substrateHue:[24,81,47,91][i],
+        symbiosisMode:["Mutualistic lace","Hybrid membrane",
+          "Dormant","Electric synapse"][i],
+        symbiosisAmount:[70,94,0,83][i],
+        symbiosisDetail:[62,88,57,81][i],
+        symbiosisMotion:[43,76,47,85][i],
+        symbiosisGlow:[80,97,71,91][i],
+        habitatStamps,
+        colorAmount:[82,96,69,91][i],lightMotion:[85,96,75,91][i],
+      }
+    };
+  }),
+
 ];

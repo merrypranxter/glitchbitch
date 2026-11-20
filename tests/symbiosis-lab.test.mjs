@@ -137,9 +137,9 @@ test("invalid relationship mode/values are rejected before compiling GPU shaders
   ])assert.throws(()=>validateRecipe({...base,[key]:val}),undefined,key);
 });
 
-test("all 152 Looks including actual touching relationships validate and round trip",()=>{
-  assert.equal(looks.length,152);
-  assert.equal(new Set(looks.map(x=>x.name)).size,152);
+test("all 157 Looks including actual touching relationships validate and round trip",()=>{
+  assert.equal(looks.length,157);
+  assert.equal(new Set(looks.map(x=>x.name)).size,157);
   const family=looks.filter(x=>x.family==="Symbiosis Lab");
   assert.equal(family.length,4);
   for(const look of looks){

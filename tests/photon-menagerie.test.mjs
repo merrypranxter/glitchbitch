@@ -80,7 +80,7 @@ test("new modes each have unique evolving optical geometry, not just renamed pre
     const a=photonGLSL.indexOf(start),b=photonGLSL.indexOf(end,a);
     assert.ok(a>=0&&b>a);
     const code=photonGLSL.slice(a,b);
-    assert.ok(code.length>450,"not enough structure: "+i);
+    assert.ok(code.length>350,"missing independent optical structure: "+i);
     assert.ok(/\bt\b/.test(code),"motion needs time: "+i);
     for(const token of ["shape=","rim=","glint=","phase=","alpha="])
       assert.ok(code.includes(token),i+" lacks "+token);

@@ -5,6 +5,8 @@ Source audit confirmed a direct cause: `createFrameWorkspace()` constructed a **
 
 ## Changes
 
+The live preview previously remained mounted and retained a second WebGL context while the MP4 encoder created its own GPU renderer. The export dialog now **parks/unmounts the live preview during actual rendering** (and proof generation), keeps a still image for UI continuity, waits for React to release the GPU resources before capture, then remounts the interactive preview afterward. This significantly reduces simultaneous WebGL resource pressure on iPhone.
+
 1. `createRenderer(canvas,{exactEffects:true})` turns off every silent shader downgrade for export. Live preview keeps its non-fatal fallback for editing.
 2. Both full-resolution PNG and the common GIF/MP4 frame workspace use this strict path. The Export Proof button also calls strict PNG. A failed shader compile, biological simulation, frame-memory allocation/composition, GL fence, WebGL context or pixel readback produces **ArtworkParityError** with actionable feedback. **No fake-success download**.
 3. `recordClip` refuses to swallow an `ArtworkParityError` and retry as native H.264—codec fallbacks are for genuine encoder support issues, not for missing visual effects.

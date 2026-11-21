@@ -73,6 +73,30 @@ test("export UI explicitly explains that video effects cannot disappear quietly"
   assert.match(dialog,/onClick=\{makeProof\}/);
 });
 
+test("preview GPU is released before exact-effect capture and resumed afterward",()=>{
+  const main=text("../src/main.jsx");
+  assert.match(main,/\{exportRendererBusy \? \(/);
+  assert.match(main,/canvasRef\.current\.toDataURL\("image\/png"\)/);
+  assert.match(main,/setExportRendererBusy\(Boolean\(value\)\)/);
+  assert.match(main,/onExportBusy=\{onExportBusy\}/);
+  assert.match(dialog,/onExportBusy\?\.\(true\)/);
+  assert.match(dialog,/onExportBusy\?\.\(false\)/);
+  const starts=dialog.match(/onExportBusy\?\.\(true\)/g)||[];
+  const stops=dialog.match(/onExportBusy\?\.\(false\)/g)||[];
+  assert.equal(starts.length,3,"PNG/MP4, quick proof and blend proof each park preview");
+  assert.ok(stops.length>=4,"all finally/cleanup routes restore the preview");
+  assert.match(dialog,/requestAnimationFrame\(\(\)=>requestAnimationFrame\(resolve\)\)/);
+});
+
+test("Vite JSX transform parses the live Preview/Export control updates",async()=>{
+  const {transformWithEsbuild}=await import("vite");
+  for(const path of ["../src/main.jsx","../src/components/ExportDialog.jsx"]){
+    const source=text(path);
+    const result=await transformWithEsbuild(source,path,{loader:"jsx"});
+    assert.ok(result.code.length>1000);
+  }
+});
+
 test("all the new source still parses as JavaScript",()=>{
   assert.match(renderer,/readFrame\(target\)/);
   assert.match(exporter,/export async function recordClip\(/);

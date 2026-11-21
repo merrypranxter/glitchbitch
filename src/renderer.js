@@ -14,7 +14,7 @@ import { backdropGLSL } from "./backdrops.js";
 import { microGLSL } from "./microstructure.js";
 import { substanceGLSL } from "./substance.js";
 import { photonGLSL, photonSpecies } from "./photon-zoo.js";
-import { filamentGLSL, filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, specializeFilamentGeometry } from "./filament-forge.js";
+import { filamentGLSL, filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, specializeFilamentGeometry, specializeFilamentStitchMotion } from "./filament-forge.js";
 import { underlayGLSL, underlayModes } from "./living-underlay.js";
 import { tunnelGLSL } from "./tunnels.js";
 import { strangeFieldsGLSL } from "./strange-fields.js";
@@ -708,9 +708,11 @@ export function createRenderer(canvas) {
             "#define filamentSecondMaterial "+Math.max(0,filamentMaterials.indexOf(s.filamentSecondMaterial)))
       : "";
     const selectedFilament=withFilament
-      ? specializeFilamentGeometry(rawFilament,
-          filamentSpecies.indexOf(s.filamentSpecies),
-          withHybrid?filamentSpecies.indexOf(s.filamentSecondSpecies):null)
+      ? specializeFilamentStitchMotion(
+          specializeFilamentGeometry(rawFilament,
+            filamentSpecies.indexOf(s.filamentSpecies),
+            withHybrid?filamentSpecies.indexOf(s.filamentSecondSpecies):null),
+          withStitch?filamentStitchModes.indexOf(s.filamentStitchMode):null)
       : "";
     source=source.replace("/* FILAMENT_MODULE */",selectedFilament);
     source=source.replace("/* FILAMENT_POST */",

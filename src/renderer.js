@@ -11,8 +11,8 @@ import { kineticGLSL, glyphCanvas } from "./kinetic-type.js";
 import { ensureRetroFontLoaded, retroFontReady, retroFontRevision } from "./retro-fonts.js";
 import { compositionGLSL } from "./composition.js";
 import { backdropGLSL } from "./backdrops.js";
-import { microGLSL } from "./microstructure.js";
-import { substanceGLSL } from "./substance.js";
+import { microGLSL, microModes, specializeMicroGLSL } from "./microstructure.js";
+import { substanceGLSL, substanceModes, specializeSubstanceGLSL } from "./substance.js";
 import { photonGLSL, photonSpecies, specializePhotonGeometry } from "./photon-zoo.js";
 import { filamentGLSL, filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, specializeFilamentGeometry, specializeFilamentStitchMotion } from "./filament-forge.js";
 import { underlayGLSL, underlayModes } from "./living-underlay.js";
@@ -639,7 +639,7 @@ export function createRenderer(canvas) {
       ),
       withStrange = (s.engine>=17 && s.engine<=19) ||
         (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -668,7 +668,13 @@ export function createRenderer(canvas) {
          ${withComposition ? "if(engine!=16 && secondaryEngine==16) ghostOpacity*=territoryMask(uv)*compositionAmount;" : ""}
          col=mix(col,ghost.rgb,clamp(ghostOpacity*(.52+.48*ghost.a),0.,1.));`
       : "");
-    source=source.replace("/* SUBSTANCE_MODULE */",withSubstance?substanceGLSL:"");
+    const materialSource=withSubstance
+      ? specializeSubstanceGLSL(
+          substanceGLSL.replace("uniform int substanceMode;",
+            "#define substanceMode "+Math.max(0,substanceModes.indexOf(s.substanceMode))),
+          substanceModes.indexOf(s.substanceMode))
+      : "";
+    source=source.replace("/* SUBSTANCE_MODULE */",materialSource);
     source=source.replace("/* SUBSTANCE_POST */",
       withSubstance?"col=livingSubstance(col,uv,p,v);":"");
     // Extract only the selected optical geometry before shader compilation.
@@ -914,7 +920,13 @@ export function createRenderer(canvas) {
         (withSymbiosis
           ? "col=livingSymbiosis(col,uv,symbioticAMask,symbioticBMask);"
           : "")) : "");
-    source=source.replace("/* MICRO_MODULE */",withMicro?microGLSL:"");
+    const textureSource=withMicro
+      ? specializeMicroGLSL(
+          microGLSL.replace("uniform int microMode;",
+            "#define microMode "+Math.max(0,microModes.indexOf(s.microMode))),
+          microModes.indexOf(s.microMode))
+      : "";
+    source=source.replace("/* MICRO_MODULE */",textureSource);
     source=source.replace("/* MICRO_POST */",withMicro?"col=movingMicrostructure(col,p,uv,v);":"");
     source=source.replace("/* BACKDROP_MODULE */",withBackdrop?backdropGLSL:"");
     source=source.replace("/* BACKDROP_POST */",withBackdrop?"col=livingBackdrop(col,uv,v);":"");
@@ -1354,8 +1366,7 @@ export function createRenderer(canvas) {
         "Infinite spiral","Conch cathedral","Braided wormhole",
         "Moiré throat","Living iris","Liquid vortex"
       ].indexOf(s.tunnelMode));
-      gl.uniform1i(loc("microMode"), ["Living embroidery","Opal granulation",
-        "Gel caustics","Point lace","Glass filaments","Crystalline cilia"].indexOf(s.microMode));
+      gl.uniform1i(loc("microMode"), microModes.indexOf(s.microMode));
       gl.uniform1i(loc("photonSpecies"), photonSpecies.indexOf(s.photonSpecies));
       gl.uniform1i(loc("filamentSpecies"), filamentSpecies.indexOf(s.filamentSpecies));
       gl.uniform1i(loc("filamentSecondSpecies"), filamentSpecies.indexOf(s.filamentSecondSpecies));
@@ -1364,9 +1375,7 @@ export function createRenderer(canvas) {
       gl.uniform1i(loc("filamentStitchMode"), filamentStitchModes.indexOf(s.filamentStitchMode));
       gl.uniform1i(loc("filamentSculptMode"), filamentSculptModes.indexOf(s.filamentSculptMode));
       gl.uniform1i(loc("underlayMode"), underlayModes.indexOf(s.underlayMode));
-      gl.uniform1i(loc("substanceMode"), [
-        "CMY lithogenesis","Chromatophore reef",
-        "Chitin interference","Conformal chromasoup"].indexOf(s.substanceMode));
+      gl.uniform1i(loc("substanceMode"), substanceModes.indexOf(s.substanceMode));
       gl.uniform1i(loc("backdropMode"), ["Nebula veils","Cosmic pollen",
         "Caustic undercurrent","Ghost architecture","Phosphor jacquard",
         "Opal cell fog"].indexOf(s.backdropMode));

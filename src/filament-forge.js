@@ -2162,7 +2162,8 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float preplastic=neuralSignal;
   neuralSignal=mix(preplastic,clamp(preplastic+plasticDelta,0.0,1.0),
     filamentPlasticAmount);
-  float plasticEdge=clamp(abs(neuralSignal-preplastic)*2.3,0.0,1.0);
+  float plasticEdge=clamp(max(0.0,neuralSignal-preplastic)*2.3,0.0,1.0);
+  float plasticShadow=clamp(max(0.0,preplastic-neuralSignal)*2.1,0.0,1.0);
 #endif
   float nerveStrength=filamentNeuralAmount*neuralSignal;
   outgoingNeural=clamp(nerveStrength*core,0.0,1.0);
@@ -2487,6 +2488,9 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     nerveResponse*nerveFlash*filamentNeuralGlow*.78;
 #ifdef FILAMENT_PLASTICITY
   // Accentuate changing synaptic weights on real sewn cores.
+  // Inhibitory and pruning waves remove light (real dark lace) instead of
+  // paradoxically flashing brightly at their suppressed synapses.
+  thread*=1.0-plasticShadow*(.15+.43*filamentPlasticInhibition)*core;
   thread+=mix(ink,glimmer,.62)*core*filamentPlasticAmount*
     filamentPlasticGlow*plasticEdge*.42;
 #endif

@@ -50,7 +50,7 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
   filamentMaterials,filamentMaterialPresets,applyFilamentMaterialPreset,remixUnusualFilamentMaterials,
   filamentAdornmentModes,filamentAdornmentFamilies,filamentAdornmentDescriptions,
-  filamentAdornmentPresets,applyFilamentAdornmentPreset,remixFilamentAdornments,
+  filamentAdornmentPresets,applyFilamentAdornmentPreset,remixFilamentAdornments,remixThreadCouture,
   remixFilamentMaterials,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
@@ -1763,6 +1763,10 @@ export function EffectsInspector({ history, onTool, tool }) {
             <Shuffle size={13}/> Dress in weird shit
           </button>
           <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixThreadCouture(x))}>
+            <Dices size={13}/> Outfit roulette — fibers + jewelry
+          </button>
+          <button type="button" className="button secondary"
             onClick={()=>history.change(x=>({...x,
               filamentMaterial:"Original thread",
               filamentSecondMaterial:"Original thread",
@@ -1813,6 +1817,10 @@ export function EffectsInspector({ history, onTool, tool }) {
           <button type="button" className="button secondary"
             onClick={()=>history.change(x=>remixFilamentAdornments(x,Math.random,true))}>
             <Dices size={13}/> Shuffle cursed jewelry
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixThreadCouture(x,Math.random,true))}>
+            <Dices size={13}/> Full cursed couture
           </button>
           <button type="button" className="button secondary"
             disabled={s.filamentAdornmentAmount<=0}

@@ -362,6 +362,156 @@ export function breedFilaments(state,rng=Math.random){
  * GIF and MP4. No accumulated GPU state, feedback textures or random
  * state can drift between captures.
  */
+
+/**
+ * THREAD TRINKET CABINET: decorations grow from the *actual* filament path.
+ * Not screen-space stickers. Kept separate from geometry, stitch dynamics,
+ * materials and 2.5D thread sculpting so old recipes stay exactly as drawn.
+ */
+export const filamentAdornmentModes=[
+  "Bare threads",
+  "Pearl stations",
+  "Sequin chain",
+  "French knots",
+  "Tassel fringe",
+  "Lace picots",
+  "Glass bugles",
+  "Opal barnacles",
+  "Electric thorns",
+  "Watching eyes",
+  "Mycelium spores",
+  "Neon teeth",
+  "Orbiting halos"
+];
+export const filamentAdornmentFamilies=[
+  {name:"Unadorned",modes:filamentAdornmentModes.slice(0,1)},
+  {name:"Classic haberdashery",modes:filamentAdornmentModes.slice(1,7)},
+  {name:"Gothic alien couture",modes:filamentAdornmentModes.slice(7)}
+];
+export const filamentAdornmentDescriptions={
+  "Bare threads":"No additional objects are attached to the fibers.",
+  "Pearl stations":"Small glossy pearl mounts decorate the real thread path.",
+  "Sequin chain":"Alternating foil discs flash as the stitched fabric moves.",
+  "French knots":"Raised twisted knots collect in a lively pointillist rhythm.",
+  "Tassel fringe":"Threadlike tassel tips comb the sides of the woven filaments.",
+  "Lace picots":"Tiny open loops and picots embellish the lace edge.",
+  "Glass bugles":"Long narrow glass beads glint along their stitched carrier.",
+  "Opal barnacles":"Pearlescent ringed shells accrete on the seam.",
+  "Electric thorns":"Voltage-sharp needles sprout along each living filament.",
+  "Watching eyes":"Little chromatic iris-and-pupil charms track the passing light.",
+  "Mycelium spores":"Fungal spores bud and pulse at seeded fiber junctions.",
+  "Neon teeth":"A tiny luminous zipper jaw snaps open and shut.",
+  "Orbiting halos":"Phase-shifted halo collars pass along the moving thread."
+};
+export const filamentAdornmentControls=[
+  "filamentAdornmentAmount","filamentAdornmentSpacing",
+  "filamentAdornmentSize","filamentAdornmentMotion","filamentAdornmentGlow"
+];
+export const filamentAdornmentPresets=[
+  {name:"Pearl heirloom",filamentAdornmentMode:"Pearl stations",
+    filamentSecondAdornmentMode:"Lace picots",filamentAdornmentAmount:84,
+    filamentAdornmentSpacing:46,filamentAdornmentSize:43,
+    filamentAdornmentMotion:18,filamentAdornmentGlow:70},
+  {name:"Disco sequin blizzard",filamentAdornmentMode:"Sequin chain",
+    filamentSecondAdornmentMode:"Glass bugles",filamentAdornmentAmount:96,
+    filamentAdornmentSpacing:79,filamentAdornmentSize:69,
+    filamentAdornmentMotion:81,filamentAdornmentGlow:99},
+  {name:"French-knot tapestry",filamentAdornmentMode:"French knots",
+    filamentSecondAdornmentMode:"Pearl stations",filamentAdornmentAmount:89,
+    filamentAdornmentSpacing:75,filamentAdornmentSize:36,
+    filamentAdornmentMotion:34,filamentAdornmentGlow:71},
+  {name:"Possessed tassels",filamentAdornmentMode:"Tassel fringe",
+    filamentSecondAdornmentMode:"Neon teeth",filamentAdornmentAmount:95,
+    filamentAdornmentSpacing:56,filamentAdornmentSize:88,
+    filamentAdornmentMotion:72,filamentAdornmentGlow:84},
+  {name:"Picot wedding veil",filamentAdornmentMode:"Lace picots",
+    filamentSecondAdornmentMode:"French knots",filamentAdornmentAmount:80,
+    filamentAdornmentSpacing:82,filamentAdornmentSize:48,
+    filamentAdornmentMotion:24,filamentAdornmentGlow:65},
+  {name:"Crystal buglework",filamentAdornmentMode:"Glass bugles",
+    filamentSecondAdornmentMode:"Sequin chain",filamentAdornmentAmount:97,
+    filamentAdornmentSpacing:51,filamentAdornmentSize:71,
+    filamentAdornmentMotion:61,filamentAdornmentGlow:92},
+  {name:"Barnacle bride",filamentAdornmentMode:"Opal barnacles",
+    filamentSecondAdornmentMode:"Mycelium spores",filamentAdornmentAmount:93,
+    filamentAdornmentSpacing:67,filamentAdornmentSize:83,
+    filamentAdornmentMotion:37,filamentAdornmentGlow:91},
+  {name:"Voltage crown",filamentAdornmentMode:"Electric thorns",
+    filamentSecondAdornmentMode:"Orbiting halos",filamentAdornmentAmount:96,
+    filamentAdornmentSpacing:57,filamentAdornmentSize:92,
+    filamentAdornmentMotion:91,filamentAdornmentGlow:100},
+  {name:"A thousand tiny witnesses",filamentAdornmentMode:"Watching eyes",
+    filamentSecondAdornmentMode:"Opal barnacles",filamentAdornmentAmount:94,
+    filamentAdornmentSpacing:77,filamentAdornmentSize:72,
+    filamentAdornmentMotion:65,filamentAdornmentGlow:78},
+  {name:"Fungal bridal jewelry",filamentAdornmentMode:"Mycelium spores",
+    filamentSecondAdornmentMode:"Lace picots",filamentAdornmentAmount:97,
+    filamentAdornmentSpacing:85,filamentAdornmentSize:62,
+    filamentAdornmentMotion:83,filamentAdornmentGlow:95},
+  {name:"Teeth of the machine",filamentAdornmentMode:"Neon teeth",
+    filamentSecondAdornmentMode:"Electric thorns",filamentAdornmentAmount:99,
+    filamentAdornmentSpacing:66,filamentAdornmentSize:92,
+    filamentAdornmentMotion:77,filamentAdornmentGlow:100},
+  {name:"Sacred halo relay",filamentAdornmentMode:"Orbiting halos",
+    filamentSecondAdornmentMode:"Watching eyes",filamentAdornmentAmount:94,
+    filamentAdornmentSpacing:56,filamentAdornmentSize:84,
+    filamentAdornmentMotion:71,filamentAdornmentGlow:98}
+];
+export function applyFilamentAdornmentPreset(state,name){
+  const preset=filamentAdornmentPresets.find(x=>x.name===name);
+  if(!preset)return state;
+  const {name:label,...adornment}=preset;
+  return {...state,...adornment,filamentAmount:Math.max(60,state.filamentAmount||0)};
+}
+export function remixFilamentAdornments(state,rng=Math.random,onlyWeird=false){
+  const unit=()=>{const n=Number(rng());return Number.isFinite(n)?
+    Math.min(1-Number.EPSILON,Math.max(0,n)):0;};
+  const set=onlyWeird?filamentAdornmentModes.slice(7):filamentAdornmentModes.slice(1);
+  const pick=old=>{const pool=set.filter(x=>x!==old);
+    return pool[Math.floor(unit()*pool.length)];};
+  return {...state,filamentAdornmentMode:pick(state.filamentAdornmentMode),
+    filamentSecondAdornmentMode:pick(state.filamentSecondAdornmentMode),
+    filamentAmount:Math.max(65,state.filamentAmount||0),
+    filamentAdornmentAmount:Math.max(82,state.filamentAdornmentAmount||0),
+    filamentAdornmentSpacing:28+unit()*70,
+    filamentAdornmentSize:36+unit()*62,
+    filamentAdornmentMotion:20+unit()*78,
+    filamentAdornmentGlow:54+unit()*45};
+}
+/** One press dresses and jewels BOTH parents without changing their pattern,
+ * clocks, thread species, text, colors or underlying mathematical artwork. */
+export function remixThreadCouture(state,rng=Math.random,onlyWeird=false){
+  const fibers=onlyWeird?remixUnusualFilamentMaterials(state,rng):
+    remixFilamentMaterials(state,rng);
+  return remixFilamentAdornments(fibers,rng,onlyWeird);
+}
+
+export function specializeFilamentAdornments(source,first,second=null){
+  if(first==null||!Number.isInteger(first)||first<0||
+    first>=filamentAdornmentModes.length)return source;
+  const ids=[first,...(second==null?[]:[second])];
+  if(ids.some(n=>!Number.isInteger(n)||n<0||n>=filamentAdornmentModes.length))
+    return source;
+  const opener=n=>n===1?"  if(adornmentMode==1){":
+    "  }else if(adornmentMode=="+n+"){";
+  const starts=filamentAdornmentModes.slice(1)
+    .map((_,i)=>source.indexOf(opener(i+1)));
+  if(starts.some((n,i)=>n<0||(i>0&&n<=starts[i-1])))return source;
+  const fallback=source.indexOf("  }else{ // Unsupported adornment mode",starts.at(-1));
+  const end=source.indexOf("  // Paint trinkets on real filament geometry",fallback);
+  if(fallback<0||end<=fallback)return source;
+  const chosen=[...new Set(ids.filter(n=>n>0))].sort((a,b)=>a-b);
+  if(!chosen.length)return source.slice(0,starts[0])+
+    "  trinket=0.0;\n  sparkle=0.0;\n"+source.slice(end);
+  const branches=chosen.map((n,k)=>{
+    const finish=n===filamentAdornmentModes.length-1?fallback:starts[n];
+    return (k===0?"  if(adornmentMode=="+n+"){":
+      "  }else if(adornmentMode=="+n+"){")+
+      source.slice(starts[n-1]+opener(n).length,finish);
+  }).join("");
+  return source.slice(0,starts[0])+branches+source.slice(fallback,end)+source.slice(end);
+}
+
 export const filamentStitchModes=[
   "Needle chase",
   "Loom sweep",
@@ -700,6 +850,9 @@ uniform int filamentSecondSpecies;
 uniform int filamentMaterial,filamentSecondMaterial;
 uniform int filamentStitchMode;
 uniform int filamentSculptMode;
+uniform int filamentAdornmentMode,filamentSecondAdornmentMode;
+uniform float filamentAdornmentAmount,filamentAdornmentSpacing;
+uniform float filamentAdornmentSize,filamentAdornmentMotion,filamentAdornmentGlow;
 uniform float filamentSculptAmount,filamentSculptDepth;
 uniform float filamentSculptLight,filamentSculptShadow,filamentSculptPuff;
 uniform float filamentStitchAmount,filamentStitchSpeed;
@@ -710,7 +863,7 @@ uniform float filamentAmount,filamentScale,filamentDensity,filamentMotion;
 uniform float filamentWidth,filamentRelief,filamentHue,filamentVariation;
 
 vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
-    int species,int fiberMaterial,float phaseOffset,float twist,float hueOffset,
+    int species,int fiberMaterial,int adornmentMode,float phaseOffset,float twist,float hueOffset,
     out float maskCore){
   float t=time*(.14+filamentMotion*.72)+phaseOffset;
   float ct=colorTime*.12+phaseOffset*.18;
@@ -1394,6 +1547,127 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     result+=vec3(1.0,.98,.92)*bead*(.3+.7*luster)*glisten;
   }
 #endif
+
+#ifdef FILAMENT_ADORNMENT
+  // Local phase is attached to the actual moving fiber, not UV-screen dots.
+  // The soft radial collar is restricted to the thread's own distance mask.
+  float adornClock=time*(.18+filamentAdornmentMotion*1.5)+phaseOffset*.32;
+  float adornPhase=phase*(7.0+filamentAdornmentSpacing*27.0)+
+    q.x*.29+seedPhase*.17;
+  float beadBeat=.5+.5*cos(adornPhase);
+  float beadStation=pow(beadBeat,mix(18.0,6.0,filamentAdornmentSize));
+  float fiberRadial=threadD/max(width,.003);
+  float collar=(1.0-smoothstep(width*.55,
+    width*(1.9+filamentAdornmentSize*3.0)+aa,threadD))*mask;
+#ifdef FILAMENT_STITCHING
+  // An unwoven portion cannot grow charms before its stitch exists.
+  collar*=reveal;
+#endif
+  float trinket=0.0;
+  float sparkle=0.0;
+  float shadow=.0;
+  float colorShift=0.0;
+  if(adornmentMode==1){ // PEARL STATIONS: round luster and attachment socket.
+    float roundness=1.0-smoothstep(.22,1.85,fiberRadial);
+    trinket=beadStation*roundness;
+    sparkle=pow(max(0.0,1.0-abs(fiberRadial-.38)*1.25),7.0)*beadStation;
+    shadow=beadStation*pow(1.0-roundness,2.0);
+    colorShift=.04;
+  }else if(adornmentMode==2){ // SEQUIN CHAIN: alternating flashing foil facets.
+    float facet=step(.5,fract(adornPhase/6.2831853));
+    float flash=pow(.5+.5*cos(adornClock*1.42+facet*2.47+phase*.7),12.0);
+    trinket=beadStation*(.58+.42*facet);
+    sparkle=trinket*(.28+.72*flash);
+    shadow=.11*trinket;
+    colorShift=.26;
+  }else if(adornmentMode==3){ // FRENCH KNOTS: multiple wrapped helical loops.
+    float wrap=.5+.5*cos(adornPhase*2.0+
+      fiberRadial*9.0+adornClock*.43);
+    trinket=beadStation*(.42+.58*wrap);
+    sparkle=pow(wrap,10.0)*beadStation;
+    shadow=(1.0-wrap)*beadStation*.42;
+    colorShift=.09;
+  }else if(adornmentMode==4){ // TASSEL FRINGE: hanging comb of split threadlets.
+    float comb=pow(.5+.5*cos(adornPhase*1.5),6.0);
+    float split=.5+.5*cos(q.x*12.0+fiberRadial*7.0-adornClock*.62);
+    trinket=comb*split*smoothstep(.33,1.7,fiberRadial);
+    sparkle=pow(split,9.0)*comb*.42;
+    shadow=comb*.13;
+    colorShift=.16;
+  }else if(adornmentMode==5){ // LACE PICOTS: open chained edge loops.
+    float arc=abs(fiberRadial-(1.35+.3*sin(adornPhase*.5)));
+    float ring=1.0-smoothstep(.12,.55,arc);
+    trinket=beadStation*ring;
+    sparkle=pow(max(0.0,1.0-arc*2.6),8.0)*beadStation;
+    shadow=.13*beadStation;
+    colorShift=.33;
+  }else if(adornmentMode==6){ // GLASS BUGLES: narrow faceted bars.
+    float bar=pow(.5+.5*cos(adornPhase*.5),5.0);
+    float glass=pow(.5+.5*cos(fiberRadial*4.7+adornClock*.32),9.0);
+    trinket=bar*(.4+.6*glass);
+    sparkle=bar*glass;
+    shadow=bar*(1.0-glass)*.24;
+    colorShift=.18;
+  }else if(adornmentMode==7){ // OPAL BARNACLES: concentric growing mineral lips.
+    float shell=.5+.5*cos(fiberRadial*13.0-
+      sin(adornClock*.27+adornPhase*.3)*1.6);
+    float growth=.5+.5*cos(adornClock*.41-adornPhase*.13);
+    trinket=beadStation*(.25+.75*shell)*(.5+.5*growth);
+    sparkle=beadStation*pow(shell,14.0);
+    shadow=beadStation*(1.0-shell)*.32;
+    colorShift=.41;
+  }else if(adornmentMode==8){ // ELECTRIC THORNS: narrow living points.
+    float tip=pow(.5+.5*cos(adornPhase*1.6),10.0);
+    float volts=.5+.5*sin(adornClock*3.1+phase*9.0);
+    trinket=tip*(1.0-smoothstep(1.4,4.4,fiberRadial))*volts;
+    sparkle=pow(volts,10.0)*tip;
+    shadow=tip*.15;
+    colorShift=.54;
+  }else if(adornmentMode==9){ // WATCHING EYES: socket, iris and pupil.
+    float socket=beadStation*(1.0-smoothstep(.6,2.2,fiberRadial));
+    float iris=exp(-pow((fiberRadial-1.0)*2.1,2.0));
+    float pupil=exp(-pow((fiberRadial-.28)*4.0,2.0));
+    trinket=socket*(.43+.57*iris);
+    sparkle=socket*pow(iris,2.0)*(.48+.52*sin(adornClock+phase));
+    shadow=socket*pupil*.91;
+    colorShift=.62;
+  }else if(adornmentMode==10){ // MYCELIUM SPORES: seeded pulses along a hyphal line.
+    float spore=pow(.5+.5*cos(adornPhase*2.7+sin(q.y*.91)*.9),13.0);
+    float germination=.5+.5*sin(adornClock*.76+
+      floor(adornPhase/6.2831853)*1.71);
+    trinket=spore*(.16+.84*germination);
+    sparkle=spore*pow(germination,12.0);
+    shadow=spore*.18;
+    colorShift=.7;
+  }else if(adornmentMode==11){ // NEON TEETH: interlocking zipper bite.
+    float tooth=pow(.5+.5*cos(adornPhase*2.6),8.0);
+    float jaw=.5+.5*sin(adornClock*1.4+phase*3.8);
+    trinket=tooth*jaw*(1.0-smoothstep(1.2,4.6,fiberRadial));
+    sparkle=tooth*pow(jaw,8.0);
+    shadow=tooth*(1.0-jaw)*.42;
+    colorShift=.81;
+  }else if(adornmentMode==12){ // ORBITING HALOS: traveling optical collars.
+    float orbit=sin(adornClock*.82+phase*.8+seedPhase*.12);
+    float ring=exp(-pow((fiberRadial-(1.35+.75*orbit))*2.4,2.0));
+    float relay=pow(.5+.5*cos(adornPhase*.68-adornClock*.47),7.0);
+    trinket=ring*relay;
+    sparkle=ring*pow(relay,1.7);
+    shadow=relay*.1;
+    colorShift=.93;
+  }else{ // Unsupported adornment mode: no accessory rendered.
+    trinket=0.0;
+    sparkle=0.0;
+  }
+  // Paint trinkets on real filament geometry, obeying stitch-reveal and
+  // each parent's individual material/geometry. No full-frame sticker pass.
+  vec3 accent=palette(fract(pigmentPhase+colorShift));
+  float jewelry=collar*filamentAdornmentAmount;
+  float opacity=clamp(jewelry*trinket,0.0,.9);
+  result=mix(result,result*.46+accent*.94,opacity*.78);
+  result+=mix(accent,vec3(1.0,.98,1.0),.67)*
+    jewelry*sparkle*filamentAdornmentGlow*.59;
+  result*=1.0-clamp(jewelry*shadow*.3,0.0,.25);
+#endif
 #ifdef FILAMENT_SCULPT
   // Geometry-constrained 2.5D emboss: a rounded cross-section, directional
   // grazing highlight and soft darkening immediately around stitch boundaries.
@@ -1536,12 +1810,12 @@ vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
   if(filamentAmount<.001)return background;
   float firstCore=0.0;
   vec3 first=filamentField(background,uv,fieldP,fieldV,
-    filamentSpecies,filamentMaterial,0.0,0.0,0.0,firstCore);
+    filamentSpecies,filamentMaterial,filamentAdornmentMode,0.0,0.0,0.0,firstCore);
 #ifdef FILAMENT_HYBRID
   if(filamentCrossbreed<.001)return first;
   float secondCore=0.0;
   vec3 second=filamentField(first,uv,fieldP,fieldV,
-    filamentSecondSpecies,filamentSecondMaterial,
+    filamentSecondSpecies,filamentSecondMaterial,filamentSecondAdornmentMode,
     filamentPhase*6.2831853,filamentTwist*6.2831853,
     filamentSecondHue*.9,secondCore);
   // True under/over crossings: only where two threads overlap. Different

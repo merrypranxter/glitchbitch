@@ -13,7 +13,7 @@ export { injuryModes };
 export { alchemyModes };
 import { backdropModes } from "./backdrops.js";
 export { backdropModes };
-import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes } from "./filament-forge.js";
+import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
@@ -312,6 +312,11 @@ export const numericRanges = {
   filamentBeads: [0, 100],
   filamentBeadSize: [0, 100],
   filamentSecondHue: [0, 100],
+  filamentAdornmentAmount: [0, 100],
+  filamentAdornmentSpacing: [0, 100],
+  filamentAdornmentSize: [0, 100],
+  filamentAdornmentMotion: [0, 100],
+  filamentAdornmentGlow: [0, 100],
   filamentStitchAmount: [0, 100],
   filamentStitchSpeed: [0, 100],
   filamentStitchLength: [0, 100],
@@ -602,6 +607,13 @@ export const initial = {
   filamentBeads: 0,
   filamentBeadSize: 45,
   filamentSecondHue: 0,
+  filamentAdornmentMode: "Bare threads",
+  filamentSecondAdornmentMode: "Bare threads",
+  filamentAdornmentAmount: 0,
+  filamentAdornmentSpacing: 56,
+  filamentAdornmentSize: 55,
+  filamentAdornmentMotion: 48,
+  filamentAdornmentGlow: 70,
   filamentStitchMode: "Needle chase",
   filamentStitchAmount: 0,
   filamentStitchSpeed: 52,
@@ -857,6 +869,8 @@ export function validateRecipe(input) {
     filamentMaterial: filamentMaterials,
     filamentSecondMaterial: filamentMaterials,
     filamentStitchMode: filamentStitchModes,
+    filamentAdornmentMode: filamentAdornmentModes,
+    filamentSecondAdornmentMode: filamentAdornmentModes,
     filamentSculptMode: filamentSculptModes,
     underlayMode: underlayModes,
     atmoMode: atmosphereModes,
@@ -1268,6 +1282,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "filamentCrossbreed","filamentInterlace","filamentTwist","filamentPhase",
       "filamentNap","filamentLuster","filamentBeads","filamentBeadSize",
       "filamentSecondHue",
+      "filamentAdornmentAmount","filamentAdornmentSpacing","filamentAdornmentSize",
+      "filamentAdornmentMotion","filamentAdornmentGlow",
       "filamentStitchAmount","filamentStitchSpeed",
       "filamentStitchLength","filamentStitchGlow",
       "filamentSculptAmount","filamentSculptDepth",
@@ -1500,6 +1516,13 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.filamentBeads=random()<.6 ? 21+random()*78 : 0;
   s.filamentBeadSize=14+random()*83;
   s.filamentSecondHue=random()*100;
+  s.filamentAdornmentMode=different(filamentAdornmentModes,state.filamentAdornmentMode,random);
+  s.filamentSecondAdornmentMode=different(filamentAdornmentModes,state.filamentSecondAdornmentMode,random);
+  s.filamentAdornmentAmount=s.filamentAmount>0 && random()<.58?39+random()*59:0;
+  s.filamentAdornmentSpacing=22+random()*76;
+  s.filamentAdornmentSize=24+random()*75;
+  s.filamentAdornmentMotion=18+random()*80;
+  s.filamentAdornmentGlow=32+random()*66;
   s.filamentStitchMode=different(filamentStitchModes,state.filamentStitchMode,random);
   s.filamentStitchAmount=s.filamentAmount>0 && random()<.58 ? 45+random()*54 : 0;
   s.filamentStitchSpeed=15+random()*84;

@@ -493,6 +493,8 @@ export function specializeFilamentAdornments(source,first,second=null){
   const end=source.indexOf("  // Paint trinkets on real filament geometry",fallback);
   if(fallback<0||end<=fallback)return source;
   const chosen=[...new Set(ids.filter(n=>n>0))].sort((a,b)=>a-b);
+  if(!chosen.length)return source.slice(0,starts[0])+
+    "  trinket=0.0;\n  sparkle=0.0;\n"+source.slice(end);
   const branches=chosen.map((n,k)=>{
     const finish=n===filamentAdornmentModes.length-1?fallback:starts[n];
     return (k===0?"  if(adornmentMode=="+n+"){":

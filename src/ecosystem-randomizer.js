@@ -17,6 +17,7 @@ import { MAX_HABITAT_STAMPS } from "./habitat-painter.js";
 import {branchSpecies,speciationModes} from "./speciation-lab.js";
 import {coevolutionModes,evolveCoevolution,stageEncounter} from "./coevolution-lab.js";
 import {advanceSuccession,shuffleSuccession} from "./ecological-succession.js";
+import {foodWebLinks,shuffleFoodWeb,feedFoodWeb,prepareFoodWeb} from "./living-food-web.js";
 
 const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
 const unit=rng=>{
@@ -156,7 +157,7 @@ export function shuffleColonies(state,rng=Math.random,opts={}){
     ...opts,needA:true,needB:second,
   });
   s.sporeGeneration=0;
-  s.coevoRound=0;
+  s.coevoRound=0;s.foodWebRound=0;
   const settled=ensureValidEcosystemState(s,rng);
   return settled.geneAmount>0 ? seedGenePool(settled,rng) : settled;
 }
@@ -216,10 +217,21 @@ const maybeSuccede=(s,rng,opts={})=>{
   return advanceSuccession({...shuffleSuccession(s,rng),
     successionBurial:45+unit(rng)*54});
 };
+const maybeFoodWeb=(s,rng,opts={})=>{
+  if((s.habitatStamps||[]).length<2||!foodWebLinks(s).length||
+    ((s.fossilAmount>0&&s.fossilRecords?.length)&&
+     (s.successionAmount>0&&s.successionRecords?.length)&&
+     opts.allowHeavy!==true)||
+    !roll(opts.allowHeavy===true?.42:.24,rng))return s;
+  const network=prepareFoodWeb(shuffleFoodWeb(s,rng));
+  return roll(.48,rng)?feedFoodWeb(network,1):network;
+};
 const evolveRandomEcosystem=(state,rng,opts)=>
-  maybeSuccede(maybeCoevolve(maybeSpeciate(state,rng,opts),rng,opts),rng,opts);
+  maybeFoodWeb(maybeSuccede(maybeCoevolve(
+    maybeSpeciate(state,rng,opts),rng,opts),rng,opts),rng,opts);
 export function shuffleEcosystem(state,rng=Math.random,opts={}){
   const s={...state};
+  s.foodWebAmount=0;s.foodWebRound=0;
   const dual=opts.allowDual!==false&&roll(opts.dualChance??.63,rng);
   const intensity=clamp(Number.isFinite(opts.intensity)?opts.intensity:.7,0,1);
   s.atmoMode=choose(atmosphereModes,rng);
@@ -439,6 +451,7 @@ export function mixEcosystemIntoSurprise(state,rng=Math.random,opts={}){
     s.fossilMode="Dormant";s.fossilAmount=0;s.fossilRecords=[];
     s.successionMode="Pioneer enrichment";s.successionAmount=0;
     s.successionRecords=[];s.successionEpoch=0;
+    s.foodWebAmount=0;s.foodWebRound=0;
     return s;
   }
   s=shuffleEcosystem(s,rng,{

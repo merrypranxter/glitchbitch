@@ -46,8 +46,8 @@ export function shuffleAlchemy(state,rng=Math.random,kind="all"){
     p.name==="Chromatic Riso Hallucination"||
     p.name==="Soft Neon Jewel Spores"||
     p.name==="Acid Chroma Oracle"):alchemyPresets;
-  const candidates=pool.filter(p=>p.mode!==state.alchemyMode || 
-    p.name!==state.alchemyPreset);
+  // A color shuffle should genuinely change the underlying color engine.
+  const candidates=pool.filter(p=>p.mode!==state.alchemyMode);
   const target=(candidates.length?candidates:pool)[
     Math.floor(unit*(candidates.length?candidates.length:pool.length))];
   return {...applyAlchemyPreset(state,target.name)};
@@ -122,8 +122,8 @@ vec3 livingColorAlchemy(vec3 original,vec2 uv,vec2 p,float v){
       .31*cos(p.y*2.2-t*.53+f*.25);
     float turn=motion*(.3+alchemySeparation*3.5);
     vec2 hue=vec2(cos(angle+turn),sin(angle+turn));
-    float saturation=1.+alchemySeparation*(.35+.3*motion);
-    vec2 ab=hue*max(.018,radius)*saturation;
+    float chromaBoost=1.+alchemySeparation*(.35+.3*motion);
+    vec2 ab=hue*max(.018,radius)*chromaBoost;
     vec3 paletteLab=caToLab(palette(fract(
       f*.083+t*.043+alchemyVariation*.12)));
     ab=mix(ab,paletteLab.yz,.10+.42*alchemyPalette);

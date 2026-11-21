@@ -119,7 +119,7 @@ export function nextPhotonSpecies(state,rng=Math.random){
   return {...state,photonSpecies:selection,photonAmount:Math.max(50,state.photonAmount||0)};
 }
 export const photonGLSL = `
-// Eight geometry-first luminous optical organisms. The base mathematical
+// Eighteen geometry-first luminous optical organisms. The base mathematical
 // field provides phase/pigment changes, while the new forms have own kinetics.
 uniform int photonSpecies;
 uniform float photonAmount,photonScale,photonMotion,photonDensity;

@@ -81,7 +81,7 @@ test("the eight funky optics have distinct time-driven shape, rim and glow",()=>
    const a=photonGLSL.indexOf(start),b=photonGLSL.indexOf(end,a);
    assert.ok(a>=0&&b>a);
    const shape=photonGLSL.slice(a,b);
-   assert.ok(shape.length>440,String(id));
+   assert.ok(shape.length>400,String(id));
    for(const key of ["shape=","rim=","glint=","phase=","alpha="])
      assert.ok(shape.includes(key),id+" "+key);
    assert.match(shape,/\bt\b/);

@@ -1,4 +1,4 @@
-// PHOTON ZOO — eighteen living optical architectures, WebGL 1/2 compatible.
+// PHOTON ZOO — twenty-six living optical architectures, WebGL 1/2 compatible.
 // No texture reads, framebuffers, external dependencies or expensive raymarch.
 // Shader only exists when the user turns this family on.
 export const photonSpecies = [
@@ -19,8 +19,17 @@ export const photonSpecies = [
   "Moiré pollen",
   "Spectral manta wings",
   "Nerve pearls",
-  "Temporal diffraction comb"
+  "Temporal diffraction comb",
+  "Candy singularity",
+  "Pollen eclipse",
+  "Jelly cathedral",
+  "Haunted lenticules",
+  "Iridescent spore halo",
+  "Prism amoeba",
+  "Neon diffraction fungus",
+  "Opal thunder lattice"
 ];
+export const funkyPhotonSpecies=photonSpecies.slice(18);
 export const newPhotonSpecies=photonSpecies.slice(8);
 export const photonSpeciesFamilies=[
   {name:"Original optical creatures",species:photonSpecies.slice(0,8)},
@@ -32,6 +41,12 @@ export const photonSpeciesFamilies=[
     "Temporal diffraction comb"]},
   {name:"Biological spectral organisms",species:[
     "Spectral manta wings","Nerve pearls"]},
+  {name:"Funky singularities and spore optics",species:[
+    "Candy singularity","Pollen eclipse","Iridescent spore halo",
+    "Neon diffraction fungus"]},
+  {name:"Haunted prismatic organisms",species:[
+    "Jelly cathedral","Haunted lenticules","Prism amoeba",
+    "Opal thunder lattice"]},
 ];
 export const photonSpeciesDescriptions={
   "Prism rosettes":"Rotating polar petals with moving opalescent interference rings.",
@@ -52,7 +67,24 @@ export const photonSpeciesDescriptions={
   "Spectral manta wings":"Interfering wing membranes unfurl in traveling iridescent waves.",
   "Nerve pearls":"Glassy bead chains connect through electrically rippling filaments.",
   "Temporal diffraction comb":"Rotating slit gratings make spectral combs sweep through the field.",
+  "Candy singularity":"A soft gravitational candy lens folds its luminous spiral rings inward.",
+  "Pollen eclipse":"Tiny traveling eclipses cast shifting bright coronas through spore cells.",
+  "Jelly cathedral":"Interlocking translucent bell vaults resonate with moving spectral ribs.",
+  "Haunted lenticules":"Ghost reflections slide between gently rotating anisotropic glass lenses.",
+  "Iridescent spore halo":"Germinating colored coronas beat against ring-shaped interference shells.",
+  "Prism amoeba":"A soft morphing refractive body flows through a sparkling cellular skin.",
+  "Neon diffraction fungus":"Branching gills pulse through animated slit diffraction and light spores.",
+  "Opal thunder lattice":"Jagged moving opaline wavefronts crackle along a distorted light lattice.",
 };
+export function remixFunkyPhoton(state,rng=Math.random){
+  const n=Number(rng());
+  const unit=Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;
+  const candidates=funkyPhotonSpecies.filter(name=>name!==state.photonSpecies);
+  const options=candidates.length?candidates:funkyPhotonSpecies;
+  const species=options[Math.floor(unit*options.length)];
+  const preset=photonPresets.find(p=>p.species===species);
+  return preset?photonPresetState(state,preset.name):state;
+}
 // Source-only compile-time pruning avoids compiling eighteen optical
 // geometries when one is selected. Existing numerical IDs remain intact.
 export function specializePhotonGeometry(source,index){
@@ -61,10 +93,10 @@ export function specializePhotonGeometry(source,index){
     "  }else if(photonSpecies=="+i+"){";
   const starts=photonSpecies.map((_,i)=>source.indexOf(opener(i)));
   if(starts.some((at,i)=>at<0||(i>0&&at<=starts[i-1])))return source;
-  const fallback=source.indexOf("  }else{ // Unsupported photon species",starts[17]);
+  const fallback=source.indexOf("  }else{ // Unsupported photon species",starts[starts.length-1]);
   const end=source.indexOf("  float chroma=fract(",fallback);
   if(fallback<0||end<=fallback)return source;
-  const stop=index===17?fallback:starts[index+1];
+  const stop=index===starts.length-1?fallback:starts[index+1];
   const branch=source.slice(starts[index]+opener(index).length,stop);
   return source.slice(0,starts[0])+"  if(photonSpecies=="+index+"){"+
     branch+source.slice(fallback,end)+source.slice(end);
@@ -104,7 +136,15 @@ export const photonPresets = [
   {name:"Moiré spore cathedral",species:"Moiré pollen",photonAmount:97,photonScale:70,photonMotion:93,photonDensity:90,photonRelief:86,photonHue:36,photonVariation:62},
   {name:"Spectral manta migration",species:"Spectral manta wings",photonAmount:96,photonScale:61,photonMotion:80,photonDensity:84,photonRelief:94,photonHue:56,photonVariation:78},
   {name:"Electric opal necklace",species:"Nerve pearls",photonAmount:97,photonScale:65,photonMotion:86,photonDensity:89,photonRelief:98,photonHue:88,photonVariation:77},
-  {name:"Temporal diffraction witch",species:"Temporal diffraction comb",photonAmount:96,photonScale:64,photonMotion:88,photonDensity:92,photonRelief:89,photonHue:91,photonVariation:49}
+  {name:"Temporal diffraction witch",species:"Temporal diffraction comb",photonAmount:96,photonScale:64,photonMotion:88,photonDensity:92,photonRelief:89,photonHue:91,photonVariation:49},
+  {"name":"Candy Event Horizon","species":"Candy singularity","photonAmount":97,"photonScale":59,"photonMotion":86,"photonDensity":89,"photonRelief":97,"photonHue":68,"photonVariation":77},
+  {"name":"Eclipse in the Pollen Cathedral","species":"Pollen eclipse","photonAmount":94,"photonScale":72,"photonMotion":79,"photonDensity":85,"photonRelief":92,"photonHue":25,"photonVariation":68},
+  {"name":"Gelatinous Glass Chapel","species":"Jelly cathedral","photonAmount":96,"photonScale":63,"photonMotion":72,"photonDensity":91,"photonRelief":96,"photonHue":44,"photonVariation":60},
+  {"name":"Ghost Lens Boardinghouse","species":"Haunted lenticules","photonAmount":93,"photonScale":65,"photonMotion":78,"photonDensity":78,"photonRelief":96,"photonHue":82,"photonVariation":74},
+  {"name":"Coronal Spore Rave","species":"Iridescent spore halo","photonAmount":97,"photonScale":67,"photonMotion":83,"photonDensity":90,"photonRelief":93,"photonHue":55,"photonVariation":80},
+  {"name":"Refractive Monster Soup","species":"Prism amoeba","photonAmount":97,"photonScale":62,"photonMotion":89,"photonDensity":83,"photonRelief":98,"photonHue":74,"photonVariation":92},
+  {"name":"Bioluminescent Diffraction Rot","species":"Neon diffraction fungus","photonAmount":96,"photonScale":70,"photonMotion":93,"photonDensity":94,"photonRelief":90,"photonHue":37,"photonVariation":85},
+  {"name":"Opal Lightning Cathedral","species":"Opal thunder lattice","photonAmount":97,"photonScale":55,"photonMotion":91,"photonDensity":93,"photonRelief":98,"photonHue":88,"photonVariation":71}
 ];
 export const photonControlNames = ["photonAmount","photonScale","photonMotion","photonDensity","photonRelief","photonHue","photonVariation"];
 export function photonPresetState(state,presetName) {
@@ -119,7 +159,7 @@ export function nextPhotonSpecies(state,rng=Math.random){
   return {...state,photonSpecies:selection,photonAmount:Math.max(50,state.photonAmount||0)};
 }
 export const photonGLSL = `
-// Eighteen geometry-first luminous optical organisms. The base mathematical
+// Twenty-six geometry-first luminous optical organisms. The base mathematical
 // field provides phase/pigment changes, while the new forms have own kinetics.
 uniform int photonSpecies;
 uniform float photonAmount,photonScale,photonMotion,photonDensity;
@@ -356,6 +396,105 @@ vec3 livingPhotonZoo(vec3 original,vec2 uv,vec2 p,float v){
     glint=pow(.5+.5*cos((u+w)*9.0-t*1.6),18.0);
     phase=u*.48+w*.23+interference*.46;
     alpha=.09+.54*shape+.4*rim+.2*glint;
+  }else if(photonSpecies==18){ // CANDY SINGULARITY: folding lens ribbons.
+    float swirl=aa+1.35/(rr+.32)+t*.39;
+    float inward=rr*(16.0+photonDensity*10.0)-
+      6.0*swirl+t*.77+sin(swirl*4.0)*1.7;
+    shape=pow(.5+.5*cos(inward),16.0);
+    rim=pow(.5+.5*sin(rr*23.0+swirl*3.0-t*.83),18.0);
+    glint=pow(.5+.5*cos(swirl*9.0-rr*7.0+t*.53),12.0);
+    phase=swirl*.8-inward*.12;
+    alpha=.13+.52*shape+.39*rim+.19*glint;
+  }else if(photonSpecies==19){ // POLLEN ECLIPSE: migrating cellular dark moons.
+    vec2 grid=q*(.66+photonDensity*.48),id=floor(grid),cell=fract(grid)-.5;
+    float h=hash(id+phaseShift);
+    vec2 orbit=.17*vec2(sin(t*.63+h*6.2831853),cos(t*.58+h*6.2831853));
+    float d=length(cell-orbit);
+    float moon=.16+.07*sin(t*.41+h*5.0);
+    float corona=1.0-smoothstep(.018,.09,abs(d-moon));
+    float shadow=1.0-smoothstep(moon-.04,moon+.07,d);
+    shape=corona*(.65+.35*sin(t*.75+h*9.0)*sin(t*.75+h*9.0));
+    rim=pow(.5+.5*cos(d*46.0-t*.61),17.0)*(1.0-shadow);
+    glint=pow(.5+.5*cos(atan(cell.y,cell.x)*8.0+t*.68),14.0)*corona;
+    phase=h+d*2.5+shadow*.24;
+    alpha=.09+.67*shape+.36*rim+.18*glint;
+  }else if(photonSpecies==20){ // JELLY CATHEDRAL: nested living glass vaults.
+    vec2 vault=q*.54;
+    float arch=abs(sin(vault.x*1.34+t*.32))*.83+
+      .33*cos(vault.y*1.89-t*.28);
+    float cup=sin(vault.y*4.0-arch*3.5+t*.6);
+    float pillars=cos(vault.x*(10.0+photonDensity*11.0)+
+      sin(vault.y+t*.27)*2.0);
+    shape=pow(.5+.5*cup,13.0);
+    rim=pow(.5+.5*cos(arch*12.0-vault.y*5.3-t*.38),18.0);
+    glint=pow(.5+.5*pillars,22.0)*(.6+.4*shape);
+    phase=arch*.83+cup*.42+vault.y*.32;
+    alpha=.11+.47*shape+.49*rim+.23*glint;
+  }else if(photonSpecies==21){ // HAUNTED LENTICULES: doubly exposed rotating cells.
+    vec2 grid=q*(.6+photonDensity*.54),id=floor(grid),cell=fract(grid)-.5;
+    float h=hash(id+phaseShift),angle=t*.22+h*6.2831853;
+    vec2 axis=vec2(cos(angle),sin(angle));
+    float x=dot(cell,axis),y=dot(cell,vec2(-axis.y,axis.x));
+    float lens=length(vec2(x*1.67,y*.79));
+    float echo=length(vec2((x-.11*sin(t*.54+h*6.0))*1.49,y*.87));
+    shape=pow(.5+.5*cos(lens*28.0-t*.87),15.0);
+    rim=1.0-smoothstep(.02,.095,abs(echo-.26));
+    glint=pow(.5+.5*cos((lens-echo)*33.0+t*.63),17.0)*
+      (1.0-smoothstep(.27,.55,lens));
+    phase=angle*.21+echo*3.0+h;
+    alpha=.12+.42*shape+.47*rim+.22*glint;
+  }else if(photonSpecies==22){ // IRIDESCENT SPORE HALO: breathing coronas.
+    vec2 grid=q*(.54+photonDensity*.59),id=floor(grid),cell=fract(grid)-.5;
+    float h=hash(id+phaseShift),r=length(cell);
+    float breathe=.20+.08*sin(t*.58+h*7.0);
+    float field=sin((r-breathe)*35.0-t*.84+h*11.0);
+    float outer=1.0-smoothstep(.04,.12,abs(r-breathe));
+    shape=pow(.5+.5*field,11.0)*(1.0-smoothstep(.21,.52,r));
+    rim=outer;
+    glint=pow(.5+.5*cos(atan(cell.y,cell.x)*9.0+
+      r*16.0-t*.74),19.0)*outer;
+    phase=field*.58+h+r*1.7;
+    alpha=.07+.56*shape+.48*rim+.22*glint;
+  }else if(photonSpecies==23){ // PRISM AMOEBA: blobby refractive cell membrane.
+    vec2 g=q*.42;
+    float angle=atan(g.y,g.x),r=length(g);
+    float wave=sin(angle*6.0+t*.54+sin(angle*3.0-t*.35)*1.4);
+    float contour=.86+.16*wave+.12*sin(angle*11.0-t*.73);
+    float distanceToSkin=abs(r-contour);
+    float refraction=sin(r*(17.0+photonDensity*9.0)+
+      wave*2.3-t*.61);
+    shape=(1.0-smoothstep(.07,.3,distanceToSkin))*
+      (.64+.36*refraction*refraction);
+    rim=1.0-smoothstep(.012,.10,distanceToSkin);
+    glint=pow(.5+.5*cos(angle*13.0+wave*2.2+t*.49),16.0)*
+      (1.0-smoothstep(.04,.43,distanceToSkin));
+    phase=angle*.67+wave*.52+r*.42;
+    alpha=.11+.47*shape+.47*rim+.2*glint;
+  }else if(photonSpecies==24){ // NEON DIFFRACTION FUNGUS: gilled radial lace.
+    vec2 g=q*.59;
+    float angle=atan(g.y,g.x),r=length(g);
+    float gills=sin(angle*(16.0+floor(photonDensity*20.0))+
+      sin(r*3.4-t*.6)*1.5);
+    float cap=cos(r*(13.0+photonScale*12.0)-t*.71+
+      gills*2.6);
+    float spores=cos(g.x*9.0+t*.86)*sin(g.y*11.0-t*.61);
+    shape=pow(.5+.5*cap,13.0)*(.55+.45*gills*gills);
+    rim=pow(.5+.5*gills,15.0)*(.54+.46*cap*cap);
+    glint=pow(.5+.5*spores,16.0);
+    phase=gills*.64+cap*.31+r*.4;
+    alpha=.12+.51*shape+.43*rim+.18*glint;
+  }else if(photonSpecies==25){ // OPAL THUNDER LATTICE: buckled lightning knots.
+    vec2 g=q*.9;
+    float warp=sin(g.x*2.9+t*.4)*cos(g.y*2.3-t*.53);
+    float lightning=sin(g.x*8.0+sin(g.y*3.1+t*.73)*3.2+
+      warp*2.0-t*1.1);
+    float cross=cos(g.y*9.2+sin(g.x*2.6-t*.61)*3.3-t*.8);
+    float seam=abs(lightning*cross);
+    shape=pow(.5+.5*lightning,15.0);
+    rim=pow(.5+.5*cross,17.0);
+    glint=pow(seam,7.0);
+    phase=warp*.8+lightning*.52+cross*.31;
+    alpha=.07+.49*shape+.49*rim+.23*glint;
   }else{ // Unsupported photon species: keep the original art unmodified.
     return original;
   }

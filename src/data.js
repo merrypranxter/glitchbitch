@@ -7,6 +7,8 @@ import { microModes } from "./microstructure.js";
 import { substanceModes } from "./substance.js";
 export { microModes, substanceModes };
 import { photonSpecies } from "./photon-zoo.js";
+import { backdropModes } from "./backdrops.js";
+export { backdropModes };
 import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
@@ -183,10 +185,7 @@ export const compositionModes = [
   "Iris portals", "Braided ribbons", "Cell colonies", "Patchwork",
   "Orbital archipelagos", "Woven windows",
 ];
-export const backdropModes = [
-  "Nebula veils", "Cosmic pollen", "Caustic undercurrent", "Ghost architecture",
-  "Phosphor jacquard", "Opal cell fog",
-];
+// Backdrop names and numeric shader IDs live beside the GLSL implementation.
 // Keep mode IDs alongside their actual Microtexture shader implementations.
 // Keep mode IDs alongside their actual Substance shader implementations.
 export const chaosPhrases = ["ERROR ANGEL", "GLITCHBITCH", "LOVE.exe", "U R CUTE", "SOFT APOCALYPSE",

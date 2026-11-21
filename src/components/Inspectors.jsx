@@ -44,11 +44,13 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
   filamentMaterials,filamentMaterialPresets,applyFilamentMaterialPreset,
   remixFilamentMaterials,filamentStitchModes,filamentStitchFamilies,
-  filamentStitchDescriptions,remixFilamentStitchMotion,filamentStitchPresets,
-  applyFilamentStitchPreset,stopFilamentStitching,
-  filamentSculptModes,filamentSculptPresets,applyFilamentSculptPreset,disableFilamentSculpt } from "../filament-forge.js";
-import { underlayModes, underlayPresets, applyUnderlayPreset,
-  changeUnderlayMode, nextUnderlayMode, disableUnderlay } from "../living-underlay.js";
+  filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
+  filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
+  filamentSculptModes,filamentSculptFamilies,filamentSculptPresets,
+  applyFilamentSculptPreset,remixFilamentSculpt,disableFilamentSculpt } from "../filament-forge.js";
+import { underlayModes,underlayFamilies,underlayDescriptions,remixUnderlay,
+  underlayPresets,applyUnderlayPreset,changeUnderlayMode,
+  nextUnderlayMode,disableUnderlay } from "../living-underlay.js";
 import { sections, sectionActive, effectGroups } from "../ui-index";
 import { atmosphereModes, atmospherePresets, applyAtmospherePreset,
   nextAtmosphereMode, hideAtmosphere, hybridAtmospherePresets,
@@ -1524,11 +1526,16 @@ export function EffectsInspector({ history, onTool, tool }) {
       <p className="control-note">Fully reversible: both parents share your palette and export timeline. Your original engines, artwork, text and all other layers remain untouched when both presences are 0.</p>
     </>,
     underlay: <>
-      <p className="control-note">Six mathematical textile grounds that fill the spaces behind the stitched lines. Moving jacquard, shifting moiré, fivefold twill, velvet pile, opaline damask and cellular gauze. Also works as stand-alone animated artwork with Filament Forge turned off.</p>
+      <p className="control-note">Sixteen moving textile grounds: six original woven fabrics plus ten new ghosts, invasion cloths, soft moiré, and maximalist cursed upholstery. Use them alone or behind your filament art.</p>
       <Select label="Fabric ground" value={s.underlayMode}
         onChange={mode=>history.change(x=>changeUnderlayMode(x,mode))}>
-        {underlayModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        {underlayFamilies.map(family=><optgroup key={family.name}
+          label={family.name}>
+          {family.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </optgroup>)}
       </Select>
+      {underlayDescriptions[s.underlayMode]&&
+        <p className="control-note">{underlayDescriptions[s.underlayMode]}</p>
       <Parameter label="Underlay presence" name="underlayAmount" history={history}/>
       <Parameter label="Fabric pattern scale" name="underlayScale" history={history}/>
       <Parameter label="Weave / pile density" name="underlayDensity" history={history}/>
@@ -1548,6 +1555,14 @@ export function EffectsInspector({ history, onTool, tool }) {
         <button type="button" className="button secondary"
           onClick={()=>history.change(x=>nextUnderlayMode(x))}>
           <Dices size={13}/> New fabric
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>remixUnderlay(x))}>
+          <Shuffle size={13}/> Shuffle textile grounds
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>remixUnderlay(x,Math.random,true))}>
+          <Dices size={13}/> Shuffle haunted fabrics
         </button>
         <button type="button" className="button secondary"
           onClick={()=>history.change(x=>({...x,
@@ -1613,12 +1628,15 @@ export function EffectsInspector({ history, onTool, tool }) {
       </div>
       <details className="filament-crossbreeder filament-sculpt-lab">
         <summary>💎 SCULPTED THREADS — RAISED RELIEF & LIGHT</summary>
-        <p className="control-note">Give the existing filament paths tactile-looking volume with directional highlights, raised satin, quilted puff, engraved grooves and shadow-cut lace. This is lightweight 2.5D shading—not a heavyweight 3D mesh.</p>
+        <p className="control-note">Fifteen geometry-constrained 2.5D relief styles, including new gilded metalwork, bone inlays, molten jewels and scarred alien sutures. No heavyweight 3D mesh; the tactile lighting stays on your actual yarn.</p>
         <Select label="Sculpted thread style" value={s.filamentSculptMode}
           onChange={value=>history.change(x=>({...x,filamentSculptMode:value,
             filamentSculptAmount:Math.max(65,x.filamentSculptAmount),
             filamentAmount:Math.max(55,x.filamentAmount)}))}>
-          {filamentSculptModes.map(name=><option key={name} value={name}>{name}</option>)}
+          {filamentSculptFamilies.map(family=><optgroup
+            key={family.name} label={family.name}>
+            {family.modes.map(name=><option key={name} value={name}>{name}</option>)}
+          </optgroup>)}
         </Select>
         <Parameter label="Tactile relief presence" name="filamentSculptAmount" history={history}/>
         <Parameter label="Thread height / depth" name="filamentSculptDepth" history={history}/>
@@ -1634,6 +1652,14 @@ export function EffectsInspector({ history, onTool, tool }) {
             Sculpt selected preset
           </button>
           <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentSculpt(x))}>
+            <Shuffle size={13}/> Shuffle sculpted relief
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentSculpt(x,Math.random,true))}>
+            <Dices size={13}/> Shuffle alien relic relief
+          </button>
+          <button type="button" className="button secondary"
             disabled={s.filamentSculptAmount<=0}
             onClick={()=>history.change(disableFilamentSculpt)}>
             Flatten relief (keep threads)
@@ -1643,7 +1669,7 @@ export function EffectsInspector({ history, onTool, tool }) {
       </details>
       <details className="filament-crossbreeder filament-stitch-lab">
         <summary>🪡 SELF-WEAVING LOOM — STITCH IN MOTION</summary>
-        <p className="control-note">Fifteen distinct moving stitch behaviors, from original needle chases to alien code transmissions, vascular growth and reverse repairs. Each animation follows the actual selected thread geometry; no separate screen overlay. Select a mode or use the remix buttons.</p>
+        <p className="control-note">Twenty-one distinct animated stitch laws. Six new parasitic and ritual sewing modes crawl, spasm, blink, unpick and knot their way along your actual filament paths.</p>
         <Select label="Stitch motion" value={s.filamentStitchMode}
           onChange={mode=>history.change(x=>({...x,filamentStitchMode:mode,
             filamentStitchAmount:Math.max(68,x.filamentStitchAmount),
@@ -1673,6 +1699,10 @@ export function EffectsInspector({ history, onTool, tool }) {
           <button type="button" className="button secondary"
             onClick={()=>history.change(x=>remixFilamentStitchMotion(x,Math.random,true))}>
             <Dices size={13}/> Shuffle new weird stitches
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixRitualStitches(x))}>
+            <Shuffle size={13}/> Shuffle ritual stitches
           </button>
           <button type="button" className="button secondary"
             disabled={s.filamentStitchAmount<=0}

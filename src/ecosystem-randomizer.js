@@ -16,6 +16,7 @@ import {archiveFossils,shuffleFossils} from "./fossil-record.js";
 import { MAX_HABITAT_STAMPS } from "./habitat-painter.js";
 import {branchSpecies,speciationModes} from "./speciation-lab.js";
 import {coevolutionModes,evolveCoevolution,stageEncounter} from "./coevolution-lab.js";
+import {advanceSuccession,shuffleSuccession} from "./ecological-succession.js";
 
 const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
 const unit=rng=>{
@@ -205,8 +206,18 @@ const maybeCoevolve=(state,rng,opts={})=>{
   return evolveCoevolution(staged,choose(coevolutionModes,rng),
     range(45,95,rng),roll(.33,rng)?2:1);
 };
+const maybeSuccede=(s,rng,opts={})=>{
+  // On mobile avoid stacking both fossil and succession resource loops by
+  // default. Explicit artists can still layer both in the Scene controls.
+  if(!s.habitatStamps?.length||s.substrateAmount<=0||
+     s.substrateMode==="Bare canvas"||
+     (s.fossilAmount>0&&s.fossilRecords?.length&&opts.allowHeavy!==true)||
+     !roll(opts.allowHeavy===true?.34:.16,rng))return s;
+  return advanceSuccession({...shuffleSuccession(s,rng),
+    successionBurial:45+unit(rng)*54});
+};
 const evolveRandomEcosystem=(state,rng,opts)=>
-  maybeCoevolve(maybeSpeciate(state,rng,opts),rng,opts);
+  maybeSuccede(maybeCoevolve(maybeSpeciate(state,rng,opts),rng,opts),rng,opts);
 export function shuffleEcosystem(state,rng=Math.random,opts={}){
   const s={...state};
   const dual=opts.allowDual!==false&&roll(opts.dualChance??.63,rng);
@@ -242,6 +253,8 @@ export function shuffleEcosystem(state,rng=Math.random,opts={}){
   s.coevoRound=0;
   s.fossilRecords=[];
   s.fossilAmount=0;s.fossilMode="Dormant";
+  s.successionRecords=[];s.successionEpoch=0;
+  s.successionAmount=0;s.successionMode="Pioneer enrichment";
   const lifeChance=opts.lifeChance??(.27+.55*intensity);
   const live=roll(lifeChance,rng);
   if(live){
@@ -424,6 +437,8 @@ export function mixEcosystemIntoSurprise(state,rng=Math.random,opts={}){
     s.selectionMode="Dormant";s.selectionPressure=0;
     s.apocalypseMode="Dormant";s.apocalypseAmount=0;s.apocalypseEpoch=0;
     s.fossilMode="Dormant";s.fossilAmount=0;s.fossilRecords=[];
+    s.successionMode="Pioneer enrichment";s.successionAmount=0;
+    s.successionRecords=[];s.successionEpoch=0;
     return s;
   }
   s=shuffleEcosystem(s,rng,{

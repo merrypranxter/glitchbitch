@@ -1536,6 +1536,7 @@ export function EffectsInspector({ history, onTool, tool }) {
       </Select>
       {underlayDescriptions[s.underlayMode]&&
         <p className="control-note">{underlayDescriptions[s.underlayMode]}</p>
+      }
       <Parameter label="Underlay presence" name="underlayAmount" history={history}/>
       <Parameter label="Fabric pattern scale" name="underlayScale" history={history}/>
       <Parameter label="Weave / pile density" name="underlayDensity" history={history}/>

@@ -8,9 +8,9 @@ import {
 } from "../src/filament-forge.js";
 import {sectionMeta,findControls} from "../src/ui-index.js";
 
-test("Six hybrid recipes have two valid distinct parent geometries",()=>{
- assert.equal(filamentHybridPresets.length,6);
- assert.equal(new Set(filamentHybridPresets.map(x=>x.name)).size,6);
+test("Eight hybrid recipes have two valid distinct parent geometries",()=>{
+ assert.equal(filamentHybridPresets.length,8);
+ assert.equal(new Set(filamentHybridPresets.map(x=>x.name)).size,8);
  for(const preset of filamentHybridPresets){
    assert.ok(filamentSpecies.includes(preset.first),preset.name+" parent A");
    assert.ok(filamentSpecies.includes(preset.second),preset.name+" parent B");

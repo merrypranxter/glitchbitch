@@ -6,10 +6,10 @@ import {filamentSpecies,filamentPresets,filamentControls,
   applyFilamentPreset,nextFilamentSpecies,filamentGLSL} from "../src/filament-forge.js";
 import {sections,sectionMeta,sectionActive,findControls} from "../src/ui-index.js";
 
-test("Filament Forge has six distinct species and six full art presets",()=>{
- assert.equal(filamentSpecies.length,6);
- assert.equal(new Set(filamentSpecies).size,6);
- assert.equal(filamentPresets.length,6);
+test("Filament Forge has sixteen distinct species and sixteen full art presets",()=>{
+ assert.equal(filamentSpecies.length,16);
+ assert.equal(new Set(filamentSpecies).size,16);
+ assert.equal(filamentPresets.length,16);
  for(const p of filamentPresets){
    assert.ok(filamentSpecies.includes(p.species),p.name);
    for(const key of filamentControls){
@@ -67,7 +67,7 @@ test("Surprise and Mutate incorporate filament settings without generating words
  assert.ok(mutated.filamentAmount>s.filamentAmount);
  assert.equal(mutated.lettering,s.lettering);
 });
-test("Shader has six geometric branches and no WebGL2-only requirements",()=>{
+test("Shader has sixteen geometric branches and no WebGL2-only requirements",()=>{
  assert.match(filamentGLSL,/vec3 livingFilamentForge/);
  assert.match(filamentGLSL,/uniform int filamentSpecies;/);
  assert.match(filamentGLSL,/if\(species==0\)/);

@@ -188,7 +188,7 @@ export const sections = [
       "seam sweep","crystal contagion","molten migration","moth-eaten portals",
       "checker metamorph","strange attractor","morse rethreading","fungal takeover",
       "chromatic tide","material transformation","morphing fabric","living silk",
-      "silk turns crystal","shuffle transformations","shuffle fungal","impossible",
+      "opaline seam sweep","molten oil-slick","fossil couture","shuffle transformations","shuffle fungal","impossible",
       "material transformation strength","transformation patch scale",
       "transformation frontier glow","stop morphing","keep fabric"] },
   { id: "photon", tab: "Effects", group: "Light", title: "Photon zoo",

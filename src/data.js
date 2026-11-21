@@ -3,6 +3,9 @@ import { generateRandomPalette, shuffleColorStops } from "./palette-actions.js";
 import { retroFontIds } from "./retro-fonts.js";
 import { letteringBlendModes } from "./lettering-blends.js";
 import { letteringMotionPaths } from "./lettering-motion.js";
+import { microModes } from "./microstructure.js";
+import { substanceModes } from "./substance.js";
+export { microModes, substanceModes };
 import { photonSpecies } from "./photon-zoo.js";
 import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
@@ -184,14 +187,8 @@ export const backdropModes = [
   "Nebula veils", "Cosmic pollen", "Caustic undercurrent", "Ghost architecture",
   "Phosphor jacquard", "Opal cell fog",
 ];
-export const microModes = [
-  "Living embroidery", "Opal granulation", "Gel caustics", "Point lace",
-  "Glass filaments", "Crystalline cilia",
-];
-export const substanceModes = [
-  "CMY lithogenesis", "Chromatophore reef",
-  "Chitin interference", "Conformal chromasoup",
-];
+// Keep mode IDs alongside their actual Microtexture shader implementations.
+// Keep mode IDs alongside their actual Substance shader implementations.
 export const chaosPhrases = ["ERROR ANGEL", "GLITCHBITCH", "LOVE.exe", "U R CUTE", "SOFT APOCALYPSE",
   "INFINITE TRASH", "COSMIC STATIC", "NEON FUNERAL", "NO SIGNAL", "DIVINE MALFUNCTION",
   "HYPERSPACE", "TOXIC DREAM", "BLESSED ERROR", "404 REALITY", "SWEET CORRUPTION"];

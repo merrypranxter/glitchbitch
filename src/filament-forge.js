@@ -998,13 +998,13 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     highlight=.5+.5*cos(phase*4.3+t*.27);
   }else if(species==20){ // MOBIUS CABLE: twisting paired strands on a spiral band.
     float angle=atan(q.y,q.x),radial=length(q);
-    float twist=angle*2.0+log(1.0+radial)*9.0+t*.31;
-    float cable=sin(twist*3.0+sin(angle*2.0)*1.8);
-    float partner=cos(twist*3.0-angle*2.0+t*.23);
+    float cablePhase=angle*2.0+log(1.0+radial)*9.0+t*.31;
+    float cable=sin(cablePhase*3.0+sin(angle*2.0)*1.8);
+    float partner=cos(cablePhase*3.0-angle*2.0+t*.23);
     threadD=min(abs(cable)*.081,abs(partner)*.083);
     mask=1.0-smoothstep(7.0,11.5,radial);
-    phase=twist*1.3;
-    highlight=.5+.5*sin(twist*6.0+t*.74);
+    phase=cablePhase*1.3;
+    highlight=.5+.5*sin(cablePhase*6.0+t*.74);
   }else if(species==21){ // PARASITIC LADDER: rungs crawl over a growing scaffold.
     vec2 loom=q*(.54+density*.67);
     float serpent=sin(loom.y*.7+t*.55+sin(loom.x*.41)*.5);

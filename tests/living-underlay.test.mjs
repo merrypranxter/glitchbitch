@@ -7,13 +7,14 @@ import {underlayModes,underlayControls,underlayPresets,
   disableUnderlay,underlayGLSL} from "../src/living-underlay.js";
 import {sectionMeta,sectionActive,findControls} from "../src/ui-index.js";
 
-test("Living Underlay has six procedural cloth types and eight bounded controls",()=>{
- assert.deepEqual(underlayModes,[
+test("Living Underlay has sixteen procedural cloth types and eight bounded controls",()=>{
+ assert.deepEqual(underlayModes.slice(0,6),[
   "Ornamental jacquard","Breathing moiré organza","Quasicrystal twill",
   "Velvet pile","Opalescent damask","Cellular gauze"
  ]);
- assert.equal(underlayPresets.length,6);
- assert.equal(new Set(underlayPresets.map(x=>x.name)).size,6);
+ assert.equal(underlayModes.length,16);
+ assert.equal(underlayPresets.length,16);
+ assert.equal(new Set(underlayPresets.map(x=>x.name)).size,16);
  for(const p of underlayPresets){
   assert.ok(underlayModes.includes(p.underlayMode),p.name);
   for(const k of underlayControls){

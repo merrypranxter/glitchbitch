@@ -8,13 +8,14 @@ import {
 } from "../src/filament-forge.js";
 import {sectionMeta,findControls} from "../src/ui-index.js";
 
-test("Five tactile modes and presets have five bounded sculpt parameters",()=>{
- assert.deepEqual(filamentSculptModes,[
+test("Fifteen tactile modes and presets have five bounded sculpt parameters",()=>{
+ assert.deepEqual(filamentSculptModes.slice(0,5),[
    "Raised satin","Trapunto quilting","Recessed engraving",
    "Chased metal","Shadow cutwork"
  ]);
- assert.equal(filamentSculptPresets.length,5);
- assert.equal(new Set(filamentSculptPresets.map(p=>p.name)).size,5);
+ assert.equal(filamentSculptModes.length,15);
+ assert.equal(filamentSculptPresets.length,15);
+ assert.equal(new Set(filamentSculptPresets.map(p=>p.name)).size,15);
  for(const p of filamentSculptPresets){
    assert.ok(filamentSculptModes.includes(p.filamentSculptMode),p.name);
    for(const key of filamentSculptControls){

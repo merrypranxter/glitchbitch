@@ -6,10 +6,10 @@ import {filamentStitchModes,filamentStitchControls,filamentStitchPresets,
  applyFilamentStitchPreset,stopFilamentStitching,filamentGLSL} from "../src/filament-forge.js";
 import {sectionMeta,findControls} from "../src/ui-index.js";
 
-test("Fifteen distinct self-weaving patterns use the same four controllable parameters",()=>{
- assert.equal(filamentStitchModes.length,15);
- assert.equal(new Set(filamentStitchModes).size,5);
- assert.equal(filamentStitchPresets.length,15);
+test("Twenty-one distinct self-weaving patterns use the same four controllable parameters",()=>{
+ assert.equal(filamentStitchModes.length,21);
+ assert.equal(new Set(filamentStitchModes).size,21);
+ assert.equal(filamentStitchPresets.length,21);
  for(const p of filamentStitchPresets){
   assert.ok(filamentStitchModes.includes(p.filamentStitchMode),p.name);
   for(const k of filamentStitchControls){

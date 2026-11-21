@@ -1128,7 +1128,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     result*=1.0-shadowStrength*1.38;
     result+=vec3(1.0,.95,.94)*core*spec*lightStrength*1.8;
     result+=glimmer*edge*lightStrength*.49;
-  }else if(filamentSculptMode==4){ // Shadow cutwork, original math unchanged.
+  }else if(filamentSculptMode==4){ // Shadow cutwork: dark relieved edge and luminous rim.
     result*=1.0-shadowStrength*1.6;
     result*=1.0-core*sculptPower*(.12+.19*sculptDepth);
     result+=glimmer*edge*(.43+.57*litSide)*sculptPower*.42;

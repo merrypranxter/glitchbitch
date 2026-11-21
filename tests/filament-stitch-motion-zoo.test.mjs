@@ -14,7 +14,9 @@ const originals=["Needle chase","Loom sweep","Running stitch",
 const newModes=["Helix handoff","Knot cascade","Synaptic firing",
   "Alien Morse","Coral accretion","Tidal darning",
   "Fractal infestation","Reverse unpick",
-  "Ricochet needle","Wormhole crochet"];
+  "Ricochet needle","Wormhole crochet",
+  "Parasite hem","Oracle tacking","Spasm tatting",
+  "Hologram darning","Ritual overlock","Witch-knot relay"];
 const authored={...initial,engine:17,ratio:"9:16",seed:98736,
   filamentSpecies:"Alien scriptwork",filamentSecondSpecies:"Nerve net",
   filamentCrossbreed:87,filamentMaterial:"Opaline glass",
@@ -25,12 +27,12 @@ test("original five modes keep their exact saved identities and source order",()
  assert.deepEqual(filamentStitchModes.slice(0,5),originals);
  assert.deepEqual(filamentStitchModes.slice(5),newModes);
  assert.deepEqual(newFilamentStitchModes,newModes);
- assert.equal(filamentStitchModes.length,15);
- assert.equal(new Set(filamentStitchModes).size,15);
- assert.equal(filamentStitchPresets.length,15);
+ assert.equal(filamentStitchModes.length,21);
+ assert.equal(new Set(filamentStitchModes).size,21);
+ assert.equal(filamentStitchPresets.length,21);
  assert.deepEqual(filamentStitchPresets.slice(0,5).map(x=>x.filamentStitchMode),originals);
- assert.deepEqual(filamentStitchFamilies.flatMap(f=>f.modes).length,15);
- assert.equal(new Set(filamentStitchFamilies.flatMap(f=>f.modes)).size,15);
+ assert.deepEqual(filamentStitchFamilies.flatMap(f=>f.modes).length,21);
+ assert.equal(new Set(filamentStitchFamilies.flatMap(f=>f.modes)).size,21);
  for(const mode of filamentStitchModes)assert.ok(filamentStitchDescriptions[mode],mode);
 });
 
@@ -52,11 +54,11 @@ test("every new species-specific stitch mode saves, reloads and preserves the au
  }
 });
 
-test("each of fifteen motion shader branches can be isolated for mobile GPU compilation",()=>{
+test("each of twenty-one motion shader branches can be isolated for mobile GPU compilation",()=>{
  const branchIds=s=>[...s.matchAll(/(?:if|else if)\(filamentStitchMode==(\d+)\)/g)]
    .map(match=>Number(match[1]));
  const balance=s=>[...s].reduce((n,c)=>n+(c==="{")-(c==="}"),0);
- for(let i=0;i<15;i++){
+ for(let i=0;i<21;i++){
    const selected=specializeFilamentStitchMotion(filamentGLSL,i);
    assert.deepEqual(branchIds(selected),[i],"motion index "+i);
    assert.equal(balance(selected),0,"motion braces "+i);
@@ -69,16 +71,16 @@ test("each of fifteen motion shader branches can be isolated for mobile GPU comp
  }
  assert.equal(specializeFilamentStitchMotion(filamentGLSL,null),filamentGLSL);
  assert.equal(specializeFilamentStitchMotion(filamentGLSL,-1),filamentGLSL);
- assert.equal(specializeFilamentStitchMotion(filamentGLSL,19),filamentGLSL);
+ assert.equal(specializeFilamentStitchMotion(filamentGLSL,99),filamentGLSL);
 });
 
-test("ten new modes have unique time-dependent mask AND needle behavior",()=>{
+test("sixteen new modes have unique time-dependent mask AND needle behavior",()=>{
  const start=i=>i===0?"  if(filamentStitchMode==0){":
    "  }else if(filamentStitchMode=="+i+"){";
  const raw=filamentGLSL;
- for(let i=5;i<15;i++){
+ for(let i=5;i<21;i++){
    const begin=raw.indexOf(start(i));
-   const end=raw.indexOf(i===14?"  }else{ // Invalid stored mode":
+   const end=raw.indexOf(i===20?"  }else{ // Invalid stored mode":
      start(i+1),begin);
    assert.ok(begin>=0&&end>begin,"branch "+i);
    const body=raw.slice(begin,end);

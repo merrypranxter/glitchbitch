@@ -38,7 +38,9 @@ import {substanceFamilies,substancePresets,applySubstancePreset,remixSubstance} 
 import {bioRotPresets,applyBioRotPreset,remixBioRot} from "../bio-rot-presets.js";
 import { photonSpecies, photonSpeciesFamilies, photonSpeciesDescriptions,
   photonPresets, photonPresetState, nextPhotonSpecies,
-  remixPhotonZoo } from "../photon-zoo.js";
+  remixPhotonZoo,remixFunkyPhoton } from "../photon-zoo.js";
+import { backdropFamilies,backdropDescriptions,backdropPresets,
+  applyBackdropPreset,remixBackdrop } from "../backdrops.js";
 import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   xenoVascularSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
@@ -266,6 +268,7 @@ export function EffectsInspector({ history, onTool, tool }) {
     try { localStorage.setItem(FILTER_KEY, f); } catch { /* session only */ }
   };
   const [photonPreset,setPhotonPreset]=React.useState(photonPresets[0].name);
+  const [backdropPreset,setBackdropPreset]=React.useState(backdropPresets[0].name);
   const [filamentPreset,setFilamentPreset]=React.useState(filamentPresets[0].name);
   const [hybridPreset,setHybridPreset]=React.useState(filamentHybridPresets[0].name);
   const [materialPreset,setMaterialPreset]=React.useState(filamentMaterialPresets[0].name);
@@ -1796,7 +1799,7 @@ export function EffectsInspector({ history, onTool, tool }) {
       <p className="control-note">Presence at 0 leaves existing art untouched. Crossbreed at 0 runs only the original thread shader. Both patterns use the normal PNG/GIF/MP4 renderer.</p>
     </>,
     photon: <>
-      <p className="control-note">Eighteen genuinely animated optical organisms—living caustics, gyroid ghosts, lensworms, quasicrystals and the original eight. Each has distinct evolving geometry, not just a recolored preset.</p>
+      <p className="control-note">Twenty-six animated optical organisms, including eight new candy singularities, spectral spore eclipses and dimensional jellyfish cathedrals. Each runs its own time-dependent geometry.</p>
       <Select label="Optical creature" value={s.photonSpecies}
         onChange={v=>history.change(x=>({...x,photonSpecies:v,
           photonAmount:Math.max(62,x.photonAmount),
@@ -1834,6 +1837,10 @@ export function EffectsInspector({ history, onTool, tool }) {
         <button type="button" className="button secondary"
           onClick={()=>history.change(x=>remixPhotonZoo(x,Math.random,true))}>
           <Dices size={13}/> Shuffle new weird optics
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>remixFunkyPhoton(x))}>
+          <Shuffle size={13}/> Shuffle funky cosmic optics
         </button>
         <button type="button" className="button secondary"
           onClick={()=>history.change(x=>({...x,photonVariation:(x.photonVariation+19+Math.random()*64)%100}))}>
@@ -2030,10 +2037,19 @@ export function EffectsInspector({ history, onTool, tool }) {
       <Parameter label="Detail (GPU load)" name="stereoQuality" history={history} />
     </>,
     backdrop: <>
-      <Select label="Background" value={s.backdropMode}
-        onChange={(v) => history.change((x) => ({...x, backdropMode:v}))}>
-        {backdropModes.map((mode) => <option key={mode}>{mode}</option>)}
+      <p className="control-note">Eighteen animated atmospheric species—radiant fog, ghost architecture, weird wallpaper, mold heaven and abandoned aquarium malls. Independent near/far depth with optional palette-linked motion.</p>
+      <Select label="Atmospheric habitat" value={s.backdropMode}
+        onChange={v=>history.change(x=>({...x,backdropMode:v,
+          backdropAmount:Math.max(55,x.backdropAmount),
+          backdropMotion:Math.max(22,x.backdropMotion)}))}>
+        {backdropFamilies.map(family=><optgroup key={family.name}
+          label={family.name}>
+          {family.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </optgroup>)}
       </Select>
+      {backdropDescriptions[s.backdropMode] ? (
+        <p className="control-note">{backdropDescriptions[s.backdropMode]}</p>
+      ) : null}
       <Parameter label="Presence" name="backdropAmount" history={history} />
       <Parameter label="Parallax depth" name="backdropDepth" history={history} />
       <Parameter label="Density" name="backdropDensity" history={history} />
@@ -2041,7 +2057,35 @@ export function EffectsInspector({ history, onTool, tool }) {
       <Parameter label="Glow" name="backdropGlow" history={history} />
       <Parameter label="Palette shift" name="backdropHue" history={history} />
       <Parameter label="Variation" name="backdropVariation" history={history} />
-      <Reseed label="Shuffle background" onClick={() => history.change((x) => ({...x,backdropVariation:
+      <div className="preset-row">
+        <Select label="Instant atmosphere" value={backdropPreset} onChange={setBackdropPreset}>
+          {backdropPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applyBackdropPreset(x,backdropPreset))}>
+          Spawn this atmosphere
+        </button>
+      </div>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>remixBackdrop(x))}>
+          <Shuffle size={13}/> Shuffle all backdrops
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>remixBackdrop(x,Math.random,"new"))}>
+          <Dices size={13}/> Shuffle new atmospheres
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>remixBackdrop(x,Math.random,"funky"))}>
+          <Shuffle size={13}/> Shuffle paranormal habitats
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.backdropAmount<=0}
+          onClick={()=>history.change(x=>({...x,backdropAmount:0}))}>
+          <EyeOff size={13}/> Hide atmosphere
+        </button>
+      </div>
+      <Reseed label="Reseed background" onClick={() => history.change((x) => ({...x,backdropVariation:
         (x.backdropVariation+19+Math.random()*62)%100}))}/>
     </>,
   };

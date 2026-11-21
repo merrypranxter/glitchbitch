@@ -46,7 +46,11 @@ export async function renderImage(state, timeline, longEdge = 2160, type = "imag
     if (hasFeedback(state))
       for (let i = 5; i >= 1; i--)
         renderer.draw(state, clockAt(state, timeline, -i / 20), width, height);
-    renderer.draw(state, timeline, width, height);
+    if(!renderer.draw(state, timeline, width, height))
+      throw Error("Graphics context was lost during PNG capture.");
+    // PNG should wait for the exact same GPU fence used by GIF/MP4.
+    // Otherwise toBlob may race a newly compiled/large shader frame.
+    await waitForGraphics(renderer);
     // Rasterize the same type overlay used by the live preview onto exports.
     // The original WebGL pixels remain untouched when the recipe has no words.
     let output = canvas;
@@ -96,6 +100,20 @@ function checkExport(signal) {
 }
 const yieldUI = () => new Promise(resolve => setTimeout(resolve, 0));
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, Math.max(0, ms)));
+/** Wait for the frame's GPU fence before copying it into PNG, GIF or MP4.
+ * Bounded, cancellable and shared between single-frame and video exports.
+ * Rendering itself is not cancelled; its canvas is cleaned in the caller. */
+export async function waitForGraphics(renderer, signal, timeoutMs=30000) {
+  checkExport(signal);
+  const start=performance.now();
+  while(!renderer.ready()) {
+    checkExport(signal);
+    if(performance.now()-start>=timeoutMs)
+      throw Error("The graphics processor timed out. Reduce export resolution or turn off a heavy effect.");
+    await sleep(8);
+  }
+  checkExport(signal);
+}
 // A reusable, bounded renderer: only one RGBA frame, one WebGL canvas and one 2D canvas.
 function createFrameWorkspace(state, timeline, size, signal) {
   const canvas = document.createElement("canvas");
@@ -113,13 +131,9 @@ function createFrameWorkspace(state, timeline, size, signal) {
   async function render(seconds, includePixels = false) {
     checkExport(signal);
     const frameClock = clockAt(state, timeline, seconds);
-    renderer.draw(state, frameClock, size.width, size.height);
-    const deadline = performance.now() + 30000;
-    while (!renderer.ready()) {
-      checkExport(signal);
-      if (performance.now() > deadline) throw Error("The graphics processor timed out. Reduce resolution.");
-      await sleep(8);
-    }
+    if(!renderer.draw(state, frameClock, size.width, size.height))
+      throw Error("Graphics context was lost during video capture.");
+    await waitForGraphics(renderer,signal);
     renderer.readFrame(bytes);
     for(let y=0;y<size.height;y++)
       frame.data.set(bytes.subarray((size.height-1-y)*stride,(size.height-y)*stride), y*stride);

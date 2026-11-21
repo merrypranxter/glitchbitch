@@ -59,7 +59,7 @@ export function stageEncounter(state){
   if(!best)return state;
   const a=stamps[best.i],b=stamps[best.j];
   const target=(a.radius+b.radius)*.72;
-  if(best.d<=target)return state;
+  if(best.d<=target+1e-9)return state;
   const fraction=target/best.d;
   const x=clamp(a.x+(b.x-a.x)*fraction,.055,.945);
   const y=clamp(a.y+(b.y-a.y)*fraction,.055,.945);

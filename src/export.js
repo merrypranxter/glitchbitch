@@ -1,4 +1,5 @@
 import { createRenderer } from "./renderer.js";
+import { isArtworkParityError } from "./export-parity.js";
 import { ratios } from "./data.js";
 import { hasVisibleLettering, paintLettering, waitForLetteringFonts } from "./text-compositor.js";
 
@@ -36,16 +37,26 @@ function clockAt(state, timeline, seconds) {
     textTime: Math.max(0, (timeline.textTime || 0) + seconds),
   };
 }
+// Use an identical deterministic short history before PNG, GIF and MP4.
+// The live preview's accumulated GPU feedback cannot be cloned into a fresh
+// renderer, but export should not start cold while PNG starts pre-warmed.
+async function primeFrameHistory(renderer,state,timeline,size,signal){
+  if(!hasFeedback(state))return;
+  for(let i=5;i>=1;i--){
+    checkExport(signal);
+    if(!renderer.draw(state,clockAt(state,timeline,-i/20),size.width,size.height))
+      throw Error("GPU context lost while preparing the effect history.");
+    await waitForGraphics(renderer,signal);
+  }
+}
 export async function renderImage(state, timeline, longEdge = 2160, type = "image/png") {
   await waitForLetteringFonts(state);
   const canvas = document.createElement("canvas");
   let renderer;
   try {
-    renderer = createRenderer(canvas);
+    renderer = createRenderer(canvas,{exactEffects:true});
     const { width, height } = dimensions(state.ratio, longEdge);
-    if (hasFeedback(state))
-      for (let i = 5; i >= 1; i--)
-        renderer.draw(state, clockAt(state, timeline, -i / 20), width, height);
+    await primeFrameHistory(renderer,state,timeline,{width,height});
     if(!renderer.draw(state, timeline, width, height))
       throw Error("Graphics context was lost during PNG capture.");
     // PNG should wait for the exact same GPU fence used by GIF/MP4.
@@ -122,14 +133,19 @@ function createFrameWorkspace(state, timeline, size, signal) {
   const ctx = capture.getContext("2d", { alpha: false });
   if (!ctx) throw Error("Canvas 2D is unavailable for video capture.");
   let renderer;
-  try { renderer = createRenderer(canvas); }
+  try { renderer = createRenderer(canvas,{exactEffects:true}); }
   catch (e) { capture.width = capture.height = 1; throw e; }
   const frame = ctx.createImageData(size.width, size.height);
   const bytes = new Uint8Array(size.width * size.height * 4);
   const stride = size.width * 4;
   const lettered = hasVisibleLettering(state);
+  let historyPrimed=false;
   async function render(seconds, includePixels = false) {
     checkExport(signal);
+    if(!historyPrimed){
+      await primeFrameHistory(renderer,state,timeline,size,signal);
+      historyPrimed=true;
+    }
     const frameClock = clockAt(state, timeline, seconds);
     if(!renderer.draw(state, frameClock, size.width, size.height))
       throw Error("Graphics context was lost during video capture.");
@@ -276,11 +292,19 @@ export async function recordClip(state, timeline, {
   let firstError;
   if(typeof VideoEncoder!=="undefined" && typeof VideoFrame!=="undefined") {
     try {return await encodeMp4WebCodecs(state,timeline,opts);}
-    catch(e) {if(e.name==="AbortError")throw e; firstError=e;}
+    catch(e) {
+      // H.264 fallback is okay; silently losing artwork is never okay.
+      if(e.name==="AbortError" || isArtworkParityError(e))throw e;
+      firstError=e;
+    }
   }
   if(nativeMp4Mime()) {
     try {return await encodeMp4Recorder(state,timeline,opts);}
-    catch(e) {if(e.name==="AbortError")throw e; firstError=e;}
+    catch(e) {
+      // H.264 fallback is okay; silently losing artwork is never okay.
+      if(e.name==="AbortError" || isArtworkParityError(e))throw e;
+      firstError=e;
+    }
   }
   throw Error("MP4 H.264 export isn't supported on this device" +
     (firstError ? ": " + firstError.message : ". Try Safari or Chrome with hardware encoding.") +

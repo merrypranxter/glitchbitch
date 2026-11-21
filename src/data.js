@@ -7,6 +7,8 @@ import { microModes } from "./microstructure.js";
 import { substanceModes } from "./substance.js";
 export { microModes, substanceModes };
 import { photonSpecies } from "./photon-zoo.js";
+import { alchemyModes } from "./chromatic-alchemy.js";
+export { alchemyModes };
 import { backdropModes } from "./backdrops.js";
 export { backdropModes };
 import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes } from "./filament-forge.js";
@@ -332,6 +334,13 @@ export const numericRanges = {
   photonRelief: [0, 100],
   photonHue: [0, 100],
   photonVariation: [0, 100],
+  alchemyAmount: [0, 100],
+  alchemyScale: [0, 100],
+  alchemyMotion: [0, 100],
+  alchemySeparation: [0, 100],
+  alchemySoftness: [0, 100],
+  alchemyWhite: [0, 100],
+  alchemyVariation: [0, 100],
   substanceAmount: [0, 100],
   substanceScale: [0, 100],
   substanceMotion: [0, 100],
@@ -612,6 +621,15 @@ export const initial = {
   photonRelief: 76,
   photonHue: 48,
   photonVariation: 33,
+  alchemyMode: "OKLab Chroma Oracle",
+  alchemyAmount: 0,
+  alchemyScale: 56,
+  alchemyMotion: 58,
+  alchemySeparation: 75,
+  alchemySoftness: 57,
+  alchemyWhite: 53,
+  alchemyVariation: 39,
+  alchemyPalette: true,
   substanceMode: "CMY lithogenesis",
   substanceAmount: 0,
   substanceScale: 54,
@@ -750,6 +768,7 @@ const bools = [
   "invert",
   "freezeGeometry",
   "freezeColor",
+  "alchemyPalette",
 ];
 const colorRE = /^#[0-9a-f]{6}$/i;
 export function validateRecipe(input) {
@@ -812,6 +831,7 @@ export function validateRecipe(input) {
     microMode: microModes,
     substanceMode: substanceModes,
     photonSpecies: photonSpecies,
+    alchemyMode: alchemyModes,
     filamentSpecies: filamentSpecies,
     filamentSecondSpecies: filamentSpecies,
     filamentMaterial: filamentMaterials,
@@ -1212,6 +1232,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "stereoAmount","stereoDepth","stereoParallax",
       "stereoMorph","stereoGlow","stereoWiggle","stereoQuality",
       "filmAmount","filmThickness","opalAmount","prismAmount","foilRelief","foilMotion",
+      "alchemyAmount","alchemyScale","alchemyMotion","alchemySeparation",
+      "alchemySoftness","alchemyWhite","alchemyVariation",
       "letteringAmount","letteringScale","letteringWarp","letteringMotion",
       "compositionAmount","compositionScale","compositionFeather",
       "compositionMotion","compositionColorShift","compositionVariation",
@@ -1370,6 +1392,17 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.prismAmount=random()<.49 ? 24+random()*75:0;
   s.foilRelief=random()<.55 ? 20+random()*70:0;
   s.foilMotion=31+random()*67;
+  // Opt-in color sorcery: weighted to stay off in most full surprises.
+  // This does not rewrite a user's palette; color movement stays in the shader.
+  s.alchemyMode=different(alchemyModes,state.alchemyMode,random);
+  s.alchemyAmount=random()<.38?38+random()*59:0;
+  s.alchemyScale=18+random()*76;
+  s.alchemyMotion=20+random()*79;
+  s.alchemySeparation=32+random()*66;
+  s.alchemySoftness=20+random()*78;
+  s.alchemyWhite=10+random()*86;
+  s.alchemyVariation=random()*100;
+  s.alchemyPalette=true;
   // Surprise Me NEVER generates a slogan. Words belong to the artist.
   s.letteringStyle=different(letteringStyles,state.letteringStyle,random);
   s.letteringBlendMode="Normal";

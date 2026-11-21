@@ -1960,7 +1960,7 @@ export function EffectsInspector({ history, onTool, tool }) {
         <button type="button" className="button secondary"
           disabled={!s.bioAmount}
           onClick={()=>history.change(x=>({...x,bioAmount:0}))}>
-          <EyeOff size={13}/> Pause visible rot
+          <EyeOff size={13}/> Hide bio overlay
         </button>
       </div>
       <Parameter label="Organism" name="bioAmount" history={history} />

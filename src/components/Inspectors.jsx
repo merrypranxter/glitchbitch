@@ -46,9 +46,9 @@ import {alchemyModes,alchemyFamilies,alchemyDescriptions,alchemyPresets,
 import {injuryModes,injuryFamilies,injuryDescriptions,injuryPresets,
   applyInjuryPreset,shuffleInjury,hideInjury} from "../print-spectrum-injury.js";
 import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
-  xenoVascularSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies,
+  xenoVascularSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies, remixFreshFilaments,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
-  filamentMaterials,filamentMaterialPresets,applyFilamentMaterialPreset,
+  filamentMaterials,filamentMaterialPresets,applyFilamentMaterialPreset,remixUnusualFilamentMaterials,
   remixFilamentMaterials,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
@@ -1626,6 +1626,10 @@ export function EffectsInspector({ history, onTool, tool }) {
           <Shuffle size={13}/> Shuffle alien + veinwork
         </button>
         <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>remixFreshFilaments(x))}>
+          <Dices size={13}/> Shuffle fresh textile geometries
+        </button>
+        <button type="button" className="button secondary"
           onClick={()=>history.change(x=>({...x,
             filamentVariation:(x.filamentVariation+17+Math.random()*61)%100}))}>
           <Shuffle size={13}/> Reseed threads
@@ -1679,7 +1683,7 @@ export function EffectsInspector({ history, onTool, tool }) {
       </details>
       <details className="filament-crossbreeder filament-stitch-lab">
         <summary>🪡 SELF-WEAVING LOOM — STITCH IN MOTION</summary>
-        <p className="control-note">Twenty-one distinct animated stitch laws. Six new parasitic and ritual sewing modes crawl, spasm, blink, unpick and knot their way along your actual filament paths.</p>
+        <p className="control-note">Thirty-one animated stitch laws: classic chain, cross, satin, blanket, feather and cable stitches, plus ghost bobbins, quantum unraveling and mutant zipper nightmares. All follow the actual thread paths.</p>
         <Select label="Stitch motion" value={s.filamentStitchMode}
           onChange={mode=>history.change(x=>({...x,filamentStitchMode:mode,
             filamentStitchAmount:Math.max(68,x.filamentStitchAmount),
@@ -1724,7 +1728,7 @@ export function EffectsInspector({ history, onTool, tool }) {
       </details>
       <details className="filament-crossbreeder filament-material-lab">
         <summary>✨ THREAD ALCHEMY — MATERIALS & BEADS</summary>
-        <p className="control-note">Dress the actual stitch paths in iridescent silk, molten chrome, translucent opal, velvet fiber, or glowing twisted yarn. Both parents can wear different materials. Original Thread retains the old look.</p>
+        <p className="control-note">Fourteen dressable fiber materials: from cotton, pearl floss, chenille and metallic tinsel to rainbow fiber optics, oil-slick latex, gelatin nerves and living bioluminescent mycelium. Both parents can wear DIFFERENT materials. Original Thread retains the old look.</p>
         <Select label="First parent fiber material" value={s.filamentMaterial}
           onChange={value=>history.change(x=>({...x,filamentMaterial:value,
             filamentAmount:Math.max(50,x.filamentAmount)}))}>
@@ -1750,6 +1754,10 @@ export function EffectsInspector({ history, onTool, tool }) {
           <button type="button" className="button secondary"
             onClick={()=>history.change(x=>remixFilamentMaterials(x))}>
             <Dices size={13}/> Remix fibers
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixUnusualFilamentMaterials(x))}>
+            <Shuffle size={13}/> Dress in weird shit
           </button>
           <button type="button" className="button secondary"
             onClick={()=>history.change(x=>({...x,

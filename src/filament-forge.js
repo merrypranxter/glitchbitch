@@ -690,6 +690,157 @@ export function specializeFilamentContagion(source,index){
     "  }\n"+source.slice(end);
 }
 
+
+/**
+ * NEURAL LOOM — deterministic electric signaling across procedurally moving
+ * woven fibers. Cross-parent coupling comes from actual already-sewn
+ * intersection masks and the first parent's palette luminance/pulse.
+ * Not a temporal memory buffer or physically trained neural network.
+ */
+export const filamentNeuralModes=[
+  "Off",
+  "Axon train",
+  "Chromatic reflex",
+  "Synaptic handshake",
+  "Ganglion chorus",
+  "Reflex arc",
+  "Myelin skip",
+  "Nerve storm",
+  "Resting potential"
+];
+export const filamentNeuralFamilies=[
+  {name:"Quiet",modes:filamentNeuralModes.slice(0,1)},
+  {name:"Classic neural signaling",modes:filamentNeuralModes.slice(1,4)},
+  {name:"Strange textile brains",modes:filamentNeuralModes.slice(4,8)},
+  {name:"Slow meditative currents",modes:filamentNeuralModes.slice(8)}
+];
+export const filamentNeuralDescriptions={
+  "Off": "No nervous-system activity. Existing artworks and material dressing stay unchanged.",
+  "Axon train": "Bright action-potential packets move in chains along the current animated filaments.",
+  "Chromatic reflex": "The textile reacts to its own palette gradients and fires at strong neighboring-color contrasts.",
+  "Synaptic handshake": "The second parent reacts to a pulse arriving from the first only at their actual stitched crossings.",
+  "Ganglion chorus": "Seeded ganglion clusters synchronize nearby thread motion and rhythmic flashes.",
+  "Reflex arc": "Electrical impulses turn around periodically and travel back along the fibers.",
+  "Myelin skip": "Saltatory spikes appear to jump between regularly spaced myelin-like nodes.",
+  "Nerve storm": "Seeded, irregular bursts of optical electricity erupt along the woven network.",
+  "Resting potential": "Slow glow pulses drift across a calm fabric without constant harsh flashing."
+};
+export const filamentNeuralControls=["filamentNeuralAmount","filamentNeuralSpeed",
+  "filamentNeuralCoupling","filamentNeuralThreshold","filamentNeuralGlow"];
+export const filamentNeuralPresets=[
+  {
+    "name": "Silk axon railway",
+    "filamentNeuralMode": "Axon train",
+    "filamentNeuralAmount": 85,
+    "filamentNeuralSpeed": 61,
+    "filamentNeuralCoupling": 63,
+    "filamentNeuralThreshold": 32,
+    "filamentNeuralGlow": 74
+  },
+  {
+    "name": "Chromatic synesthesia",
+    "filamentNeuralMode": "Chromatic reflex",
+    "filamentNeuralAmount": 95,
+    "filamentNeuralSpeed": 47,
+    "filamentNeuralCoupling": 72,
+    "filamentNeuralThreshold": 28,
+    "filamentNeuralGlow": 87
+  },
+  {
+    "name": "Contact synapse",
+    "filamentNeuralMode": "Synaptic handshake",
+    "filamentNeuralAmount": 94,
+    "filamentNeuralSpeed": 69,
+    "filamentNeuralCoupling": 82,
+    "filamentNeuralThreshold": 24,
+    "filamentNeuralGlow": 91
+  },
+  {
+    "name": "Ganglion choir",
+    "filamentNeuralMode": "Ganglion chorus",
+    "filamentNeuralAmount": 91,
+    "filamentNeuralSpeed": 42,
+    "filamentNeuralCoupling": 79,
+    "filamentNeuralThreshold": 38,
+    "filamentNeuralGlow": 82
+  },
+  {
+    "name": "Reversing reflex arc",
+    "filamentNeuralMode": "Reflex arc",
+    "filamentNeuralAmount": 94,
+    "filamentNeuralSpeed": 67,
+    "filamentNeuralCoupling": 58,
+    "filamentNeuralThreshold": 35,
+    "filamentNeuralGlow": 81
+  },
+  {
+    "name": "Saltatory electric lace",
+    "filamentNeuralMode": "Myelin skip",
+    "filamentNeuralAmount": 97,
+    "filamentNeuralSpeed": 79,
+    "filamentNeuralCoupling": 68,
+    "filamentNeuralThreshold": 23,
+    "filamentNeuralGlow": 100
+  },
+  {
+    "name": "Voltage panic",
+    "filamentNeuralMode": "Nerve storm",
+    "filamentNeuralAmount": 98,
+    "filamentNeuralSpeed": 89,
+    "filamentNeuralCoupling": 87,
+    "filamentNeuralThreshold": 17,
+    "filamentNeuralGlow": 100
+  },
+  {
+    "name": "Dreaming fabric",
+    "filamentNeuralMode": "Resting potential",
+    "filamentNeuralAmount": 79,
+    "filamentNeuralSpeed": 25,
+    "filamentNeuralCoupling": 53,
+    "filamentNeuralThreshold": 61,
+    "filamentNeuralGlow": 62
+  }
+];
+export function applyFilamentNeuralPreset(state,name){
+  const preset=filamentNeuralPresets.find(x=>x.name===name);
+  if(!preset)return state;
+  const {name:unused,...selected}=preset;
+  return {...state,...selected,filamentAmount:Math.max(72,state.filamentAmount||0)};
+}
+export function remixFilamentNeural(state,rng=Math.random,onlyWeird=false){
+  const unit=()=>{const x=Number(rng());return Number.isFinite(x)?
+    Math.max(0,Math.min(1-Number.EPSILON,x)):0;};
+  const options=onlyWeird?filamentNeuralModes.slice(4,8):
+    filamentNeuralModes.slice(1);
+  const alternatives=options.filter(x=>x!==state.filamentNeuralMode);
+  const pool=alternatives.length?alternatives:options;
+  return {...state,
+    filamentNeuralMode:pool[Math.floor(unit()*pool.length)],
+    filamentNeuralAmount:72+unit()*27,
+    filamentNeuralSpeed:16+unit()*83,
+    filamentNeuralCoupling:19+unit()*80,
+    filamentNeuralThreshold:12+unit()*77,
+    filamentNeuralGlow:40+unit()*59,
+    filamentAmount:Math.max(72,state.filamentAmount||0)};
+}
+/** iPhone shader specialization strips 7 of the 8 unused neural laws. */
+export function specializeFilamentNeural(source,index){
+  if(index==null||!Number.isInteger(index)||index<1||
+    index>=filamentNeuralModes.length)return source;
+  const opener=i=>i===1?"  if(filamentNeuralMode==1){":
+    "  }else if(filamentNeuralMode=="+i+"){";
+  const starts=filamentNeuralModes.slice(1).map((_,i)=>source.indexOf(opener(i+1)));
+  if(starts.some((p,i)=>p<0||(i>0&&p<=starts[i-1])))return source;
+  const end=source.indexOf("  // Real contact is never approximated by screen neighbors.",starts.at(-1));
+  if(end<0)return source;
+  const close=source.lastIndexOf("  }\n",end);
+  if(close<starts.at(-1))return source;
+  const next=index===filamentNeuralModes.length-1?close:starts[index];
+  const body=source.slice(starts[index-1]+opener(index).length,next);
+  return source.slice(0,starts[0])+"  if(filamentNeuralMode=="+index+"){"+
+    body+"  }\n"+source.slice(end);
+}
+
 export const filamentAdornmentModes=[
   "Bare threads",
   "Pearl stations",
@@ -1175,6 +1326,9 @@ uniform int filamentSculptMode;
 uniform int filamentAdornmentMode,filamentSecondAdornmentMode;
 uniform int filamentMorphMode;
 uniform int filamentContagionMode;
+uniform int filamentNeuralMode;
+uniform float filamentNeuralAmount,filamentNeuralSpeed;
+uniform float filamentNeuralCoupling,filamentNeuralThreshold,filamentNeuralGlow;
 uniform float filamentContagionAmount,filamentContagionReach;
 uniform float filamentContagionSpeed,filamentContagionLag,filamentContagionGlow;
 uniform int filamentMorphTarget,filamentSecondMorphTarget;
@@ -1194,8 +1348,12 @@ uniform float filamentWidth,filamentRelief,filamentHue,filamentVariation;
 vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     int species,int fiberMaterial,int adornmentMode,int morphMaterial,float phaseOffset,float twist,float hueOffset,
     float incomingCore,float incomingCarrier,
-    out float maskCore,out float outgoingCarrier){
+    float incomingNeural,float incomingLuma,
+    out float maskCore,out float outgoingCarrier,
+    out float outgoingNeural,out float outgoingLuma){
   outgoingCarrier=0.0;
+  outgoingNeural=0.0;
+  outgoingLuma=0.0;
   float t=time*(.14+filamentMotion*.72)+phaseOffset;
   float ct=colorTime*.12+phaseOffset*.18;
   float freq=3.0+filamentScale*11.0;
@@ -1209,6 +1367,16 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   q+=.14*filamentMotion*vec2(sin(q.y*.81+t*.53),cos(q.x*.93-t*.44));
   float density=filamentDensity;
   float seedPhase=filamentVariation*6.28318+seed*.000013+phaseOffset*.61;
+#ifdef FILAMENT_NEURAL
+  // A very small true geometry perturbation that travels with the threads.
+  // Both parents share the clock; local coordinates retain individual shape.
+  float nerveClock=time*(.15+filamentNeuralSpeed*1.31);
+  float nerveSpacing=1.0+filamentNeuralCoupling*2.4;
+  vec2 nerveDisplacement=vec2(
+    sin(q.y*.73*nerveSpacing-nerveClock+seedPhase*.37),
+    cos(q.x*.62*nerveSpacing+nerveClock*.87+seedPhase*.29));
+  q+=nerveDisplacement*filamentNeuralAmount*.064;
+#endif
   float threadD=1.0,phase=0.0,mask=1.0,highlight=0.0;
   if(species==0){
     // Two five-axis quasiperiodic thread families, never a repeating tile.
@@ -1753,6 +1921,62 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     seedPhase*.047+ct*(.023+.017*filamentMotion)+fieldV*.06);
   vec3 ink=palette(pigmentPhase);
   vec3 glimmer=palette(fract(pigmentPhase+.23+.16*filamentRelief));
+#ifdef FILAMENT_NEURAL
+  // Nearby color is the neighboring palette position, NOT a fabricated
+  // color histogram; real cross-parent color arrives through incomingLuma.
+  vec3 lumaWeights=vec3(.2126,.7152,.0722);
+  float colorLuma=dot(ink,lumaWeights);
+  float neighborLuma=dot(palette(fract(pigmentPhase+.045)),lumaWeights);
+  float chromaGradient=clamp(abs(colorLuma-neighborLuma)*6.0,0.0,1.0);
+  float stimulusGate=smoothstep(max(0.0,filamentNeuralThreshold-.14),
+    min(1.0,filamentNeuralThreshold+.18),chromaGradient);
+  float contactNeural=clamp(incomingCore*core*incomingNeural,0.0,1.0);
+  float contactChromatic=contactNeural*
+    clamp(abs(incomingLuma-colorLuma)*2.2,0.0,1.0);
+  float axonPhase=phase*(2.4+filamentNeuralCoupling*6.3)+
+    q.x*.17+q.y*.11+seedPhase*.16;
+  float neuralSignal=0.0;
+  if(filamentNeuralMode==1){ // AXON TRAIN
+    neuralSignal=pow(.5+.5*cos(axonPhase*2.6-nerveClock*2.2),7.0);
+  }else if(filamentNeuralMode==2){ // CHROMATIC REFLEX
+    float pulse=.5+.5*sin(axonPhase*2.1-nerveClock*1.5);
+    neuralSignal=stimulusGate*pow(pulse,3.0)+
+      contactChromatic*filamentNeuralCoupling;
+  }else if(filamentNeuralMode==3){ // SYNAPTIC HANDSHAKE
+    float donor=pow(.5+.5*cos(axonPhase*1.5-nerveClock*1.3),8.0);
+    neuralSignal=clamp(donor*.38+
+      contactNeural*filamentNeuralCoupling*.93,0.0,1.0);
+  }else if(filamentNeuralMode==4){ // GANGLION CHORUS
+    vec2 cluster=floor(q*(.18+filamentNeuralCoupling*.28));
+    float ganglion=fract(sin(dot(cluster,vec2(21.1,91.7))+seedPhase)*48372.19);
+    neuralSignal=.5+.5*cos(nerveClock*1.6+ganglion*2.5+
+      sin(axonPhase*.49)*.24);
+  }else if(filamentNeuralMode==5){ // REFLEX ARC
+    float cycle=sin(nerveClock*.35);
+    neuralSignal=pow(.5+.5*cos(axonPhase*2.9-
+      nerveClock*(.65+.7*cycle)),6.0);
+  }else if(filamentNeuralMode==6){ // MYELIN SKIP
+    float node=pow(.5+.5*cos(axonPhase*4.7),9.0);
+    float spike=pow(.5+.5*cos(nerveClock*2.9-
+      floor(axonPhase*1.5)*.91),7.0);
+    neuralSignal=node*spike;
+  }else if(filamentNeuralMode==7){ // NERVE STORM
+    float site=floor(axonPhase*1.8);
+    float seedFire=fract(sin(site*71.13+seedPhase)*14731.37);
+    float storm=pow(.5+.5*cos(nerveClock*(1.4+seedFire*.91)-
+      site*.91),13.0);
+    neuralSignal=storm*smoothstep(.18,.78,seedFire)+
+      contactNeural*.48;
+  }else if(filamentNeuralMode==8){ // RESTING POTENTIAL
+    neuralSignal=.26+.38*(.5+.5*cos(axonPhase*.63-nerveClock*.32));
+  }
+  // Real contact is never approximated by screen neighbors.
+  neuralSignal=clamp(neuralSignal+
+    contactNeural*filamentNeuralCoupling*.28,0.0,1.0);
+  float nerveStrength=filamentNeuralAmount*neuralSignal;
+  outgoingNeural=clamp(nerveStrength*core,0.0,1.0);
+  outgoingLuma=colorLuma;
+#endif
   float sheen=(.38+.62*highlight)*(.3+.7*filamentRelief);
   vec3 thread=ink*(.75+.55*sheen)+glimmer*.21*filamentRelief;
 #ifdef FILAMENT_STITCHING
@@ -2059,6 +2283,18 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
 #endif
 
 #endif
+#ifdef FILAMENT_NEURAL
+  // Color + irradiance AND actual fiber geometry respond; this only paints
+  // the already-revealed thread core. No effect on free background pixels.
+  float nerveFlash=pow(clamp(neuralSignal,0.0,1.0),6.0);
+  vec3 nerveChromatic=palette(fract(pigmentPhase+.31+
+    neuralSignal*.19+contactChromatic*.16));
+  float nerveResponse=clamp(nerveStrength*core,0.0,1.0);
+  thread=mix(thread,thread*.42+nerveChromatic*.96,
+    nerveResponse*(.2+.38*filamentNeuralCoupling));
+  thread+=mix(nerveChromatic,vec3(.95,.97,1.0),.56)*
+    nerveResponse*nerveFlash*filamentNeuralGlow*.78;
+#endif
   float amount=filamentAmount;
   vec3 result=mix(background,background*.48+thread*1.06,core*amount*.91);
   result+=glimmer*halo*amount*(.045+.115*filamentRelief);
@@ -2338,17 +2574,18 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
 }
 vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
   if(filamentAmount<.001)return background;
-  float firstCore=0.0,firstCarrier=0.0;
+  float firstCore=0.0,firstCarrier=0.0,firstNeural=0.0,firstLuma=0.0;
   vec3 first=filamentField(background,uv,fieldP,fieldV,
     filamentSpecies,filamentMaterial,filamentAdornmentMode,filamentMorphTarget,
-    0.0,0.0,0.0,0.0,0.0,firstCore,firstCarrier);
+    0.0,0.0,0.0,0.0,0.0,0.0,0.0,firstCore,firstCarrier,firstNeural,firstLuma);
 #ifdef FILAMENT_HYBRID
   if(filamentCrossbreed<.001)return first;
-  float secondCore=0.0,secondCarrier=0.0;
+  float secondCore=0.0,secondCarrier=0.0,secondNeural=0.0,secondLuma=0.0;
   vec3 second=filamentField(first,uv,fieldP,fieldV,
     filamentSecondSpecies,filamentSecondMaterial,filamentSecondAdornmentMode,
     filamentSecondMorphTarget,filamentPhase*6.2831853,filamentTwist*6.2831853,
-    filamentSecondHue*.9,firstCore,firstCarrier,secondCore,secondCarrier);
+    filamentSecondHue*.9,firstCore,firstCarrier,firstNeural,firstLuma,
+    secondCore,secondCarrier,secondNeural,secondLuma);
   // True under/over crossings: only where two threads overlap. Different
   // paths remain distinct rather than dissolving into a flat opacity mix.
   float contact=clamp(firstCore*secondCore,0.0,1.0);

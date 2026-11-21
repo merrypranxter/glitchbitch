@@ -155,7 +155,7 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
       >
         <div className="engine-grid">
           {engineInfo.map((e, i) => {
-            const Icon = icons[i];
+            const Icon = icons[i] ?? Orbit;
             return (
               <button
                 key={i}
@@ -1536,6 +1536,7 @@ export function EffectsInspector({ history, onTool, tool }) {
       </Select>
       {underlayDescriptions[s.underlayMode]&&
         <p className="control-note">{underlayDescriptions[s.underlayMode]}</p>
+      }
       <Parameter label="Underlay presence" name="underlayAmount" history={history}/>
       <Parameter label="Fabric pattern scale" name="underlayScale" history={history}/>
       <Parameter label="Weave / pile density" name="underlayDensity" history={history}/>

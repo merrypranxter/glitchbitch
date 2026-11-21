@@ -394,7 +394,7 @@ export const filamentMorphControls=["filamentMorphAmount","filamentMorphScale",
   "filamentMorphSpeed","filamentMorphSharpness","filamentMorphGlow"];
 export const filamentMorphPresets=[
   {
-    "name": "Silk turns crystal",
+    "name": "Opaline seam sweep",
     "filamentMorphMode": "Seam sweep",
     "filamentMorphTarget": "Opaline glass",
     "filamentSecondMorphTarget": "Pearl embroidery floss",
@@ -405,7 +405,7 @@ export const filamentMorphPresets=[
     "filamentMorphGlow": 46
   },
   {
-    "name": "Chrome melts into glass",
+    "name": "Molten oil-slick",
     "filamentMorphMode": "Crystal contagion",
     "filamentMorphTarget": "Oil-slick latex",
     "filamentSecondMorphTarget": "Molten chrome",
@@ -449,7 +449,7 @@ export const filamentMorphPresets=[
     "filamentMorphGlow": 98
   },
   {
-    "name": "Pixelated seam witch",
+    "name": "Metallic checkerfall",
     "filamentMorphMode": "Strange attractor",
     "filamentMorphTarget": "Metallic tinsel",
     "filamentSecondMorphTarget": "Opaline glass",
@@ -460,7 +460,7 @@ export const filamentMorphPresets=[
     "filamentMorphGlow": 57
   },
   {
-    "name": "Twin-attractor silk",
+    "name": "Twin-attractor nerves",
     "filamentMorphMode": "Morse rethreading",
     "filamentMorphTarget": "Gelatin nerve cord",
     "filamentSecondMorphTarget": "Oil-slick latex",
@@ -471,7 +471,7 @@ export const filamentMorphPresets=[
     "filamentMorphGlow": 70
   },
   {
-    "name": "Morse-code platinum",
+    "name": "Morse-code opal",
     "filamentMorphMode": "Fungal takeover",
     "filamentMorphTarget": "Opaline glass",
     "filamentSecondMorphTarget": "Mercerized cotton",
@@ -1830,7 +1830,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   }
   float transitionWidth=mix(.64,.06,filamentMorphSharpness);
   float morphMask=smoothstep(-transitionWidth,transitionWidth,morphField);
-  float coverage=filamentMorphAmount*morphMask;
+  float coverage=filamentMorphAmount*morphMask*(morphMaterial==fiberMaterial?0.0:1.0);
   vec3 secondDress=thread;
   float secondHalo=extraHalo;
   thread=mix(primaryDress,secondDress,coverage);
@@ -1839,7 +1839,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float border=1.0-smoothstep(transitionWidth*.28,
     transitionWidth*1.7+.005,abs(morphField));
   thread+=mix(glimmer,vec3(1.0),.41)*border*filamentMorphGlow*
-    filamentMorphAmount*(.23+.57*cord);
+    coverage*(.23+.57*cord);
 #endif
 
 #endif

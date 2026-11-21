@@ -15,6 +15,7 @@ import { substrateModes, substratePresets } from "./substrate-alchemy.js";
 import { symbiosisModes, symbiosisPresets, ensureSymbioticContact } from "./symbiosis-lab.js";
 import { genePresets } from "./colony-genetics.js";
 import {selectionModes,selectionPresets} from "./selection-chamber.js";
+import {successionModes,successionControls,MAX_SUCCESSION} from "./ecological-succession.js";
 import {apocalypseModes,apocalypsePresets} from "./apocalypse-clock.js";
 import {fossilModes,fossilPresets,MAX_FOSSILS} from "./fossil-record.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
@@ -411,6 +412,13 @@ export const numericRanges = {
   fossilGlow: [0, 100],
   fossilHue: [0, 100],
   fossilBurial: [0, 100],
+  successionAmount: [0, 100],
+  successionDepth: [0, 100],
+  successionSpread: [0, 100],
+  successionMotion: [0, 100],
+  successionGlow: [0, 100],
+  successionHue: [0, 100],
+  successionBurial: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -699,6 +707,16 @@ export const initial = {
   fossilHue: 46,
   fossilBurial: 58,
   fossilRecords: [],
+  successionMode: "Pioneer enrichment",
+  successionAmount: 0,
+  successionDepth: 70,
+  successionSpread: 58,
+  successionMotion: 54,
+  successionGlow: 76,
+  successionHue: 45,
+  successionBurial: 60,
+  successionEpoch: 0,
+  successionRecords: [],
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -804,6 +822,7 @@ export function validateRecipe(input) {
     selectionMode: selectionModes,
     apocalypseMode: apocalypseModes,
     fossilMode: fossilModes,
+    successionMode: successionModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -927,6 +946,36 @@ export function validateRecipe(input) {
     if(!Number.isInteger(x.coevoRound)||x.coevoRound<0||
       x.coevoRound>4095)throw Error("Invalid coevolution round.");
     s.coevoRound=x.coevoRound;
+  }
+  if(x.successionEpoch!==undefined){
+    if(!Number.isInteger(x.successionEpoch)||x.successionEpoch<0||
+       x.successionEpoch>4095)throw Error("Invalid succession epoch.");
+    s.successionEpoch=x.successionEpoch;
+  }
+  if(x.successionRecords!==undefined){
+    if(!Array.isArray(x.successionRecords)||
+       x.successionRecords.length>MAX_SUCCESSION)
+      throw Error("Maximum six ecological soil records.");
+    const ids=new Set();
+    s.successionRecords=x.successionRecords.map(record=>{
+      if(!record||typeof record!=="object"||
+         typeof record.id!=="string"||!record.id||record.id.length>120||
+         typeof record.origin!=="string"||!record.origin||
+         record.origin.length>80||
+         ids.has(record.id)||
+         !Number.isFinite(record.x)||record.x<0||record.x>1||
+         !Number.isFinite(record.y)||record.y<0||record.y>1||
+         !Number.isFinite(record.radius)||record.radius<.05||record.radius>.45||
+         (record.parent!==0&&record.parent!==1)||
+         !Number.isInteger(record.epoch)||record.epoch<0||
+         record.epoch>4095||
+         !successionModes.includes(record.mode))
+        throw Error("Invalid ecological soil record.");
+      ids.add(record.id);
+      return {id:record.id,origin:record.origin,x:record.x,
+        y:record.y,radius:record.radius,parent:record.parent,
+        epoch:record.epoch,mode:record.mode};
+    });
   }
   // Painted habitats are independent of touch deformation marks.
   // Bounded storage and strict validation prevent bogus GPU uniform arrays.
@@ -1184,6 +1233,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "apocalypsePressure","apocalypseGlow","apocalypseHue",
       "fossilAmount","fossilDepth","fossilMotion",
       "fossilGlow","fossilHue","fossilBurial",
+      ...successionControls,
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -1200,6 +1250,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key==="selectionPressure"&&state.selectionPressure<=0)continue; // No silent Darwin on old art.
       if(key==="apocalypseAmount"&&state.apocalypseAmount<=0)continue; // Geology stays stable on old art.
       if(key==="fossilAmount"&&state.fossilAmount<=0)continue; // Burying the past remains opt-in.
+      if(key==="successionAmount"&&state.successionAmount<=0)continue; // Soil memory stays opt-in.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1457,6 +1508,10 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.fossilDepth=73;s.fossilMotion=54;
   s.fossilGlow=80;s.fossilHue=46;s.fossilBurial=58;
   s.fossilRecords=[];
+  s.successionMode="Pioneer enrichment";s.successionAmount=0;
+  s.successionDepth=70;s.successionSpread=58;s.successionMotion=54;
+  s.successionGlow=76;s.successionHue=45;s.successionBurial=60;
+  s.successionEpoch=0;s.successionRecords=[];
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;

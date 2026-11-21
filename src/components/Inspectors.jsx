@@ -55,6 +55,8 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentMorphPresets,applyFilamentMorphPreset,remixFilamentMorph,
   filamentContagionModes,filamentContagionFamilies,filamentContagionDescriptions,
   filamentContagionPresets,applyFilamentContagionPreset,remixFilamentContagion,
+  filamentNeuralModes,filamentNeuralFamilies,filamentNeuralDescriptions,
+  filamentNeuralPresets,applyFilamentNeuralPreset,remixFilamentNeural,
   remixFilamentMaterials,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
@@ -287,6 +289,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [adornmentPreset,setAdornmentPreset]=React.useState(filamentAdornmentPresets[0].name);
   const [morphPreset,setMorphPreset]=React.useState(filamentMorphPresets[0].name);
   const [contagionPreset,setContagionPreset]=React.useState(filamentContagionPresets[0].name);
+  const [neuralPreset,setNeuralPreset]=React.useState(filamentNeuralPresets[0].name);
   const [stitchPreset,setStitchPreset]=React.useState(filamentStitchPresets[0].name);
   const [sculptPreset,setSculptPreset]=React.useState(filamentSculptPresets[0].name);
   const [underlayPreset,setUnderlayPreset]=React.useState(underlayPresets[0].name);
@@ -1883,6 +1886,47 @@ export function EffectsInspector({ history, onTool, tool }) {
           </button>
         </div>
         <p className="control-note">Uses the two morph targets from Thread Metamorphosis, so no original fiber dressing or colors get overwritten. Crossbreed two thread species to see transfer at real stitched intersections. Effect defaults off; strict PNG/GIF/MP4 exporting never removes it silently.</p>
+      </details>
+      <details className="filament-crossbreeder filament-neural-lab">
+        <summary>🧠 NEURAL LOOM — A NERVOUS SYSTEM FOR YOUR FABRIC</summary>
+        <p className="control-note">Thread-local electrical pulses now travel down genuine moving stitches, react to nearby colors, slightly twitch the thread geometry and pass synaptic signals between the two hybrid parents only at real stitched intersections. Independent from Metamorphosis, Contagion and thread dressing. Choose a neural behavior or try a one-tap preset.</p>
+        <Select label="Nervous-system behavior" value={s.filamentNeuralMode}
+          onChange={mode=>history.change(x=>({...x,filamentNeuralMode:mode,
+            filamentNeuralAmount:mode==="Off"?x.filamentNeuralAmount:Math.max(78,x.filamentNeuralAmount),
+            filamentAmount:mode==="Off"?x.filamentAmount:Math.max(70,x.filamentAmount)}))}>
+          {filamentNeuralFamilies.map(family=><optgroup key={family.name} label={family.name}>
+            {family.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+          </optgroup>)}
+        </Select>
+        <p className="control-note">{filamentNeuralDescriptions[s.filamentNeuralMode]}</p>
+        <Parameter label="Nerve signal intensity" name="filamentNeuralAmount" history={history}/>
+        <Parameter label="Impulse travel speed" name="filamentNeuralSpeed" history={history}/>
+        <Parameter label="Synaptic coupling / thread synchrony" name="filamentNeuralCoupling" history={history}/>
+        <Parameter label="Color sensitivity threshold" name="filamentNeuralThreshold" history={history}/>
+        <Parameter label="Electrical highlight / glow" name="filamentNeuralGlow" history={history}/>
+        <Select label="Nervous system recipe" value={neuralPreset} onChange={setNeuralPreset}>
+          {filamentNeuralPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>applyFilamentNeuralPreset(x,neuralPreset))}>
+            Electrify the threads
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentNeural(x))}>
+            <Dices size={13}/> Shuffle nervous systems
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentNeural(x,Math.random,true))}>
+            <Shuffle size={13}/> Shuffle feral synapses
+          </button>
+          <button type="button" className="button secondary"
+            disabled={s.filamentNeuralAmount<=0}
+            onClick={()=>history.change(x=>({...x,filamentNeuralAmount:0}))}>
+            Sedate the weave — keep everything else
+          </button>
+        </div>
+        <p className="control-note">Crossbreed two thread species to see synaptic handshakes at their overlaps. Other laws also work on a single thread family. Pulse behavior is mathematical, not a self-learning biological brain; no new simulation buffers or separate video clock. Preview, GIF and MP4 use the same shader and strict-effects checks.</p>
       </details>
       <details className="filament-crossbreeder filament-adornment-lab">
         <summary>💎 THREAD JEWELRY — CHARMS, FRINGE & WEIRD SHIT</summary>

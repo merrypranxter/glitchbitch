@@ -46,10 +46,10 @@ test("all legacy names/indices are preserved, grouped exactly once",()=>{
  assert.deepEqual(filamentStitchModes.slice(0,15),originalStitch);
  assert.equal(underlayModes.length,16);
  assert.equal(filamentSculptModes.length,15);
- assert.equal(filamentStitchModes.length,21);
+ assert.equal(filamentStitchModes.length,31);
  assert.deepEqual(newUnderlayModes,underlayModes.slice(6));
  assert.deepEqual(newFilamentSculptModes,filamentSculptModes.slice(5));
- assert.deepEqual(ritualFilamentStitchModes,filamentStitchModes.slice(15));
+ assert.deepEqual(ritualFilamentStitchModes,filamentStitchModes.slice(15,21));
  for(const [modes,groups] of [[underlayModes,underlayFamilies],
    [filamentSculptModes,filamentSculptFamilies],
    [filamentStitchModes,filamentStitchFamilies]]){
@@ -59,7 +59,7 @@ test("all legacy names/indices are preserved, grouped exactly once",()=>{
  }
  assert.equal(underlayPresets.length,16);
  assert.equal(filamentSculptPresets.length,15);
- assert.equal(filamentStitchPresets.length,21);
+ assert.equal(filamentStitchPresets.length,31);
  for(const mode of newUnderlayModes)assert.ok(underlayDescriptions[mode]);
  for(const mode of filamentStitchModes)assert.ok(filamentStitchDescriptions[mode]);
 });

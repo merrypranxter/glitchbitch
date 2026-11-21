@@ -8,12 +8,14 @@ import {
 } from "../src/filament-forge.js";
 import {sectionMeta,findControls} from "../src/ui-index.js";
 
-test("Six distinct material modes and six independent material recipes",()=>{
+test("Fourteen distinct materials and fourteen independent dress recipes",()=>{
  assert.deepEqual(filamentMaterials,[
    "Original thread","Iridescent silk","Molten chrome","Opaline glass",
-   "Velvet flock","Electroluminescent yarn"
+   "Velvet flock","Electroluminescent yarn",
+   "Mercerized cotton","Metallic tinsel","Chenille plush","Pearl embroidery floss",
+   "Fiber-optic rainbow","Gelatin nerve cord","Oil-slick latex","Bioluminescent mycelium"
  ]);
- assert.equal(filamentMaterialPresets.length,6);
+ assert.equal(filamentMaterialPresets.length,14);
  assert.equal(new Set(filamentMaterialPresets.map(p=>p.name)).size,6);
  for(const p of filamentMaterialPresets){
    assert.ok(filamentMaterials.includes(p.filamentMaterial),p.name);

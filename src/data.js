@@ -13,7 +13,7 @@ export { injuryModes };
 export { alchemyModes };
 import { backdropModes } from "./backdrops.js";
 export { backdropModes };
-import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes } from "./filament-forge.js";
+import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, filamentMorphModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
@@ -312,6 +312,11 @@ export const numericRanges = {
   filamentBeads: [0, 100],
   filamentBeadSize: [0, 100],
   filamentSecondHue: [0, 100],
+  filamentMorphAmount: [0, 100],
+  filamentMorphScale: [0, 100],
+  filamentMorphSpeed: [0, 100],
+  filamentMorphSharpness: [0, 100],
+  filamentMorphGlow: [0, 100],
   filamentAdornmentAmount: [0, 100],
   filamentAdornmentSpacing: [0, 100],
   filamentAdornmentSize: [0, 100],
@@ -607,6 +612,14 @@ export const initial = {
   filamentBeads: 0,
   filamentBeadSize: 45,
   filamentSecondHue: 0,
+  filamentMorphMode: "Off",
+  filamentMorphTarget: "Opaline glass",
+  filamentSecondMorphTarget: "Bioluminescent mycelium",
+  filamentMorphAmount: 0,
+  filamentMorphScale: 55,
+  filamentMorphSpeed: 50,
+  filamentMorphSharpness: 58,
+  filamentMorphGlow: 70,
   filamentAdornmentMode: "Bare threads",
   filamentSecondAdornmentMode: "Bare threads",
   filamentAdornmentAmount: 0,
@@ -869,6 +882,9 @@ export function validateRecipe(input) {
     filamentMaterial: filamentMaterials,
     filamentSecondMaterial: filamentMaterials,
     filamentStitchMode: filamentStitchModes,
+    filamentMorphMode: filamentMorphModes,
+    filamentMorphTarget: filamentMaterials,
+    filamentSecondMorphTarget: filamentMaterials,
     filamentAdornmentMode: filamentAdornmentModes,
     filamentSecondAdornmentMode: filamentAdornmentModes,
     filamentSculptMode: filamentSculptModes,
@@ -1284,6 +1300,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "filamentSecondHue",
       "filamentAdornmentAmount","filamentAdornmentSpacing","filamentAdornmentSize",
       "filamentAdornmentMotion","filamentAdornmentGlow",
+      "filamentMorphAmount","filamentMorphScale","filamentMorphSpeed",
+      "filamentMorphSharpness","filamentMorphGlow",
       "filamentStitchAmount","filamentStitchSpeed",
       "filamentStitchLength","filamentStitchGlow",
       "filamentSculptAmount","filamentSculptDepth",
@@ -1523,6 +1541,14 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.filamentAdornmentSize=24+random()*75;
   s.filamentAdornmentMotion=18+random()*80;
   s.filamentAdornmentGlow=32+random()*66;
+  s.filamentMorphMode=different(filamentMorphModes,state.filamentMorphMode,random);
+  s.filamentMorphTarget=different(filamentMaterials,state.filamentMorphTarget,random);
+  s.filamentSecondMorphTarget=different(filamentMaterials,state.filamentSecondMorphTarget,random);
+  s.filamentMorphAmount=s.filamentAmount>0 && random()<.54 ? 43+random()*56:0;
+  s.filamentMorphScale=20+random()*79;
+  s.filamentMorphSpeed=16+random()*81;
+  s.filamentMorphSharpness=25+random()*74;
+  s.filamentMorphGlow=30+random()*69;
   s.filamentStitchMode=different(filamentStitchModes,state.filamentStitchMode,random);
   s.filamentStitchAmount=s.filamentAmount>0 && random()<.58 ? 45+random()*54 : 0;
   s.filamentStitchSpeed=15+random()*84;

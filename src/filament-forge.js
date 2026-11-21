@@ -368,6 +368,176 @@ export function breedFilaments(state,rng=Math.random){
  * Not screen-space stickers. Kept separate from geometry, stitch dynamics,
  * materials and 2.5D thread sculpting so old recipes stay exactly as drawn.
  */
+
+/** Existing dressing becomes the first material in a time-varying blend.
+ * The second is independently chosen per filament parent. */
+export const filamentMorphModes=["Off","Seam sweep","Crystal contagion","Molten migration","Moth-eaten portals","Checker metamorph","Strange attractor","Morse rethreading","Fungal takeover","Chromatic tide"];
+export const filamentMorphFamilies=[
+  {name:"Dormant",modes:filamentMorphModes.slice(0,1)},
+  {name:"Seams and phase transformations",modes:filamentMorphModes.slice(1,4)},
+  {name:"Weird mutations",modes:filamentMorphModes.slice(4,9)},
+  {name:"Optical tides",modes:filamentMorphModes.slice(9)}
+];
+export const filamentMorphDescriptions={
+  "Off": "No morphing, original materials unchanged.",
+  "Seam sweep": "A moving seam front hands one true fiber material to another.",
+  "Crystal contagion": "Faceted islands crystallize through the threads.",
+  "Molten migration": "Liquid waves melt the cloth into its second material.",
+  "Moth-eaten portals": "Flickering holes open in the original yarn.",
+  "Checker metamorph": "Checkered fabric patches alternate their materials.",
+  "Strange attractor": "Two orbiting mathematical attractors recolor the filaments.",
+  "Morse rethreading": "Morse-like packets change the yarn one signal at a time.",
+  "Fungal takeover": "Living hyphae take over the original material.",
+  "Chromatic tide": "Slow rolling tides sweep new optical materials through the cloth."
+};
+export const filamentMorphControls=["filamentMorphAmount","filamentMorphScale",
+  "filamentMorphSpeed","filamentMorphSharpness","filamentMorphGlow"];
+export const filamentMorphPresets=[
+  {
+    "name": "Opaline seam sweep",
+    "filamentMorphMode": "Seam sweep",
+    "filamentMorphTarget": "Opaline glass",
+    "filamentSecondMorphTarget": "Pearl embroidery floss",
+    "filamentMorphAmount": 80,
+    "filamentMorphScale": 35,
+    "filamentMorphSpeed": 38,
+    "filamentMorphSharpness": 26,
+    "filamentMorphGlow": 46
+  },
+  {
+    "name": "Molten oil-slick",
+    "filamentMorphMode": "Crystal contagion",
+    "filamentMorphTarget": "Oil-slick latex",
+    "filamentSecondMorphTarget": "Molten chrome",
+    "filamentMorphAmount": 86,
+    "filamentMorphScale": 42,
+    "filamentMorphSpeed": 47,
+    "filamentMorphSharpness": 37,
+    "filamentMorphGlow": 59
+  },
+  {
+    "name": "Fungal couture",
+    "filamentMorphMode": "Molten migration",
+    "filamentMorphTarget": "Bioluminescent mycelium",
+    "filamentSecondMorphTarget": "Fiber-optic rainbow",
+    "filamentMorphAmount": 92,
+    "filamentMorphScale": 49,
+    "filamentMorphSpeed": 56,
+    "filamentMorphSharpness": 48,
+    "filamentMorphGlow": 72
+  },
+  {
+    "name": "Velvet infection",
+    "filamentMorphMode": "Moth-eaten portals",
+    "filamentMorphTarget": "Velvet flock",
+    "filamentSecondMorphTarget": "Chenille plush",
+    "filamentMorphAmount": 98,
+    "filamentMorphScale": 56,
+    "filamentMorphSpeed": 65,
+    "filamentMorphSharpness": 59,
+    "filamentMorphGlow": 85
+  },
+  {
+    "name": "Moth-eaten starlight",
+    "filamentMorphMode": "Checker metamorph",
+    "filamentMorphTarget": "Fiber-optic rainbow",
+    "filamentSecondMorphTarget": "Gelatin nerve cord",
+    "filamentMorphAmount": 80,
+    "filamentMorphScale": 63,
+    "filamentMorphSpeed": 74,
+    "filamentMorphSharpness": 70,
+    "filamentMorphGlow": 98
+  },
+  {
+    "name": "Metallic checkerfall",
+    "filamentMorphMode": "Strange attractor",
+    "filamentMorphTarget": "Metallic tinsel",
+    "filamentSecondMorphTarget": "Opaline glass",
+    "filamentMorphAmount": 86,
+    "filamentMorphScale": 70,
+    "filamentMorphSpeed": 83,
+    "filamentMorphSharpness": 81,
+    "filamentMorphGlow": 57
+  },
+  {
+    "name": "Twin-attractor nerves",
+    "filamentMorphMode": "Morse rethreading",
+    "filamentMorphTarget": "Gelatin nerve cord",
+    "filamentSecondMorphTarget": "Oil-slick latex",
+    "filamentMorphAmount": 92,
+    "filamentMorphScale": 77,
+    "filamentMorphSpeed": 92,
+    "filamentMorphSharpness": 92,
+    "filamentMorphGlow": 70
+  },
+  {
+    "name": "Morse-code opal",
+    "filamentMorphMode": "Fungal takeover",
+    "filamentMorphTarget": "Opaline glass",
+    "filamentSecondMorphTarget": "Mercerized cotton",
+    "filamentMorphAmount": 98,
+    "filamentMorphScale": 84,
+    "filamentMorphSpeed": 44,
+    "filamentMorphSharpness": 31,
+    "filamentMorphGlow": 83
+  },
+  {
+    "name": "Spore takeover",
+    "filamentMorphMode": "Chromatic tide",
+    "filamentMorphTarget": "Bioluminescent mycelium",
+    "filamentSecondMorphTarget": "Pearl embroidery floss",
+    "filamentMorphAmount": 80,
+    "filamentMorphScale": 91,
+    "filamentMorphSpeed": 53,
+    "filamentMorphSharpness": 42,
+    "filamentMorphGlow": 96
+  }
+];
+export function applyFilamentMorphPreset(state,name){
+  const preset=filamentMorphPresets.find(p=>p.name===name);
+  if(!preset)return state;
+  const {name:unused,...params}=preset;
+  return {...state,...params,filamentAmount:Math.max(72,state.filamentAmount||0)};
+}
+export function remixFilamentMorph(state,rng=Math.random,onlyWeird=false){
+  const unit=()=>{const n=Number(rng());return Number.isFinite(n)?
+    Math.min(1-Number.EPSILON,Math.max(0,n)):0;};
+  const pick=(options,old)=>{const pool=options.filter(x=>x!==old);
+    const values=pool.length?pool:options;return values[Math.floor(unit()*values.length)];};
+  return {...state,
+    filamentMorphMode:pick(onlyWeird?filamentMorphModes.slice(4,9):
+      filamentMorphModes.slice(1),state.filamentMorphMode),
+    filamentMorphTarget:pick(filamentMaterials.slice(1),state.filamentMaterial),
+    filamentSecondMorphTarget:pick(filamentMaterials.slice(1),state.filamentSecondMaterial),
+    filamentMorphAmount:72+unit()*27,filamentMorphScale:24+unit()*74,
+    filamentMorphSpeed:15+unit()*83,filamentMorphSharpness:20+unit()*79,
+    filamentMorphGlow:31+unit()*68,filamentAmount:Math.max(72,state.filamentAmount||0)};
+}
+/** Compile only the active target fiber laws (at most two) on mobile. */
+export function specializeFilamentMorphMaterials(source,first,second=null){
+  if(first==null||!Number.isInteger(first)||first<0||
+    first>=filamentMaterials.length)return source;
+  const ids=[first,...(second==null?[]:[second])];
+  if(ids.some(n=>!Number.isInteger(n)||n<0||n>=filamentMaterials.length))
+    return source;
+  const opener=id=>id===1?"  if(morphMaterial==1){":
+    "  }else if(morphMaterial=="+id+"){";
+  const starts=filamentMaterials.slice(1).map((_,i)=>source.indexOf(opener(i+1)));
+  if(starts.some((pos,i)=>pos<0||(i&&pos<=starts[i-1])))return source;
+  const ending=source.indexOf("  // Blend actual fiber material appearances",starts.at(-1));
+  if(ending<0)return source;
+  const close=source.lastIndexOf("  }\n",ending);
+  if(close<starts.at(-1))return source;
+  const selected=[...new Set(ids.filter(x=>x>0))].sort((a,b)=>a-b);
+  const blocks=selected.map((id,i)=>(
+    (i===0?"  if(morphMaterial=="+id+"){":
+      "  }else if(morphMaterial=="+id+"){")+
+    source.slice(starts[id-1]+opener(id).length,
+      id===filamentMaterials.length-1?close:starts[id])));
+  return source.slice(0,starts[0])+blocks.join("")+
+    (selected.length?"  }\n":"")+source.slice(ending);
+}
+
 export const filamentAdornmentModes=[
   "Bare threads",
   "Pearl stations",
@@ -851,6 +1021,10 @@ uniform int filamentMaterial,filamentSecondMaterial;
 uniform int filamentStitchMode;
 uniform int filamentSculptMode;
 uniform int filamentAdornmentMode,filamentSecondAdornmentMode;
+uniform int filamentMorphMode;
+uniform int filamentMorphTarget,filamentSecondMorphTarget;
+uniform float filamentMorphAmount,filamentMorphScale;
+uniform float filamentMorphSpeed,filamentMorphSharpness,filamentMorphGlow;
 uniform float filamentAdornmentAmount,filamentAdornmentSpacing;
 uniform float filamentAdornmentSize,filamentAdornmentMotion,filamentAdornmentGlow;
 uniform float filamentSculptAmount,filamentSculptDepth;
@@ -863,7 +1037,7 @@ uniform float filamentAmount,filamentScale,filamentDensity,filamentMotion;
 uniform float filamentWidth,filamentRelief,filamentHue,filamentVariation;
 
 vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
-    int species,int fiberMaterial,int adornmentMode,float phaseOffset,float twist,float hueOffset,
+    int species,int fiberMaterial,int adornmentMode,int morphMaterial,float phaseOffset,float twist,float hueOffset,
     out float maskCore){
   float t=time*(.14+filamentMotion*.72)+phaseOffset;
   float ct=colorTime*.12+phaseOffset*.18;
@@ -1528,6 +1702,146 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float pearl=pow(max(0.0,.5+.5*cos(phase*beadPeriod+
     q.x*.3+seedPhase*.17)),mix(24.0,9.0,filamentBeadSize));
   float bead=filamentBeads*pearl*pow(max(0.0,core),1.4)*filamentAmount;
+
+#ifdef FILAMENT_METAMORPH
+  // Base material already shaded above. Restore the exact original starting
+  // light, shade the target with the SAME 14 material laws, then blend.
+  vec3 primaryDress=thread;
+  float primaryHalo=extraHalo;
+  thread=ink*(.75+.55*sheen)+glimmer*.21*filamentRelief;
+#ifdef FILAMENT_STITCHING
+  thread+=mix(ink,vec3(1.0,.98,.92),.71)*
+    needle*filamentStitchGlow*core*(.42+1.25*filamentStitchAmount);
+#endif
+  extraHalo=0.0;
+  if(morphMaterial==1){ // Iridescent silk: striations and grazing-angle sheen.
+    vec3 irid=.5+.5*cos(vec3(0.0,2.094,4.188)+
+      pigmentPhase*8.4+across*4.5+spun*2.2+colorTime*.08);
+    thread=mix(thread,ink*.53+irid*.75,
+      .2+.43*luster);
+    thread+=glimmer*(.14+.48*luster)*glisten*cord;
+    thread*=.75+.32*spun;
+  }else if(morphMaterial==2){ // Metallic thread: sharp specular core, dark sides.
+    float chrome=pow(max(0.0,1.0-abs(across-.38)*1.5),3.0);
+    float darkness=.24+.45*abs(twistWave);
+    thread=thread*darkness+vec3(.95,1.0,1.0)*chrome*(.37+1.45*luster);
+    thread+=glimmer*.3*pow(spun,10.0);
+  }else if(morphMaterial==3){ // Opal glass: thin-film rim and transparent body.
+    vec3 spectral=.5+.5*cos(vec3(0.0,2.094,4.188)+
+      (pigmentPhase+across*.2)*12.0+spun*.8+colorTime*.06);
+    thread=mix(thread*.45,glimmer*.38+spectral*.95,.3+.57*luster);
+    thread+=vec3(1.0,.94,1.0)*glisten*cord*(.16+.42*luster);
+    extraHalo=.08+.15*luster;
+  }else if(morphMaterial==4){ // Velvet pile: low specularity and fuzzy nap.
+    thread=mix(thread*.48,ink*(.55+.37*fibers),.45+.4*nap);
+    thread*=.65+.3*spun;
+  }else if(morphMaterial==5){ // Electroluminescent twisted fiber.
+    float helix=.5+.5*cos(phase*28.0+t*.39+q.x*7.0+seedPhase);
+    thread=ink*.58+glimmer*.48+
+      vec3(.92,.97,1.0)*helix*(.23+.6*luster);
+    thread*=.75+.3*spun;
+    extraHalo=.18+.33*luster;
+  }else if(morphMaterial==6){ // MERCERIZED COTTON: fine dry twisted matte staple.
+    float staple=.5+.5*sin(phase*34.0+q.y*11.0+t*.18);
+    thread=mix(thread*.68,ink*(.72+.24*staple),.72);
+    thread+=glimmer*cord*glisten*luster*.19;
+    extraHalo=.012+.035*nap;
+  }else if(morphMaterial==7){ // METALLIC TINSEL: flat reflective foil facets.
+    float foil=.5+.5*cos(phase*43.0+q.x*13.0-t*.62);
+    float flash=pow(max(0.0,.5+.5*cos(across*4.2-foil*3.0)),13.0);
+    thread=ink*.33+glimmer*(.32+.63*foil)+vec3(1.0,.99,.94)*flash*luster;
+    extraHalo=.08+.1*luster;
+  }else if(morphMaterial==8){ // CHENILLE PLUSH: soft bulky crushed pile.
+    float shag=.5+.5*cos(phase*62.0+q.y*31.0+t*.21);
+    thread=ink*(.4+.38*fibers+.2*shag)+glimmer*.08;
+    thread*=.84+.13*spun;
+    extraHalo=.06+.1*nap;
+  }else if(morphMaterial==9){ // PEARL FLOSS: satin-pearl diffraction stripes.
+    vec3 pearl=.5+.5*cos(vec3(0.0,2.094,4.188)+
+      phase*3.1+across*2.2+colorTime*.04);
+    thread=mix(ink*.7+glimmer*.29,pearl*.65+vec3(.53,.57,.63),.45+.32*luster);
+    thread+=vec3(1.0,.98,.94)*glisten*cord*.3;
+  }else if(morphMaterial==10){ // FIBER OPTIC: bright travelling rainbow light.
+    vec3 ray=.5+.5*cos(vec3(0.0,2.094,4.188)+
+      phase*2.7-t*1.9+across*4.5);
+    float pulse=pow(.5+.5*cos(phase*9.0-t*2.3),7.0);
+    thread=ink*.3+ray*(.57+.55*pulse)+vec3(.92,.97,1.0)*pulse*luster*.5;
+    extraHalo=.22+.28*luster;
+  }else if(morphMaterial==11){ // GELATIN NERVE: translucent internal axonal waves.
+    float axon=.5+.5*sin(phase*22.0-t*1.23+sin(q.y*2.0));
+    vec3 gel=ink*.45+glimmer*(.17+.32*axon)+vec3(.73,.96,.94)*axon*.26;
+    thread=mix(thread*.28,gel,.76);
+    thread+=vec3(1.0,.96,1.0)*glisten*.36*luster;
+    extraHalo=.14+.2*luster;
+  }else if(morphMaterial==12){ // OIL SLICK LATEX: spectral reflective viscous skin.
+    vec3 oil=.5+.5*cos(vec3(0.0,2.094,4.188)+
+      across*8.1+phase*.73-t*.58+seedPhase*.21);
+    float wet=pow(max(0.0,.5+.5*sin(spun*3.0+across*3.7)),8.0);
+    thread=ink*.19+oil*(.37+.67*luster)+vec3(.98,.99,1.0)*wet*.42;
+    extraHalo=.1+.18*luster;
+  }else if(morphMaterial==13){ // BIOLUMINESCENT MYCELIUM: pulsing spore-laced hyphae.
+    float hyphae=.5+.5*sin(phase*43.0+sin(q.x*4.0)*2.1-t*.71);
+    float spores=pow(hyphae,18.0);
+    thread=ink*.48+glimmer*(.3+.4*hyphae)+vec3(.84,1.0,.82)*spores*.58;
+    thread*=.7+.32*fibers;
+    extraHalo=.15+.28*hyphae;
+  }
+
+  // Blend actual fiber material appearances with deterministic, moving
+  // thread-local phase fields. No screen-wide stickers, frames, or textures.
+  float morphClock=time*(.12+filamentMorphSpeed*1.43)+phaseOffset*.29;
+  float morphFreq=2.0+filamentMorphScale*16.0;
+  float seamPhase=phase*.34+seedPhase*.11;
+  float morphField=0.0;
+  if(filamentMorphMode==1){ // SEAM SWEEP
+    morphField=sin(seamPhase*morphFreq*.42-morphClock);
+  }else if(filamentMorphMode==2){ // CRYSTAL CONTAGION
+    vec2 cell=floor(q*(.27+.07*morphFreq));
+    float facets=abs(sin(cell.x*1.31+cell.y*.89+seedPhase*.23));
+    morphField=sin(phase*morphFreq*.34-morphClock*.7)*.47+facets-.5;
+  }else if(filamentMorphMode==3){ // MOLTEN MIGRATION
+    morphField=sin(q.x*.73+sin(q.y*.63+morphClock*.47)*2.1+
+      seamPhase*.53-morphClock*.87);
+  }else if(filamentMorphMode==4){ // MOTH-EATEN PORTALS
+    vec2 holes=floor(q*(.36+.045*morphFreq)+sin(morphClock*.24));
+    float n=fract(sin(dot(holes,vec2(17.31,83.7))+seedPhase)*43758.5453);
+    float portal=length(fract(q*(.36+.045*morphFreq))-.5);
+    morphField=(.35+sin(morphClock*.41+n*6.28318)*.23)-portal;
+  }else if(filamentMorphMode==5){ // CHECKER METAMORPH
+    vec2 chk=floor(q*(.21+.03*morphFreq)+morphClock*.22);
+    float parity=mod(chk.x+chk.y,2.0);
+    morphField=(parity-.5)*1.3+.23*sin(morphClock+seamPhase);
+  }else if(filamentMorphMode==6){ // STRANGE ATTRACTOR
+    vec2 aa=q*.19;
+    vec2 nodeA=vec2(sin(morphClock*.23),cos(morphClock*.31))*2.3;
+    vec2 nodeB=vec2(cos(morphClock*.17),sin(morphClock*.27))*2.6;
+    float basin=min(length(aa-nodeA),length(aa-nodeB));
+    morphField=1.2-basin+sin(seamPhase*morphFreq*.22)*.27;
+  }else if(filamentMorphMode==7){ // MORSE RETHREADING
+    float packet=sin(seamPhase*morphFreq*1.4-morphClock*1.23);
+    float key=sin(seamPhase*morphFreq*.39+morphClock*.24);
+    morphField=.58*packet+.45*key;
+  }else if(filamentMorphMode==8){ // FUNGAL TAKEOVER
+    float branching=sin(q.x*.73+sin(q.y*.82+morphClock*.28)*2.3);
+    morphField=.54*branching+.48*sin(seamPhase*morphFreq*.35-morphClock*.39);
+  }else if(filamentMorphMode==9){ // CHROMATIC TIDE
+    morphField=.55*sin(q.y*.37+seamPhase*.4-morphClock*.73)+
+      .45*cos(q.x*.46-seamPhase*.31+morphClock*.56);
+  }
+  float transitionWidth=mix(.64,.06,filamentMorphSharpness);
+  float morphMask=smoothstep(-transitionWidth,transitionWidth,morphField);
+  float coverage=filamentMorphAmount*morphMask*(morphMaterial==fiberMaterial?0.0:1.0);
+  vec3 secondDress=thread;
+  float secondHalo=extraHalo;
+  thread=mix(primaryDress,secondDress,coverage);
+  extraHalo=mix(primaryHalo,secondHalo,coverage);
+  // A glint marks the seam on existing, sewn filament—not the background.
+  float border=1.0-smoothstep(transitionWidth*.28,
+    transitionWidth*1.7+.005,abs(morphField));
+  thread+=mix(glimmer,vec3(1.0),.41)*border*filamentMorphGlow*
+    coverage*(.23+.57*cord);
+#endif
+
 #endif
   float amount=filamentAmount;
   vec3 result=mix(background,background*.48+thread*1.06,core*amount*.91);
@@ -1810,13 +2124,14 @@ vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
   if(filamentAmount<.001)return background;
   float firstCore=0.0;
   vec3 first=filamentField(background,uv,fieldP,fieldV,
-    filamentSpecies,filamentMaterial,filamentAdornmentMode,0.0,0.0,0.0,firstCore);
+    filamentSpecies,filamentMaterial,filamentAdornmentMode,filamentMorphTarget,
+    0.0,0.0,0.0,firstCore);
 #ifdef FILAMENT_HYBRID
   if(filamentCrossbreed<.001)return first;
   float secondCore=0.0;
   vec3 second=filamentField(first,uv,fieldP,fieldV,
     filamentSecondSpecies,filamentSecondMaterial,filamentSecondAdornmentMode,
-    filamentPhase*6.2831853,filamentTwist*6.2831853,
+    filamentSecondMorphTarget,filamentPhase*6.2831853,filamentTwist*6.2831853,
     filamentSecondHue*.9,secondCore);
   // True under/over crossings: only where two threads overlap. Different
   // paths remain distinct rather than dissolving into a flat opacity mix.

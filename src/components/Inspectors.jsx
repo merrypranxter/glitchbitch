@@ -57,6 +57,8 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentContagionPresets,applyFilamentContagionPreset,remixFilamentContagion,
   filamentNeuralModes,filamentNeuralFamilies,filamentNeuralDescriptions,
   filamentNeuralPresets,applyFilamentNeuralPreset,remixFilamentNeural,
+  filamentPlasticModes,filamentPlasticFamilies,filamentPlasticDescriptions,
+  filamentPlasticPresets,applyFilamentPlasticPreset,remixFilamentPlastic,
   remixFilamentMaterials,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
@@ -290,6 +292,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [morphPreset,setMorphPreset]=React.useState(filamentMorphPresets[0].name);
   const [contagionPreset,setContagionPreset]=React.useState(filamentContagionPresets[0].name);
   const [neuralPreset,setNeuralPreset]=React.useState(filamentNeuralPresets[0].name);
+  const [plasticPreset,setPlasticPreset]=React.useState(filamentPlasticPresets[0].name);
   const [stitchPreset,setStitchPreset]=React.useState(filamentStitchPresets[0].name);
   const [sculptPreset,setSculptPreset]=React.useState(filamentSculptPresets[0].name);
   const [underlayPreset,setUnderlayPreset]=React.useState(underlayPresets[0].name);
@@ -1927,6 +1930,52 @@ export function EffectsInspector({ history, onTool, tool }) {
           </button>
         </div>
         <p className="control-note">Crossbreed two thread species to see synaptic handshakes at their overlaps. Other laws also work on a single thread family. Pulse behavior is mathematical, not a self-learning biological brain; no new simulation buffers or separate video clock. Preview, GIF and MP4 use the same shader and strict-effects checks.</p>
+      </details>
+      <details className="filament-crossbreeder filament-plasticity-lab">
+        <summary>🧠 SYNAPTIC PLASTICITY — TEACH THE THREADS NEW TRICKS</summary>
+        <p className="control-note">Build on Neural Loom: amplify coincident pulses, create inhibitory dark bands, echo a nerve signal, entrain clusters, prune weak connections, or let the whole weave dream. This is mathematical, time-based adaptation—not a permanent AI brain or stored learning. Real crossed thread masks affect synaptic coupling.</p>
+        <Select label="Synaptic behavior" value={s.filamentPlasticMode}
+          onChange={mode=>history.change(x=>({...x,filamentPlasticMode:mode,
+            filamentAmount:mode==="Off"?x.filamentAmount:Math.max(70,x.filamentAmount),
+            filamentNeuralMode:mode==="Off"?x.filamentNeuralMode:
+              x.filamentNeuralMode==="Off"?"Axon train":x.filamentNeuralMode,
+            filamentNeuralAmount:mode==="Off"?x.filamentNeuralAmount:
+              Math.max(80,x.filamentNeuralAmount),
+            filamentPlasticAmount:mode==="Off"?x.filamentPlasticAmount:
+              Math.max(80,x.filamentPlasticAmount)}))}>
+          {filamentPlasticFamilies.map(family=><optgroup key={family.name} label={family.name}>
+            {family.modes.map(name=><option key={name} value={name}>{name}</option>)}
+          </optgroup>)}
+        </Select>
+        <p className="control-note">{filamentPlasticDescriptions[s.filamentPlasticMode]}</p>
+        <Parameter label="Synaptic adaptation strength" name="filamentPlasticAmount" history={history}/>
+        <Parameter label="Adaptation rhythm" name="filamentPlasticRate" history={history}/>
+        <Parameter label="Inhibition / damping" name="filamentPlasticInhibition" history={history}/>
+        <Parameter label="Echo persistence / phase span" name="filamentPlasticRetention" history={history}/>
+        <Parameter label="Changing synapse glow" name="filamentPlasticGlow" history={history}/>
+        <Select label="Plasticity recipe" value={plasticPreset} onChange={setPlasticPreset}>
+          {filamentPlasticPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>applyFilamentPlasticPreset(x,plasticPreset))}>
+            Sculpt synapses
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentPlastic(x))}>
+            <Dices size={13}/> Shuffle plasticity
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentPlastic(x,Math.random,true))}>
+            <Shuffle size={13}/> Shuffle strange synapses
+          </button>
+          <button type="button" className="button secondary"
+            disabled={s.filamentPlasticAmount<=0}
+            onClick={()=>history.change(x=>({...x,filamentPlasticAmount:0}))}>
+            Quiet synapses — keep the nerves
+          </button>
+        </div>
+        <p className="control-note">Choose a Neural Loom behavior first or use one of these presets to turn it on. Your materials, lettering, geometry, color palettes, and ornaments remain untouched. Plasticity defaults off in existing recipes, and strict MP4/GIF uses this same animated shader.</p>
       </details>
       <details className="filament-crossbreeder filament-adornment-lab">
         <summary>💎 THREAD JEWELRY — CHARMS, FRINGE & WEIRD SHIT</summary>

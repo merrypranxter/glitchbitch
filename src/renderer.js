@@ -7,6 +7,7 @@ import { bioGLSL } from "./bio-shader.js";
 import { stereoGLSL } from "./stereo.js";
 import { wiggleGLSL } from "./wiggle.js";
 import { materialGLSL } from "./materials.js";
+import {alchemyModes,alchemyGLSL,specializeAlchemyGLSL} from "./chromatic-alchemy.js";
 import { kineticGLSL, glyphCanvas } from "./kinetic-type.js";
 import { ensureRetroFontLoaded, retroFontReady, retroFontRevision } from "./retro-fonts.js";
 import { compositionGLSL } from "./composition.js";
@@ -101,6 +102,7 @@ phase+=source;if(posterize)phase=floor(phase*7.)/7.;return phase;}
 /* SUBSTRATE_MODULE */
 /* HABITAT_MODULE */
 /* LETTERING_MODULE */
+/* ALCHEMY_MODULE */
 ${appearanceGLSL}
 void main(){vec2 uv=gl_FragCoord.xy/res;vec2 aspect=vec2(res.x/res.y,1.);vec2 sampleUV=uv;
 if(pixel>.001){float cells=mix(600.,24.,pow(pixel,.65));sampleUV=(floor(uv*vec2(cells*aspect.x,cells))+.5)/vec2(cells*aspect.x,cells);}
@@ -146,6 +148,7 @@ col=stainWithBiology(col,uv,p);
 if(split>.001){col.r=mix(col.r,palette(phaseOf(composed(p+vec2(split*.09,0.)),uv,source)).r,split);col.b=mix(col.b,palette(phaseOf(composed(p-vec2(split*.09,0.)),uv,source)).b,split);}
 col*=1.-scan*(.5+.5*sin(uv.y*900.))*.55;col+=(hash(floor(uv*1000.)+fract(time))-.5)*grain*.3;col=mix(col,col.brg,tear*.65);col=mix(col,col.gbr,blocks*block*.6);
 float luma=dot(col,vec3(.2126,.7152,.0722));col=mix(vec3(luma),col,saturation*2.);col=(col-.5)*(.5+contrast)+.5;col*=.5+brightness;col*=1.-vignette*smoothstep(.15,.8,length((uv-.5)*aspect));if(invert)col=1.-col;
+/* ALCHEMY_POST */
 col=applyAppearance(col,uv);
 gl_FragColor=vec4(clamp(col,0.,1.),1.);}`;
 
@@ -175,11 +178,11 @@ export function createRenderer(canvas) {
     photonUnavailable = false, filamentUnavailable = false,
     filamentHybridUnavailable = false, filamentMaterialUnavailable = false,
     filamentStitchUnavailable = false, filamentSculptUnavailable = false,
-    underlayUnavailable = false, fossilUnavailable = false,
+    underlayUnavailable = false, alchemyUnavailable = false, fossilUnavailable = false,
     successionUnavailable = false, foodWebUnavailable = false;
   function compatibleShaderState(s){
     const source = stereoUnavailable ? safe2DSelection(s) : s;
-    if(!materialUnavailable && !typeShaderUnavailable &&
+    if(!alchemyUnavailable && !materialUnavailable && !typeShaderUnavailable &&
        !compositionUnavailable && !backdropUnavailable &&
        !microUnavailable && !substanceUnavailable && !wiggleUnavailable &&
        !photonUnavailable && !filamentUnavailable && !filamentHybridUnavailable &&
@@ -189,6 +192,7 @@ export function createRenderer(canvas) {
        !atmosphereBUnavailable && !habitatUnavailable)return source;
     return {
       ...source,
+      ...(alchemyUnavailable ? {alchemyAmount:0}:{}),
       ...(materialUnavailable ? {filmAmount:0,opalAmount:0,prismAmount:0,foilRelief:0}:{}),
       ...(typeShaderUnavailable ? {letteringAmount:0}:{}),
       ...(compositionUnavailable ? {compositionAmount:0}:{}),
@@ -600,6 +604,7 @@ export function createRenderer(canvas) {
       withStereo = s.engine === 16 || (blended && s.secondaryEngine === 16) || s.stereoAmount > 0,
       withWiggle = s.wiggleAmount > 0,
       withMaterial = s.filmAmount>0 || s.opalAmount>0 || s.prismAmount>0 || s.foilRelief>0,
+      withAlchemy = s.alchemyAmount>0,
       withLettering = false, // Lettering is a separate, fail-safe GPU compositing pass.
       withComposition = blended && s.compositionAmount>0,
       withBackdrop = s.backdropAmount>0,
@@ -639,7 +644,7 @@ export function createRenderer(canvas) {
       ),
       withStrange = (s.engine>=17 && s.engine<=19) ||
         (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}/${withAlchemy ? "alchemy"+alchemyModes.indexOf(s.alchemyMode) : "no-alchemy"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -948,6 +953,17 @@ export function createRenderer(canvas) {
     if(withComposition)source=source.replace("float v=composed(p);","float v=field(p,engine);");
     source=source.replace("/* MATERIAL_MODULE */",withMaterial?materialGLSL:"");
     source=source.replace("/* MATERIAL_POST */",withMaterial?"col=prismaticTape(col,uv,p,v);":"");
+    // Shader mode specialization is the only color engine sent to the GPU.
+    // Off => shader code entirely absent, so legacy art remains pixel-identical.
+    const opticalColor=withAlchemy
+      ?specializeAlchemyGLSL(
+          alchemyGLSL.replace("uniform int alchemyMode;",
+            "#define alchemyMode "+Math.max(0,alchemyModes.indexOf(s.alchemyMode))),
+          alchemyModes.indexOf(s.alchemyMode))
+      :"";
+    source=source.replace("/* ALCHEMY_MODULE */",opticalColor);
+    source=source.replace("/* ALCHEMY_POST */",
+      withAlchemy?"col=livingColorAlchemy(col,uv,p,v);":"");
     source=source.replace("/* LETTERING_MODULE */",withLettering?kineticGLSL:"");
     source=source.replace("/* LETTERING_POST */",withLettering?"col=drawKineticLetters(col,uv);":"");
     if (s.split <= 0.1) source = source.replace("if(split>.001)", "if(false)");
@@ -1060,7 +1076,7 @@ export function createRenderer(canvas) {
       // Keep the exact state used by the successfully compiled shader.
       // programFor() has its own withGene local; draw() cannot access it.
       let compiledState=s;
-      for(let attempt=0;attempt<16;attempt++){
+      for(let attempt=0;attempt<17;attempt++){
         const candidate=compatibleShaderState(s);
         try {
           active=programFor(candidate);
@@ -1069,7 +1085,10 @@ export function createRenderer(canvas) {
           break;
         }catch(e){
           lastCompileError=e;
-          if(foodWebActive(candidate)&&!foodWebUnavailable){
+          if(candidate.alchemyAmount>0 && !alchemyUnavailable){
+            alchemyUnavailable=true;
+            console.warn("Color Sorcery exceeded this GPU; preserving the original artwork and every other layer.",e);
+          }else if(foodWebActive(candidate)&&!foodWebUnavailable){
             foodWebUnavailable=true;
             console.warn("Food web filaments exceed this GPU; preserving painted colonies, soil and other effects.",e);
           }else if(successionEnabled(candidate)&&!successionUnavailable){
@@ -1223,7 +1242,9 @@ export function createRenderer(canvas) {
         "stereoWiggle",
         "stereoQuality",
         "filmAmount", "filmThickness", "opalAmount", "prismAmount",
-        "foilRelief", "foilMotion", "letteringAmount", "letteringScale",
+        "foilRelief", "foilMotion",
+        "alchemyAmount","alchemyScale","alchemyMotion","alchemySeparation",
+        "alchemySoftness","alchemyWhite","alchemyVariation", "letteringAmount", "letteringScale",
         "letteringWarp", "letteringMotion",
         "compositionAmount","compositionScale","compositionFeather",
         "compositionMotion","compositionColorShift","compositionVariation",
@@ -1273,6 +1294,7 @@ export function createRenderer(canvas) {
         "tunnelAperture","tunnelVariation",
       ])
         gl.uniform1f(loc(k), s[k] / 100);
+      gl.uniform1f(loc("alchemyPalette"), s.alchemyPalette ? 1 : 0);
       gl.uniform1f(loc("rotation"), (s.rotation * Math.PI) / 180);
       gl.uniform1f(loc("symmetry"), s.symmetry);
       for (const k of ["bloom", "posterize", "mirror", "invert"])

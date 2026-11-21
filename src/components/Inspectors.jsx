@@ -41,6 +41,8 @@ import { photonSpecies, photonSpeciesFamilies, photonSpeciesDescriptions,
   remixPhotonZoo,remixFunkyPhoton } from "../photon-zoo.js";
 import { backdropFamilies,backdropDescriptions,backdropPresets,
   applyBackdropPreset,remixBackdrop } from "../backdrops.js";
+import {alchemyModes,alchemyFamilies,alchemyDescriptions,alchemyPresets,
+  applyAlchemyPreset,shuffleAlchemy,hideAlchemy} from "../chromatic-alchemy.js";
 import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   xenoVascularSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
@@ -268,6 +270,7 @@ export function EffectsInspector({ history, onTool, tool }) {
     try { localStorage.setItem(FILTER_KEY, f); } catch { /* session only */ }
   };
   const [photonPreset,setPhotonPreset]=React.useState(photonPresets[0].name);
+  const [alchemyPreset,setAlchemyPreset]=React.useState(alchemyPresets[0].name);
   const [backdropPreset,setBackdropPreset]=React.useState(backdropPresets[0].name);
   const [filamentPreset,setFilamentPreset]=React.useState(filamentPresets[0].name);
   const [hybridPreset,setHybridPreset]=React.useState(filamentHybridPresets[0].name);
@@ -1970,6 +1973,54 @@ export function EffectsInspector({ history, onTool, tool }) {
       </div>
       <Reseed label="Reseed substance" onClick={()=>history.change(x=>({...x,substanceVariation:
         (x.substanceVariation+19+Math.random()*67)%100}))}/>
+    </>,
+    alchemy: <>
+      <p className="control-note">Four animated color engines from your shader vault. They change the light and pigment on your existing art—not your geometry, palettes or separately composited words.</p>
+      <Select label="Color sorcery" value={s.alchemyMode}
+        onChange={v=>history.change(x=>({...x,alchemyMode:v,
+          alchemyAmount:Math.max(65,x.alchemyAmount)}))}>
+        {alchemyFamilies.map(family=><optgroup key={family.name}
+          label={family.name}>
+          {family.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </optgroup>)}
+      </Select>
+      {alchemyDescriptions[s.alchemyMode] ? (
+        <p className="control-note">{alchemyDescriptions[s.alchemyMode]}</p>
+      ) : null}
+      <Parameter label="Presence" name="alchemyAmount" history={history}/>
+      <Parameter label="Field scale" name="alchemyScale" history={history}/>
+      <Parameter label="Color motion" name="alchemyMotion" history={history}/>
+      <Parameter label="Spectral separation" name="alchemySeparation" history={history}/>
+      <Parameter label="Softness" name="alchemySoftness" history={history}/>
+      <Parameter label="White crown" name="alchemyWhite" history={history}/>
+      <Parameter label="Variation" name="alchemyVariation" history={history}/>
+      <Switch label="Use my current palette" name="alchemyPalette" history={history}/>
+      <div className="preset-row">
+        <Select label="Instant color sorcery" value={alchemyPreset}
+          onChange={setAlchemyPreset}>
+          {alchemyPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applyAlchemyPreset(x,alchemyPreset))}>
+          Summon this color
+        </button>
+      </div>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleAlchemy(x))}>
+          <Shuffle size={13}/> Shuffle color sorcery
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleAlchemy(x,Math.random,"funky"))}>
+          <Dices size={13}/> Shuffle funky colors
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.alchemyAmount<=0}
+          onClick={()=>history.change(hideAlchemy)}>
+          <EyeOff size={13}/> Hide color sorcery
+        </button>
+      </div>
+      <p className="control-note">All four modes use the normal animation clock and PNG/GIF/MP4 renderer. Presence at 0 is identical to old art. Undo restores the previous effect.</p>
     </>,
     foil: <>
       <Parameter label="Thin-film rainbow" name="filmAmount" history={history} />

@@ -34,7 +34,8 @@ import {
 import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, compositionModes, backdropModes, microModes, substanceModes, wiggleModes, randomize } from "../data";
 import { Parameter, Range, Toggle, Switch, Select, Section, Segmented, Pill, useReveal } from "./Controls";
 import { photonSpecies, photonPresets, photonPresetState, nextPhotonSpecies } from "../photon-zoo.js";
-import { filamentSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies,
+import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
+  xenoVascularSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
   filamentMaterials,filamentMaterialPresets,applyFilamentMaterialPreset,
   remixFilamentMaterials,filamentStitchModes,filamentStitchPresets,
@@ -1553,10 +1554,16 @@ export function EffectsInspector({ history, onTool, tool }) {
       <p className="control-note">Underlay is an independent layer: hide it without losing your lace, text, Photon Zoo or underlying math art. It uses the existing palette and normal PNG/GIF/MP4 renderer.</p>
     </>,
     filament: <>
-      <p className="control-note">Six animated stitch geometries: actual filament paths, not a blurry texture. They ride your palette without replacing the underlying art, and can stack with Photon Zoo.</p>
+      <p className="control-note">Sixteen animated mathematical thread species. Your original lace and Fractal veinwork are untouched; ten new aliens, living vessels, roots and nerves have their own continuously moving geometry. They share palettes, materials, stitching, crossbreeding and GIF/MP4 timelines.</p>
       <Select label="Thread geometry" value={s.filamentSpecies}
-        onChange={v=>history.change(x=>({...x,filamentSpecies:v,filamentAmount:Math.max(55,x.filamentAmount)}))}>
-        {filamentSpecies.map(name=><option key={name} value={name}>{name}</option>)}
+        onChange={v=>history.change(x=>({...x,filamentSpecies:v,
+          filamentAmount:Math.max(73,x.filamentAmount),
+          filamentMotion:xenoVascularSpecies.includes(v)
+            ?Math.max(45,x.filamentMotion):x.filamentMotion}))}>
+        {filamentSpeciesFamilies.map(family=><optgroup
+          key={family.name} label={family.name}>
+          {family.species.map(name=><option key={name} value={name}>{name}</option>)}
+        </optgroup>)}
       </Select>
       <Parameter label="Thread presence" name="filamentAmount" history={history}/>
       <Parameter label="Pattern scale" name="filamentScale" history={history}/>
@@ -1579,6 +1586,10 @@ export function EffectsInspector({ history, onTool, tool }) {
         <button type="button" className="button secondary"
           onClick={()=>history.change(x=>nextFilamentSpecies(x))}>
           <Dices size={13}/> New stitch species
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>remixXenoVascular(x))}>
+          <Shuffle size={13}/> Shuffle alien + veinwork
         </button>
         <button type="button" className="button secondary"
           onClick={()=>history.change(x=>({...x,
@@ -1696,7 +1707,10 @@ export function EffectsInspector({ history, onTool, tool }) {
           onChange={v=>history.change(x=>({...x,
             filamentSecondSpecies:v,filamentCrossbreed:Math.max(60,x.filamentCrossbreed),
             filamentAmount:Math.max(55,x.filamentAmount)}))}>
-          {filamentSpecies.map(name=><option key={name} value={name}>{name}</option>)}
+          {filamentSpeciesFamilies.map(family=><optgroup
+            key={family.name} label={family.name}>
+            {family.species.map(name=><option key={name} value={name}>{name}</option>)}
+          </optgroup>)}
         </Select>
         <Parameter label="Second parent presence" name="filamentCrossbreed" history={history}/>
         <Parameter label="Under / over crossing depth" name="filamentInterlace" history={history}/>

@@ -1,5 +1,5 @@
 /**
- * FILAMENT FORGE — six procedural filament geometries.
+ * FILAMENT FORGE — sixteen procedural filament geometries.
  * True lines, stitches and crossings rather than a color/screen overlay.
  * All species run in WebGL 1.0 / WebGL2 fragment GLSL; they are selected
  * at program compile so inactive geometry does not burden iPhone GPUs.
@@ -11,7 +11,71 @@ export const filamentSpecies = [
   "Voronoi lace",
   "Spiral appliqué",
   "Fractal veinwork",
+  "Alien lattice",
+  "Alien scriptwork",
+  "Glyph swarm",
+  "Xeno filament",
+  "Capillary bloom",
+  "Mycelial veinwork",
+  "Lightning lace",
+  "Root filigree",
+  "Coral vasculature",
+  "Nerve net",
 ];
+
+// Named families are UI/grouping metadata, never GPU or saved-state data.
+// Every species remains valid as a primary or secondary parent in hybrids.
+export const filamentSpeciesFamilies=[
+  {name:"Original mathematical lace",species:filamentSpecies.slice(0,5)},
+  {name:"Living veins & neural structures",species:[
+    "Fractal veinwork","Capillary bloom","Mycelial veinwork",
+    "Lightning lace","Root filigree","Coral vasculature","Nerve net"]},
+  {name:"Alien inscriptions & nonhuman ornaments",species:[
+    "Alien lattice","Alien scriptwork","Glyph swarm","Xeno filament"]},
+];
+export const xenoVascularSpecies=filamentSpecies.slice(6);
+
+// Ship just the selected structural branches to the iPhone GPU.
+// Even in a hybrid, no more than two species paths are needed.
+export function specializeFilamentGeometry(source,first,second=null){
+  const ids=[first,...(second==null?[]:[second])];
+  if(!ids.length||ids.some(n=>!Number.isInteger(n)||n<0||n>=filamentSpecies.length))
+    return source;
+  const chosen=[...new Set(ids)].sort((a,b)=>a-b);
+  const opening=id=>id===0?"  if(species==0){":
+    "  }else if(species=="+id+"){";
+  const starts=filamentSpecies.map((_,id)=>source.indexOf(opening(id)));
+  if(starts.some((pos,id)=>pos<0||(id>0&&pos<=starts[id-1])))return source;
+  const fallback=source.indexOf(
+    "  }else{\n    // The branch is intentionally unreachable",starts[starts.length-1]);
+  const geometryEnd=source.indexOf("  // Signed-distance-like threads:",fallback);
+  if(fallback<0||geometryEnd<=fallback)return source;
+  const branches=chosen.map((id,k)=>{
+    const end=id===starts.length-1?fallback:starts[id+1];
+    const body=source.slice(starts[id]+opening(id).length,end);
+    return (k===0?"  if(species=="+id+"){":
+      "  }else if(species=="+id+"){")+body;
+  }).join("");
+  return source.slice(0,starts[0])+branches+
+    source.slice(fallback,geometryEnd)+source.slice(geometryEnd);
+}
+
+export function remixXenoVascular(state,rng=Math.random){
+  const safe=()=>{const x=Number(rng());return Number.isFinite(x)?
+    Math.max(0,Math.min(1-Number.EPSILON,x)):0;};
+  const candidates=xenoVascularSpecies.filter(x=>x!==state.filamentSpecies);
+  const list=candidates.length?candidates:xenoVascularSpecies;
+  const species=list[Math.floor(safe()*list.length)];
+  return {...state,filamentSpecies:species,
+    filamentAmount:Math.max(73,state.filamentAmount||0),
+    filamentScale:30+Math.floor(safe()*61),
+    filamentDensity:48+Math.floor(safe()*49),
+    filamentMotion:36+Math.floor(safe()*65),
+    filamentWidth:12+Math.floor(safe()*39),
+    filamentRelief:59+Math.floor(safe()*42),
+    filamentHue:Math.floor(safe()*101),
+    filamentVariation:Math.floor(safe()*101)};
+}
 
 export const filamentMaterials = [
   "Original thread",
@@ -95,6 +159,36 @@ export const filamentPresets = [
   {name:"Bioluminescent needlework",species:"Fractal veinwork",
     filamentAmount:95,filamentScale:65,filamentDensity:79,filamentMotion:68,
     filamentWidth:29,filamentRelief:81,filamentHue:73,filamentVariation:91},
+  {name:"Xeno transmission lace",species:"Alien lattice",
+    filamentAmount:96,filamentScale:56,filamentDensity:83,filamentMotion:76,
+    filamentWidth:22,filamentRelief:86,filamentHue:64,filamentVariation:48},
+  {name:"Inscription of the Others",species:"Alien scriptwork",
+    filamentAmount:93,filamentScale:62,filamentDensity:74,filamentMotion:67,
+    filamentWidth:26,filamentRelief:91,filamentHue:81,filamentVariation:73},
+  {name:"Oracle glyph infestation",species:"Glyph swarm",
+    filamentAmount:94,filamentScale:58,filamentDensity:84,filamentMotion:89,
+    filamentWidth:21,filamentRelief:88,filamentHue:93,filamentVariation:51},
+  {name:"Xenobiological cable loom",species:"Xeno filament",
+    filamentAmount:97,filamentScale:60,filamentDensity:86,filamentMotion:84,
+    filamentWidth:18,filamentRelief:93,filamentHue:72,filamentVariation:57},
+  {name:"Carnivorous capillary lace",species:"Capillary bloom",
+    filamentAmount:97,filamentScale:63,filamentDensity:85,filamentMotion:85,
+    filamentWidth:20,filamentRelief:89,filamentHue:61,filamentVariation:76},
+  {name:"Mycelial nerve cathedral",species:"Mycelial veinwork",
+    filamentAmount:96,filamentScale:57,filamentDensity:85,filamentMotion:82,
+    filamentWidth:18,filamentRelief:92,filamentHue:79,filamentVariation:66},
+  {name:"Electrical heirloom lace",species:"Lightning lace",
+    filamentAmount:94,filamentScale:64,filamentDensity:89,filamentMotion:91,
+    filamentWidth:18,filamentRelief:98,filamentHue:82,filamentVariation:62},
+  {name:"Root oracle tapestry",species:"Root filigree",
+    filamentAmount:94,filamentScale:59,filamentDensity:82,filamentMotion:79,
+    filamentWidth:19,filamentRelief:88,filamentHue:43,filamentVariation:64},
+  {name:"Bioluminescent coral veins",species:"Coral vasculature",
+    filamentAmount:96,filamentScale:53,filamentDensity:89,filamentMotion:88,
+    filamentWidth:23,filamentRelief:96,filamentHue:36,filamentVariation:79},
+  {name:"Neural signal embroidery",species:"Nerve net",
+    filamentAmount:97,filamentScale:58,filamentDensity:85,filamentMotion:94,
+    filamentWidth:20,filamentRelief:91,filamentHue:96,filamentVariation:84},
 ];
 
 export function applyFilamentPreset(state,name){
@@ -125,6 +219,10 @@ export const filamentHybridPresets = [
     filamentAmount:89,filamentCrossbreed:85,filamentInterlace:87,filamentTwist:14,filamentPhase:68},
   {name:"Spiral crown mycelium",first:"Spiral appliqué",second:"Fractal veinwork",
     filamentAmount:96,filamentCrossbreed:91,filamentInterlace:51,filamentTwist:62,filamentPhase:37},
+  {name:"Xeno-vascular communion",first:"Alien scriptwork",second:"Mycelial veinwork",
+    filamentAmount:97,filamentCrossbreed:89,filamentInterlace:74,filamentTwist:39,filamentPhase:68},
+  {name:"Nerve lightning brocade",first:"Nerve net",second:"Lightning lace",
+    filamentAmount:98,filamentCrossbreed:90,filamentInterlace:78,filamentTwist:24,filamentPhase:59},
 ];
 export const filamentHybridControls=[
   "filamentCrossbreed","filamentInterlace","filamentTwist","filamentPhase"
@@ -350,8 +448,8 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     mask=1.0-smoothstep(.39,.62,radius);
     phase=rand+angle*.17-radius*2.0;
     highlight=.5+.5*cos(spin*.33);
-  }else{
-    // Self-similar branching contour pairs; no data texture or recursion.
+  }else if(species==5){
+    // Original Fractal veinwork is preserved verbatim.
     vec2 z=q*.76;
     float f=0.0,g=0.0;
     float amp=.55;
@@ -365,6 +463,147 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
                 abs(cos(g*(9.0+density*9.0)-fieldV*.31)))*.092;
     phase=f*1.5+g*.95;
     highlight=.5+.5*sin((f+g)*8.0+t*.6);
+  }else if(species==6){
+    // ALIEN LATTICE: drifting quasihexagonal signal mesh with living junctions.
+    vec2 r=q*(.68+density*.46);
+    vec2 axes=vec2(dot(r,vec2(.866025,.5)),dot(r,vec2(-.866025,.5)));
+    float a=sin(axes.x*4.15+t*.61+sin(axes.y*1.2+t*.2));
+    float b=sin(axes.y*4.15-t*.47+cos(axes.x*1.13-t*.29));
+    float c=sin((axes.x+axes.y)*4.15+t*.31);
+    float junction=pow(max(0.0,1.0-max(abs(a),abs(b))),.7);
+    threadD=min(min(abs(a),abs(b)),abs(c))*.081;
+    threadD=min(threadD,.13*(1.0-junction));
+    phase=axes.x*.31+axes.y*.42+sin(t*.42);
+    highlight=.5+.5*cos(a*7.0+b*7.0+t*1.4);
+  }else if(species==7){
+    // ALIEN SCRIPTWORK: skewed strokes, loops and translating angular runes.
+    vec2 tile=q*(.45+density*.48);
+    vec2 id=floor(tile),p=fract(tile)-.5;
+    float h=hash(id+seedPhase),h2=hash(id+vec2(7.3,3.9)+seedPhase);
+    p+=.08*vec2(sin(t*.6+h*6.28),cos(t*.48+h2*6.28));
+    float slant=mix(-.7,.7,h);
+    float stem=abs(p.x-p.y*slant);
+    float bar=abs(p.y-(h2-.5)*.6)-.02;
+    float hoop=abs(length(p-vec2((h-.5)*.2,(h2-.5)*.2))-
+      (.18+.12*h));
+    float gate=step(.13,abs(p.y));
+    threadD=min(min(stem*.8+(.014+abs(p.y)*.028),
+      abs(bar)*(.6+.4*gate)),hoop)*.64;
+    mask=1.0-smoothstep(.38,.58,max(abs(p.x),abs(p.y)));
+    phase=h*2.5+h2+tile.y*.21+t*.24;
+    highlight=.5+.5*sin(phase*6.2+t*.93);
+  }else if(species==8){
+    // GLYPH SWARM: orbiting, changing incomplete runes confined to cells.
+    vec2 tile=q*(.58+density*.38),id=floor(tile);
+    vec2 p=fract(tile)-.5;
+    float h=hash(id+seedPhase),angle=t*(.32+.43*h)+h*6.28318;
+    p=mat2(cos(angle),-sin(angle),sin(angle),cos(angle))*p;
+    float a=atan(p.y,p.x),r=length(p);
+    float ring=abs(r-(.20+.085*sin(t*.57+h*5.0)));
+    float bar=abs(p.x-.11*sin(p.y*6.0+t+h));
+    float opening=1.0-smoothstep(.0,.25,sin(a*3.0+h*6.0-t*.45));
+    threadD=min(ring+opening*.15,bar*.52+abs(p.y)*.04);
+    mask=1.0-smoothstep(.38,.57,r);
+    phase=a*.7+r*2.5+h+t*.33;
+    highlight=.5+.5*cos(a*5.0-t*1.5);
+  }else if(species==9){
+    // XENO FILAMENT: migrating twisted double helix and segmented rungs.
+    vec2 r=q*(.76+density*.38);
+    float center=.29*sin(r.y*.62+t*.35+sin(r.y*.23));
+    float helix=.18*sin(r.y*2.6-t*1.25+seedPhase);
+    float strandA=abs(r.x-center-helix);
+    float strandB=abs(r.x-center+helix);
+    float rung=abs(sin(r.y*5.2-t*.8))*abs(r.x-center)*.68;
+    float within=1.0-smoothstep(.15,.29,abs(r.x-center));
+    threadD=min(min(strandA,strandB),rung+(1.0-within)*.2)*.42;
+    phase=r.y*.49+center*.7+t*.7;
+    highlight=.5+.5*cos(r.y*5.2-t*1.9);
+  }else if(species==10){
+    // CAPILLARY BLOOM: growing radial blood vessels with recursive forks.
+    vec2 cell=floor(q*.7),p=fract(q*.7)-.5;
+    float h=hash(cell+seedPhase),a=atan(p.y,p.x);
+    float r=length(p),fork=7.0+floor(density*6.0);
+    float spokes=abs(sin(a*fork+r*9.0+t*.38+h*6.283));
+    float secondary=abs(sin(a*fork*2.0-r*17.0-t*.55));
+    float vessel=min(spokes*.048,secondary*.071);
+    float lobes=.035*abs(sin(r*26.0-t*.78));
+    threadD=min(vessel+lobes,abs(r-(.25+.06*sin(t*.6+h*6.0)))*.39);
+    mask=1.0-smoothstep(.43,.65,r);
+    phase=r*3.5+a*.54+h;
+    highlight=.5+.5*sin(r*22.0-t*1.18);
+  }else if(species==11){
+    // MYCELIAL VEINWORK: recursively displaced rhizomorphic pathways.
+    vec2 z=q*.66;
+    float f=0.0,g=0.0,amp=.62;
+    for(int i=0;i<3;i++){
+      float n=sin(z.y*1.47+cos(z.x*.83+t*.27)*1.6);
+      float m=cos(z.x*1.61-sin(z.y*.71-t*.33)*1.9);
+      f+=amp*n;g+=amp*m;
+      z=mat2(.82,-.57,.57,.82)*z*1.87+vec2(.73,1.13);
+      amp*=.58;
+    }
+    float branch=sin(f*(9.0+density*13.0)+t*.16);
+    float cross=sin(g*(9.0+density*12.0)-t*.23);
+    threadD=min(abs(branch)*.073,abs(cross)*.067);
+    phase=f*2.6+g*1.6+t*.21;
+    highlight=.5+.5*cos(f*13.0-g*8.0+t*.92);
+  }else if(species==12){
+    // LIGHTNING LACE: jagged branching stroke fronts with traveling sparks.
+    vec2 r=q*(.6+density*.42);
+    float stepY=floor(r.y*3.5);
+    float zig=hash(vec2(stepY,seedPhase))-.5;
+    float zigNext=hash(vec2(stepY+1.0,seedPhase))-.5;
+    float front=mix(zig,zigNext,smoothstep(0.0,1.0,fract(r.y*3.5)));
+    float arc=sin(r.y*1.7-t*.83+seedPhase)*.36;
+    float trunk=abs(sin((r.x-front*.72-arc)*4.1));
+    float twig=abs(sin((r.x+front*.55+r.y*.64)*7.2+t*.59));
+    float spark=pow(.5+.5*sin(r.y*18.0-t*3.1),12.0);
+    threadD=min(trunk*.078,twig*.071+.006*(1.0-spark));
+    phase=r.y*.75+front+t*.65;
+    highlight=.5+.5*spark;
+  }else if(species==13){
+    // ROOT FILIGREE: gravity-biased curling root fans with lateral hairs.
+    vec2 r=q*(.66+density*.39);
+    float drift=sin(r.y*.54+t*.39+sin(r.y*.15))* .43;
+    float trunk=abs(sin((r.x-drift)*3.7+sin(r.y*.62+t*.31)));
+    float laterals=abs(sin(r.x*7.3+r.y*3.8+
+      sin(r.y*1.6-t*.5)*1.2));
+    float taper=.55+.45*abs(sin(r.y*1.13+seedPhase));
+    threadD=min(trunk*.075,laterals*.075*taper);
+    phase=r.y*.49+r.x*.13+drift;
+    highlight=.5+.5*cos(r.y*8.0-t*1.14);
+  }else if(species==14){
+    // CORAL VASCULATURE: branching, pulsing radial reef cups and pores.
+    vec2 tile=q*.56,id=floor(tile),p=fract(tile)-.5;
+    float h=hash(id+seedPhase),r=length(p),a=atan(p.y,p.x);
+    float branches=6.0+floor(density*6.0);
+    float fan=abs(sin(a*branches-r*15.0+t*.46+h*6.0));
+    float twigs=abs(sin(a*branches*2.0+r*24.0-t*.68));
+    float cup=abs(r-(.25+.05*sin(t*.36+h*5.0)));
+    threadD=min(min(fan*.07,twigs*.09),cup*.38);
+    mask=1.0-smoothstep(.43,.63,r);
+    phase=r*4.0+a*.61+h;
+    highlight=.5+.5*sin(r*19.0-t*1.2+h*4.0);
+  }else if(species==15){
+    // NERVE NET: oscillating dendrite spokes and migrating synapse pulses.
+    vec2 tile=q*(.56+density*.36),id=floor(tile);
+    vec2 p=fract(tile)-.5;
+    float h=hash(id+seedPhase);
+    p+=.045*vec2(sin(t*.39+h*6.2),cos(t*.47+h*6.2));
+    float r=length(p),a=atan(p.y,p.x);
+    float dendrite=abs(sin(a*(5.0+floor(density*5.0))+
+      sin(r*16.0-t*.65)*.7+h*6.283));
+    float synapse=abs(r-(.095+.035*sin(t*.8+h*5.0)));
+    float cross=abs(sin((p.x+p.y)*7.1-t*.35+h*4.0));
+    threadD=min(min(dendrite*.068+r*.016,synapse*.48),
+      cross*.062+abs(p.x-p.y)*.014);
+    mask=1.0-smoothstep(.41,.61,r);
+    phase=r*3.7+a*.7+h+t*.19;
+    highlight=pow(.5+.5*sin(r*29.0-t*2.8+a*3.0),4.0);
+  }else{
+    // The branch is intentionally unreachable for validated species IDs.
+    threadD=1.0;
+    mask=0.0;
   }
   // Signed-distance-like threads: sharp high-resolution core, wider translucent
   // halo and directional raised relief. The majority of pixels stay untouched.

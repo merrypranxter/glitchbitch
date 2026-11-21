@@ -29,6 +29,7 @@ import { geneGLSL, geneEnabled, packGeneMarker } from "./colony-genetics.js";
 import {selectionModes,selectionGLSL,selectionActive} from "./selection-chamber.js";
 import {apocalypseModes,apocalypseGLSL,apocalypseActive} from "./apocalypse-clock.js";
 import {MAX_FOSSILS,fossilGLSL,fossilEnabled,packedFossil} from "./fossil-record.js";
+import {MAX_SUCCESSION,successionGLSL,successionEnabled,packedSuccession} from "./ecological-succession.js";
 import { atmosphereHabitats, atmosphereSecondHabitats, atmosphereBlendModes,
   habitatGLSL, atmosphereHybridGLSL } from "./atmosphere-habitats.js";
 
@@ -94,6 +95,7 @@ phase+=source;if(posterize)phase=floor(phase*7.)/7.;return phase;}
 /* SYMBIOSIS_MODULE */
 /* APOCALYPSE_MODULE */
 /* FOSSIL_MODULE */
+/* SUCCESSION_MODULE */
 /* SUBSTRATE_MODULE */
 /* HABITAT_MODULE */
 /* LETTERING_MODULE */
@@ -130,6 +132,7 @@ float v=composed(p);vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*
 /* UNDERLAY_POST */
 /* FILAMENT_POST */
 /* SUBSTRATE_POST */
+/* SUCCESSION_POST */
 /* FOSSIL_POST */
 /* APOCALYPSE_POST */
 /* ATMOSPHERE_POST */
@@ -169,7 +172,8 @@ export function createRenderer(canvas) {
     photonUnavailable = false, filamentUnavailable = false,
     filamentHybridUnavailable = false, filamentMaterialUnavailable = false,
     filamentStitchUnavailable = false, filamentSculptUnavailable = false,
-    underlayUnavailable = false, fossilUnavailable = false;
+    underlayUnavailable = false, fossilUnavailable = false,
+    successionUnavailable = false;
   function compatibleShaderState(s){
     const source = stereoUnavailable ? safe2DSelection(s) : s;
     if(!materialUnavailable && !typeShaderUnavailable &&
@@ -178,7 +182,7 @@ export function createRenderer(canvas) {
        !photonUnavailable && !filamentUnavailable && !filamentHybridUnavailable &&
        !filamentMaterialUnavailable && !filamentStitchUnavailable &&
        !filamentSculptUnavailable && !underlayUnavailable &&
-       !strangeUnavailable && !fossilUnavailable && !atmosphereUnavailable &&
+       !strangeUnavailable && !fossilUnavailable && !successionUnavailable && !atmosphereUnavailable &&
        !atmosphereBUnavailable && !habitatUnavailable)return source;
     return {
       ...source,
@@ -195,6 +199,7 @@ export function createRenderer(canvas) {
       ...(filamentSculptUnavailable ? {filamentSculptAmount:0}:{}),
       ...(underlayUnavailable ? {underlayAmount:0}:{}),
       ...(fossilUnavailable ? {fossilAmount:0}:{}),
+      ...(successionUnavailable ? {successionAmount:0}:{}),
       ...(atmosphereUnavailable ? {atmoAmount:0}:{}),
       ...(atmosphereBUnavailable ? {atmoBAmount:0}:{}),
       ...(habitatUnavailable ? {atmoMaskMode:"Everywhere",atmoBMaskMode:"Everywhere"}:{}),
@@ -613,6 +618,7 @@ export function createRenderer(canvas) {
       withSubstrate = substrateEnabled(s),
       withApocalypse = apocalypseActive(s),
       withFossil = fossilEnabled(s),
+      withSuccession = successionEnabled(s),
       withSymbiosis = symbiosisActive(s),
       withGene = geneEnabled(s),
       withSelection = selectionActive(s),
@@ -628,7 +634,7 @@ export function createRenderer(canvas) {
       ),
       withStrange = (s.engine>=17 && s.engine<=19) ||
         (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withWiggle ? "wiggle" : "still"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop" : "unbacked"}/${withMicro ? "micro" : "untextured"}/${withSubstance ? "substance" : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withWiggle ? "wiggle" : "still"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -715,6 +721,8 @@ export function createRenderer(canvas) {
       withApocalypse?apocalypseGLSL:"");
     source=source.replace("/* FOSSIL_MODULE */",
       withFossil?fossilGLSL:"");
+    source=source.replace("/* SUCCESSION_MODULE */",
+      withSuccession?successionGLSL:"");
     source=source.replace("/* SUBSTRATE_MODULE */",
       withSubstrate
         ? substrateGLSL
@@ -723,9 +731,14 @@ export function createRenderer(canvas) {
           .replace("/* FOSSIL_RESOURCE */",
             withFossil?"fossilResource(uv,":"")
           .replace("/* FOSSIL_RESOURCE_END */",withFossil?")":"")
+          .replace("/* SUCCESSION_RESOURCE */",
+            withSuccession?"successionResource(uv,":"")
+          .replace("/* SUCCESSION_RESOURCE_END */",withSuccession?")":"")
         : "");
     source=source.replace("/* SUBSTRATE_POST */",
       withSubstrate?"col=shadeSubstrate(col,uv);":"");
+    source=source.replace("/* SUCCESSION_POST */",
+      withSuccession?"col=shadeSuccession(col,uv);":"");
     source=source.replace("/* FOSSIL_POST */",
       withFossil?"col=shadeFossilRelics(col,uv);":"");
     source=source.replace("/* APOCALYPSE_POST */",
@@ -958,6 +971,7 @@ export function createRenderer(canvas) {
     shapeBuffer = new Float32Array(64),
     habitatBuffer = new Float32Array(64), // 16 planted habitat seeds, 4 floats per stamp
     fossilBuffer = new Float32Array(32), // 8 historical impressions, 4 floats each; reused
+    successionBuffer = new Float32Array(MAX_SUCCESSION*4), // six aged soil deposits
     sporeLandingBuffer = new Float32Array(32); // CPU-selected daughter UV; identical preview/export
   const maxSize = Math.min(
     gl.getParameter(gl.MAX_RENDERBUFFER_SIZE),
@@ -1013,7 +1027,10 @@ export function createRenderer(canvas) {
           break;
         }catch(e){
           lastCompileError=e;
-          if(fossilEnabled(candidate)&&!fossilUnavailable){
+          if(successionEnabled(candidate)&&!successionUnavailable){
+            successionUnavailable=true;
+            console.warn("Succession strata too costly for this GPU; preserving mineral substrate and colonies.",e);
+          }else if(fossilEnabled(candidate)&&!fossilUnavailable){
             fossilUnavailable=true;
             console.warn("Historical fossil material too expensive for this GPU; preserving living colonies and baseline mineral art.",e);
           }else if((candidate.atmoAmount>0||candidate.atmoBAmount>0) &&
@@ -1204,6 +1221,8 @@ export function createRenderer(canvas) {
         "apocalypsePressure","apocalypseGlow","apocalypseHue",
         "fossilAmount","fossilDepth","fossilMotion",
         "fossilGlow","fossilHue",
+        "successionAmount","successionDepth","successionSpread",
+        "successionMotion","successionGlow","successionHue",
         "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
         "tunnelAperture","tunnelVariation",
       ])
@@ -1245,6 +1264,7 @@ export function createRenderer(canvas) {
       gl.uniform1i(loc("selectionMode"),selectionModes.indexOf(s.selectionMode));
       gl.uniform1i(loc("apocalypseMode"),apocalypseModes.indexOf(s.apocalypseMode));
       gl.uniform1f(loc("apocalypseEpoch"),s.apocalypseEpoch);
+      gl.uniform1f(loc("successionEpoch"),s.successionEpoch);
       if(fossilEnabled(compiledState)){
         const relics=compiledState.fossilRecords||[];
         const count=Math.min(MAX_FOSSILS,relics.length);
@@ -1263,6 +1283,20 @@ export function createRenderer(canvas) {
         ].indexOf(s.fossilMode));
         gl.uniform1f(loc("fossilEpoch"),s.apocalypseEpoch);
         gl.uniform4fv(loc("fossilStamps[0]"),fossilBuffer);
+      }
+      if(successionEnabled(compiledState)){
+        const traces=compiledState.successionRecords||[];
+        const count=Math.min(MAX_SUCCESSION,traces.length);
+        successionBuffer.fill(0);
+        for(let i=0;i<count;i++){
+          const mark=traces[i],j=i*4;
+          successionBuffer[j]=mark.x;
+          successionBuffer[j+1]=mark.y;
+          successionBuffer[j+2]=mark.radius;
+          successionBuffer[j+3]=packedSuccession(mark);
+        }
+        gl.uniform1i(loc("successionCount"),count);
+        gl.uniform4fv(loc("successionStamps[0]"),successionBuffer);
       }
       gl.uniform1f(loc("sporeGeneration"),s.sporeGeneration);
       gl.uniform1i(loc("habitatStampCount"),plantedCount);

@@ -1,5 +1,6 @@
 import {apocalypseResource} from "./apocalypse-clock.js";
 import {fossilResourceAt} from "./fossil-record.js";
+import {successionResourceAt} from "./ecological-succession.js";
 // SUBSTRATE ALCHEMY — a mineral/nutrient landscape that organisms respond to.
 // Deliberately pure and analytically mirrored between JS and GLSL, so
 // spore daughter landing sites remain EXACTLY the sites exported in the art.
@@ -78,8 +79,8 @@ export function substrateResourceAt(state,x,y){
         Math.cos(v*f*TAU-.7*Math.sin(u*9));
       break;
   }
-  return fossilResourceAt(state,x,y,
-    apocalypseResource(state,x,y,clamp(n,0,1)));
+  return successionResourceAt(state,x,y,fossilResourceAt(state,x,y,
+    apocalypseResource(state,x,y,clamp(n,0,1))));
 }
 export const substratePreference=(state,resource,parent)=>
   (parent===0?state.substrateAffinityA:state.substrateAffinityB)/100*
@@ -159,7 +160,7 @@ float substrateResource(vec2 uv){
     n=.5+.5*sin(u*f*TAU+.9*cos(v*7.))*
       cos(v*f*TAU-.7*sin(u*9.));
   }
-  return clamp(/* FOSSIL_RESOURCE */ /* APOCALYPSE_RESOURCE */n /* FOSSIL_RESOURCE_END */,0.,1.);
+  return clamp(/* SUCCESSION_RESOURCE */ /* FOSSIL_RESOURCE */ /* APOCALYPSE_RESOURCE */n /* FOSSIL_RESOURCE_END */ /* SUCCESSION_RESOURCE_END */,0.,1.);
 }
 vec3 shadeSubstrate(vec3 col,vec2 uv){
   substrateNutrient=substrateResource(uv);

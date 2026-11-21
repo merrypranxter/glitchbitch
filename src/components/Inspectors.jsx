@@ -79,7 +79,11 @@ import {resurrectionModes,canResurrectRecord,resurrectFossil,
 import {echoModes,evolveAncestralGeneration,evolveAncestralEpochs} from "../ancestral-echoes.js";
 import {speciationModes,branchSpecies,contestTerritory,lineageCensus} from "../speciation-lab.js";
 import {coevolutionModes,encounterNetwork,stageEncounter,evolveCoevolution} from "../coevolution-lab.js";
+import {MAX_SUCCESSION,successionModes,prepareSuccession,
+  advanceSuccession,advanceSuccessionAges,successionCensus,
+  shuffleSuccession,hideSuccession,clearSuccession} from "../ecological-succession.js";
 import { ensureValidEcosystemState } from "../ecosystem-randomizer.js";
+import {substrateResourceAt} from "../substrate-alchemy.js";
 import { shuffleColonies, shuffleColonyLife, shuffleEcosystem,
   fullWeirdShuffle, chaosLevels } from "../ecosystem-randomizer.js";
 export { TextInspector } from "./TextInspector";
@@ -335,6 +339,99 @@ export function EffectsInspector({ history, onTool, tool }) {
         Uncheck Preserve colors to randomize the palette too. Your text stays
         intact unless you explicitly uncheck its protection. Manual controls
         and all planted seeds remain editable afterward.
+      </p>
+    </>,
+    "ecological-succession": <>
+      <p className="control-note">
+        ECOLOGICAL SUCCESSION — organisms rewrite their own rock.
+        Local chemical memories change actual nutrients, fitness, and spore
+        landing. Geological time advances only when you click.
+      </p>
+      <Select label="Chemistry of the next deposit" value={s.successionMode}
+        onChange={mode=>history.change(x=>({...x,successionMode:mode}))}>
+        {successionModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <Parameter label="Legacy visibility / strength" name="successionAmount" history={history}/>
+      <Parameter label="Chemical depth" name="successionDepth" history={history}/>
+      <Parameter label="Soil spread" name="successionSpread" history={history}/>
+      <Parameter label="Subsurface motion" name="successionMotion" history={history}/>
+      <Parameter label="Sediment glow" name="successionGlow" history={history}/>
+      <Parameter label="Sediment pigment" name="successionHue" history={history}/>
+      <Parameter label="Percent of live seeds depositing soil" name="successionBurial" history={history}/>
+      <p className="control-note">
+        Century {s.successionEpoch||0}/4095
+        {" · "}{(s.successionRecords||[]).length}/{MAX_SUCCESSION} soil layers.
+        Each layer retains its original chemistry when you change modes.
+      </p>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>ensureValidEcosystemState({
+            ...prepareSuccession(x),atmoMaskMode:"Painted colonies",
+            atmoAmount:Math.max(73,x.atmoAmount||0),
+          }))}>
+          <Flower2 size={13}/> Awaken living rock
+        </button>
+        <button type="button" className="button secondary"
+          disabled={!s.habitatStamps?.length||s.successionEpoch>=4095||
+            s.successionBurial<=0}
+          onClick={()=>history.change(advanceSuccession)}>
+          <Layers size={13}/> Deposit one century
+        </button>
+        <button type="button" className="button secondary"
+          disabled={!s.habitatStamps?.length||s.successionEpoch>=4095||
+            s.successionBurial<=0}
+          onClick={()=>history.change(x=>advanceSuccessionAges(x,3))}>
+          <Orbit size={13}/> Advance three centuries
+        </button>
+        <button type="button" className="button secondary"
+          disabled={!s.habitatStamps?.length||s.habitatStamps.length>=16||
+            s.sporeGeneration>=4095||s.sporeFertility<=0||
+            s.successionEpoch>=4095||s.successionBurial<=0}
+          onClick={()=>history.change(x=>evolveSporeGeneration(
+            advanceSuccession(x)))}>
+          <Dna size={13}/> Century + descendants
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(shuffleSuccession)}>
+          <Dices size={13}/> Shuffle soil chemistry
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.successionAmount<=0}
+          onClick={()=>history.change(hideSuccession)}>
+          <EyeOff size={13}/> Hide memory (keep archive)
+        </button>
+        <button type="button" className="button secondary"
+          disabled={!s.successionRecords?.length}
+          onClick={()=>{if(window.confirm(
+            "Erase all ecological soil strata? Living colonies, fossils, words and colors stay. You can Undo."
+          ))history.change(clearSuccession);}}>
+          <Trash2 size={13}/> Clear ecological history (confirm)
+        </button>
+      </div>
+      <details className="filament-crossbreeder">
+        <summary>Soil chemistry beneath living colonies</summary>
+        <ol>
+          {successionCensus(s,substrateResourceAt).map(sample=><li key={sample.id}>
+            {sample.parent===0?"A":"B"} · {sample.id}
+            {" · "}nutrients {Math.round(sample.before*100)}%
+            {" → "}{Math.round(sample.after*100)}%
+          </li>)}
+        </ol>
+      </details>
+      <details className="filament-crossbreeder">
+        <summary>Geological sediment · {(s.successionRecords||[]).length} deposits</summary>
+        <ol>
+          {(s.successionRecords||[]).map(record=><li key={record.id}>
+            Century {record.epoch} · {record.parent===0?"A":"B"}
+            {" · "}{record.mode} · {record.origin}
+          </li>)}
+        </ol>
+      </details>
+      <p className="control-note">
+        Living organisms are never deleted by deposition. Oldest memories
+        cycle out only on an explicit advance; fossils remain independent.
+        Hiding chemistry doesn't erase it. Descendant spores and natural
+        selection use the same nutrient changes visible on the substrate.
       </p>
     </>,
     "fossil-record": <>

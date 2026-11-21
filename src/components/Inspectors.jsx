@@ -77,6 +77,7 @@ import {MAX_FOSSILS,fossilModes,fossilPresets,applyFossilPreset,
 import {resurrectionModes,canResurrectRecord,resurrectFossil,
   resurrectOldest,resurrectWholeArchive} from "../ancestral-resurrection.js";
 import {echoModes,evolveAncestralGeneration,evolveAncestralEpochs} from "../ancestral-echoes.js";
+import {speciationModes,branchSpecies,contestTerritory,lineageCensus} from "../speciation-lab.js";
 import { ensureValidEcosystemState } from "../ecosystem-randomizer.js";
 import { shuffleColonies, shuffleColonyLife, shuffleEcosystem,
   fullWeirdShuffle, chaosLevels } from "../ecosystem-randomizer.js";
@@ -269,6 +270,8 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [resurrectionMode,setResurrectionMode]=React.useState(resurrectionModes[0]);
   const [echoMode,setEchoMode]=React.useState(echoModes[0]);
   const [echoIntensity,setEchoIntensity]=React.useState(65);
+  const [speciesMode,setSpeciesMode]=React.useState(speciationModes[0]);
+  const [speciesStrength,setSpeciesStrength]=React.useState(75);
   const [chaosLevel,setChaosLevel]=React.useState("Wild");
   const [preserveColors,setPreserveColors]=React.useState(true);
   const [preserveText,setPreserveText]=React.useState(true);
@@ -504,6 +507,54 @@ export function EffectsInspector({ history, onTool, tool }) {
         express ancestral genes, ghost roots favor different populations,
         and mirrored strata reverse local conditions. Burial keeps all
         living seeds; only the explicit clear action erases history.
+      </p>
+    </>,
+    "speciation-lab": <>
+      <p className="control-note">
+        SPECIATION LAB — genetically divergent bloodlines grow into rival
+        ecological families. Existing organisms, color palettes and fossils
+        remain intact. No extra shader or invisible extinctions.
+      </p>
+      <Select label="Divergence pattern" value={speciesMode} onChange={setSpeciesMode}>
+        {speciationModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <label className="control-note" htmlFor="species-strength">
+        Evolutionary pressure · {speciesStrength}%
+      </label>
+      <input id="species-strength" type="range" min="0" max="100"
+        value={speciesStrength}
+        onChange={event=>setSpeciesStrength(Number(event.target.value))}/>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          disabled={!s.habitatStamps?.length}
+          onClick={()=>history.change(x=>branchSpecies(x,speciesMode,speciesStrength))}>
+          <Dna size={13}/> Branch rival families
+        </button>
+        <button type="button" className="button secondary"
+          disabled={(s.habitatStamps||[]).length<2}
+          onClick={()=>{if(window.confirm(
+            "Run one territory contest? Overlapping rival colonies grow or shrink. No deaths; you can Undo."
+          ))history.change(x=>contestTerritory(x,speciesStrength));}}>
+          <Orbit size={13}/> Contest territory (confirm)
+        </button>
+      </div>
+      <details className="filament-crossbreeder">
+        <summary>Lineage census · {lineageCensus(s).length} families</summary>
+        <ol>
+          {lineageCensus(s).map(f=><li key={f.clade}>
+            {f.clade} · {f.parent===0?"A":"B"}
+            {" · "}{f.count} organism{f.count===1?"":"s"}
+            {" · "}fitness {Math.round(f.fitness*100)}%
+            {" · "}territory {(f.area*100).toFixed(1)}
+          </li>)}
+        </ol>
+      </details>
+      <p className="control-note">
+        Branching turns existing painted seeds into founding clades and
+        adds up to two new species. Their DNA changes visible boundaries
+        and pigmentation, and normal spore offspring inherit their clade.
+        To fight, move rivals into contact with Touch first. Contest is a
+        single undoable step, never automatic. Sixteen live seeds maximum.
       </p>
     </>,
     "apocalypse-clock": <>

@@ -953,7 +953,11 @@ export function validateRecipe(input) {
       if(m.mate!==undefined&&
          (typeof m.mate!=="string"||!m.mate||m.mate.length>80))
         throw Error("Invalid colony genetic mate.");
+      if(m.clade!==undefined&&
+         (typeof m.clade!=="string"||!/^[AB]-[a-z0-9-]{1,30}$/.test(m.clade)))
+        throw Error("Invalid colony clade.");
       return {id:m.id,x:m.x,y:m.y,radius:m.radius,parent:m.parent,
+        ...(m.clade!==undefined?{clade:m.clade}:{}),
         ...(m.gene!==undefined?{gene:m.gene}:{}),
         ...(m.generation!==undefined?{generation:m.generation}:{}),
         ...(m.ancestor!==undefined?{ancestor:m.ancestor}:{}),

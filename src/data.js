@@ -8,6 +8,8 @@ import { substanceModes } from "./substance.js";
 export { microModes, substanceModes };
 import { photonSpecies } from "./photon-zoo.js";
 import { alchemyModes } from "./chromatic-alchemy.js";
+import { injuryModes } from "./print-spectrum-injury.js";
+export { injuryModes };
 export { alchemyModes };
 import { backdropModes } from "./backdrops.js";
 export { backdropModes };
@@ -341,6 +343,13 @@ export const numericRanges = {
   alchemySoftness: [0, 100],
   alchemyWhite: [0, 100],
   alchemyVariation: [0, 100],
+  injuryAmount: [0, 100],
+  injuryScale: [0, 100],
+  injuryMotion: [0, 100],
+  injurySeparation: [0, 100],
+  injuryGrain: [0, 100],
+  injuryGlow: [0, 100],
+  injuryVariation: [0, 100],
   substanceAmount: [0, 100],
   substanceScale: [0, 100],
   substanceMotion: [0, 100],
@@ -630,6 +639,15 @@ export const initial = {
   alchemyWhite: 53,
   alchemyVariation: 39,
   alchemyPalette: true,
+  injuryMode: "Rainbow XOR Ditherscape",
+  injuryAmount: 0,
+  injuryScale: 53,
+  injuryMotion: 60,
+  injurySeparation: 75,
+  injuryGrain: 55,
+  injuryGlow: 69,
+  injuryVariation: 41,
+  injuryPalette: true,
   substanceMode: "CMY lithogenesis",
   substanceAmount: 0,
   substanceScale: 54,
@@ -769,6 +787,7 @@ const bools = [
   "freezeGeometry",
   "freezeColor",
   "alchemyPalette",
+  "injuryPalette",
 ];
 const colorRE = /^#[0-9a-f]{6}$/i;
 export function validateRecipe(input) {
@@ -832,6 +851,7 @@ export function validateRecipe(input) {
     substanceMode: substanceModes,
     photonSpecies: photonSpecies,
     alchemyMode: alchemyModes,
+    injuryMode: injuryModes,
     filamentSpecies: filamentSpecies,
     filamentSecondSpecies: filamentSpecies,
     filamentMaterial: filamentMaterials,
@@ -1234,6 +1254,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "filmAmount","filmThickness","opalAmount","prismAmount","foilRelief","foilMotion",
       "alchemyAmount","alchemyScale","alchemyMotion","alchemySeparation",
       "alchemySoftness","alchemyWhite","alchemyVariation",
+      "injuryAmount","injuryScale","injuryMotion","injurySeparation",
+      "injuryGrain","injuryGlow","injuryVariation",
       "letteringAmount","letteringScale","letteringWarp","letteringMotion",
       "compositionAmount","compositionScale","compositionFeather",
       "compositionMotion","compositionColorShift","compositionVariation",
@@ -1403,6 +1425,17 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.alchemyWhite=10+random()*86;
   s.alchemyVariation=random()*100;
   s.alchemyPalette=true;
+  // Animated print/spectrum injury is optional; full Surprise uses it
+  // selectively instead of stacking every expensive effect.
+  s.injuryMode=different(injuryModes,state.injuryMode,random);
+  s.injuryAmount=random()<.36?35+random()*62:0;
+  s.injuryScale=17+random()*78;
+  s.injuryMotion=19+random()*80;
+  s.injurySeparation=34+random()*65;
+  s.injuryGrain=18+random()*80;
+  s.injuryGlow=20+random()*78;
+  s.injuryVariation=random()*100;
+  s.injuryPalette=true;
   // Surprise Me NEVER generates a slogan. Words belong to the artist.
   s.letteringStyle=different(letteringStyles,state.letteringStyle,random);
   s.letteringBlendMode="Normal";

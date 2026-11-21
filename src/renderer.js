@@ -8,6 +8,7 @@ import { stereoGLSL } from "./stereo.js";
 import { wiggleGLSL } from "./wiggle.js";
 import { materialGLSL } from "./materials.js";
 import {alchemyModes,alchemyGLSL,specializeAlchemyGLSL} from "./chromatic-alchemy.js";
+import {injuryModes,injuryGLSL,specializeInjuryGLSL} from "./print-spectrum-injury.js";
 import { kineticGLSL, glyphCanvas } from "./kinetic-type.js";
 import { ensureRetroFontLoaded, retroFontReady, retroFontRevision } from "./retro-fonts.js";
 import { compositionGLSL } from "./composition.js";
@@ -103,6 +104,7 @@ phase+=source;if(posterize)phase=floor(phase*7.)/7.;return phase;}
 /* HABITAT_MODULE */
 /* LETTERING_MODULE */
 /* ALCHEMY_MODULE */
+/* INJURY_MODULE */
 ${appearanceGLSL}
 void main(){vec2 uv=gl_FragCoord.xy/res;vec2 aspect=vec2(res.x/res.y,1.);vec2 sampleUV=uv;
 if(pixel>.001){float cells=mix(600.,24.,pow(pixel,.65));sampleUV=(floor(uv*vec2(cells*aspect.x,cells))+.5)/vec2(cells*aspect.x,cells);}
@@ -149,6 +151,7 @@ if(split>.001){col.r=mix(col.r,palette(phaseOf(composed(p+vec2(split*.09,0.)),uv
 col*=1.-scan*(.5+.5*sin(uv.y*900.))*.55;col+=(hash(floor(uv*1000.)+fract(time))-.5)*grain*.3;col=mix(col,col.brg,tear*.65);col=mix(col,col.gbr,blocks*block*.6);
 float luma=dot(col,vec3(.2126,.7152,.0722));col=mix(vec3(luma),col,saturation*2.);col=(col-.5)*(.5+contrast)+.5;col*=.5+brightness;col*=1.-vignette*smoothstep(.15,.8,length((uv-.5)*aspect));if(invert)col=1.-col;
 /* ALCHEMY_POST */
+/* INJURY_POST */
 col=applyAppearance(col,uv);
 gl_FragColor=vec4(clamp(col,0.,1.),1.);}`;
 
@@ -178,11 +181,13 @@ export function createRenderer(canvas) {
     photonUnavailable = false, filamentUnavailable = false,
     filamentHybridUnavailable = false, filamentMaterialUnavailable = false,
     filamentStitchUnavailable = false, filamentSculptUnavailable = false,
-    underlayUnavailable = false, alchemyUnavailable = false, fossilUnavailable = false,
+    underlayUnavailable = false, alchemyUnavailable = false,
+    injuryUnavailable = false, fossilUnavailable = false,
     successionUnavailable = false, foodWebUnavailable = false;
   function compatibleShaderState(s){
     const source = stereoUnavailable ? safe2DSelection(s) : s;
-    if(!alchemyUnavailable && !materialUnavailable && !typeShaderUnavailable &&
+    if(!injuryUnavailable && !alchemyUnavailable &&
+       !materialUnavailable && !typeShaderUnavailable &&
        !compositionUnavailable && !backdropUnavailable &&
        !microUnavailable && !substanceUnavailable && !wiggleUnavailable &&
        !photonUnavailable && !filamentUnavailable && !filamentHybridUnavailable &&
@@ -192,6 +197,8 @@ export function createRenderer(canvas) {
        !atmosphereBUnavailable && !habitatUnavailable)return source;
     return {
       ...source,
+
+      ...(injuryUnavailable ? {injuryAmount:0}:{}),
       ...(alchemyUnavailable ? {alchemyAmount:0}:{}),
       ...(materialUnavailable ? {filmAmount:0,opalAmount:0,prismAmount:0,foilRelief:0}:{}),
       ...(typeShaderUnavailable ? {letteringAmount:0}:{}),
@@ -605,6 +612,7 @@ export function createRenderer(canvas) {
       withWiggle = s.wiggleAmount > 0,
       withMaterial = s.filmAmount>0 || s.opalAmount>0 || s.prismAmount>0 || s.foilRelief>0,
       withAlchemy = s.alchemyAmount>0,
+      withInjury = s.injuryAmount>0,
       withLettering = false, // Lettering is a separate, fail-safe GPU compositing pass.
       withComposition = blended && s.compositionAmount>0,
       withBackdrop = s.backdropAmount>0,
@@ -644,7 +652,7 @@ export function createRenderer(canvas) {
       ),
       withStrange = (s.engine>=17 && s.engine<=19) ||
         (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}/${withAlchemy ? "alchemy"+alchemyModes.indexOf(s.alchemyMode) : "no-alchemy"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}/${withAlchemy ? "alchemy"+alchemyModes.indexOf(s.alchemyMode) : "no-alchemy"}/${withInjury ? "injury"+injuryModes.indexOf(s.injuryMode) : "no-injury"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -964,6 +972,16 @@ export function createRenderer(canvas) {
     source=source.replace("/* ALCHEMY_MODULE */",opticalColor);
     source=source.replace("/* ALCHEMY_POST */",
       withAlchemy?"col=livingColorAlchemy(col,uv,p,v);":"");
+    // Filter to the selected print law only; no extra post-processing pass.
+    const printSource=withInjury
+      ?specializeInjuryGLSL(
+          injuryGLSL.replace("uniform int injuryMode;",
+            "#define injuryMode "+Math.max(0,injuryModes.indexOf(s.injuryMode))),
+          injuryModes.indexOf(s.injuryMode))
+      :"";
+    source=source.replace("/* INJURY_MODULE */",printSource);
+    source=source.replace("/* INJURY_POST */",
+      withInjury?"col=livingPrintInjury(col,uv,p,v);":"");
     source=source.replace("/* LETTERING_MODULE */",withLettering?kineticGLSL:"");
     source=source.replace("/* LETTERING_POST */",withLettering?"col=drawKineticLetters(col,uv);":"");
     if (s.split <= 0.1) source = source.replace("if(split>.001)", "if(false)");
@@ -1076,7 +1094,7 @@ export function createRenderer(canvas) {
       // Keep the exact state used by the successfully compiled shader.
       // programFor() has its own withGene local; draw() cannot access it.
       let compiledState=s;
-      for(let attempt=0;attempt<17;attempt++){
+      for(let attempt=0;attempt<18;attempt++){
         const candidate=compatibleShaderState(s);
         try {
           active=programFor(candidate);
@@ -1085,7 +1103,10 @@ export function createRenderer(canvas) {
           break;
         }catch(e){
           lastCompileError=e;
-          if(candidate.alchemyAmount>0 && !alchemyUnavailable){
+          if(candidate.injuryAmount>0 && !injuryUnavailable){
+            injuryUnavailable=true;
+            console.warn("Print & Spectrum Injury unsupported by this GPU; keeping every earlier layer and Color Sorcery.",e);
+          }else if(candidate.alchemyAmount>0 && !alchemyUnavailable){
             alchemyUnavailable=true;
             console.warn("Color Sorcery exceeded this GPU; preserving the original artwork and every other layer.",e);
           }else if(foodWebActive(candidate)&&!foodWebUnavailable){
@@ -1244,7 +1265,9 @@ export function createRenderer(canvas) {
         "filmAmount", "filmThickness", "opalAmount", "prismAmount",
         "foilRelief", "foilMotion",
         "alchemyAmount","alchemyScale","alchemyMotion","alchemySeparation",
-        "alchemySoftness","alchemyWhite","alchemyVariation", "letteringAmount", "letteringScale",
+        "alchemySoftness","alchemyWhite","alchemyVariation",
+        "injuryAmount","injuryScale","injuryMotion","injurySeparation",
+        "injuryGrain","injuryGlow","injuryVariation", "letteringAmount", "letteringScale",
         "letteringWarp", "letteringMotion",
         "compositionAmount","compositionScale","compositionFeather",
         "compositionMotion","compositionColorShift","compositionVariation",
@@ -1295,6 +1318,7 @@ export function createRenderer(canvas) {
       ])
         gl.uniform1f(loc(k), s[k] / 100);
       gl.uniform1f(loc("alchemyPalette"), s.alchemyPalette ? 1 : 0);
+      gl.uniform1f(loc("injuryPalette"), s.injuryPalette ? 1 : 0);
       gl.uniform1f(loc("rotation"), (s.rotation * Math.PI) / 180);
       gl.uniform1f(loc("symmetry"), s.symmetry);
       for (const k of ["bloom", "posterize", "mirror", "invert"])

@@ -43,6 +43,8 @@ import { backdropFamilies,backdropDescriptions,backdropPresets,
   applyBackdropPreset,remixBackdrop } from "../backdrops.js";
 import {alchemyModes,alchemyFamilies,alchemyDescriptions,alchemyPresets,
   applyAlchemyPreset,shuffleAlchemy,hideAlchemy} from "../chromatic-alchemy.js";
+import {injuryModes,injuryFamilies,injuryDescriptions,injuryPresets,
+  applyInjuryPreset,shuffleInjury,hideInjury} from "../print-spectrum-injury.js";
 import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   xenoVascularSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
@@ -271,6 +273,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   };
   const [photonPreset,setPhotonPreset]=React.useState(photonPresets[0].name);
   const [alchemyPreset,setAlchemyPreset]=React.useState(alchemyPresets[0].name);
+  const [injuryPreset,setInjuryPreset]=React.useState(injuryPresets[0].name);
   const [backdropPreset,setBackdropPreset]=React.useState(backdropPresets[0].name);
   const [filamentPreset,setFilamentPreset]=React.useState(filamentPresets[0].name);
   const [hybridPreset,setHybridPreset]=React.useState(filamentHybridPresets[0].name);
@@ -1875,6 +1878,53 @@ export function EffectsInspector({ history, onTool, tool }) {
       <Parameter label="Bayer dither" name="dither" history={history} />
       <Parameter label="CMY risograph" name="riso" history={history} />
       <Parameter label="Ink misregistration" name="misregister" history={history} />
+    </>,
+    "print-injury": <>
+      <p className="control-note">Print and spectrum mutations: animated XOR pixel decisions, living caustic print plates, reactive hypercolor injury and spectral frequency combs. Your actual art stays underneath.</p>
+      <Select label="Print mutation" value={s.injuryMode}
+        onChange={v=>history.change(x=>({...x,injuryMode:v,
+          injuryAmount:Math.max(x.injuryAmount,63)}))}>
+        {injuryFamilies.map(family=><optgroup key={family.name} label={family.name}>
+          {family.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </optgroup>)}
+      </Select>
+      {injuryDescriptions[s.injuryMode] ? (
+        <p className="control-note">{injuryDescriptions[s.injuryMode]}</p>
+      ) : null}
+      <Parameter label="Presence" name="injuryAmount" history={history}/>
+      <Parameter label="Spatial frequency" name="injuryScale" history={history}/>
+      <Parameter label="Motion" name="injuryMotion" history={history}/>
+      <Parameter label="Color separation" name="injurySeparation" history={history}/>
+      <Parameter label="Dot grain / damage" name="injuryGrain" history={history}/>
+      <Parameter label="Neon / white glow" name="injuryGlow" history={history}/>
+      <Parameter label="Variation" name="injuryVariation" history={history}/>
+      <Switch label="Use my current palette" name="injuryPalette" history={history}/>
+      <div className="preset-row">
+        <Select label="Instant print mutation" value={injuryPreset}
+          onChange={setInjuryPreset}>
+          {injuryPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applyInjuryPreset(x,injuryPreset))}>
+          Summon print mutation
+        </button>
+      </div>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleInjury(x))}>
+          <Shuffle size={13}/> Shuffle print injury
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleInjury(x,Math.random,"funky"))}>
+          <Dices size={13}/> Shuffle extreme damage
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.injuryAmount<=0}
+          onClick={()=>history.change(hideInjury)}>
+          <EyeOff size={13}/> Hide print injury
+        </button>
+      </div>
+      <p className="control-note">Works alongside Color Sorcery with the normal PNG/GIF/MP4 clock. Undo restores previous settings. Presence 0 means untouched old art.</p>
     </>,
     memory: <>
       <Parameter label="Afterimage" name="afterimage" history={history} />

@@ -367,7 +367,7 @@ export function shuffleEcosystem(state,rng=Math.random,opts={}){
 const extras=[
   "filamentAmount","underlayAmount","photonAmount","microAmount",
   "substanceAmount","backdropAmount","bioAmount","filmAmount","prismAmount",
-  "alchemyAmount","stereoAmount","wiggleAmount","compositionAmount",
+  "alchemyAmount","injuryAmount","stereoAmount","wiggleAmount","compositionAmount",
 ];
 export function enforceChaosBudget(state,rng=Math.random,opts={}){
   const s={...state};

@@ -267,6 +267,12 @@ export const filamentStitchModes=[
   "Reverse unpick",
   "Ricochet needle",
   "Wormhole crochet",
+  "Parasite hem",
+  "Oracle tacking",
+  "Spasm tatting",
+  "Hologram darning",
+  "Ritual overlock",
+  "Witch-knot relay"
 ];
 // Human-facing organization only; saved names and numerical shader IDs
 // for the original five motions are preserved exactly.
@@ -278,7 +284,22 @@ export const filamentStitchFamilies=[
     "Knot cascade","Coral accretion","Tidal darning"]},
   {name:"Kinetic sewing machines",modes:[
     "Helix handoff","Reverse unpick","Ricochet needle"]},
+  {name:"Funky ritual & parasite stitching",modes:filamentStitchModes.slice(15)},
 ];
+export const ritualFilamentStitchModes=filamentStitchModes.slice(15);
+export function remixRitualStitches(state,rng=Math.random){
+  const unit=()=>{const n=Number(rng());return Number.isFinite(n)?
+    Math.min(1-Number.EPSILON,Math.max(0,n)):0;};
+  const options=ritualFilamentStitchModes.filter(x=>x!==state.filamentStitchMode);
+  const pool=options.length?options:ritualFilamentStitchModes;
+  return {...state,filamentStitchMode:pool[Math.floor(unit()*pool.length)],
+    filamentAmount:Math.max(65,state.filamentAmount||0),
+    filamentStitchAmount:Math.max(83,state.filamentStitchAmount||0),
+    filamentStitchSpeed:40+Math.floor(unit()*59),
+    filamentStitchLength:26+Math.floor(unit()*73),
+    filamentStitchGlow:67+Math.floor(unit()*32)};
+}
+
 export const newFilamentStitchModes=filamentStitchModes.slice(5);
 export const filamentStitchDescriptions={
   "Needle chase":"A bright needle tip advances along a short traveling thread.",
@@ -296,6 +317,12 @@ export const filamentStitchDescriptions={
   "Reverse unpick":"A migrating repair gap unravels and stitches itself back.",
   "Ricochet needle":"One needle races back and forth, bouncing at seam ends.",
   "Wormhole crochet":"Logarithmic spiral sutures travel around impossible loops.",
+  "Parasite hem":"A crawling invasion front branches and overtakes the sewn edge.",
+  "Oracle tacking":"Ritual seed-coded knots blink in rotating radial sequences.",
+  "Spasm tatting":"Nervous thread pulses twitch between irregularly spaced loops.",
+  "Hologram darning":"Two phase-shifted virtual stitch grids alternate in shimmering scans.",
+  "Ritual overlock":"Countermoving serpentine edge stitches overtake the yarn.",
+  "Witch-knot relay":"Sequential knotted signal packets pass through a cyclic chain.",
 };
 export function remixFilamentStitchMotion(state,rng=Math.random,onlyNew=false){
   const unit=()=>{
@@ -384,7 +411,13 @@ export const filamentStitchPresets=[
     filamentStitchLength:32,filamentStitchGlow:99},
   {name:"Crochet through a portal",filamentStitchMode:"Wormhole crochet",
     filamentStitchAmount:94,filamentStitchSpeed:72,
-    filamentStitchLength:67,filamentStitchGlow:96}
+    filamentStitchLength:67,filamentStitchGlow:96},
+  {"name":"Invasive Hem Organism","filamentStitchMode":"Parasite hem","filamentStitchAmount":92,"filamentStitchSpeed":62,"filamentStitchLength":38,"filamentStitchGlow":82},
+  {"name":"Prophet's Needle","filamentStitchMode":"Oracle tacking","filamentStitchAmount":94,"filamentStitchSpeed":69,"filamentStitchLength":49,"filamentStitchGlow":89},
+  {"name":"Spasm Lace Possession","filamentStitchMode":"Spasm tatting","filamentStitchAmount":96,"filamentStitchSpeed":76,"filamentStitchLength":60,"filamentStitchGlow":96},
+  {"name":"Darning a Hologram","filamentStitchMode":"Hologram darning","filamentStitchAmount":92,"filamentStitchSpeed":83,"filamentStitchLength":71,"filamentStitchGlow":85},
+  {"name":"Ritual Seam Summons","filamentStitchMode":"Ritual overlock","filamentStitchAmount":94,"filamentStitchSpeed":90,"filamentStitchLength":82,"filamentStitchGlow":92},
+  {"name":"Witch Knot Transmission","filamentStitchMode":"Witch-knot relay","filamentStitchAmount":96,"filamentStitchSpeed":63,"filamentStitchLength":93,"filamentStitchGlow":99}
 ];
 export function applyFilamentStitchPreset(state,name){
  const preset=filamentStitchPresets.find(p=>p.name===name);
@@ -407,7 +440,55 @@ export const filamentSculptModes=[
   "Recessed engraving",
   "Chased metal",
   "Shadow cutwork",
+  "Beaded emboss",
+  "Cushion stitch",
+  "Gilded repoussé",
+  "Bas-relief threadwork",
+  "Carved appliqué",
+  "Bone inlay",
+  "Melted jewelry",
+  "Alien scar tissue",
+  "Fossil stitching",
+  "Ruin filigree"
 ];
+export const newFilamentSculptModes=filamentSculptModes.slice(5);
+export const filamentSculptFamilies=[
+  {name:"Original tactile crafts",modes:filamentSculptModes.slice(0,5)},
+  {name:"Embossed fabrics & jewelry",modes:filamentSculptModes.slice(5,10)},
+  {name:"Alien artifacts & fossil scars",modes:filamentSculptModes.slice(10)},
+];
+export function remixFilamentSculpt(state,rng=Math.random,newOnly=false){
+  const rnd=()=>{const v=Number(rng());return Number.isFinite(v)?
+    Math.min(1-Number.EPSILON,Math.max(0,v)):0;};
+  const group=newOnly?newFilamentSculptModes:filamentSculptModes;
+  const choices=group.filter(x=>x!==state.filamentSculptMode);
+  const pool=choices.length?choices:group;
+  return {...state,filamentSculptMode:pool[Math.floor(rnd()*pool.length)],
+    filamentAmount:Math.max(65,state.filamentAmount||0),
+    filamentSculptAmount:Math.max(80,state.filamentSculptAmount||0),
+    filamentSculptDepth:48+Math.floor(rnd()*51),
+    filamentSculptLight:Math.floor(rnd()*100),
+    filamentSculptShadow:42+Math.floor(rnd()*57),
+    filamentSculptPuff:24+Math.floor(rnd()*75)};
+}
+/** Only the active relief branch reaches the actual GPU compiler. */
+export function specializeFilamentSculptMotion(source,index){
+  if(index==null||!Number.isInteger(index)||index<0||
+    index>=filamentSculptModes.length)return source;
+  const opener=id=>id===0?"  if(filamentSculptMode==0){":
+    "  }else if(filamentSculptMode=="+id+"){";
+  const starts=filamentSculptModes.map((_,id)=>source.indexOf(opener(id)));
+  if(starts.some((x,i)=>x<0||(i&&x<=starts[i-1])))return source;
+  const fallback=source.indexOf("  }else{ // Unsupported sculpt mode",starts[14]);
+  const end=source.indexOf("#endif\n  return clamp(result",fallback);
+  if(fallback<0||end<0)return source;
+  const body=source.slice(starts[index]+opener(index).length,
+    index===14?fallback:starts[index+1]);
+  return source.slice(0,starts[0])+
+    "  if(filamentSculptMode=="+index+"){"+body+
+    source.slice(fallback,end)+source.slice(end);
+}
+
 export const filamentSculptControls=[
   "filamentSculptAmount","filamentSculptDepth",
   "filamentSculptLight","filamentSculptShadow","filamentSculptPuff",
@@ -428,6 +509,16 @@ export const filamentSculptPresets=[
   {name:"Cutwork cathedral",filamentSculptMode:"Shadow cutwork",
     filamentSculptAmount:91,filamentSculptDepth:85,
     filamentSculptLight:60,filamentSculptShadow:96,filamentSculptPuff:46},
+  {"name":"Embossed Glass Pearls","filamentSculptMode":"Beaded emboss","filamentSculptAmount":92,"filamentSculptDepth":67,"filamentSculptLight":17,"filamentSculptShadow":60,"filamentSculptPuff":35},
+  {"name":"Opal Cushion Temple","filamentSculptMode":"Cushion stitch","filamentSculptAmount":94,"filamentSculptDepth":72,"filamentSculptLight":28,"filamentSculptShadow":67,"filamentSculptPuff":44},
+  {"name":"Gilded Phantom Repoussé","filamentSculptMode":"Gilded repoussé","filamentSculptAmount":96,"filamentSculptDepth":77,"filamentSculptLight":39,"filamentSculptShadow":74,"filamentSculptPuff":53},
+  {"name":"Carved Moonstone Bas Relief","filamentSculptMode":"Bas-relief threadwork","filamentSculptAmount":92,"filamentSculptDepth":82,"filamentSculptLight":50,"filamentSculptShadow":81,"filamentSculptPuff":62},
+  {"name":"Satin Cathedral Appliqué","filamentSculptMode":"Carved appliqué","filamentSculptAmount":94,"filamentSculptDepth":87,"filamentSculptLight":61,"filamentSculptShadow":88,"filamentSculptPuff":71},
+  {"name":"Fossil Bone Jewelry","filamentSculptMode":"Bone inlay","filamentSculptAmount":96,"filamentSculptDepth":92,"filamentSculptLight":72,"filamentSculptShadow":95,"filamentSculptPuff":80},
+  {"name":"Molten Treasure Hem","filamentSculptMode":"Melted jewelry","filamentSculptAmount":92,"filamentSculptDepth":97,"filamentSculptLight":83,"filamentSculptShadow":64,"filamentSculptPuff":89},
+  {"name":"Xeno Scar Sutures","filamentSculptMode":"Alien scar tissue","filamentSculptAmount":94,"filamentSculptDepth":70,"filamentSculptLight":94,"filamentSculptShadow":71,"filamentSculptPuff":35},
+  {"name":"Petrified Threadworms","filamentSculptMode":"Fossil stitching","filamentSculptAmount":96,"filamentSculptDepth":75,"filamentSculptLight":5,"filamentSculptShadow":78,"filamentSculptPuff":44},
+  {"name":"Ruined Oracle Filigree","filamentSculptMode":"Ruin filigree","filamentSculptAmount":92,"filamentSculptDepth":80,"filamentSculptLight":16,"filamentSculptShadow":85,"filamentSculptPuff":53}
 ];
 export function applyFilamentSculptPreset(state,name){
   const preset=filamentSculptPresets.find(p=>p.name===name);
@@ -839,6 +930,54 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     visibleStitch=.10+.90*smoothstep(.35,.73,curl)*
       (.46+.54*gate);
     needle=pow(curl,15.0)*pow(gate,5.0);
+  }else if(filamentStitchMode==15){ // PARASITE HEM: irregular invasive fronts.
+    float tendril=sin(localProgress*8.1+
+      sin(q.y*1.4+sewClock*.48)*2.0);
+    float invasion=fract(localProgress*.64-sewClock*.42+
+      tendril*.11+seedPhase*.017);
+    float invasionMask=1.0-smoothstep(.21,.39,invasion);
+    float capillary=pow(.5+.5*cos(tendril*8.4-sewClock*.91),7.0);
+    visibleStitch=.12+.88*clamp(invasionMask*(.42+.58*capillary),0.0,1.0);
+    needle=pow(max(0.0,1.0-abs(invasion-.26)*12.0),5.0);
+  }else if(filamentStitchMode==16){ // ORACLE TACKING: seeded order of sewn symbols.
+    float index=floor(localProgress*17.0);
+    float symbol=hash(vec2(index,seedPhase));
+    float slot=fract(localProgress*17.0);
+    float onset=fract(sewClock*.24+symbol);
+    float oracle=pow(max(0.0,.5+.5*cos((slot-onset)*6.2831853)),13.0);
+    float gate=step(.31,symbol);
+    visibleStitch=.14+.86*oracle*(.26+.74*gate);
+    needle=pow(oracle,2.0)*gate;
+  }else if(filamentStitchMode==17){ // SPASM TATTING: mixed frequency nervous impulses.
+    float spasms=sin(localProgress*21.0-sewClock*1.9+
+      sin(localProgress*7.0+seedPhase)*2.7);
+    float shaking=sin(localProgress*47.0+sewClock*3.3+
+      sin(q.x*3.2+sewClock*.73));
+    float twitch=.57*spasms+.43*shaking;
+    visibleStitch=.08+.92*smoothstep(-.25,.62,twitch);
+    needle=pow(.5+.5*twitch,11.0);
+  }else if(filamentStitchMode==18){ // HOLOGRAM DARNING: phase-shifted spectral mesh.
+    float lightA=sin(localProgress*16.0-sewClock*.64+q.y*.41);
+    float lightB=cos(localProgress*18.0+sewClock*.79+q.x*.31);
+    float scan=sin((q.x-q.y)*4.3-sewClock*.36+seedPhase*.18);
+    float hologram=.44*lightA+.39*lightB+.17*scan;
+    visibleStitch=.09+.91*smoothstep(-.43,.55,hologram);
+    needle=pow(.5+.5*cos((lightA-lightB)*4.3+sewClock),11.0);
+  }else if(filamentStitchMode==19){ // RITUAL OVERLOCK: serpentine over-under edge.
+    float edgeWave=sin(localProgress*11.0+sewClock*.84);
+    float braid=cos(localProgress*29.0-sewClock*1.31+
+      sin(q.y*.84+seedPhase)*.63);
+    float seam=.49*edgeWave+.51*braid;
+    visibleStitch=.15+.85*smoothstep(-.3,.41,seam);
+    needle=pow(.5+.5*cos(seam*6.1+sewClock*.44),9.0);
+  }else if(filamentStitchMode==20){ // WITCH-KNOT RELAY: handoff between packet nodes.
+    float position=localProgress*12.0;
+    float node=floor(position),between=fract(position);
+    float awake=.5+.5*cos(sewClock*1.21-node*1.7+seedPhase*.28);
+    float knot=pow(max(0.0,1.0-abs(between-.5)*2.9),4.0);
+    float relay=pow(awake,5.0);
+    visibleStitch=.12+.88*(.15+.85*relay*knot);
+    needle=pow(awake,16.0)*knot;
   }else{ // Invalid stored mode: leave the drawn thread untouched.
     visibleStitch=1.0;
     needle=0.0;
@@ -989,10 +1128,89 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     result*=1.0-shadowStrength*1.38;
     result+=vec3(1.0,.95,.94)*core*spec*lightStrength*1.8;
     result+=glimmer*edge*lightStrength*.49;
-  }else{ // Shadow cutwork: dark relieved edge and luminous rim.
+  }else if(filamentSculptMode==4){ // Shadow cutwork: dark relieved edge and luminous rim.
     result*=1.0-shadowStrength*1.6;
     result*=1.0-core*sculptPower*(.12+.19*sculptDepth);
     result+=glimmer*edge*(.43+.57*litSide)*sculptPower*.42;
+  }else if(filamentSculptMode==5){ // BEADED EMBOSS: raised pearls sewn on the path.
+    float beadPhase=phase*(15.0+sculptPuff*9.0)+t*.24;
+    float pearl=pow(.5+.5*cos(beadPhase),16.0);
+    float socket=pow(.5+.5*cos(beadPhase+1.1),9.0);
+    float beadCrown=pow(rounded,.56)*pearl;
+    result*=1.0-shadowStrength*(1.15+.3*socket);
+    result+=mix(glimmer,vec3(1.0,.95,.98),.56)*core*
+      beadCrown*(.47+.53*litSide)*lightStrength*1.76;
+    result+=ink*edge*sculptPower*socket*.13;
+  }else if(filamentSculptMode==6){ // CUSHION STITCH: plush swelling segments.
+    float pillow=.5+.5*cos(phase*8.1-t*.17);
+    float bulge=pow(rounded,.25+.38*(1.0-pillow));
+    float seam=pow(1.0-rounded,2.2)*(.45+.55*pillow);
+    result*=1.0-shadowStrength*(1.5+.35*pillow);
+    result+=mix(ink,glimmer,.4)*core*
+      (bulge*(.43+.43*litSide)+seam*.11)*lightStrength*1.27;
+  }else if(filamentSculptMode==7){ // GILDED REPOUSSÉ: crisp metallic chased repoussé.
+    float chased=.5+.5*sin(phase*11.4+q.x*2.2-t*.33);
+    float crest=pow(clamp(rounded*(.24+.76*litSide),0.0,1.0),13.0);
+    float flank=pow(1.0-rounded,2.1);
+    result*=1.0-shadowStrength*1.43;
+    result+=mix(ink,vec3(1.0,.88,.59),.67)*core*
+      (crest*1.7+chased*.23)*lightStrength;
+    result+=glimmer*edge*flank*sculptPower*.43;
+  }else if(filamentSculptMode==8){ // BAS-RELIEF: carved architectural channeling.
+    float channel=.5+.5*cos(phase*4.2-t*.22);
+    float stepRelief=smoothstep(.1,.67,rounded)*channel;
+    float trench=pow(1.0-rounded,1.25);
+    result*=1.0-shadowStrength*(1.11+.28*channel);
+    result+=glimmer*core*(.16+.54*stepRelief)*lightStrength;
+    result+=ink*edge*sculptPower*trench*.17;
+  }else if(filamentSculptMode==9){ // CARVED APPLIQUÉ: stacked cut fabric edges.
+    float ornament=.5+.5*sin(phase*6.8+t*.31+seedPhase*.2);
+    float perimeter=pow(1.0-rounded,.9);
+    float lift=pow(rounded,.38)*(.6+.4*ornament);
+    result*=1.0-shadowStrength*1.35;
+    result+=mix(ink,glimmer,.57)*core*lift*lightStrength*.95;
+    result+=glimmer*edge*sculptPower*perimeter*.48;
+  }else if(filamentSculptMode==10){ // BONE INLAY: opaline ivory grooves.
+    float marrow=sin(phase*8.7+sin(q.y*.9+t*.26)*2.0);
+    float ridge=pow(.5+.5*marrow,10.0);
+    float fracture=pow(1.0-rounded,2.0);
+    result*=1.0-(shadowStrength*.93+core*sculptPower*.12);
+    result+=mix(ink,vec3(.97,.89,.74),.69)*core*
+      (rounded*.6+ridge*.42)*lightStrength;
+    result+=glimmer*edge*fracture*sculptPower*.25;
+  }else if(filamentSculptMode==11){ // MELTED JEWELRY: crawling molten metal beads.
+    float melt=.5+.5*sin(phase*7.6-t*.94+q.x*.43);
+    float droplet=pow(melt,8.0)*pow(rounded,.64);
+    float spec=pow(.45+.55*rounded*litSide,18.0);
+    result*=1.0-shadowStrength*(1.0+.56*melt);
+    result+=mix(glimmer,vec3(1.0,.96,.9),.7)*core*
+      (droplet*.9+spec*.8)*lightStrength*1.21;
+  }else if(filamentSculptMode==12){ // ALIEN SCAR TISSUE: hypertrophic seam growth.
+    float scar=sin(phase*9.1+sin(q.y*.88+t*.47)*2.2);
+    float keloid=.5+.5*scar;
+    float raisedScar=pow(rounded,.32)*pow(keloid,.57);
+    result*=1.0-shadowStrength*(1.25+.42*keloid);
+    result+=mix(ink,glimmer,.32)*core*raisedScar*
+      (lightStrength*.74+.22*sculptPower);
+    result+=glimmer*edge*sculptPower*.14*keloid;
+  }else if(filamentSculptMode==13){ // FOSSIL STITCHING: layered mineralized strata.
+    float layer=.5+.5*cos(phase*12.0-q.y*.6+t*.18);
+    float calcite=pow(layer,12.0);
+    float petrify=pow(1.0-rounded,1.3);
+    result*=1.0-shadowStrength*1.5;
+    result+=mix(ink,glimmer,.73)*core*
+      (rounded*.3+calcite*.61)*lightStrength*.93;
+    result+=glimmer*edge*sculptPower*petrify*.31;
+  }else if(filamentSculptMode==14){ // RUIN FILIGREE: fractured arc highlights.
+    float arch=sin(phase*5.9+q.x*.36+t*.3);
+    float fissure=pow(.5+.5*cos(arch*8.2-t*.53),11.0);
+    float broken=pow(1.0-rounded,1.52);
+    result*=1.0-shadowStrength*(1.25+.5*fissure);
+    result+=glimmer*core*(rounded*.37+fissure*.41)*
+      lightStrength*(.52+.48*litSide);
+    result+=ink*edge*sculptPower*broken*.37;
+  }else{ // Unsupported sculpt mode: no relief added.
+    result=result;
   }
 #endif
   return clamp(result,0.0,1.6);

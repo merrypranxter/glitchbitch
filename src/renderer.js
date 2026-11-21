@@ -14,8 +14,8 @@ import { backdropGLSL } from "./backdrops.js";
 import { microGLSL, microModes, specializeMicroGLSL } from "./microstructure.js";
 import { substanceGLSL, substanceModes, specializeSubstanceGLSL } from "./substance.js";
 import { photonGLSL, photonSpecies, specializePhotonGeometry } from "./photon-zoo.js";
-import { filamentGLSL, filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, specializeFilamentGeometry, specializeFilamentStitchMotion } from "./filament-forge.js";
-import { underlayGLSL, underlayModes } from "./living-underlay.js";
+import { filamentGLSL, filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, specializeFilamentGeometry, specializeFilamentStitchMotion, specializeFilamentSculptMotion } from "./filament-forge.js";
+import { underlayGLSL, underlayModes, specializeUnderlayGLSL } from "./living-underlay.js";
 import { tunnelGLSL } from "./tunnels.js";
 import { strangeFieldsGLSL } from "./strange-fields.js";
 import { atmosphereGLSL, atmosphereModes, specializeAtmosphereVariant } from "./mutant-atmospheres.js";
@@ -689,8 +689,10 @@ export function createRenderer(canvas) {
     // Textile ground is independent from filament visibility. Inject it
     // directly behind the stitches and specialize to the selected pattern.
     const selectedUnderlay = withUnderlay
-      ? underlayGLSL.replace("uniform int underlayMode;",
-          "#define underlayMode "+Math.max(0,underlayModes.indexOf(s.underlayMode)))
+      ? specializeUnderlayGLSL(
+          underlayGLSL.replace("uniform int underlayMode;",
+            "#define underlayMode "+Math.max(0,underlayModes.indexOf(s.underlayMode))),
+          underlayModes.indexOf(s.underlayMode))
       : "";
     source=source.replace("/* UNDERLAY_MODULE */",selectedUnderlay);
     source=source.replace("/* UNDERLAY_POST */",
@@ -715,11 +717,13 @@ export function createRenderer(canvas) {
             "#define filamentSecondMaterial "+Math.max(0,filamentMaterials.indexOf(s.filamentSecondMaterial)))
       : "";
     const selectedFilament=withFilament
-      ? specializeFilamentStitchMotion(
-          specializeFilamentGeometry(rawFilament,
-            filamentSpecies.indexOf(s.filamentSpecies),
-            withHybrid?filamentSpecies.indexOf(s.filamentSecondSpecies):null),
-          withStitch?filamentStitchModes.indexOf(s.filamentStitchMode):null)
+      ? specializeFilamentSculptMotion(
+          specializeFilamentStitchMotion(
+            specializeFilamentGeometry(rawFilament,
+              filamentSpecies.indexOf(s.filamentSpecies),
+              withHybrid?filamentSpecies.indexOf(s.filamentSecondSpecies):null),
+            withStitch?filamentStitchModes.indexOf(s.filamentStitchMode):null),
+          withSculpt?filamentSculptModes.indexOf(s.filamentSculptMode):null)
       : "";
     source=source.replace("/* FILAMENT_MODULE */",selectedFilament);
     source=source.replace("/* FILAMENT_POST */",

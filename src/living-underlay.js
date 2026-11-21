@@ -11,8 +11,67 @@ export const underlayModes=[
   "Quasicrystal twill",
   "Velvet pile",
   "Opalescent damask",
-  "Cellular gauze"
+  "Cellular gauze",
+  "Holographic brocade",
+  "Ghost quilt",
+  "Threadbare cathedral",
+  "Elastic tartan",
+  "Moiré satin haze",
+  "Haunted upholstery",
+  "Radioactive afghan",
+  "Parasite upholstery",
+  "Wet relic cloth",
+  "Disco shroud"
 ];
+export const newUnderlayModes=underlayModes.slice(6);
+export const underlayFamilies=[
+  {name:"Original living textiles",modes:underlayModes.slice(0,6)},
+  {name:"Spectral fabrics & luminous lace",modes:underlayModes.slice(6,11)},
+  {name:"Haunted & mutant upholstery",modes:underlayModes.slice(11)},
+];
+export const underlayDescriptions={
+  "Holographic brocade":"Time-interleaved warp facets and hologram-like shifted medallions.",
+  "Ghost quilt":"Translucent quilt cells expand and fade through spectral seams.",
+  "Threadbare cathedral":"Flying buttress threadwork grows and unthreads its own gaps.",
+  "Elastic tartan":"Two stretching tartan meshes breathe at independent frequencies.",
+  "Moiré satin haze":"Superposed rotating silk gratings yield crawling satin highlights.",
+  "Haunted upholstery":"Stippled damask faces dissolve through drifting negative space.",
+  "Radioactive afghan":"Crochet chevrons race with phosphorescent cellular bursts.",
+  "Parasite upholstery":"Branching self-propagating threads colonize a woven substrate.",
+  "Wet relic cloth":"Meniscus ripples circulate over drowned etched yarn.",
+  "Disco shroud":"Shimmering triangular sequins unfold across a sweeping weave.",
+};
+export function remixUnderlay(state,rng=Math.random,newOnly=false){
+  const unit=()=>{const n=Number(rng());return Number.isFinite(n)?
+    Math.min(1-Number.EPSILON,Math.max(0,n)):0;};
+  const list=newOnly?newUnderlayModes:underlayModes;
+  const candidates=list.filter(x=>x!==state.underlayMode);
+  const options=candidates.length?candidates:list;
+  return {...state,underlayMode:options[Math.floor(unit()*options.length)],
+    underlayAmount:Math.max(78,state.underlayAmount||0),
+    underlayScale:28+Math.floor(unit()*68),
+    underlayDensity:38+Math.floor(unit()*60),
+    underlayMotion:40+Math.floor(unit()*60),
+    underlayRelief:53+Math.floor(unit()*46),
+    underlayContrast:51+Math.floor(unit()*48),
+    underlayHue:Math.floor(unit()*100),
+    underlayVariation:Math.floor(unit()*100)};
+}
+/** Compile exactly one textile ground instead of 16 in mobile Safari. */
+export function specializeUnderlayGLSL(source,id){
+  if(!Number.isInteger(id)||id<0||id>=underlayModes.length)return source;
+  const opener=i=>i===0?"  if(underlayMode==0){":
+    "  }else if(underlayMode=="+i+"){";
+  const starts=underlayModes.map((_,i)=>source.indexOf(opener(i)));
+  if(starts.some((n,i)=>n<0||(i&&n<=starts[i-1])))return source;
+  const fallback=source.indexOf("  }else{ // Unsupported textile mode",starts[15]);
+  const end=source.indexOf("  // The underlying painting survives",fallback);
+  if(fallback<0||end<0)return source;
+  const body=source.slice(starts[id]+opener(id).length,id===15?fallback:starts[id+1]);
+  return source.slice(0,starts[0])+"  if(underlayMode=="+id+"){"+
+    body+source.slice(fallback,end)+source.slice(end);
+}
+
 
 export const underlayControls=[
   "underlayAmount","underlayScale","underlayDensity","underlayMotion",
@@ -37,7 +96,17 @@ export const underlayPresets=[
     underlayRelief:91,underlayHue:58,underlayContrast:86,underlayVariation:51},
   {name:"Neon Cellular Gauze",underlayMode:"Cellular gauze",
     underlayAmount:91,underlayScale:59,underlayDensity:79,underlayMotion:64,
-    underlayRelief:74,underlayHue:18,underlayContrast:82,underlayVariation:71}
+    underlayRelief:74,underlayHue:18,underlayContrast:82,underlayVariation:71},
+  {"name":"Cybernetic Hologram Fabric","underlayMode":"Holographic brocade","underlayAmount":90,"underlayScale":36,"underlayDensity":56,"underlayMotion":57,"underlayRelief":73,"underlayHue":29,"underlayContrast":68,"underlayVariation":41},
+  {"name":"Ancestral Ghost Quilt","underlayMode":"Ghost quilt","underlayAmount":93,"underlayScale":45,"underlayDensity":63,"underlayMotion":62,"underlayRelief":80,"underlayHue":42,"underlayContrast":75,"underlayVariation":52},
+  {"name":"Cathedral Shroud","underlayMode":"Threadbare cathedral","underlayAmount":96,"underlayScale":54,"underlayDensity":70,"underlayMotion":67,"underlayRelief":87,"underlayHue":55,"underlayContrast":82,"underlayVariation":63},
+  {"name":"Tartan Elastic Fever","underlayMode":"Elastic tartan","underlayAmount":90,"underlayScale":63,"underlayDensity":77,"underlayMotion":72,"underlayRelief":94,"underlayHue":68,"underlayContrast":89,"underlayVariation":74},
+  {"name":"Moire Silk Vapor","underlayMode":"Moiré satin haze","underlayAmount":93,"underlayScale":72,"underlayDensity":84,"underlayMotion":77,"underlayRelief":74,"underlayHue":81,"underlayContrast":96,"underlayVariation":85},
+  {"name":"Haunted Sitting Room","underlayMode":"Haunted upholstery","underlayAmount":96,"underlayScale":81,"underlayDensity":91,"underlayMotion":82,"underlayRelief":81,"underlayHue":94,"underlayContrast":73,"underlayVariation":96},
+  {"name":"Uranium Granny Square","underlayMode":"Radioactive afghan","underlayAmount":90,"underlayScale":90,"underlayDensity":58,"underlayMotion":87,"underlayRelief":88,"underlayHue":7,"underlayContrast":80,"underlayVariation":7},
+  {"name":"Vermin Jacquard","underlayMode":"Parasite upholstery","underlayAmount":93,"underlayScale":44,"underlayDensity":65,"underlayMotion":92,"underlayRelief":95,"underlayHue":20,"underlayContrast":87,"underlayVariation":18},
+  {"name":"Drowned Relic Brocade","underlayMode":"Wet relic cloth","underlayAmount":96,"underlayScale":53,"underlayDensity":72,"underlayMotion":57,"underlayRelief":75,"underlayHue":33,"underlayContrast":94,"underlayVariation":29},
+  {"name":"Disco Funeral Veil","underlayMode":"Disco shroud","underlayAmount":90,"underlayScale":62,"underlayDensity":79,"underlayMotion":62,"underlayRelief":82,"underlayHue":46,"underlayContrast":71,"underlayVariation":40}
 ];
 
 export function applyUnderlayPreset(state,name){
@@ -146,8 +215,8 @@ vec3 livingTextileUnderlay(vec3 original,vec2 uv,float baseField){
     shimmer=pow(.5+.5*cos((curl-vines)*7.3+r*.85),12.0);
     shadow=.5-.5*vines*bloomAngle;
     phase=(curl-vines)*.35+a*.1;
-  }else{
-    // Cellular gauze: three tilted knitted thread directions leave eyelets.
+  }else if(underlayMode==5){
+    // Original cellular gauze geometry — preserved exactly.
     vec2 h=q*(1.2+.65*underlayDensity);
     float a=sin(dot(h,vec2(1.0,0.0))*3.0+t*.2);
     float b=sin(dot(h,vec2(.5,.8660254))*3.0-t*.15);
@@ -159,6 +228,124 @@ vec3 livingTextileUnderlay(vec3 original,vec2 uv,float baseField){
     shimmer=pow(max(0.0,1.0-strand*2.5),8.0);
     shadow=eyelet;
     phase=(a+b-c)*.19;
+  }else if(underlayMode==6){ // HOLOGRAPHIC BROCADE: diffractive medallions.
+    vec2 g=q*(.69+.36*underlayDensity);
+    float warp=sin(g.x*yarnFreq+sin(g.y*.61+t*.34)*1.1);
+    float weft=cos(g.y*yarnFreq*.88+sin(g.x*.52-t*.43)*.91);
+    float medallion=cos(length(g)*3.6-t*.57+phaseSeed*.2)*
+      cos(atan(g.y,g.x)*7.0+t*.24);
+    fiber=.5+.5*(warp*.52+weft*.48);
+    ornament=.5+.5*sin(medallion*4.7+warp*1.6);
+    shimmer=pow(.5+.5*cos((warp-weft)*6.0+t*.91),13.0);
+    shadow=.5-.5*warp*weft;
+    phase=medallion*.63+g.y*.04;
+  }else if(underlayMode==7){ // GHOST QUILT: migrating stitched pillows.
+    vec2 cell=floor(q*.73),d=fract(q*.73)-.5;
+    float h=hash(cell+phaseSeed),r=length(d);
+    float puff=sin(t*.49+h*6.283)*.095+.3;
+    float seam=abs(max(abs(d.x),abs(d.y))-puff);
+    fiber=1.0-smoothstep(.02,.09,seam);
+    ornament=.5+.5*cos(r*15.0-t*.81+h*6.2);
+    shimmer=pow(.5+.5*cos(seam*39.0+t*.74),10.0);
+    shadow=clamp(r*1.5+h*.3,0.0,1.0);
+    phase=r*1.2+h*.64+t*.13;
+  }else if(underlayMode==8){ // THREADBARE CATHEDRAL: structural rib arches.
+    vec2 g=q*.65;
+    float arch=abs(g.x-.46*sin(g.y*1.1+t*.29));
+    float vault=sin(g.y*2.8+sin(g.x*.94+t*.16)*1.7);
+    float rib=sin((arch*5.3+vault*.8)*yarnFreq);
+    float ruin=sin(g.x*3.2+g.y*4.3-t*.4+phaseSeed);
+    fiber=pow(.5+.5*rib,4.0);
+    ornament=.5+.5*cos(vault*6.0+t*.28);
+    shimmer=pow(.5+.5*cos(ruin*6.0+t*.42),10.0);
+    shadow=.5-.5*ruin*vault;
+    phase=vault*.6+arch*.35;
+  }else if(underlayMode==9){ // ELASTIC TARTAN: deforming independent plaid directions.
+    vec2 stretch=q+vec2(sin(q.y*.9+t*.61)*.29,
+      cos(q.x*.84-t*.44)*.27);
+    float xx=sin(stretch.x*yarnFreq*2.6+
+      sin(t*.41+stretch.y*.8)*1.7);
+    float yy=cos(stretch.y*yarnFreq*2.2+
+      cos(t*.38-stretch.x*.72)*1.5);
+    fiber=.5+.5*(xx*.5+yy*.5);
+    ornament=pow(.5+.5*xx*yy,2.0);
+    shimmer=pow(.5+.5*cos((xx-yy)*4.5+t*.4),12.0);
+    shadow=.5-.5*xx*yy;
+    phase=xx*.22+yy*.42;
+  }else if(underlayMode==10){ // MOIRÉ SATIN HAZE: evolving two-axis interference.
+    float angle=t*.055+phaseSeed*.17;
+    vec2 dir=vec2(cos(angle),sin(angle));
+    vec2 other=vec2(cos(angle+.034+.17*underlayDensity),
+      sin(angle+.034+.17*underlayDensity));
+    float a=cos(dot(q,dir)*yarnFreq*3.8);
+    float b=cos(dot(q,other)*yarnFreq*3.7+t*.21);
+    float difference=a-b;
+    fiber=.5+.5*(a*.54+b*.46);
+    ornament=.5+.5*sin(difference*7.4+t*.57);
+    shimmer=pow(.5+.5*cos(difference*10.0+q.x*.27),14.0);
+    shadow=.5-.5*a*b;
+    phase=difference*.47;
+  }else if(underlayMode==11){ // HAUNTED UPHOLSTERY: phantom ornament emergence.
+    vec2 g=q*.58;
+    float a=sin(g.x*1.74+t*.3+sin(g.y*1.1)*1.2);
+    float b=cos(g.y*1.87-t*.22+sin(g.x*.93)*1.4);
+    float ghost=sin((a+b)*5.4+t*.37+phaseSeed*.2);
+    float residue=sin(g.x*yarnFreq*3.2+g.y*2.6-t*.45);
+    fiber=.5+.5*residue;
+    ornament=pow(.5+.5*ghost,2.0);
+    shimmer=pow(.5+.5*cos((ghost-residue)*6.0),9.0);
+    shadow=.5-.5*a*b;
+    phase=ghost*.46+residue*.16;
+  }else if(underlayMode==12){ // RADIOACTIVE AFGHAN: pulsing granny squares.
+    vec2 cell=floor(q*.67),d=fract(q*.67)-.5;
+    float r=max(abs(d.x),abs(d.y));
+    float h=hash(cell+phaseSeed);
+    float crocheted=sin(r*(22.0+underlayDensity*19.0)-t*.63+h*3.0);
+    float diagonal=sin((d.x+d.y)*yarnFreq*5.0+t*.74);
+    fiber=.5+.5*crocheted;
+    ornament=.5+.5*diagonal*crocheted;
+    shimmer=pow(.5+.5*cos(r*38.0-t*.91),13.0);
+    shadow=clamp(r*.93+h*.37,0.0,1.0);
+    phase=r*2.4+h*.5;
+  }else if(underlayMode==13){ // PARASITE UPHOLSTERY: recursive invasive vine paths.
+    vec2 z=q*.48;
+    float growth=0.0,fork=0.0,amp=.58;
+    for(int i=0;i<3;i++){
+      growth+=amp*sin(z.x*1.7+sin(z.y*1.1+t*.46)*2.1);
+      fork+=amp*cos(z.y*1.9-cos(z.x*.89-t*.43)*2.3);
+      z=mat2(.77,-.64,.64,.77)*z*1.91+vec2(.82,1.13);
+      amp*=.52;
+    }
+    fiber=pow(.5+.5*cos(growth*(9.0+yarnFreq)+t*.42),6.0);
+    ornament=.5+.5*sin((growth-fork)*7.0+t*.53);
+    shimmer=pow(.5+.5*cos(fork*13.0-t*.88),11.0);
+    shadow=.5-.5*growth*fork;
+    phase=growth*.77+fork*.38;
+  }else if(underlayMode==14){ // WET RELIC CLOTH: meniscus-film on ancient threads.
+    float r=length(q*.26);
+    float meniscus=sin(q.x*2.1+sin(q.y*.77+t*.35)*1.4);
+    float warp=cos(q.y*yarnFreq*2.3-t*.42+meniscus*.8);
+    float drip=sin(r*15.0-t*.61+phaseSeed*.17);
+    fiber=.5+.5*(warp*.7+meniscus*.3);
+    ornament=.5+.5*drip*meniscus;
+    shimmer=pow(.5+.5*cos((drip-warp)*4.4+t*.72),14.0);
+    shadow=.5-.5*meniscus*warp;
+    phase=meniscus*.54+drip*.35;
+  }else if(underlayMode==15){ // DISCO SHROUD: moving triangular sequin interference.
+    vec2 grid=q*(.87+.17*underlayDensity);
+    vec2 cell=floor(grid),d=fract(grid)-.5;
+    float h=hash(cell+phaseSeed);
+    float angle=t*(.21+.27*h)+h*6.2831853;
+    d=mat2(cos(angle),-sin(angle),sin(angle),cos(angle))*d;
+    float tri=max(d.y*.9-d.x*.52,-d.y*.69);
+    float fringe=sin(tri*22.0-t*.93+h*6.2);
+    fiber=.5+.5*fringe;
+    ornament=1.0-smoothstep(.17,.36,abs(tri));
+    shimmer=pow(.5+.5*cos(tri*39.0+t*.66),15.0);
+    shadow=.5-.5*fringe*tri;
+    phase=angle*.2+tri*2.0;
+  }else{ // Unsupported textile mode should not change the canvas.
+    return original;
   }
   // The underlying painting survives; top filaments are composited AFTER
   // this function. Keep a broad, visible material field without blank areas.

@@ -33,6 +33,9 @@ import {
 } from "lucide-react";
 import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, compositionModes, backdropModes, microModes, substanceModes, wiggleModes, randomize } from "../data";
 import { Parameter, Range, Toggle, Switch, Select, Section, Segmented, Pill, useReveal } from "./Controls";
+import {microFamilies,microPresets,applyMicroPreset,remixMicro} from "../microstructure.js";
+import {substanceFamilies,substancePresets,applySubstancePreset,remixSubstance} from "../substance.js";
+import {bioRotPresets,applyBioRotPreset,remixBioRot} from "../bio-rot-presets.js";
 import { photonSpecies, photonSpeciesFamilies, photonSpeciesDescriptions,
   photonPresets, photonPresetState, nextPhotonSpecies,
   remixPhotonZoo } from "../photon-zoo.js";
@@ -277,6 +280,9 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [symbiosisPreset,setSymbiosisPreset]=React.useState(symbiosisPresets[0].name);
   const [genePreset,setGenePreset]=React.useState(genePresets[0].name);
   const [selectionPreset,setSelectionPreset]=React.useState(selectionPresets[0].name);
+  const [microPreset,setMicroPreset]=React.useState(microPresets[0].name);
+  const [substancePreset,setSubstancePreset]=React.useState(substancePresets[0].name);
+  const [bioRotPreset,setBioRotPreset]=React.useState(bioRotPresets[0].name);
   const [apocalypsePreset,setApocalypsePreset]=React.useState(apocalypsePresets[0].name);
   const [fossilPreset,setFossilPreset]=React.useState(fossilPresets[0].name);
   const [resurrectionMode,setResurrectionMode]=React.useState(resurrectionModes[0]);
@@ -1840,9 +1846,14 @@ export function EffectsInspector({ history, onTool, tool }) {
       <Parameter label="Glitter explosions" name="glitter" history={history} />
     </>,
     micro: <>
-      <Select label="Texture" value={s.microMode}
-        onChange={(v)=>history.change(x=>({...x,microMode:v}))}>
-        {microModes.map(mode=><option key={mode}>{mode}</option>)}
+      <p className="control-note">Sixteen animated microscopic constructions, from opal dust and bubble silk to creeping mold sequins and alien dandruff. New shapes use distinct real-time shader geometry.</p>
+      <Select label="Microscopic species" value={s.microMode}
+        onChange={v=>history.change(x=>({...x,microMode:v,
+          microAmount:Math.max(68,x.microAmount),
+          microMotion:Math.max(40,x.microMotion)}))}>
+        {microFamilies.map(family=><optgroup key={family.name} label={family.name}>
+          {family.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </optgroup>)}
       </Select>
       <Parameter label="Presence" name="microAmount" history={history}/>
       <Parameter label="Scale" name="microScale" history={history}/>
@@ -1851,13 +1862,42 @@ export function EffectsInspector({ history, onTool, tool }) {
       <Parameter label="Density" name="microDensity" history={history}/>
       <Parameter label="Color shift" name="microHue" history={history}/>
       <Parameter label="Variation" name="microVariation" history={history}/>
+      <div className="preset-row">
+        <Select label="Instant microtexture" value={microPreset} onChange={setMicroPreset}>
+          {microPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applyMicroPreset(x,microPreset))}>
+          Spawn microtexture
+        </button>
+      </div>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>remixMicro(x))}>
+          <Shuffle size={13}/> Shuffle microtextures
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>remixMicro(x,Math.random,true))}>
+          <Dices size={13}/> Shuffle new contaminants
+        </button>
+        <button type="button" className="button secondary"
+          disabled={!s.microAmount}
+          onClick={()=>history.change(x=>({...x,microAmount:0}))}>
+          <EyeOff size={13}/> Hide microtexture
+        </button>
+      </div>
       <Reseed label="Reseed texture" onClick={()=>history.change(x=>({...x,microVariation:
         (x.microVariation+23+Math.random()*56)%100}))}/>
     </>,
     substance: <>
-      <Select label="Substance" value={s.substanceMode}
-        onChange={v=>history.change(x=>({...x,substanceMode:v}))}>
-        {substanceModes.map(mode=><option key={mode}>{mode}</option>)}
+      <p className="control-note">Twelve living materials with distinct motion and optics: soft opal, oil membranes, glassy mucus, silica foam and a few deeply questionable candy-tissue experiments.</p>
+      <Select label="Living material" value={s.substanceMode}
+        onChange={v=>history.change(x=>({...x,substanceMode:v,
+          substanceAmount:Math.max(72,x.substanceAmount),
+          substanceMotion:Math.max(39,x.substanceMotion)}))}>
+        {substanceFamilies.map(family=><optgroup key={family.name} label={family.name}>
+          {family.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </optgroup>)}
       </Select>
       <Parameter label="Strength" name="substanceAmount" history={history}/>
       <Parameter label="Cell scale" name="substanceScale" history={history}/>
@@ -1866,6 +1906,30 @@ export function EffectsInspector({ history, onTool, tool }) {
       <Parameter label="Edge glow" name="substanceEdge" history={history}/>
       <Parameter label="Palette shift" name="substanceHue" history={history}/>
       <Parameter label="Variation" name="substanceVariation" history={history}/>
+      <div className="preset-row">
+        <Select label="Instant living material" value={substancePreset} onChange={setSubstancePreset}>
+          {substancePresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applySubstancePreset(x,substancePreset))}>
+          Spawn selected material
+        </button>
+      </div>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>remixSubstance(x))}>
+          <Shuffle size={13}/> Shuffle substances
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>remixSubstance(x,Math.random,true))}>
+          <Dices size={13}/> Shuffle mutant matter
+        </button>
+        <button type="button" className="button secondary"
+          disabled={!s.substanceAmount}
+          onClick={()=>history.change(x=>({...x,substanceAmount:0}))}>
+          <EyeOff size={13}/> Hide substance
+        </button>
+      </div>
       <Reseed label="Reseed substance" onClick={()=>history.change(x=>({...x,substanceVariation:
         (x.substanceVariation+19+Math.random()*67)%100}))}/>
     </>,
@@ -1878,6 +1942,27 @@ export function EffectsInspector({ history, onTool, tool }) {
       <Parameter label="Animation" name="foilMotion" history={history} />
     </>,
     bio: <>
+      <p className="control-note">Real Gray–Scott chemistry, eight curated growth regimes. These are genuine feed/kill combinations, not imaginary extra solvers. Growth remains continuous along the existing animation timeline.</p>
+      <div className="preset-row">
+        <Select label="Petri-dish growth recipe" value={bioRotPreset} onChange={setBioRotPreset}>
+          {bioRotPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applyBioRotPreset(x,bioRotPreset))}>
+          Cultivate selected growth
+        </button>
+      </div>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>remixBioRot(x))}>
+          <Dices size={13}/> Shuffle the petri dish
+        </button>
+        <button type="button" className="button secondary"
+          disabled={!s.bioAmount}
+          onClick={()=>history.change(x=>({...x,bioAmount:0}))}>
+          <EyeOff size={13}/> Pause visible rot
+        </button>
+      </div>
       <Parameter label="Organism" name="bioAmount" history={history} />
       <Parameter label="Feed" name="bioFeed" history={history} />
       <Parameter label="Kill" name="bioKill" history={history} />

@@ -538,6 +538,158 @@ export function specializeFilamentMorphMaterials(source,first,second=null){
     (selected.length?"  }\n":"")+source.slice(ending);
 }
 
+
+/**
+ * THREAD CONTAGION: analytic infection waves travel along live fiber phase.
+ * When both parents exist, the second can receive a signal only at genuine
+ * overlapping stitch cores. No simulation framebuffer or export-only pass.
+ */
+export const filamentContagionModes=[
+  "Off",
+  "Stitch relay",
+  "Crossing fever",
+  "Mycelial bridge",
+  "Spark jump",
+  "Knot epidemic",
+  "Spore drift"
+];
+export const filamentContagionFamilies=[
+  {name:"Dormant",modes:filamentContagionModes.slice(0,1)},
+  {name:"Sewn transmission",modes:filamentContagionModes.slice(1,3)},
+  {name:"Strange growths and charge",modes:filamentContagionModes.slice(3)}
+];
+export const filamentContagionDescriptions={
+  "Off": "Existing material transformations remain unchanged.",
+  "Stitch relay": "Animated stitch-local packets pass a transformed finish along each thread.",
+  "Crossing fever": "Real overlaps between hybrid parent cores light up and transfer the first parent's active morph to the second.",
+  "Mycelial bridge": "Branching wavefronts travel from seeded cells through the living weave.",
+  "Spark jump": "Transient electric pulses leap between nearby sections of the thread field.",
+  "Knot epidemic": "Seeded knot clusters exchange their transformed appearance in a cyclic relay.",
+  "Spore drift": "Soft clouds of spores ride traveling strands and settle in rhythmic bursts."
+};
+export const filamentContagionControls=[
+  "filamentContagionAmount","filamentContagionReach","filamentContagionSpeed",
+  "filamentContagionLag","filamentContagionGlow"
+];
+export const filamentContagionPresets=[
+  {
+    "name": "Satin epidemic",
+    "filamentContagionMode": "Stitch relay",
+    "filamentMorphTarget": "Opaline glass",
+    "filamentSecondMorphTarget": "Pearl embroidery floss",
+    "filamentContagionAmount": 85,
+    "filamentContagionReach": 47,
+    "filamentContagionSpeed": 62,
+    "filamentContagionLag": 28,
+    "filamentContagionGlow": 58
+  },
+  {
+    "name": "Contact fever",
+    "filamentContagionMode": "Crossing fever",
+    "filamentMorphTarget": "Gelatin nerve cord",
+    "filamentSecondMorphTarget": "Bioluminescent mycelium",
+    "filamentContagionAmount": 97,
+    "filamentContagionReach": 42,
+    "filamentContagionSpeed": 73,
+    "filamentContagionLag": 19,
+    "filamentContagionGlow": 86
+  },
+  {
+    "name": "Possessed fungus",
+    "filamentContagionMode": "Mycelial bridge",
+    "filamentMorphTarget": "Bioluminescent mycelium",
+    "filamentSecondMorphTarget": "Opaline glass",
+    "filamentContagionAmount": 92,
+    "filamentContagionReach": 68,
+    "filamentContagionSpeed": 45,
+    "filamentContagionLag": 67,
+    "filamentContagionGlow": 83
+  },
+  {
+    "name": "Jumping voltage",
+    "filamentContagionMode": "Spark jump",
+    "filamentMorphTarget": "Fiber-optic rainbow",
+    "filamentSecondMorphTarget": "Molten chrome",
+    "filamentContagionAmount": 97,
+    "filamentContagionReach": 64,
+    "filamentContagionSpeed": 86,
+    "filamentContagionLag": 13,
+    "filamentContagionGlow": 98
+  },
+  {
+    "name": "Knot plague",
+    "filamentContagionMode": "Knot epidemic",
+    "filamentMorphTarget": "Oil-slick latex",
+    "filamentSecondMorphTarget": "Velvet flock",
+    "filamentContagionAmount": 91,
+    "filamentContagionReach": 83,
+    "filamentContagionSpeed": 57,
+    "filamentContagionLag": 53,
+    "filamentContagionGlow": 78
+  },
+  {
+    "name": "Soft spore weather",
+    "filamentContagionMode": "Spore drift",
+    "filamentMorphTarget": "Bioluminescent mycelium",
+    "filamentSecondMorphTarget": "Iridescent silk",
+    "filamentContagionAmount": 89,
+    "filamentContagionReach": 49,
+    "filamentContagionSpeed": 38,
+    "filamentContagionLag": 80,
+    "filamentContagionGlow": 61
+  }
+];
+export function applyFilamentContagionPreset(state,name){
+  const preset=filamentContagionPresets.find(x=>x.name===name);
+  if(!preset)return state;
+  const {name:unused,...newValues}=preset;
+  return {...state,...newValues,filamentAmount:Math.max(70,state.filamentAmount||0),
+    filamentMorphMode:state.filamentMorphMode==="Off"?"Seam sweep":state.filamentMorphMode,
+    filamentMorphAmount:Math.max(82,state.filamentMorphAmount||0)};
+}
+export function remixFilamentContagion(state,rng=Math.random,onlyWeird=false){
+  const unit=()=>{const x=Number(rng());return Number.isFinite(x)?
+    Math.min(1-Number.EPSILON,Math.max(0,x)):0;};
+  const modes=onlyWeird?filamentContagionModes.slice(3):filamentContagionModes.slice(1);
+  const candidates=modes.filter(x=>x!==state.filamentContagionMode);
+  const pool=candidates.length?candidates:modes;
+  const mode=pool[Math.floor(unit()*pool.length)];
+  const alternatives=filamentMaterials.slice(1);
+  const pick=old=>{const eligible=alternatives.filter(x=>x!==old);
+    return eligible[Math.floor(unit()*eligible.length)];};
+  return {...state,filamentContagionMode:mode,
+    filamentContagionAmount:72+unit()*27,
+    filamentContagionReach:25+unit()*74,
+    filamentContagionSpeed:16+unit()*83,
+    filamentContagionLag:10+unit()*88,
+    filamentContagionGlow:35+unit()*64,
+    filamentMorphTarget:pick(state.filamentMaterial),
+    filamentSecondMorphTarget:pick(state.filamentSecondMaterial),
+    filamentMorphAmount:Math.max(83,state.filamentMorphAmount||0),
+    filamentMorphMode:state.filamentMorphMode==="Off"?"Seam sweep":state.filamentMorphMode,
+    filamentAmount:Math.max(70,state.filamentAmount||0)};
+}
+
+/** Narrow contagion compilation to the selected transmission law on iOS. */
+export function specializeFilamentContagion(source,index){
+  if(index==null||!Number.isInteger(index)||index<1||
+    index>=filamentContagionModes.length)return source;
+  const opener=id=>id===1?"  if(filamentContagionMode==1){":
+    "  }else if(filamentContagionMode=="+id+"){";
+  const starts=filamentContagionModes.slice(1)
+    .map((_,k)=>source.indexOf(opener(k+1)));
+  if(starts.some((p,k)=>p<0||(k>0&&p<=starts[k-1])))return source;
+  const end=source.indexOf("  // Link flux is zero",starts.at(-1));
+  if(end<0)return source;
+  const close=source.lastIndexOf("  }\n",end);
+  if(close<starts.at(-1))return source;
+  const stop=index===filamentContagionModes.length-1?close:starts[index];
+  const body=source.slice(starts[index-1]+opener(index).length,stop);
+  return source.slice(0,starts[0])+
+    "  if(filamentContagionMode=="+index+"){"+body+
+    "  }\n"+source.slice(end);
+}
+
 export const filamentAdornmentModes=[
   "Bare threads",
   "Pearl stations",
@@ -1022,6 +1174,9 @@ uniform int filamentStitchMode;
 uniform int filamentSculptMode;
 uniform int filamentAdornmentMode,filamentSecondAdornmentMode;
 uniform int filamentMorphMode;
+uniform int filamentContagionMode;
+uniform float filamentContagionAmount,filamentContagionReach;
+uniform float filamentContagionSpeed,filamentContagionLag,filamentContagionGlow;
 uniform int filamentMorphTarget,filamentSecondMorphTarget;
 uniform float filamentMorphAmount,filamentMorphScale;
 uniform float filamentMorphSpeed,filamentMorphSharpness,filamentMorphGlow;
@@ -1038,7 +1193,9 @@ uniform float filamentWidth,filamentRelief,filamentHue,filamentVariation;
 
 vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     int species,int fiberMaterial,int adornmentMode,int morphMaterial,float phaseOffset,float twist,float hueOffset,
-    out float maskCore){
+    float incomingCore,float incomingCarrier,
+    out float maskCore,out float outgoingCarrier){
+  outgoingCarrier=0.0;
   float t=time*(.14+filamentMotion*.72)+phaseOffset;
   float ct=colorTime*.12+phaseOffset*.18;
   float freq=3.0+filamentScale*11.0;
@@ -1828,9 +1985,62 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     morphField=.55*sin(q.y*.37+seamPhase*.4-morphClock*.73)+
       .45*cos(q.x*.46-seamPhase*.31+morphClock*.56);
   }
+
+#ifdef FILAMENT_CONTAGION
+  // A deterministic thread-local propagation phase, not a fullscreen
+  // overlay. The moving stitch clock is identical in preview and exports.
+  float contagionClock=time*(.2+filamentContagionSpeed*1.34)+phaseOffset*.27;
+  float contagionAlong=phase*(1.2+filamentContagionReach*5.8)+seedPhase*.13;
+  float contagionSignal=0.0;
+  if(filamentContagionMode==1){ // STITCH RELAY
+    float packet=.5+.5*cos(contagionAlong*3.2-contagionClock*1.5);
+    contagionSignal=packet*packet;
+  }else if(filamentContagionMode==2){ // CROSSING FEVER
+    // Hybrid-specific transfer enters ONLY where both parent thread
+    // cores actually meet, then its phase wave runs along recipient yarn.
+    float link=clamp(incomingCore*core*incomingCarrier,0.0,1.0);
+    contagionSignal=.34*(.5+.5*sin(contagionAlong*2.8-contagionClock))+
+      link*(.68+.32*cos(contagionClock*.8));
+  }else if(filamentContagionMode==3){ // MYCELIAL BRIDGE
+    vec2 site=floor(q*(.13+.06*filamentContagionReach));
+    vec2 offset=fract(q*(.13+.06*filamentContagionReach))-.5;
+    float spore=fract(sin(dot(site,vec2(17.1,83.7))+seedPhase)*43758.5453);
+    float ring=cos(length(offset)*12.0-contagionClock*(.54+.32*spore));
+    contagionSignal=.5+.5*ring;
+  }else if(filamentContagionMode==4){ // SPARK JUMP
+    float spark=.5+.5*cos(contagionAlong*8.0-contagionClock*3.1);
+    float pin=step(.72,fract(sin(floor(contagionAlong*1.7)+seedPhase)*7381.123));
+    contagionSignal=pow(spark,3.0)*(.28+.72*pin);
+  }else if(filamentContagionMode==5){ // KNOT EPIDEMIC
+    float knot=fract(contagionAlong*.43);
+    float cluster=1.0-smoothstep(.06,.47,abs(knot-.5));
+    contagionSignal=cluster*(.5+.5*cos(contagionClock*.82+
+      floor(contagionAlong*.43)*1.618));
+  }else if(filamentContagionMode==6){ // SPORE DRIFT
+    float mist=sin(q.x*.48+contagionClock*.39)+
+      sin(q.y*.68-contagionClock*.31)+
+      sin(contagionAlong*.83-contagionClock*.69);
+    contagionSignal=smoothstep(-1.2,1.4,mist);
+  }
+  // Link flux is zero when there's no real first-parent donor or contact.
+  // The phase delay makes recipient fibers respond after their donor.
+  float contactTransfer=clamp(incomingCore*core*incomingCarrier,0.0,1.0);
+  // Lag shifts the recipient's response in PHASE instead of merely
+  // changing its animation speed.
+  float delayed=.5+.5*cos(contagionAlong*1.4-contagionClock+
+    filamentContagionLag*3.1415926);
+  float neighborhood=clamp(contagionSignal*(.56+.44*delayed)+
+    contactTransfer*filamentContagionReach*delayed,0.0,1.0);
+  morphField=mix(morphField,max(morphField,neighborhood*2.0-1.0),
+    filamentContagionAmount);
+#endif
   float transitionWidth=mix(.64,.06,filamentMorphSharpness);
   float morphMask=smoothstep(-transitionWidth,transitionWidth,morphField);
   float coverage=filamentMorphAmount*morphMask*(morphMaterial==fiberMaterial?0.0:1.0);
+#ifdef FILAMENT_CONTAGION
+  // Parent A can infect B only when its live, already-sewn core overlaps.
+  outgoingCarrier=clamp(coverage*core,0.0,1.0);
+#endif
   vec3 secondDress=thread;
   float secondHalo=extraHalo;
   thread=mix(primaryDress,secondDress,coverage);
@@ -1840,6 +2050,12 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     transitionWidth*1.7+.005,abs(morphField));
   thread+=mix(glimmer,vec3(1.0),.41)*border*filamentMorphGlow*
     coverage*(.23+.57*cord);
+#ifdef FILAMENT_CONTAGION
+  // Infection glints exist on stitched fiber only, never bare background.
+  float infectionGlint=pow(clamp(contagionSignal,0.0,1.0),5.0);
+  thread+=mix(glimmer,vec3(1.0),.56)*infectionGlint*
+    filamentContagionGlow*coverage*.24*cord;
+#endif
 #endif
 
 #endif
@@ -2122,17 +2338,17 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
 }
 vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
   if(filamentAmount<.001)return background;
-  float firstCore=0.0;
+  float firstCore=0.0,firstCarrier=0.0;
   vec3 first=filamentField(background,uv,fieldP,fieldV,
     filamentSpecies,filamentMaterial,filamentAdornmentMode,filamentMorphTarget,
-    0.0,0.0,0.0,firstCore);
+    0.0,0.0,0.0,0.0,0.0,firstCore,firstCarrier);
 #ifdef FILAMENT_HYBRID
   if(filamentCrossbreed<.001)return first;
-  float secondCore=0.0;
+  float secondCore=0.0,secondCarrier=0.0;
   vec3 second=filamentField(first,uv,fieldP,fieldV,
     filamentSecondSpecies,filamentSecondMaterial,filamentSecondAdornmentMode,
     filamentSecondMorphTarget,filamentPhase*6.2831853,filamentTwist*6.2831853,
-    filamentSecondHue*.9,secondCore);
+    filamentSecondHue*.9,firstCore,firstCarrier,secondCore,secondCarrier);
   // True under/over crossings: only where two threads overlap. Different
   // paths remain distinct rather than dissolving into a flat opacity mix.
   float contact=clamp(firstCore*secondCore,0.0,1.0);

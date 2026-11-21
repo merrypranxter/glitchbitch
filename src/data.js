@@ -13,7 +13,7 @@ export { injuryModes };
 export { alchemyModes };
 import { backdropModes } from "./backdrops.js";
 export { backdropModes };
-import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, filamentMorphModes } from "./filament-forge.js";
+import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, filamentMorphModes, filamentContagionModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
@@ -317,6 +317,11 @@ export const numericRanges = {
   filamentMorphSpeed: [0, 100],
   filamentMorphSharpness: [0, 100],
   filamentMorphGlow: [0, 100],
+  filamentContagionAmount: [0, 100],
+  filamentContagionReach: [0, 100],
+  filamentContagionSpeed: [0, 100],
+  filamentContagionLag: [0, 100],
+  filamentContagionGlow: [0, 100],
   filamentAdornmentAmount: [0, 100],
   filamentAdornmentSpacing: [0, 100],
   filamentAdornmentSize: [0, 100],
@@ -620,6 +625,12 @@ export const initial = {
   filamentMorphSpeed: 50,
   filamentMorphSharpness: 58,
   filamentMorphGlow: 70,
+  filamentContagionMode: "Off",
+  filamentContagionAmount: 0,
+  filamentContagionReach: 54,
+  filamentContagionSpeed: 52,
+  filamentContagionLag: 42,
+  filamentContagionGlow: 67,
   filamentAdornmentMode: "Bare threads",
   filamentSecondAdornmentMode: "Bare threads",
   filamentAdornmentAmount: 0,
@@ -883,6 +894,7 @@ export function validateRecipe(input) {
     filamentSecondMaterial: filamentMaterials,
     filamentStitchMode: filamentStitchModes,
     filamentMorphMode: filamentMorphModes,
+    filamentContagionMode: filamentContagionModes,
     filamentMorphTarget: filamentMaterials,
     filamentSecondMorphTarget: filamentMaterials,
     filamentAdornmentMode: filamentAdornmentModes,
@@ -1302,6 +1314,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "filamentAdornmentMotion","filamentAdornmentGlow",
       "filamentMorphAmount","filamentMorphScale","filamentMorphSpeed",
       "filamentMorphSharpness","filamentMorphGlow",
+      "filamentContagionAmount","filamentContagionReach","filamentContagionSpeed",
+      "filamentContagionLag","filamentContagionGlow",
       "filamentStitchAmount","filamentStitchSpeed",
       "filamentStitchLength","filamentStitchGlow",
       "filamentSculptAmount","filamentSculptDepth",
@@ -1549,6 +1563,12 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.filamentMorphSpeed=16+random()*81;
   s.filamentMorphSharpness=25+random()*74;
   s.filamentMorphGlow=30+random()*69;
+  s.filamentContagionMode=different(filamentContagionModes,state.filamentContagionMode,random);
+  s.filamentContagionAmount=s.filamentMorphAmount>0 && random()<.55?46+random()*53:0;
+  s.filamentContagionReach=22+random()*77;
+  s.filamentContagionSpeed=16+random()*83;
+  s.filamentContagionLag=10+random()*89;
+  s.filamentContagionGlow=26+random()*73;
   s.filamentStitchMode=different(filamentStitchModes,state.filamentStitchMode,random);
   s.filamentStitchAmount=s.filamentAmount>0 && random()<.58 ? 45+random()*54 : 0;
   s.filamentStitchSpeed=15+random()*84;

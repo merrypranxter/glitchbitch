@@ -111,6 +111,7 @@ test("shader compiles only one selected synaptic plasticity law",()=>{
     assert.ok(shader.includes("neuralSignal=mix(preplastic,clamp(preplastic+plasticDelta"));
     assert.ok(shader.includes("outgoingNeural=clamp(nerveStrength*core"));
     assert.ok(shader.includes("thread+=mix(ink,glimmer,.62)*core*filamentPlasticAmount"));
+    assert.ok(shader.includes("thread*=1.0-plasticShadow*"),"inhibitory threads actually darken");
   }
   assert.equal(specializeFilamentPlasticity(filamentGLSL,null),filamentGLSL);
   assert.equal(specializeFilamentPlasticity(filamentGLSL,99),filamentGLSL);

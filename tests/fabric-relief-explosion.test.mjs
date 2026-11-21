@@ -138,8 +138,8 @@ test("sculpted relief has fifteen independent 2.5D shading branches",()=>{
    assert.deepEqual(validateRecipe(next),next);
  }
 });
-test("all 21 sewing motions can prune to a single selected needle system",()=>{
- for(let id=0;id<21;id++){
+test("all 31 sewing motions can prune to a single selected needle system",()=>{
+ for(let id=0;id<31;id++){
    const src=specializeFilamentStitchMotion(filamentGLSL,id);
    const start=src.indexOf("  if(filamentStitchMode=="+id+"){");
    const stop=src.indexOf("  }else{ // Invalid stored mode",start);
@@ -161,9 +161,9 @@ test("all 21 sewing motions can prune to a single selected needle system",()=>{
  }
 });
 test("shader pruning composes safely with every geometry and hybrid sewing",()=>{
- for(let i=0;i<16;i++){
-   const geom=specializeFilamentGeometry(filamentGLSL,i,(i+3)%16);
-   for(let stitch=0;stitch<21;stitch++){
+ for(let i=0;i<22;i++){
+   const geom=specializeFilamentGeometry(filamentGLSL,i,(i+3)%22);
+   for(let stitch=0;stitch<31;stitch++){
      const trimmed=specializeFilamentStitchMotion(geom,stitch);
      const final=specializeFilamentSculptMotion(trimmed,stitch%15);
      assert.equal(brace(final),0,i+"/"+stitch);

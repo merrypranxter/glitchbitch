@@ -53,6 +53,8 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentAdornmentPresets,applyFilamentAdornmentPreset,remixFilamentAdornments,remixThreadCouture,
   filamentMorphModes,filamentMorphFamilies,filamentMorphDescriptions,
   filamentMorphPresets,applyFilamentMorphPreset,remixFilamentMorph,
+  filamentContagionModes,filamentContagionFamilies,filamentContagionDescriptions,
+  filamentContagionPresets,applyFilamentContagionPreset,remixFilamentContagion,
   remixFilamentMaterials,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
@@ -284,6 +286,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [materialPreset,setMaterialPreset]=React.useState(filamentMaterialPresets[0].name);
   const [adornmentPreset,setAdornmentPreset]=React.useState(filamentAdornmentPresets[0].name);
   const [morphPreset,setMorphPreset]=React.useState(filamentMorphPresets[0].name);
+  const [contagionPreset,setContagionPreset]=React.useState(filamentContagionPresets[0].name);
   const [stitchPreset,setStitchPreset]=React.useState(filamentStitchPresets[0].name);
   const [sculptPreset,setSculptPreset]=React.useState(filamentSculptPresets[0].name);
   const [underlayPreset,setUnderlayPreset]=React.useState(underlayPresets[0].name);
@@ -1829,6 +1832,51 @@ export function EffectsInspector({ history, onTool, tool }) {
           </button>
         </div>
         <p className="control-note">Separate from stitch motion, geometric weaving, jewelry, color and lettering. Crossbred parents can transform toward completely different materials. The same deterministic shader is used for the artwork preview and MP4/GIF/PNG exports.</p>
+      </details>
+      <details className="filament-crossbreeder filament-contagion-lab">
+        <summary>🦠 CONTAGION LOOM — MAKE YOUR THREADS INFECT EACH OTHER</summary>
+        <p className="control-note">Stitch-local waves carry material changes down the active threads. In a two-parent crossbreed, actual overlapping stitched cores provide a real first-to-second contact signal. The moving waves are deterministic, not an accumulating GPU simulation, so your exports use the exact same math.</p>
+        <Select label="Transmission behavior" value={s.filamentContagionMode}
+          onChange={mode=>history.change(x=>({...x,filamentContagionMode:mode,
+            filamentAmount:mode==="Off"?x.filamentAmount:Math.max(70,x.filamentAmount),
+            filamentMorphMode:mode==="Off"?x.filamentMorphMode:
+              x.filamentMorphMode==="Off"?"Seam sweep":x.filamentMorphMode,
+            filamentMorphAmount:mode==="Off"?x.filamentMorphAmount:Math.max(82,x.filamentMorphAmount),
+            filamentContagionAmount:mode==="Off"?x.filamentContagionAmount:
+              Math.max(82,x.filamentContagionAmount)}))}>
+          {filamentContagionFamilies.map(family=><optgroup key={family.name} label={family.name}>
+            {family.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+          </optgroup>)}
+        </Select>
+        <p className="control-note">{filamentContagionDescriptions[s.filamentContagionMode]}</p>
+        <Parameter label="Transmission intensity" name="filamentContagionAmount" history={history}/>
+        <Parameter label="Neighbor reach / contact handoff" name="filamentContagionReach" history={history}/>
+        <Parameter label="Propagation velocity" name="filamentContagionSpeed" history={history}/>
+        <Parameter label="Recipient response lag" name="filamentContagionLag" history={history}/>
+        <Parameter label="Infection boundary glow" name="filamentContagionGlow" history={history}/>
+        <Select label="Contagion recipe" value={contagionPreset} onChange={setContagionPreset}>
+          {filamentContagionPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>applyFilamentContagionPreset(x,contagionPreset))}>
+            Infect the loom
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentContagion(x))}>
+            <Dices size={13}/> Shuffle contagions
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentContagion(x,Math.random,true))}>
+            <Shuffle size={13}/> Shuffle cursed infections
+          </button>
+          <button type="button" className="button secondary"
+            disabled={s.filamentContagionAmount===0}
+            onClick={()=>history.change(x=>({...x,filamentContagionAmount:0}))}>
+            Quarantine — keep transformed threads
+          </button>
+        </div>
+        <p className="control-note">Uses the two morph targets from Thread Metamorphosis, so no original fiber dressing or colors get overwritten. Crossbreed two thread species to see transfer at real stitched intersections. Effect defaults off; strict PNG/GIF/MP4 exporting never removes it silently.</p>
       </details>
       <details className="filament-crossbreeder filament-adornment-lab">
         <summary>💎 THREAD JEWELRY — CHARMS, FRINGE & WEIRD SHIT</summary>

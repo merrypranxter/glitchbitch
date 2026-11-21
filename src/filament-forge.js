@@ -257,7 +257,84 @@ export const filamentStitchModes=[
   "Running stitch",
   "Purl breathing",
   "Unfurl & resew",
+  "Helix handoff",
+  "Knot cascade",
+  "Synaptic firing",
+  "Alien Morse",
+  "Coral accretion",
+  "Tidal darning",
+  "Fractal infestation",
+  "Reverse unpick",
+  "Ricochet needle",
+  "Wormhole crochet",
 ];
+// Human-facing organization only; saved names and numerical shader IDs
+// for the original five motions are preserved exactly.
+export const filamentStitchFamilies=[
+  {name:"Classic self-weaving",modes:filamentStitchModes.slice(0,5)},
+  {name:"Alien signals & impossible crochet",modes:[
+    "Synaptic firing","Alien Morse","Fractal infestation","Wormhole crochet"]},
+  {name:"Organic growth & living stitches",modes:[
+    "Knot cascade","Coral accretion","Tidal darning"]},
+  {name:"Kinetic sewing machines",modes:[
+    "Helix handoff","Reverse unpick","Ricochet needle"]},
+];
+export const newFilamentStitchModes=filamentStitchModes.slice(5);
+export const filamentStitchDescriptions={
+  "Needle chase":"A bright needle tip advances along a short traveling thread.",
+  "Loom sweep":"A broad shuttle draws fibers through the cloth in waves.",
+  "Running stitch":"Separate stitched segments chase along the existing paths.",
+  "Purl breathing":"The stitch loops inhale and exhale along the actual yarn.",
+  "Unfurl & resew":"The fabric builds edge-to-edge, then gracefully unwinds.",
+  "Helix handoff":"Two alternating helical needle carriers pass luminous thread.",
+  "Knot cascade":"Individual sewn knots fire in a cascading sequence.",
+  "Synaptic firing":"Axonal bursts travel through the lace with luminous afterglow.",
+  "Alien Morse":"An encoded procession of long and short light stitches.",
+  "Coral accretion":"Nested living reef rings build and dissolve across the fiber.",
+  "Tidal darning":"Interfering oceanic wavefronts stitch crossing soft seams.",
+  "Fractal infestation":"Small growth fronts spark within larger recursive advances.",
+  "Reverse unpick":"A migrating repair gap unravels and stitches itself back.",
+  "Ricochet needle":"One needle races back and forth, bouncing at seam ends.",
+  "Wormhole crochet":"Logarithmic spiral sutures travel around impossible loops.",
+};
+export function remixFilamentStitchMotion(state,rng=Math.random,onlyNew=false){
+  const unit=()=>{
+    const n=Number(rng());
+    return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;
+  };
+  const set=onlyNew?newFilamentStitchModes:filamentStitchModes;
+  const candidates=set.filter(mode=>mode!==state.filamentStitchMode);
+  const choices=candidates.length?candidates:set;
+  return {...state,
+    filamentStitchMode:choices[Math.floor(unit()*choices.length)],
+    filamentStitchAmount:Math.max(78,state.filamentStitchAmount||0),
+    filamentAmount:Math.max(65,state.filamentAmount||0),
+    filamentStitchSpeed:24+unit()*74,
+    filamentStitchLength:18+unit()*79,
+    filamentStitchGlow:55+unit()*44};
+}
+/**
+ * Keep Safari's shader size approximately constant as the stitch zoo grows.
+ * Only the *selected* stitch-motion branch is compiled (or none if disabled).
+ * Existing geometry specialization and dual-filament hybrid shader remain.
+ */
+export function specializeFilamentStitchMotion(source,index){
+  if(index==null||!Number.isInteger(index)||index<0||
+     index>=filamentStitchModes.length)return source;
+  const opener=n=>n===0?"  if(filamentStitchMode==0){":
+    "  }else if(filamentStitchMode=="+n+"){";
+  const starts=filamentStitchModes.map((_,n)=>source.indexOf(opener(n)));
+  if(starts.some((pos,n)=>pos<0||(n>0&&pos<=starts[n-1])))return source;
+  const fallback=source.indexOf(
+    "  }else{ // Invalid stored mode",starts[starts.length-1]);
+  const end=source.indexOf("  // Apply to all three geometry masks",fallback);
+  if(fallback<0||end<=fallback)return source;
+  const stop=index===starts.length-1?fallback:starts[index+1];
+  const body=source.slice(starts[index]+opener(index).length,stop);
+  return source.slice(0,starts[0])+
+    "  if(filamentStitchMode=="+index+"){"+body+
+    source.slice(fallback,end)+source.slice(end);
+}
 export const filamentStitchControls=[
   "filamentStitchAmount","filamentStitchSpeed",
   "filamentStitchLength","filamentStitchGlow"
@@ -277,7 +354,37 @@ export const filamentStitchPresets=[
     filamentStitchLength:73,filamentStitchGlow:61},
   {name:"Unfurl the impossible",filamentStitchMode:"Unfurl & resew",
     filamentStitchAmount:97,filamentStitchSpeed:47,
-    filamentStitchLength:55,filamentStitchGlow:91}
+    filamentStitchLength:55,filamentStitchGlow:91},
+  {name:"Twisted signal relay",filamentStitchMode:"Helix handoff",
+    filamentStitchAmount:94,filamentStitchSpeed:68,
+    filamentStitchLength:45,filamentStitchGlow:96},
+  {name:"Knot infestation",filamentStitchMode:"Knot cascade",
+    filamentStitchAmount:95,filamentStitchSpeed:79,
+    filamentStitchLength:56,filamentStitchGlow:89},
+  {name:"Electric synapse embroidery",filamentStitchMode:"Synaptic firing",
+    filamentStitchAmount:97,filamentStitchSpeed:83,
+    filamentStitchLength:32,filamentStitchGlow:99},
+  {name:"Signals from the Others",filamentStitchMode:"Alien Morse",
+    filamentStitchAmount:96,filamentStitchSpeed:59,
+    filamentStitchLength:74,filamentStitchGlow:97},
+  {name:"Reef skeleton tapestry",filamentStitchMode:"Coral accretion",
+    filamentStitchAmount:92,filamentStitchSpeed:50,
+    filamentStitchLength:78,filamentStitchGlow:88},
+  {name:"Drowned velvet repair",filamentStitchMode:"Tidal darning",
+    filamentStitchAmount:91,filamentStitchSpeed:41,
+    filamentStitchLength:80,filamentStitchGlow:84},
+  {name:"Recursive organism stitches",filamentStitchMode:"Fractal infestation",
+    filamentStitchAmount:97,filamentStitchSpeed:77,
+    filamentStitchLength:35,filamentStitchGlow:95},
+  {name:"Unpick the universe",filamentStitchMode:"Reverse unpick",
+    filamentStitchAmount:93,filamentStitchSpeed:64,
+    filamentStitchLength:44,filamentStitchGlow:93},
+  {name:"Ricochet couture",filamentStitchMode:"Ricochet needle",
+    filamentStitchAmount:96,filamentStitchSpeed:87,
+    filamentStitchLength:32,filamentStitchGlow:99},
+  {name:"Crochet through a portal",filamentStitchMode:"Wormhole crochet",
+    filamentStitchAmount:94,filamentStitchSpeed:72,
+    filamentStitchLength:67,filamentStitchGlow:96}
 ];
 export function applyFilamentStitchPreset(state,name){
  const preset=filamentStitchPresets.find(p=>p.name===name);
@@ -646,12 +753,95 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     float breathing=.5+.5*cos(6.2831853*travel);
     visibleStitch=.25+.75*breathing;
     needle=pow(breathing,7.0);
-  }else{ // Complete fabric assembles from one edge and reverses smoothly.
+  }else if(filamentStitchMode==4){ // Original unfurl & resew, unchanged.
     float build=.5+.5*cos(sewClock*.78+phaseOffset*.25);
     float position=clamp(uv.x+.065*sin(uv.y*11.0+seedPhase*.18),0.0,1.0);
     float reveal=1.0-smoothstep(build-.055,build+.055,position);
     visibleStitch=.05+.95*reveal;
     needle=pow(max(0.0,1.0-abs(position-build)*11.0),3.0);
+  }else if(filamentStitchMode==5){ // HELIX HANDOFF: counter-moving carriers.
+    float strand=.5+.5*sin(localProgress*27.0-sewClock*2.2);
+    float crossing=.5+.5*sin(localProgress*27.0+sewClock*1.7+seedPhase);
+    float first=pow(strand,6.0);
+    float second=pow(crossing,6.0);
+    float baton=max(first,second);
+    visibleStitch=.11+.89*smoothstep(.05,.81,baton);
+    needle=pow(baton,2.0);
+  }else if(filamentStitchMode==6){ // KNOT CASCADE: local nodes fire sequentially.
+    float position=localProgress*14.0;
+    float node=floor(position);
+    float within=fract(position);
+    float activation=.5+.5*sin(sewClock*1.7-node*.84+seedPhase*.3);
+    float tied=pow(max(0.0,1.0-abs(within-.5)*3.2),3.0);
+    visibleStitch=.13+.87*(.16+.84*activation*(.28+.72*tied));
+    needle=pow(activation,12.0)*tied;
+  }else if(filamentStitchMode==7){ // SYNAPTIC FIRING: traveling spike and wake.
+    float position=fract(localProgress*.72-sewClock*.49);
+    float spike=exp(-pow((position-.19)*14.0,2.0));
+    float wake=exp(-pow((position-.42)*4.9,2.0));
+    visibleStitch=.09+.91*clamp(.11+wake*.49+spike*.82,0.0,1.0);
+    needle=spike;
+  }else if(filamentStitchMode==8){ // ALIEN MORSE: seeded short/long packets.
+    float symbol=localProgress*16.0-sewClock*.75;
+    float symbolId=floor(symbol);
+    float slot=fract(symbol);
+    float letter=hash(vec2(symbolId,seedPhase*3.7));
+    float duration=mix(.23,.72,step(.5,letter));
+    float envelope=smoothstep(.02,.11,slot)*
+      (1.0-smoothstep(duration,duration+.12,slot));
+    visibleStitch=.10+.90*envelope;
+    needle=pow(max(0.0,1.0-abs(slot-duration)*10.0),3.0)*
+      (.35+.65*envelope);
+  }else if(filamentStitchMode==9){ // CORAL ACCRETION: expanding reef growth rings.
+    vec2 colony=fract(q*.35+vec2(seedPhase*.037,phaseOffset*.019))-.5;
+    float radial=length(colony);
+    float mainRing=.5+.5*cos(radial*26.0-sewClock*1.07);
+    float tinyRing=.5+.5*cos(radial*51.0-sewClock*.61+seedPhase*.29);
+    float budding=mainRing*.78+tinyRing*.22;
+    visibleStitch=.11+.89*smoothstep(.27,.77,budding);
+    needle=pow(mainRing,11.0)*(.25+.75*tinyRing);
+  }else if(filamentStitchMode==10){ // TIDAL DARNING: interfering seam waves.
+    float tide=sin(q.x*.62+sewClock*.78+
+      sin(q.y*.86+seedPhase*.18)*.9)*
+      cos(q.y*.54-sewClock*.51);
+    float cross=.5+.5*sin(localProgress*18.0+sewClock*.97);
+    visibleStitch=.11+.89*smoothstep(-.17,.45,tide)*
+      (.52+.48*cross);
+    needle=pow(.5+.5*tide,8.0)*pow(cross,5.0);
+  }else if(filamentStitchMode==11){ // FRACTAL INFESTATION: nested growth fronts.
+    float coarse=sin(localProgress*6.0-sewClock*.42);
+    float middle=sin(localProgress*19.0+
+      sin(q.x*.8+seedPhase)*1.5-sewClock*1.08);
+    float fine=sin(localProgress*51.0+seedPhase*.7-sewClock*2.7);
+    float growth=.49*coarse+.33*middle+.18*fine;
+    visibleStitch=.09+.91*smoothstep(-.31,.42,growth);
+    needle=pow(max(0.0,1.0-abs(growth-.24)*3.9),4.0);
+  }else if(filamentStitchMode==12){ // REVERSE UNPICK: traveling stitch removal gap.
+    float position=fract(localProgress*.67+sewClock*.69);
+    float tear=smoothstep(.12,.24,position)*
+      (1.0-smoothstep(.49,.65,position));
+    visibleStitch=1.0-.94*tear;
+    needle=pow(max(0.0,1.0-abs(position-.5)*12.0),4.0);
+  }else if(filamentStitchMode==13){ // RICOCHET NEEDLE: ping-pong seam head.
+    float bounce=1.0-abs(2.0*fract(sewClock*.19+phaseOffset*.032)-1.0);
+    float position=fract(localProgress*.15+seedPhase*.027);
+    float gap=abs(position-bounce);
+    gap=min(gap,1.0-gap);
+    float radius=.055+span*.26;
+    visibleStitch=.09+.91*(1.0-smoothstep(radius,radius+.13,gap));
+    needle=pow(max(0.0,1.0-gap*18.0),3.0);
+  }else if(filamentStitchMode==14){ // WORMHOLE CROCHET: spiral intake of stitches.
+    float angle=atan(q.y,q.x);
+    float radial=log(1.0+length(q));
+    float spiral=angle*2.0+radial*14.0-sewClock*.96+seedPhase*.12;
+    float curl=.5+.5*cos(spiral);
+    float gate=.5+.5*cos(localProgress*11.0-sewClock*.49);
+    visibleStitch=.10+.90*smoothstep(.35,.73,curl)*
+      (.46+.54*gate);
+    needle=pow(curl,15.0)*pow(gate,5.0);
+  }else{ // Invalid stored mode: leave the drawn thread untouched.
+    visibleStitch=1.0;
+    needle=0.0;
   }
   // Apply to all three geometry masks, including crossbred contact. The
   // underlying art remains visible where the stitch is not yet "sewn".

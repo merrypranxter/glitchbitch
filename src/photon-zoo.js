@@ -1,4 +1,4 @@
-// PHOTON ZOO — eight living optical architectures, WebGL 1/2 compatible.
+// PHOTON ZOO — eighteen living optical architectures, WebGL 1/2 compatible.
 // No texture reads, framebuffers, external dependencies or expensive raymarch.
 // Shader only exists when the user turns this family on.
 export const photonSpecies = [
@@ -9,8 +9,83 @@ export const photonSpecies = [
   "Interference organisms",
   "Chromatic ribbons",
   "Op-art shockwaves",
-  "Starburst engines"
+  "Starburst engines",
+  "Caustic anemones",
+  "Opal gyroid ghosts",
+  "Gravitational lensworms",
+  "Lenticular chrysalis",
+  "Quasicrystal halos",
+  "Plasma jellybells",
+  "Moiré pollen",
+  "Spectral manta wings",
+  "Nerve pearls",
+  "Temporal diffraction comb"
 ];
+export const newPhotonSpecies=photonSpecies.slice(8);
+export const photonSpeciesFamilies=[
+  {name:"Original optical creatures",species:photonSpecies.slice(0,8)},
+  {name:"Living lenses & liquid caustics",species:[
+    "Caustic anemones","Gravitational lensworms","Lenticular chrysalis",
+    "Plasma jellybells"]},
+  {name:"Impossible crystal & light lattices",species:[
+    "Opal gyroid ghosts","Quasicrystal halos","Moiré pollen",
+    "Temporal diffraction comb"]},
+  {name:"Biological spectral organisms",species:[
+    "Spectral manta wings","Nerve pearls"]},
+];
+export const photonSpeciesDescriptions={
+  "Prism rosettes":"Rotating polar petals with moving opalescent interference rings.",
+  "Cathedral halos":"Concentric architectural arcs and mirrored light needles.",
+  "Liquid lenses":"Migrating rounded microlenses with thick wet refractive rims.",
+  "Diffraction flowers":"Radial floral fans grown from time-shifted diffraction.",
+  "Interference organisms":"Two moving wave sources generate emergent bright tissues.",
+  "Chromatic ribbons":"Folding metallic optical ribbons with moving specular ridges.",
+  "Op-art shockwaves":"Pressure ripples collide with drifting optical checker waves.",
+  "Starburst engines":"Spinning polygon mirrors with radiant needle beams.",
+  "Caustic anemones":"Tentacular light caustics flutter around undulating bright mouths.",
+  "Opal gyroid ghosts":"Gyroid-like zero surfaces drift as spectral crystalline membranes.",
+  "Gravitational lensworms":"Spiraling lens rings twist the surrounding diffraction field.",
+  "Lenticular chrysalis":"Migrating anisotropic lens cells open and close in optical waves.",
+  "Quasicrystal halos":"Fivefold nonperiodic light lattices revolve and beat in phase.",
+  "Plasma jellybells":"Pulsing bell-shaped refractions trailing electrified tentacles.",
+  "Moiré pollen":"Animated microscopic pollen cells built from crossed wave gratings.",
+  "Spectral manta wings":"Interfering wing membranes unfurl in traveling iridescent waves.",
+  "Nerve pearls":"Glassy bead chains connect through electrically rippling filaments.",
+  "Temporal diffraction comb":"Rotating slit gratings make spectral combs sweep through the field.",
+};
+// Source-only compile-time pruning avoids compiling eighteen optical
+// geometries when one is selected. Existing numerical IDs remain intact.
+export function specializePhotonGeometry(source,index){
+  if(!Number.isInteger(index)||index<0||index>=photonSpecies.length)return source;
+  const opener=i=>i===0?"  if(photonSpecies==0){":
+    "  }else if(photonSpecies=="+i+"){";
+  const starts=photonSpecies.map((_,i)=>source.indexOf(opener(i)));
+  if(starts.some((at,i)=>at<0||(i>0&&at<=starts[i-1])))return source;
+  const fallback=source.indexOf("  }else{ // Unsupported photon species",starts[17]);
+  const end=source.indexOf("  float chroma=fract(",fallback);
+  if(fallback<0||end<=fallback)return source;
+  const stop=index===17?fallback:starts[index+1];
+  const branch=source.slice(starts[index]+opener(index).length,stop);
+  return source.slice(0,starts[0])+"  if(photonSpecies=="+index+"){"+
+    branch+source.slice(fallback,end)+source.slice(end);
+}
+export function remixPhotonZoo(state,rng=Math.random,onlyNew=false){
+  const unit=()=>{
+    const n=Number(rng());return Number.isFinite(n)?
+      Math.min(1-Number.EPSILON,Math.max(0,n)):0;
+  };
+  const group=onlyNew?newPhotonSpecies:photonSpecies;
+  const candidates=group.filter(x=>x!==state.photonSpecies);
+  const pool=candidates.length?candidates:group;
+  return {...state,photonSpecies:pool[Math.floor(unit()*pool.length)],
+    photonAmount:Math.max(76,state.photonAmount||0),
+    photonScale:22+Math.floor(unit()*72),
+    photonDensity:48+Math.floor(unit()*52),
+    photonMotion:38+Math.floor(unit()*62),
+    photonRelief:62+Math.floor(unit()*38),
+    photonHue:Math.floor(unit()*101),
+    photonVariation:Math.floor(unit()*101)};
+}
 export const photonPresets = [
   {name:"Opal chapel",species:"Cathedral halos",photonAmount:82,photonScale:43,photonMotion:36,photonDensity:67,photonRelief:82,photonHue:26,photonVariation:19},
   {name:"Neon carnivorous flower",species:"Diffraction flowers",photonAmount:91,photonScale:58,photonMotion:70,photonDensity:76,photonRelief:69,photonHue:72,photonVariation:43},
@@ -19,7 +94,17 @@ export const photonPresets = [
   {name:"Interference creature",species:"Interference organisms",photonAmount:87,photonScale:67,photonMotion:68,photonDensity:77,photonRelief:78,photonHue:60,photonVariation:30},
   {name:"Psychedelic ribbon fossil",species:"Chromatic ribbons",photonAmount:92,photonScale:55,photonMotion:48,photonDensity:69,photonRelief:89,photonHue:36,photonVariation:52},
   {name:"Retinal detonation",species:"Op-art shockwaves",photonAmount:91,photonScale:63,photonMotion:72,photonDensity:92,photonRelief:62,photonHue:85,photonVariation:23},
-  {name:"Astral jewelry box",species:"Starburst engines",photonAmount:84,photonScale:48,photonMotion:55,photonDensity:71,photonRelief:96,photonHue:13,photonVariation:72}
+  {name:"Astral jewelry box",species:"Starburst engines",photonAmount:84,photonScale:48,photonMotion:55,photonDensity:71,photonRelief:96,photonHue:13,photonVariation:72},
+  {name:"Anemone caustic disco",species:"Caustic anemones",photonAmount:96,photonScale:67,photonMotion:84,photonDensity:85,photonRelief:93,photonHue:64,photonVariation:79},
+  {name:"Opaline impossible anatomy",species:"Opal gyroid ghosts",photonAmount:97,photonScale:60,photonMotion:71,photonDensity:90,photonRelief:98,photonHue:42,photonVariation:67},
+  {name:"Black-hole candyworms",species:"Gravitational lensworms",photonAmount:95,photonScale:54,photonMotion:85,photonDensity:78,photonRelief:91,photonHue:83,photonVariation:44},
+  {name:"Alien lens cocoon",species:"Lenticular chrysalis",photonAmount:94,photonScale:63,photonMotion:73,photonDensity:81,photonRelief:95,photonHue:58,photonVariation:69},
+  {name:"Quasicrystal angel engine",species:"Quasicrystal halos",photonAmount:97,photonScale:57,photonMotion:76,photonDensity:91,photonRelief:94,photonHue:87,photonVariation:54},
+  {name:"Bioluminescent plasma medusa",species:"Plasma jellybells",photonAmount:94,photonScale:63,photonMotion:90,photonDensity:78,photonRelief:95,photonHue:76,photonVariation:71},
+  {name:"Moiré spore cathedral",species:"Moiré pollen",photonAmount:97,photonScale:70,photonMotion:93,photonDensity:90,photonRelief:86,photonHue:36,photonVariation:62},
+  {name:"Spectral manta migration",species:"Spectral manta wings",photonAmount:96,photonScale:61,photonMotion:80,photonDensity:84,photonRelief:94,photonHue:56,photonVariation:78},
+  {name:"Electric opal necklace",species:"Nerve pearls",photonAmount:97,photonScale:65,photonMotion:86,photonDensity:89,photonRelief:98,photonHue:88,photonVariation:77},
+  {name:"Temporal diffraction witch",species:"Temporal diffraction comb",photonAmount:96,photonScale:64,photonMotion:88,photonDensity:92,photonRelief:89,photonHue:91,photonVariation:49}
 ];
 export const photonControlNames = ["photonAmount","photonScale","photonMotion","photonDensity","photonRelief","photonHue","photonVariation"];
 export function photonPresetState(state,presetName) {
@@ -34,7 +119,7 @@ export function nextPhotonSpecies(state,rng=Math.random){
   return {...state,photonSpecies:selection,photonAmount:Math.max(50,state.photonAmount||0)};
 }
 export const photonGLSL = `
-// Eight geometry-first luminous optical organisms. The base mathematical
+// Eighteen geometry-first luminous optical organisms. The base mathematical
 // field provides phase/pigment changes, while the new forms have own kinetics.
 uniform int photonSpecies;
 uniform float photonAmount,photonScale,photonMotion,photonDensity;
@@ -128,7 +213,7 @@ vec3 livingPhotonZoo(vec3 original,vec2 uv,vec2 p,float v){
     glint=pow(.5+.5*grid,9.0);
     phase=radius*.14+grid*.37;
     alpha=.14+.52*shape+.48*rim+.16*glint;
-  }else{ // Kinetic starburst engines: polygon mirrors and radial light needles.
+  }else if(photonSpecies==7){ // Original starburst engine, unchanged.
     float needles=8.0+floor(photonDensity*24.0);
     float beam=pow(abs(cos(aa*needles*.5+t*.16+phaseShift)),30.0);
     float ring=rr*(7.0+photonScale*11.0)-t*.73+sin(aa*6.0)*.8;
@@ -137,6 +222,142 @@ vec3 livingPhotonZoo(vec3 original,vec2 uv,vec2 p,float v){
     glint=pow(.5+.5*cos(aa*needles+t*.21),25.0);
     phase=aa*.44+rr*.71+t*.07;
     alpha=.15+.68*shape+.44*rim+.25*glint;
+  }else if(photonSpecies==8){ // CAUSTIC ANEMONES: breathing radial filaments.
+    float tentacles=8.0+floor(photonDensity*16.0);
+    float rWave=rr*(4.0+photonScale*7.0)-t*.59;
+    float fringe=sin(aa*tentacles+sin(rWave*.72+t*.47)*1.3+phaseShift);
+    float mouth=sin(rWave*1.6+fringe*2.1);
+    shape=pow(.5+.5*mouth,12.0)*(.36+.64*fringe*fringe);
+    rim=pow(.5+.5*cos(aa*tentacles*1.5-rWave*1.32),19.0);
+    glint=pow(.5+.5*sin(fringe*5.0-rWave+t*.83),13.0);
+    phase=aa*.76+rWave*.19+fringe*.45;
+    alpha=.10+.53*shape+.43*rim+.18*glint;
+  }else if(photonSpecies==9){ // OPAL GYROID GHOSTS: moving gyroid isosurfaces.
+    vec3 z=vec3(q*.84,phaseShift+t*.38);
+    z.xy+=.23*vec2(sin(z.y*.7+t*.3),cos(z.x*.75-t*.27));
+    float gy=sin(z.x)*cos(z.y)+sin(z.y)*cos(z.z)+sin(z.z)*cos(z.x);
+    float fine=sin(z.x*2.03)*cos(z.y*1.91)+
+      sin(z.y*2.03)*cos(z.z*1.91)+sin(z.z*2.03)*cos(z.x*1.91);
+    float iso=abs(gy+fine*.24);
+    shape=1.0-smoothstep(.03,.24,iso);
+    rim=pow(1.0-smoothstep(.02,.39,abs(gy)),2.4);
+    glint=pow(.5+.5*cos(fine*6.0-t*.8),10.0)*rim;
+    phase=gy*2.2+fine*.43+z.z*.35;
+    alpha=.09+.55*shape+.39*rim+.17*glint;
+  }else if(photonSpecies==10){ // GRAVITATIONAL LENSWORMS: spiraling lens rings.
+    vec2 core=vec2(.32*sin(t*.26),.25*cos(t*.31));
+    vec2 worm=q-core;
+    float wR=length(worm)+.04,wA=atan(worm.y,worm.x);
+    float bent=wA+1.5/(.37+wR)+sin(t*.48)*.18;
+    float orbit=wR*(10.0+photonDensity*14.0)-
+      bent*3.1-t*.87+phaseShift;
+    shape=pow(.5+.5*cos(orbit),15.0);
+    rim=pow(.5+.5*cos(bent*11.0-wR*7.0),20.0);
+    glint=pow(.5+.5*sin(wR*28.0+t*.8),16.0)*
+      exp(-abs(wR-.58)*1.7);
+    phase=bent*.5+orbit*.12;
+    alpha=.12+.51*shape+.43*rim+.21*glint;
+  }else if(photonSpecies==11){ // LENTICULAR CHRYSALIS: mobile ellipsoidal microlenses.
+    vec2 grid=q*(.47+photonDensity*.68);
+    vec2 id=floor(grid),u=fract(grid)-.5;
+    float h=hash(id+phaseShift);
+    float turn=t*(.19+.21*h)+h*6.2831853;
+    u=mat2(cos(turn),-sin(turn),sin(turn),cos(turn))*u;
+    u.x*=.7+.5*sin(t*.6+h*6.2);
+    float lens=length(u*vec2(1.2,.73));
+    float radius=.27+.1*sin(t*.39+h*7.0);
+    shape=pow(.5+.5*cos(lens*23.0-t*.77),12.0)*
+      (1.0-smoothstep(radius,radius+.13,lens));
+    rim=1.0-smoothstep(.02,.08,abs(lens-radius));
+    glint=pow(max(0.0,1.0-lens),16.0)*
+      (.5+.5*cos(turn*2.0));
+    phase=h+turn*.36+lens*2.0;
+    alpha=.10+.56*shape+.53*rim+.2*glint;
+  }else if(photonSpecies==12){ // QUASICRYSTAL HALOS: fivefold quasiperiodic interference.
+    float field=0.0,detail=0.0;
+    for(int k=0;k<5;k++){
+      float angle=float(k)*1.25663706+t*.07;
+      vec2 ray=vec2(cos(angle),sin(angle));
+      float w=dot(q,ray)*(3.2+photonDensity*9.4);
+      field+=cos(w+sin(t*.39+float(k)*1.37)*.73);
+      detail+=cos(w*1.61803-t*.31+float(k)*.73);
+    }
+    float lattice=field*.2,quasi=detail*.2;
+    shape=pow(.5+.5*lattice,11.0);
+    rim=pow(.5+.5*quasi,15.0);
+    glint=pow(.5+.5*cos(lattice*8.0+quasi*3.0-t*.9),13.0);
+    phase=lattice*1.7+quasi*.7+aa*.15;
+    alpha=.09+.6*shape+.39*rim+.14*glint;
+  }else if(photonSpecies==13){ // PLASMA JELLYBELLS: pulsating cups and soft tentacles.
+    vec2 cells=q*.35,id=floor(cells),u=fract(cells)-.5;
+    float h=hash(id+phaseShift);
+    u.x+=.08*sin(t*.44+u.y*3.0+h*7.0);
+    float bell=length(vec2(u.x, max(.0,u.y)*1.25));
+    float lip=.25+.045*sin(t*.71+h*6.283);
+    float cup=1.0-smoothstep(.025,.09,abs(bell-lip));
+    float tentacle=abs(sin(u.x*17.0+sin(u.y*11.0-t*.94)*1.7));
+    float under=1.0-smoothstep(-.09,.02,u.y);
+    shape=cup*(.7+.3*sin(t*.63+h*5.0));
+    rim=pow(.5+.5*cos(bell*28.0-t*.82),14.0)*
+      (1.0-smoothstep(.3,.51,bell));
+    glint=pow(1.0-tentacle,9.0)*under;
+    phase=bell*4.0+u.y*.8+h+t*.13;
+    alpha=.1+.48*shape+.39*rim+.21*glint;
+  }else if(photonSpecies==14){ // MOIRÉ POLLEN: rotating paired wave grating cells.
+    vec2 cells=q*(.52+photonDensity*.38),id=floor(cells);
+    vec2 u=fract(cells)-.5;
+    float h=hash(id+phaseShift),turn=t*.27+h*6.283;
+    vec2 d1=vec2(cos(turn),sin(turn));
+    vec2 d2=vec2(cos(turn+1.53+.08*sin(t*.54)),
+      sin(turn+1.53+.08*sin(t*.54)));
+    float a=sin(dot(u,d1)*35.0-t*.82);
+    float b=sin(dot(u,d2)*35.2+t*.59);
+    float cell=1.0-smoothstep(.32,.69,length(u));
+    shape=pow(.5+.5*a*b,8.0)*cell;
+    rim=pow(.5+.5*cos((a-b)*7.0),13.0)*cell;
+    glint=pow(.5+.5*sin((a+b)*5.0+t*.7),11.0)*cell;
+    phase=h+a*.3+b*.47+turn*.2;
+    alpha=.08+.56*shape+.38*rim+.19*glint;
+  }else if(photonSpecies==15){ // SPECTRAL MANTA WINGS: interference membranes.
+    vec2 wings=q*(.68+photonDensity*.2);
+    float pulse=.37*sin(wings.x*1.13-t*.43+phaseShift);
+    float span=abs(wings.x)+.45*abs(wings.y-pulse);
+    float rib=sin(span*(8.0+photonScale*9.0)+t*.76);
+    float membrane=sin(wings.y*3.8-sin(wings.x*1.2-t*.54)*2.1);
+    shape=pow(.5+.5*rib,12.0)*(.5+.5*membrane*membrane);
+    rim=pow(.5+.5*cos(wings.x*4.0+wings.y*3.0-t*.36),18.0);
+    glint=pow(.5+.5*cos(wings.x*2.1-wings.y*2.3+t*.82),14.0);
+    phase=span*.67+membrane*.9+pulse*.7;
+    alpha=.12+.57*shape+.31*rim+.17*glint;
+  }else if(photonSpecies==16){ // NERVE PEARLS: opaline nodes on moving axons.
+    vec2 chain=q*(.75+photonDensity*.41);
+    float wire=sin(chain.y*2.3+sin(chain.x*.8+t*.4)*1.4);
+    float cY=chain.y+sin(chain.x*1.37-t*.57)*.25;
+    vec2 nearNode=vec2(fract(chain.x*.76)-.5,fract(cY*.76)-.5);
+    float bead=length(nearNode);
+    float spark=pow(.5+.5*cos(chain.x*6.7-t*2.1+phaseShift),15.0);
+    shape=pow(.5+.5*cos(bead*34.0-t*.57),12.0)*
+      (1.0-smoothstep(.23,.37,bead));
+    rim=1.0-smoothstep(.025,.095,abs(bead-.26));
+    glint=pow(.5+.5*wire,12.0)*spark+
+      pow(max(0.0,1.0-bead),15.0)*.5;
+    phase=bead*5.0+chain.x*.25+t*.1;
+    alpha=.08+.43*shape+.47*rim+.25*glint;
+  }else if(photonSpecies==17){ // TEMPORAL DIFFRACTION COMB: slit interference.
+    float theta=t*.18+phaseShift*.3;
+    vec2 axis=vec2(cos(theta),sin(theta));
+    float u=dot(q,axis),w=dot(q,vec2(-axis.y,axis.x));
+    float slits=sin(u*(13.0+photonDensity*16.0)-t*.7);
+    float interference=cos(w*(6.0+photonScale*14.0)+
+      sin(u*2.4-t*.47)*3.0);
+    float comb=sin(u*29.0-w*3.3+t*1.2);
+    shape=pow(.5+.5*slits*interference,14.0);
+    rim=pow(.5+.5*comb,17.0);
+    glint=pow(.5+.5*cos((u+w)*9.0-t*1.6),18.0);
+    phase=u*.48+w*.23+interference*.46;
+    alpha=.09+.54*shape+.4*rim+.2*glint;
+  }else{ // Unsupported photon species: keep the original art unmodified.
+    return original;
   }
   float chroma=fract(photonHue*.82+phase*.25+ct*.021+phaseShift*.065+v*.09);
   vec3 pigment=palette(chroma);

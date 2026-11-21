@@ -33,7 +33,9 @@ import {
 } from "lucide-react";
 import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, compositionModes, backdropModes, microModes, substanceModes, wiggleModes, randomize } from "../data";
 import { Parameter, Range, Toggle, Switch, Select, Section, Segmented, Pill, useReveal } from "./Controls";
-import { photonSpecies, photonPresets, photonPresetState, nextPhotonSpecies } from "../photon-zoo.js";
+import { photonSpecies, photonSpeciesFamilies, photonSpeciesDescriptions,
+  photonPresets, photonPresetState, nextPhotonSpecies,
+  remixPhotonZoo } from "../photon-zoo.js";
 import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   xenoVascularSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
@@ -1757,10 +1759,17 @@ export function EffectsInspector({ history, onTool, tool }) {
       <p className="control-note">Presence at 0 leaves existing art untouched. Crossbreed at 0 runs only the original thread shader. Both patterns use the normal PNG/GIF/MP4 renderer.</p>
     </>,
     photon: <>
-      <Select label="Species" value={s.photonSpecies}
-        onChange={v=>history.change(x=>({...x,photonSpecies:v,photonAmount:Math.max(52,x.photonAmount)}))}>
-        {photonSpecies.map(name=><option key={name} value={name}>{name}</option>)}
+      <p className="control-note">Eighteen genuinely animated optical organisms—living caustics, gyroid ghosts, lensworms, quasicrystals and the original eight. Each has distinct evolving geometry, not just a recolored preset.</p>
+      <Select label="Optical creature" value={s.photonSpecies}
+        onChange={v=>history.change(x=>({...x,photonSpecies:v,
+          photonAmount:Math.max(62,x.photonAmount),
+          photonMotion:Math.max(32,x.photonMotion)}))}>
+        {photonSpeciesFamilies.map(family=><optgroup key={family.name}
+          label={family.name}>
+          {family.species.map(name=><option key={name} value={name}>{name}</option>)}
+        </optgroup>)}
       </Select>
+      <p className="control-note">{photonSpeciesDescriptions[s.photonSpecies]}</p>
       <Parameter label="Presence" name="photonAmount" history={history}/>
       <Parameter label="Size" name="photonScale" history={history}/>
       <Parameter label="Fine detail" name="photonDensity" history={history}/>
@@ -1780,6 +1789,14 @@ export function EffectsInspector({ history, onTool, tool }) {
       <div className="pane-actions">
         <button type="button" className="button secondary" onClick={()=>history.change(x=>nextPhotonSpecies(x))}>
           <Dices size={13}/> New creature, keep art
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>remixPhotonZoo(x))}>
+          <Shuffle size={13}/> Shuffle optical creatures
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>remixPhotonZoo(x,Math.random,true))}>
+          <Dices size={13}/> Shuffle new weird optics
         </button>
         <button type="button" className="button secondary"
           onClick={()=>history.change(x=>({...x,photonVariation:(x.photonVariation+19+Math.random()*64)%100}))}>

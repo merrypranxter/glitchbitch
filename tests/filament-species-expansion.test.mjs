@@ -6,6 +6,7 @@ import {
  filamentSpecies,filamentSpeciesFamilies,xenoVascularSpecies,
  filamentPresets,filamentHybridPresets,filamentGLSL,
  remixXenoVascular,applyFilamentPreset,applyFilamentHybrid,
+ specializeFilamentGeometry,
  nextFilamentSpecies,breedFilaments
 } from "../src/filament-forge.js";
 import {findControls} from "../src/ui-index.js";
@@ -109,4 +110,24 @@ test("family controls and Find discover new species on mobile without extra shad
  assert.ok(renderer.includes('filamentSpecies.indexOf(s.filamentSpecies)'));
  assert.ok(renderer.includes('filamentSpecies.indexOf(s.filamentSecondSpecies)'));
  assert.ok(renderer.includes('filamentUnavailable=true'));
+});
+
+test("Safari shaders include only the selected species, not sixteen at once",()=>{
+ const one=specializeFilamentGeometry(filamentGLSL,5);
+ assert.ok(one.includes("if(species==5){"));
+ assert.ok(!one.includes("species==0"));
+ assert.ok(!one.includes("species==6"));
+ assert.ok(one.includes("vec3 livingFilamentForge"));
+ assert.ok(one.length<filamentGLSL.length);
+ const both=specializeFilamentGeometry(filamentGLSL,6,11);
+ assert.ok(both.includes("if(species==6){"));
+ assert.ok(both.includes("}else if(species==11){"));
+ assert.ok(!both.includes("species==5"));
+ assert.equal([...both].reduce((n,c)=>n+(c==="{")-(c==="}"),0),0);
+ const same=specializeFilamentGeometry(filamentGLSL,8,8);
+ assert.equal((same.match(/if\(species==8\)/g)||[]).length,1);
+ assert.equal(specializeFilamentGeometry(filamentGLSL,-1),filamentGLSL);
+ const renderer=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
+ assert.ok(renderer.includes("specializeFilamentGeometry(rawFilament"));
+ assert.ok(renderer.includes("const rawFilament=withFilament"));
 });

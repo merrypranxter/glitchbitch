@@ -34,6 +34,32 @@ export const filamentSpeciesFamilies=[
     "Alien lattice","Alien scriptwork","Glyph swarm","Xeno filament"]},
 ];
 export const xenoVascularSpecies=filamentSpecies.slice(6);
+
+// Ship just the selected structural branches to the iPhone GPU.
+// Even in a hybrid, no more than two species paths are needed.
+export function specializeFilamentGeometry(source,first,second=null){
+  const ids=[first,...(second==null?[]:[second])];
+  if(!ids.length||ids.some(n=>!Number.isInteger(n)||n<0||n>=filamentSpecies.length))
+    return source;
+  const chosen=[...new Set(ids)].sort((a,b)=>a-b);
+  const opening=id=>id===0?"  if(species==0){":
+    "  }else if(species=="+id+"){";
+  const starts=filamentSpecies.map((_,id)=>source.indexOf(opening(id)));
+  if(starts.some((pos,id)=>pos<0||(id>0&&pos<=starts[id-1])))return source;
+  const fallback=source.indexOf(
+    "  }else{\n    // The branch is intentionally unreachable",starts[starts.length-1]);
+  const geometryEnd=source.indexOf("  // Signed-distance-like threads:",fallback);
+  if(fallback<0||geometryEnd<=fallback)return source;
+  const branches=chosen.map((id,k)=>{
+    const end=id===starts.length-1?fallback:starts[id+1];
+    const body=source.slice(starts[id]+opening(id).length,end);
+    return (k===0?"  if(species=="+id+"){":
+      "  }else if(species=="+id+"){")+body;
+  }).join("");
+  return source.slice(0,starts[0])+branches+
+    source.slice(fallback,geometryEnd)+source.slice(geometryEnd);
+}
+
 export function remixXenoVascular(state,rng=Math.random){
   const safe=()=>{const x=Number(rng());return Number.isFinite(x)?
     Math.max(0,Math.min(1-Number.EPSILON,x)):0;};

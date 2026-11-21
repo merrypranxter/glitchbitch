@@ -81,7 +81,8 @@ const shift=(energy,from,to,amount)=>{
 };
 function feedOnce(s){
   const seeds=s.habitatStamps||[],round=s.foodWebRound||0;
-  if(round>=4095||(s.foodWebPressure||0)<=0)return s;
+  if(round>=4095||(s.foodWebAmount||0)<=0||
+     (s.foodWebPressure||0)<=0)return s;
   const links=foodWebLinks(s);
   if(!links.length)return s;
   const before=seeds.map(m=>baseline(s,m));

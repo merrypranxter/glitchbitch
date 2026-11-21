@@ -14,6 +14,7 @@ import {shuffleSelection} from "./selection-chamber.js";
 import {shuffleApocalypse} from "./apocalypse-clock.js";
 import {archiveFossils,shuffleFossils} from "./fossil-record.js";
 import { MAX_HABITAT_STAMPS } from "./habitat-painter.js";
+import {branchSpecies,speciationModes} from "./speciation-lab.js";
 
 const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
 const unit=rng=>{
@@ -183,6 +184,14 @@ const spawnFossilMemory=(world,rng,opts={})=>{
   }
   return {...world,fossilMode:"Dormant",fossilAmount:0,fossilRecords:[]};
 };
+// Speciation joins weighted ecosystem/Full Weird/Surprise shuffles instead
+// of requiring hundreds of manual clicks. Preserve the no-dual GPU choice.
+const maybeSpeciate=(state,rng,opts={})=>{
+  if(!state.habitatStamps?.length||state.geneAmount<=0||
+    (opts.allowDual===false&&state.habitatStamps.some(m=>m.parent===1))||
+    !roll(.43,rng))return state;
+  return branchSpecies(state,choose(speciationModes,rng),range(35,100,rng));
+};
 export function shuffleEcosystem(state,rng=Math.random,opts={}){
   const s={...state};
   const dual=opts.allowDual!==false&&roll(opts.dualChance??.63,rng);
@@ -296,16 +305,16 @@ export function shuffleEcosystem(state,rng=Math.random,opts={}){
     const genePool=seedGenePool(settled,rng);
     if(genePool.substrateAmount>0 &&
        genePool.substrateMode!=="Bare canvas"&&roll(.66,rng)){
-      return spawnFossilMemory(shuffleSelection(genePool,rng),rng,opts);
+      return maybeSpeciate(spawnFossilMemory(shuffleSelection(genePool,rng),rng,opts),rng,opts);
     }
     genePool.selectionMode="Dormant";
     genePool.selectionPressure=0;
-    return spawnFossilMemory(genePool,rng,opts);
+    return maybeSpeciate(spawnFossilMemory(genePool,rng,opts),rng,opts);
   }
   settled.geneAmount=0;
   settled.selectionMode="Dormant";
   settled.selectionPressure=0;
-  return spawnFossilMemory(settled,rng,opts);
+  return spawnFossilMemory(settled,rng,opts); // DNA is off: no hidden speciation
 }
 // Old shader systems can be very costly together on mobile Safari. Explicit
 // freakshow randomization samples a capped set, never turns ALL on at once.

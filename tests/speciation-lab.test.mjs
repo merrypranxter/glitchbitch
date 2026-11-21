@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {initial,validateRecipe,recipeDocument,parseDocument} from "../src/data.js";
 import {evolveSporeGeneration} from "../src/spore-dynasties.js";
 import {branchSpecies,contestTerritory,lineageCensus,speciationModes} from "../src/speciation-lab.js";
+import {shuffleEcosystem} from "../src/ecosystem-randomizer.js";
 const original={...initial,seed:741,sporeGeneration:2,sporeFertility:100,geneAmount:90,
   atmoAmount:85,atmoBAmount:85,atmoMaskMode:"Painted colonies",
   atmoBMaskMode:"Painted colonies",habitatStamps:[
@@ -48,4 +49,12 @@ test("cap, empty state, and invalid clade are safely handled",()=>{
   assert.equal(branchSpecies(original,"invalid"),original);
   assert.throws(()=>validateRecipe({...original,habitatStamps:[
     {...original.habitatStamps[0],clade:"evil<script>"},original.habitatStamps[1]]}),/clade/);
+});
+test("weighted ecosystem shuffle can make saved clades without destroying its recipe",()=>{
+  const s=shuffleEcosystem(original,()=>.1,{allowDual:true,allowHeavy:false});
+  assert.ok(s.habitatStamps.length<=16);
+  assert.ok(s.habitatStamps.some(m=>m.clade));
+  assert.deepEqual(validateRecipe(s),s);
+  const single=shuffleEcosystem(original,()=>.1,{allowDual:false,allowHeavy:false});
+  assert.equal(single.atmoBAmount,0);
 });

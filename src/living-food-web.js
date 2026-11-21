@@ -170,7 +170,9 @@ vec3 shadeFoodWeb(vec3 col,vec2 uv){
     vec2 d=b-a;
     float distance2=max(dot(d,d),.00001);
     float t=clamp(dot(p-a,d)/distance2,0.,1.);
-    float radial=length(p-a-d*t);
+    vec2 normal=vec2(-d.y,d.x)*inversesqrt(distance2);
+    float bend=.008*sin(t*15.+time*.22+float(i)*1.31)*sin(t*PI);
+    float radial=length(p-a-d*t-normal*bend);
     float filament=exp(-pow(radial/beamWidth,2.));
     float aura=exp(-pow(radial/(beamWidth*4.),2.));
     float speed=.4+foodWebPulse*2.4;

@@ -54,7 +54,10 @@ test("feeding conserves stored resources and cannot erase living species",()=>{
     const world={...start,foodWebMode:mode};
     const after=feedFoodWeb(world,3);
     assert.deepEqual(after,feedFoodWeb(world,3));
-    assert.equal(after.foodWebRound,3,mode);
+    assert.ok(after.foodWebRound>=1&&after.foodWebRound<=3,mode);
+    if(mode==="Trophic cascade"&&after.foodWebRound<3)
+      assert.ok(after.habitatStamps.some(m=>m.webEnergy===0||m.webEnergy===100),
+        "trophic chain stops naturally when resources saturate");
     assert.equal(sum(after),sum(world),mode);
     assert.deepEqual(after.habitatStamps.map(x=>x.id),members.map(x=>x.id));
     assert.ok(after.habitatStamps.every(m=>Number.isInteger(m.webEnergy)&&

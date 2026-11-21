@@ -91,7 +91,8 @@ export function inheritColonyGene(state,parent,index,site){
     String(state.sporeGeneration||0)+":"+String(state.seed||0));
   inherited+=(roll*2-1)*(3+mutation*43);
   return {gene:clamp(Math.round(inherited),0,100),
-    generation,ancestor:parent.id,...(mate?{mate}:{})};
+    generation,ancestor:parent.id,...(mate?{mate}:{}),
+    ...(parent.clade?{clade:parent.clade}:{})};
 }
 export function applyGenePreset(state,name,rng=Math.random){
   const p=genePresets.find(x=>x.name===name);

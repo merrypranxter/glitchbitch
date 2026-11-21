@@ -79,6 +79,35 @@ export function specializeFilamentGeometry(source,first,second=null){
     source.slice(fallback,geometryEnd)+source.slice(geometryEnd);
 }
 
+/** Keep iPhone shaders lean: compile only the actually dressed fiber(s).
+ * The Original thread (index 0) does not require a material branch.
+ * Works for solo and hybrid fabrics without introducing new uniforms.
+ */
+export function specializeFilamentMaterials(source,first,second=null){
+  if(first==null||!Number.isInteger(first)||first<0||
+    first>=filamentMaterials.length)return source;
+  const ids=[first,...(second==null?[]:[second])];
+  if(ids.some(i=>!Number.isInteger(i)||i<0||i>=filamentMaterials.length))
+    return source;
+  const opener=n=>n===1?"  if(fiberMaterial==1){":
+    "  }else if(fiberMaterial=="+n+"){";
+  const starts=filamentMaterials.slice(1).map((_,k)=>source.indexOf(opener(k+1)));
+  if(starts.some((pos,n)=>pos<0||(n>0&&pos<=starts[n-1])))return source;
+  const end=source.indexOf("  // Edge nap is geometric:",starts[starts.length-1]);
+  if(end<0)return source;
+  const close=source.lastIndexOf("  }\n",end);
+  if(close<starts[starts.length-1])return source;
+  const chosen=[...new Set(ids.filter(i=>i>0))].sort((a,b)=>a-b);
+  const replacements=chosen.map((id,k)=>{
+    const endOfBranch=id===filamentMaterials.length-1?close:starts[id];
+    const body=source.slice(starts[id-1]+opener(id).length,endOfBranch);
+    return (k===0?"  if(fiberMaterial=="+id+"){":
+      "  }else if(fiberMaterial=="+id+"){")+body;
+  }).join("");
+  return source.slice(0,starts[0])+replacements+
+    (chosen.length?"  }\n":"")+source.slice(end);
+}
+
 export function remixXenoVascular(state,rng=Math.random){
   const safe=()=>{const x=Number(rng());return Number.isFinite(x)?
     Math.max(0,Math.min(1-Number.EPSILON,x)):0;};

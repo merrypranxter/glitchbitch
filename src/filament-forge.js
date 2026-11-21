@@ -1466,6 +1466,9 @@ uniform int filamentAdornmentMode,filamentSecondAdornmentMode;
 uniform int filamentMorphMode;
 uniform int filamentContagionMode;
 uniform int filamentNeuralMode;
+uniform int filamentPlasticMode;
+uniform float filamentPlasticAmount,filamentPlasticRate;
+uniform float filamentPlasticInhibition,filamentPlasticRetention,filamentPlasticGlow;
 uniform float filamentNeuralAmount,filamentNeuralSpeed;
 uniform float filamentNeuralCoupling,filamentNeuralThreshold,filamentNeuralGlow;
 uniform float filamentContagionAmount,filamentContagionReach;
@@ -2112,6 +2115,55 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   // Real contact is never approximated by screen neighbors.
   neuralSignal=clamp(neuralSignal+
     contactNeural*filamentNeuralCoupling*.28,0.0,1.0);
+
+#ifdef FILAMENT_PLASTICITY
+  // All "adaptation" is a deterministic function of current fiber geometry,
+  // real palette stimulus, incoming crossing signal and the export clock.
+  // This is NOT persistent learned neural state.
+  float plasticClock=time*(.13+filamentPlasticRate*1.47)+phaseOffset*.17;
+  float plasticPhase=axonPhase*(.74+filamentPlasticRetention*2.6);
+  float coincidence=clamp(neuralSignal*stimulusGate,0.0,1.0);
+  float donorCoincidence=clamp(contactNeural*neuralSignal,0.0,1.0);
+  float plasticDelta=0.0;
+  if(filamentPlasticMode==1){ // HEBBIAN BLOOM: synchronized responses brighten.
+    float localPair=.5+.5*cos(plasticPhase*1.7-plasticClock);
+    plasticDelta=(.32+.61*coincidence)*pow(localPair,3.0)+
+      donorCoincidence*.55;
+  }else if(filamentPlasticMode==2){ // INHIBITORY LACE: negative gain at junctions.
+    float brake=.5+.5*sin(plasticPhase*2.1-plasticClock*.82);
+    plasticDelta=-(.27+.69*filamentPlasticInhibition)*
+      brake*(.62+.38*contactNeural);
+  }else if(filamentPlasticMode==3){ // ECHO SYNAPSES: delayed-shaped twin pulse.
+    float phaseDelay=filamentPlasticRetention*5.4+.4;
+    float echo=pow(.5+.5*cos(plasticPhase*2.3-plasticClock*1.3+phaseDelay),5.0);
+    plasticDelta=echo*(.36+.39*coincidence)-
+      neuralSignal*filamentPlasticInhibition*.16;
+  }else if(filamentPlasticMode==4){ // RESONANT CHOIR: entrained cluster phases.
+    vec2 tile=floor(q*(.12+.25*filamentPlasticRetention));
+    float cluster=fract(sin(dot(tile,vec2(13.7,79.3))+seedPhase)*43758.5453);
+    float choir=.5+.5*cos(plasticClock*1.2+cluster*2.9-
+      plasticPhase*.33);
+    plasticDelta=choir*(.36+.4*filamentPlasticRetention)+
+      donorCoincidence*.61;
+  }else if(filamentPlasticMode==5){ // PRUNING WAVE: weaken less-coincident links.
+    float prune=.5+.5*cos(plasticPhase*.83-plasticClock*.66);
+    float inactivity=1.0-coincidence;
+    plasticDelta=-(.25+.69*filamentPlasticInhibition)*prune*inactivity+
+      donorCoincidence*.29;
+  }else if(filamentPlasticMode==6){ // DREAM CONSOLIDATION: slow waves of recovery.
+    float dream=.5+.5*cos(plasticClock*.24+plasticPhase*.42+
+      sin(q.y*.2+seedPhase*.11));
+    float recover=.5+.5*sin(plasticClock*.19-plasticPhase*.39);
+    plasticDelta=dream*(.27+.4*filamentPlasticRetention)*
+      (.55+.45*recover)-neuralSignal*filamentPlasticInhibition*.17;
+  }
+  // Apply analytic synaptic gain to the ACTUAL existing neural signal,
+  // never to unstitched background or a disconnected sticker layer.
+  float preplastic=neuralSignal;
+  neuralSignal=mix(preplastic,clamp(preplastic+plasticDelta,0.0,1.0),
+    filamentPlasticAmount);
+  float plasticEdge=clamp(abs(neuralSignal-preplastic)*2.3,0.0,1.0);
+#endif
   float nerveStrength=filamentNeuralAmount*neuralSignal;
   outgoingNeural=clamp(nerveStrength*core,0.0,1.0);
   outgoingLuma=colorLuma;
@@ -2433,6 +2485,11 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     nerveResponse*(.2+.38*filamentNeuralCoupling));
   thread+=mix(nerveChromatic,vec3(.95,.97,1.0),.56)*
     nerveResponse*nerveFlash*filamentNeuralGlow*.78;
+#ifdef FILAMENT_PLASTICITY
+  // Accentuate changing synaptic weights on real sewn cores.
+  thread+=mix(ink,glimmer,.62)*core*filamentPlasticAmount*
+    filamentPlasticGlow*plasticEdge*.42;
+#endif
 #endif
   float amount=filamentAmount;
   vec3 result=mix(background,background*.48+thread*1.06,core*amount*.91);

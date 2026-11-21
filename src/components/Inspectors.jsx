@@ -155,7 +155,7 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
       >
         <div className="engine-grid">
           {engineInfo.map((e, i) => {
-            const Icon = icons[i];
+            const Icon = icons[i] ?? Orbit;
             return (
               <button
                 key={i}

@@ -267,6 +267,12 @@ export const filamentStitchModes=[
   "Reverse unpick",
   "Ricochet needle",
   "Wormhole crochet",
+  "Parasite hem",
+  "Oracle tacking",
+  "Spasm tatting",
+  "Hologram darning",
+  "Ritual overlock",
+  "Witch-knot relay"
 ];
 // Human-facing organization only; saved names and numerical shader IDs
 // for the original five motions are preserved exactly.
@@ -278,7 +284,22 @@ export const filamentStitchFamilies=[
     "Knot cascade","Coral accretion","Tidal darning"]},
   {name:"Kinetic sewing machines",modes:[
     "Helix handoff","Reverse unpick","Ricochet needle"]},
+  {name:"Funky ritual & parasite stitching",modes:filamentStitchModes.slice(15)},
 ];
+export const ritualFilamentStitchModes=filamentStitchModes.slice(15);
+export function remixRitualStitches(state,rng=Math.random){
+  const unit=()=>{const n=Number(rng());return Number.isFinite(n)?
+    Math.min(1-Number.EPSILON,Math.max(0,n)):0;};
+  const options=ritualFilamentStitchModes.filter(x=>x!==state.filamentStitchMode);
+  const pool=options.length?options:ritualFilamentStitchModes;
+  return {...state,filamentStitchMode:pool[Math.floor(unit()*pool.length)],
+    filamentAmount:Math.max(65,state.filamentAmount||0),
+    filamentStitchAmount:Math.max(83,state.filamentStitchAmount||0),
+    filamentStitchSpeed:40+Math.floor(unit()*59),
+    filamentStitchLength:26+Math.floor(unit()*73),
+    filamentStitchGlow:67+Math.floor(unit()*32)};
+}
+
 export const newFilamentStitchModes=filamentStitchModes.slice(5);
 export const filamentStitchDescriptions={
   "Needle chase":"A bright needle tip advances along a short traveling thread.",
@@ -296,6 +317,12 @@ export const filamentStitchDescriptions={
   "Reverse unpick":"A migrating repair gap unravels and stitches itself back.",
   "Ricochet needle":"One needle races back and forth, bouncing at seam ends.",
   "Wormhole crochet":"Logarithmic spiral sutures travel around impossible loops.",
+  "Parasite hem":"A crawling invasion front branches and overtakes the sewn edge.",
+  "Oracle tacking":"Ritual seed-coded knots blink in rotating radial sequences.",
+  "Spasm tatting":"Nervous thread pulses twitch between irregularly spaced loops.",
+  "Hologram darning":"Two phase-shifted virtual stitch grids alternate in shimmering scans.",
+  "Ritual overlock":"Countermoving serpentine edge stitches overtake the yarn.",
+  "Witch-knot relay":"Sequential knotted signal packets pass through a cyclic chain.",
 };
 export function remixFilamentStitchMotion(state,rng=Math.random,onlyNew=false){
   const unit=()=>{
@@ -384,7 +411,13 @@ export const filamentStitchPresets=[
     filamentStitchLength:32,filamentStitchGlow:99},
   {name:"Crochet through a portal",filamentStitchMode:"Wormhole crochet",
     filamentStitchAmount:94,filamentStitchSpeed:72,
-    filamentStitchLength:67,filamentStitchGlow:96}
+    filamentStitchLength:67,filamentStitchGlow:96},
+  {"name":"Invasive Hem Organism","filamentStitchMode":"Parasite hem","filamentStitchAmount":92,"filamentStitchSpeed":62,"filamentStitchLength":38,"filamentStitchGlow":82},
+  {"name":"Prophet's Needle","filamentStitchMode":"Oracle tacking","filamentStitchAmount":94,"filamentStitchSpeed":69,"filamentStitchLength":49,"filamentStitchGlow":89},
+  {"name":"Spasm Lace Possession","filamentStitchMode":"Spasm tatting","filamentStitchAmount":96,"filamentStitchSpeed":76,"filamentStitchLength":60,"filamentStitchGlow":96},
+  {"name":"Darning a Hologram","filamentStitchMode":"Hologram darning","filamentStitchAmount":92,"filamentStitchSpeed":83,"filamentStitchLength":71,"filamentStitchGlow":85},
+  {"name":"Ritual Seam Summons","filamentStitchMode":"Ritual overlock","filamentStitchAmount":94,"filamentStitchSpeed":90,"filamentStitchLength":82,"filamentStitchGlow":92},
+  {"name":"Witch Knot Transmission","filamentStitchMode":"Witch-knot relay","filamentStitchAmount":96,"filamentStitchSpeed":63,"filamentStitchLength":93,"filamentStitchGlow":99}
 ];
 export function applyFilamentStitchPreset(state,name){
  const preset=filamentStitchPresets.find(p=>p.name===name);
@@ -897,6 +930,54 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     visibleStitch=.10+.90*smoothstep(.35,.73,curl)*
       (.46+.54*gate);
     needle=pow(curl,15.0)*pow(gate,5.0);
+  }else if(filamentStitchMode==15){ // PARASITE HEM: irregular invasive fronts.
+    float tendril=sin(localProgress*8.1+
+      sin(q.y*1.4+sewClock*.48)*2.0);
+    float invasion=fract(localProgress*.64-sewClock*.42+
+      tendril*.11+seedPhase*.017);
+    float invasionMask=1.0-smoothstep(.21,.39,invasion);
+    float capillary=pow(.5+.5*cos(tendril*8.4-sewClock*.91),7.0);
+    visibleStitch=.12+.88*clamp(invasionMask*(.42+.58*capillary),0.0,1.0);
+    needle=pow(max(0.0,1.0-abs(invasion-.26)*12.0),5.0);
+  }else if(filamentStitchMode==16){ // ORACLE TACKING: seeded order of sewn symbols.
+    float index=floor(localProgress*17.0);
+    float symbol=hash(vec2(index,seedPhase));
+    float slot=fract(localProgress*17.0);
+    float onset=fract(sewClock*.24+symbol);
+    float oracle=pow(max(0.0,.5+.5*cos((slot-onset)*6.2831853)),13.0);
+    float gate=step(.31,symbol);
+    visibleStitch=.14+.86*oracle*(.26+.74*gate);
+    needle=pow(oracle,2.0)*gate;
+  }else if(filamentStitchMode==17){ // SPASM TATTING: mixed frequency nervous impulses.
+    float spasms=sin(localProgress*21.0-sewClock*1.9+
+      sin(localProgress*7.0+seedPhase)*2.7);
+    float shaking=sin(localProgress*47.0+sewClock*3.3+
+      sin(q.x*3.2+sewClock*.73));
+    float twitch=.57*spasms+.43*shaking;
+    visibleStitch=.08+.92*smoothstep(-.25,.62,twitch);
+    needle=pow(.5+.5*twitch,11.0);
+  }else if(filamentStitchMode==18){ // HOLOGRAM DARNING: phase-shifted spectral mesh.
+    float lightA=sin(localProgress*16.0-sewClock*.64+q.y*.41);
+    float lightB=cos(localProgress*18.0+sewClock*.79+q.x*.31);
+    float scan=sin((q.x-q.y)*4.3-sewClock*.36+seedPhase*.18);
+    float hologram=.44*lightA+.39*lightB+.17*scan;
+    visibleStitch=.09+.91*smoothstep(-.43,.55,hologram);
+    needle=pow(.5+.5*cos((lightA-lightB)*4.3+sewClock),11.0);
+  }else if(filamentStitchMode==19){ // RITUAL OVERLOCK: serpentine over-under edge.
+    float edgeWave=sin(localProgress*11.0+sewClock*.84);
+    float braid=cos(localProgress*29.0-sewClock*1.31+
+      sin(q.y*.84+seedPhase)*.63);
+    float seam=.49*edgeWave+.51*braid;
+    visibleStitch=.15+.85*smoothstep(-.3,.41,seam);
+    needle=pow(.5+.5*cos(seam*6.1+sewClock*.44),9.0);
+  }else if(filamentStitchMode==20){ // WITCH-KNOT RELAY: handoff between packet nodes.
+    float position=localProgress*12.0;
+    float node=floor(position),between=fract(position);
+    float awake=.5+.5*cos(sewClock*1.21-node*1.7+seedPhase*.28);
+    float knot=pow(max(0.0,1.0-abs(between-.5)*2.9),4.0);
+    float relay=pow(awake,5.0);
+    visibleStitch=.12+.88*(.15+.85*relay*knot);
+    needle=pow(awake,16.0)*knot;
   }else{ // Invalid stored mode: leave the drawn thread untouched.
     visibleStitch=1.0;
     needle=0.0;

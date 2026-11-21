@@ -13,7 +13,7 @@ export { injuryModes };
 export { alchemyModes };
 import { backdropModes } from "./backdrops.js";
 export { backdropModes };
-import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, filamentMorphModes, filamentContagionModes, filamentNeuralModes } from "./filament-forge.js";
+import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, filamentMorphModes, filamentContagionModes, filamentNeuralModes, filamentPlasticModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
@@ -327,6 +327,11 @@ export const numericRanges = {
   filamentNeuralCoupling: [0, 100],
   filamentNeuralThreshold: [0, 100],
   filamentNeuralGlow: [0, 100],
+  filamentPlasticAmount: [0, 100],
+  filamentPlasticRate: [0, 100],
+  filamentPlasticInhibition: [0, 100],
+  filamentPlasticRetention: [0, 100],
+  filamentPlasticGlow: [0, 100],
   filamentAdornmentAmount: [0, 100],
   filamentAdornmentSpacing: [0, 100],
   filamentAdornmentSize: [0, 100],
@@ -642,6 +647,12 @@ export const initial = {
   filamentNeuralCoupling: 48,
   filamentNeuralThreshold: 39,
   filamentNeuralGlow: 74,
+  filamentPlasticMode: "Off",
+  filamentPlasticAmount: 0,
+  filamentPlasticRate: 49,
+  filamentPlasticInhibition: 45,
+  filamentPlasticRetention: 61,
+  filamentPlasticGlow: 75,
   filamentAdornmentMode: "Bare threads",
   filamentSecondAdornmentMode: "Bare threads",
   filamentAdornmentAmount: 0,
@@ -907,6 +918,7 @@ export function validateRecipe(input) {
     filamentMorphMode: filamentMorphModes,
     filamentContagionMode: filamentContagionModes,
     filamentNeuralMode: filamentNeuralModes,
+    filamentPlasticMode: filamentPlasticModes,
     filamentMorphTarget: filamentMaterials,
     filamentSecondMorphTarget: filamentMaterials,
     filamentAdornmentMode: filamentAdornmentModes,
@@ -1330,6 +1342,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "filamentContagionLag","filamentContagionGlow",
       "filamentNeuralAmount","filamentNeuralSpeed","filamentNeuralCoupling",
       "filamentNeuralThreshold","filamentNeuralGlow",
+      "filamentPlasticAmount","filamentPlasticRate","filamentPlasticInhibition",
+      "filamentPlasticRetention","filamentPlasticGlow",
       "filamentStitchAmount","filamentStitchSpeed",
       "filamentStitchLength","filamentStitchGlow",
       "filamentSculptAmount","filamentSculptDepth",
@@ -1589,6 +1603,12 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.filamentNeuralCoupling=16+random()*83;
   s.filamentNeuralThreshold=13+random()*76;
   s.filamentNeuralGlow=24+random()*75;
+  s.filamentPlasticMode=different(filamentPlasticModes,state.filamentPlasticMode,random);
+  s.filamentPlasticAmount=s.filamentNeuralAmount>0 && random()<.57?42+random()*57:0;
+  s.filamentPlasticRate=20+random()*79;
+  s.filamentPlasticInhibition=10+random()*89;
+  s.filamentPlasticRetention=12+random()*87;
+  s.filamentPlasticGlow=27+random()*72;
   s.filamentStitchMode=different(filamentStitchModes,state.filamentStitchMode,random);
   s.filamentStitchAmount=s.filamentAmount>0 && random()<.58 ? 45+random()*54 : 0;
   s.filamentStitchSpeed=15+random()*84;

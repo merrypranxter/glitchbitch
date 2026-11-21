@@ -841,6 +841,145 @@ export function specializeFilamentNeural(source,index){
     body+"  }\n"+source.slice(end);
 }
 
+
+/**
+ * SYNAPTIC PLASTICITY: mathematical gain and inhibition in the existing
+ * Neural Loom, informed by local palette gradients and real donor crossings.
+ * Stateless analytic adaptation (not persistent learning / true Hebbian
+ * weights): deterministic for the exact same preview and export timeline.
+ */
+export const filamentPlasticModes=[
+  "Off",
+  "Hebbian bloom",
+  "Inhibitory lace",
+  "Echo synapses",
+  "Resonant choir",
+  "Pruning wave",
+  "Dream consolidation"
+];
+export const filamentPlasticFamilies=[
+  {name:"Dormant",modes:filamentPlasticModes.slice(0,1)},
+  {name:"Excitation and inhibition",modes:filamentPlasticModes.slice(1,3)},
+  {name:"Temporal synapses",modes:filamentPlasticModes.slice(3,5)},
+  {name:"Pruning and dream states",modes:filamentPlasticModes.slice(5)}
+];
+export const filamentPlasticDescriptions={
+  "Off": "Leaves the existing nervous-system look completely untouched.",
+  "Hebbian bloom": "Coincident local color response and real crossing impulses amplify bright synaptic patches.",
+  "Inhibitory lace": "Dark suppressive bands quiet overexcited threads and their actual junctions.",
+  "Echo synapses": "Delayed wave packets repeat earlier-shaped signals without storing extra GPU frames.",
+  "Resonant choir": "Seeded thread clusters entrain their pulse timing, with real crossings strengthening the sync.",
+  "Pruning wave": "Weak pathways dim as a changing pruning front trims the electrical network.",
+  "Dream consolidation": "Slow, dreamlike pulse envelopes relax, brighten, and reshape neural responses."
+};
+export const filamentPlasticControls=[
+  "filamentPlasticAmount","filamentPlasticRate","filamentPlasticInhibition",
+  "filamentPlasticRetention","filamentPlasticGlow"
+];
+export const filamentPlasticPresets=[
+  {
+    "name": "Electric orchid brain",
+    "filamentPlasticMode": "Hebbian bloom",
+    "filamentPlasticAmount": 93,
+    "filamentPlasticRate": 65,
+    "filamentPlasticInhibition": 22,
+    "filamentPlasticRetention": 61,
+    "filamentPlasticGlow": 93
+  },
+  {
+    "name": "Negative-space synapses",
+    "filamentPlasticMode": "Inhibitory lace",
+    "filamentPlasticAmount": 96,
+    "filamentPlasticRate": 39,
+    "filamentPlasticInhibition": 90,
+    "filamentPlasticRetention": 55,
+    "filamentPlasticGlow": 68
+  },
+  {
+    "name": "Afterthought lightning",
+    "filamentPlasticMode": "Echo synapses",
+    "filamentPlasticAmount": 89,
+    "filamentPlasticRate": 72,
+    "filamentPlasticInhibition": 34,
+    "filamentPlasticRetention": 83,
+    "filamentPlasticGlow": 91
+  },
+  {
+    "name": "Alien textile choir",
+    "filamentPlasticMode": "Resonant choir",
+    "filamentPlasticAmount": 94,
+    "filamentPlasticRate": 49,
+    "filamentPlasticInhibition": 36,
+    "filamentPlasticRetention": 73,
+    "filamentPlasticGlow": 95
+  },
+  {
+    "name": "Fractal synapse pruning",
+    "filamentPlasticMode": "Pruning wave",
+    "filamentPlasticAmount": 91,
+    "filamentPlasticRate": 58,
+    "filamentPlasticInhibition": 79,
+    "filamentPlasticRetention": 48,
+    "filamentPlasticGlow": 86
+  },
+  {
+    "name": "Sleepwalking neurons",
+    "filamentPlasticMode": "Dream consolidation",
+    "filamentPlasticAmount": 85,
+    "filamentPlasticRate": 23,
+    "filamentPlasticInhibition": 31,
+    "filamentPlasticRetention": 92,
+    "filamentPlasticGlow": 77
+  }
+];
+export function applyFilamentPlasticPreset(state,name){
+  const preset=filamentPlasticPresets.find(p=>p.name===name);
+  if(!preset)return state;
+  const {name:unused,...values}=preset;
+  return {...state,...values,
+    filamentAmount:Math.max(70,state.filamentAmount||0),
+    filamentNeuralMode:state.filamentNeuralMode==="Off"?"Axon train":
+      state.filamentNeuralMode,
+    filamentNeuralAmount:Math.max(80,state.filamentNeuralAmount||0)};
+}
+export function remixFilamentPlastic(state,rng=Math.random,onlyWeird=false){
+  const unit=()=>{const x=Number(rng());return Number.isFinite(x)?
+    Math.max(0,Math.min(1-Number.EPSILON,x)):0;};
+  const options=onlyWeird?filamentPlasticModes.slice(4):
+    filamentPlasticModes.slice(1);
+  const pool=options.filter(x=>x!==state.filamentPlasticMode);
+  const choices=pool.length?pool:options;
+  return {...state,
+    filamentPlasticMode:choices[Math.floor(unit()*choices.length)],
+    filamentPlasticAmount:75+unit()*24,
+    filamentPlasticRate:18+unit()*81,
+    filamentPlasticInhibition:10+unit()*88,
+    filamentPlasticRetention:18+unit()*80,
+    filamentPlasticGlow:45+unit()*54,
+    filamentAmount:Math.max(70,state.filamentAmount||0),
+    filamentNeuralMode:state.filamentNeuralMode==="Off"?"Axon train":
+      state.filamentNeuralMode,
+    filamentNeuralAmount:Math.max(80,state.filamentNeuralAmount||0)};
+}
+/** Prune five unused plasticity modes from a selected iPhone shader. */
+export function specializeFilamentPlasticity(source,index){
+  if(index==null||!Number.isInteger(index)||index<1||
+    index>=filamentPlasticModes.length)return source;
+  const opener=i=>i===1?"  if(filamentPlasticMode==1){":
+    "  }else if(filamentPlasticMode=="+i+"){";
+  const starts=filamentPlasticModes.slice(1)
+    .map((_,i)=>source.indexOf(opener(i+1)));
+  if(starts.some((p,i)=>p<0||(i>0&&p<=starts[i-1])))return source;
+  const end=source.indexOf("  // Apply analytic synaptic gain",starts.at(-1));
+  if(end<0)return source;
+  const close=source.lastIndexOf("  }\n",end);
+  if(close<starts.at(-1))return source;
+  const stop=index===filamentPlasticModes.length-1?close:starts[index];
+  const body=source.slice(starts[index-1]+opener(index).length,stop);
+  return source.slice(0,starts[0])+"  if(filamentPlasticMode=="+index+"){"+
+    body+"  }\n"+source.slice(end);
+}
+
 export const filamentAdornmentModes=[
   "Bare threads",
   "Pearl stations",
@@ -1327,6 +1466,9 @@ uniform int filamentAdornmentMode,filamentSecondAdornmentMode;
 uniform int filamentMorphMode;
 uniform int filamentContagionMode;
 uniform int filamentNeuralMode;
+uniform int filamentPlasticMode;
+uniform float filamentPlasticAmount,filamentPlasticRate;
+uniform float filamentPlasticInhibition,filamentPlasticRetention,filamentPlasticGlow;
 uniform float filamentNeuralAmount,filamentNeuralSpeed;
 uniform float filamentNeuralCoupling,filamentNeuralThreshold,filamentNeuralGlow;
 uniform float filamentContagionAmount,filamentContagionReach;
@@ -1973,6 +2115,56 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   // Real contact is never approximated by screen neighbors.
   neuralSignal=clamp(neuralSignal+
     contactNeural*filamentNeuralCoupling*.28,0.0,1.0);
+
+#ifdef FILAMENT_PLASTICITY
+  // All "adaptation" is a deterministic function of current fiber geometry,
+  // real palette stimulus, incoming crossing signal and the export clock.
+  // This is NOT persistent learned neural state.
+  float plasticClock=time*(.13+filamentPlasticRate*1.47)+phaseOffset*.17;
+  float plasticPhase=axonPhase*(.74+filamentPlasticRetention*2.6);
+  float coincidence=clamp(neuralSignal*stimulusGate,0.0,1.0);
+  float donorCoincidence=clamp(contactNeural*neuralSignal,0.0,1.0);
+  float plasticDelta=0.0;
+  if(filamentPlasticMode==1){ // HEBBIAN BLOOM: synchronized responses brighten.
+    float localPair=.5+.5*cos(plasticPhase*1.7-plasticClock);
+    plasticDelta=(.32+.61*coincidence)*pow(localPair,3.0)+
+      donorCoincidence*.55;
+  }else if(filamentPlasticMode==2){ // INHIBITORY LACE: negative gain at junctions.
+    float brake=.5+.5*sin(plasticPhase*2.1-plasticClock*.82);
+    plasticDelta=-(.27+.69*filamentPlasticInhibition)*
+      brake*(.62+.38*contactNeural);
+  }else if(filamentPlasticMode==3){ // ECHO SYNAPSES: delayed-shaped twin pulse.
+    float phaseDelay=filamentPlasticRetention*5.4+.4;
+    float echo=pow(.5+.5*cos(plasticPhase*2.3-plasticClock*1.3+phaseDelay),5.0);
+    plasticDelta=echo*(.36+.39*coincidence)-
+      neuralSignal*filamentPlasticInhibition*.16;
+  }else if(filamentPlasticMode==4){ // RESONANT CHOIR: entrained cluster phases.
+    vec2 tile=floor(q*(.12+.25*filamentPlasticRetention));
+    float cluster=fract(sin(dot(tile,vec2(13.7,79.3))+seedPhase)*43758.5453);
+    float choir=.5+.5*cos(plasticClock*1.2+cluster*2.9-
+      plasticPhase*.33);
+    plasticDelta=choir*(.36+.4*filamentPlasticRetention)+
+      donorCoincidence*.61;
+  }else if(filamentPlasticMode==5){ // PRUNING WAVE: weaken less-coincident links.
+    float prune=.5+.5*cos(plasticPhase*.83-plasticClock*.66);
+    float inactivity=1.0-coincidence;
+    plasticDelta=-(.25+.69*filamentPlasticInhibition)*prune*inactivity+
+      donorCoincidence*.29;
+  }else if(filamentPlasticMode==6){ // DREAM CONSOLIDATION: slow waves of recovery.
+    float dream=.5+.5*cos(plasticClock*.24+plasticPhase*.42+
+      sin(q.y*.2+seedPhase*.11));
+    float recover=.5+.5*sin(plasticClock*.19-plasticPhase*.39);
+    plasticDelta=dream*(.27+.4*filamentPlasticRetention)*
+      (.55+.45*recover)-neuralSignal*filamentPlasticInhibition*.17;
+  }
+  // Apply analytic synaptic gain to the ACTUAL existing neural signal,
+  // never to unstitched background or a disconnected sticker layer.
+  float preplastic=neuralSignal;
+  neuralSignal=mix(preplastic,clamp(preplastic+plasticDelta,0.0,1.0),
+    filamentPlasticAmount);
+  float plasticEdge=clamp(max(0.0,neuralSignal-preplastic)*2.3,0.0,1.0);
+  float plasticShadow=clamp(max(0.0,preplastic-neuralSignal)*2.1,0.0,1.0);
+#endif
   float nerveStrength=filamentNeuralAmount*neuralSignal;
   outgoingNeural=clamp(nerveStrength*core,0.0,1.0);
   outgoingLuma=colorLuma;
@@ -2294,6 +2486,14 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     nerveResponse*(.2+.38*filamentNeuralCoupling));
   thread+=mix(nerveChromatic,vec3(.95,.97,1.0),.56)*
     nerveResponse*nerveFlash*filamentNeuralGlow*.78;
+#ifdef FILAMENT_PLASTICITY
+  // Accentuate changing synaptic weights on real sewn cores.
+  // Inhibitory and pruning waves remove light (real dark lace) instead of
+  // paradoxically flashing brightly at their suppressed synapses.
+  thread*=1.0-plasticShadow*(.15+.43*filamentPlasticInhibition)*core;
+  thread+=mix(ink,glimmer,.62)*core*filamentPlasticAmount*
+    filamentPlasticGlow*plasticEdge*.42;
+#endif
 #endif
   float amount=filamentAmount;
   vec3 result=mix(background,background*.48+thread*1.06,core*amount*.91);

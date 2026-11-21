@@ -80,6 +80,9 @@ function App() {
     [mobilePanel, setMobilePanel] = useState("Math"),
     [focus, setFocus] = useState(false),
     [modal, setModal] = useState(null);
+  // Avoid two simultaneous WebGL renderers on memory-limited iPhones.
+  const [exportRendererBusy,setExportRendererBusy] = useState(false);
+  const [exportStill,setExportStill] = useState(null);
   const [tool, setTool] = useState("Paint"),
     [handles, setHandles] = useState(false),
     [selected, setSelected] = useState(null),
@@ -137,6 +140,18 @@ function App() {
     latest = useRef(null),
     savingRef = useRef(false),
     storageWarning = useRef(false);
+  const onExportBusy=useCallback((value)=>{
+    if(value){
+      // Keep an image of the preview visible while its GPU is released.
+      // WebGL preserveDrawingBuffer is enabled in createRenderer().
+      let still=null;
+      try{
+        if(canvasRef.current?.width>0)still=canvasRef.current.toDataURL("image/png");
+      }catch{/* Safari may deny canvas capture under memory pressure. */}
+      setExportStill(still);
+    }else setExportStill(null);
+    setExportRendererBusy(Boolean(value));
+  },[]);
   latest.current = {
     history,
     title,
@@ -582,14 +597,26 @@ function App() {
                 </button>
               </div>
             </div>
-            <ArtCanvas
-              playing={playing && !modal}
-              {...{ history, timelineRef, canvasRef, quality, tool, selected }}
-              onStatus={setStatus}
-              onTime={setTimeline}
-              showHandles={handles}
-              onSelect={setSelected}
-            />
+            {exportRendererBusy ? (
+              <div className="art-stage" aria-label="Live GPU preview temporarily parked during accurate export">
+                <div className="art-surface"
+                  style={{width:"100%",height:"100%",display:"grid",placeItems:"center"}}>
+                  {exportStill ? <img src={exportStill}
+                    alt="Frozen preview while the export renderer uses the GPU"
+                    style={{width:"100%",height:"100%",objectFit:"contain"}}/> :
+                    <p className="control-note">Preserving GPU memory for the exact-effects export…</p>}
+                </div>
+              </div>
+            ) : (
+              <ArtCanvas
+                playing={playing && !modal}
+                {...{ history, timelineRef, canvasRef, quality, tool, selected }}
+                onStatus={setStatus}
+                onTime={setTimeline}
+                showHandles={handles}
+                onSelect={setSelected}
+              />
+            )}
             <div className="transport">
               <button
                 className="play"
@@ -839,6 +866,7 @@ function App() {
           timelineRef={timelineRef}
           onClose={() => setModal(null)}
           onNotice={toast}
+          onExportBusy={onExportBusy}
         />
       )}
       {modal === "find" && (

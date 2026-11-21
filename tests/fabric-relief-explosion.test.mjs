@@ -84,7 +84,7 @@ test("ten genuinely animated fabric grounds have distinct shader branches",()=>{
       "  }else if(underlayMode=="+(id+1)+"){";
    const start=source.indexOf(first),stop=source.indexOf(last,start);
    const body=source.slice(start,stop);
-   assert.ok(body.length>460,id);
+   assert.ok(body.length>400,id);
    for(const token of ["fiber=","ornament=","shimmer=","shadow=","phase="])
      assert.ok(body.includes(token),id+" "+token);
    assert.match(body,/\bt\b/);

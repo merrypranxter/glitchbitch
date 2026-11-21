@@ -658,6 +658,7 @@ export const initial = {
   sporeFertility: 64,
   sporeGlow: 73,
   sporeGeneration: 0,
+  coevoRound: 0,
   substrateMode: "Bare canvas",
   substrateAmount: 0,
   substrateScale: 55,
@@ -921,6 +922,11 @@ export function validateRecipe(input) {
     if(!Number.isInteger(x.sporeGeneration)||x.sporeGeneration<0||
       x.sporeGeneration>4095)throw Error("Invalid spore generation.");
     s.sporeGeneration=x.sporeGeneration;
+  }
+  if(x.coevoRound!==undefined){
+    if(!Number.isInteger(x.coevoRound)||x.coevoRound<0||
+      x.coevoRound>4095)throw Error("Invalid coevolution round.");
+    s.coevoRound=x.coevoRound;
   }
   // Painted habitats are independent of touch deformation marks.
   // Bounded storage and strict validation prevent bogus GPU uniform arrays.
@@ -1431,7 +1437,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.colonyCortexMotion=45;s.colonyCortexRelief=50;
   s.sporeMode="Dormant";s.sporeAmount=0;
   s.sporeSpeed=57;s.sporeReach=58;s.sporeFertility=64;
-  s.sporeGlow=73;s.sporeGeneration=0;
+  s.sporeGlow=73;s.sporeGeneration=0;s.coevoRound=0;
   s.substrateMode="Bare canvas";s.substrateAmount=0;
   s.substrateScale=55;s.substrateMotion=50;s.substratePressure=0;
   s.substrateAffinityA=90;s.substrateAffinityB=10;

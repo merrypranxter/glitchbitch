@@ -77,16 +77,16 @@ const sample={seed:4567,afterimage:80,datamosh:43,memoryDrift:32,memoryDecay:8};
 const clock={time:2.1,colorTime:1.9};
 
 test("GPU frame memory no longer copies browser default framebuffer",()=>{
-  assert.doesNotMatch(renderer,/gl\\.copyTexSubImage2D\\(/);
-  assert.match(renderer,/memory\\.history\\[writeIndex\\]/);
-  assert.match(renderer,/memory\\.history\\[readIndex\\]/);
-  assert.match(renderer,/memory\\.readIndex=writeIndex/);
+  assert.doesNotMatch(renderer,/gl\.copyTexSubImage2D\(/);
+  assert.match(renderer,/memory\.history\[writeIndex\]/);
+  assert.match(renderer,/memory\.history\[readIndex\]/);
+  assert.match(renderer,/memory\.readIndex=writeIndex/);
   assert.match(renderer,/outputFbo/);
-  assert.match(renderer,/gl\\.bindFramebuffer\\(gl\\.FRAMEBUFFER,null\\)/);
-  assert.match(renderer,/assertMemoryGl\\("GPU source scene draw failed"\\)/);
-  assert.match(renderer,/assertMemoryGl\\("GPU history composite draw failed"\\)/);
-  assert.match(renderer,/assertMemoryGl\\("GPU history presentation draw failed"\\)/);
-  assert.match(renderer,/if\\(exactEffects\\)throw artworkParityError\\("Frame-memory composite failed",e\\)/);
+  assert.match(renderer,/gl\.bindFramebuffer\(gl\.FRAMEBUFFER,null\)/);
+  assert.match(renderer,/assertMemoryGl\("GPU source scene draw failed"\)/);
+  assert.match(renderer,/assertMemoryGl\("GPU history composite draw failed"\)/);
+  assert.match(renderer,/assertMemoryGl\("GPU history presentation draw failed"\)/);
+  assert.match(renderer,/if\(exactEffects\)throw artworkParityError\("Frame-memory composite failed",e\)/);
   assert.match(feedbackFragment,/uniform sampler2D sceneTex, historyTex/);
   assert.match(feedbackDisplayFragment,/uniform sampler2D outputTex/);
 });
@@ -147,7 +147,7 @@ test("composite failure cannot advance history index or pretend it succeeded",()
   const previous=machine.current().readIndex;
   fake.forceError(0x0502);
   assert.throws(()=>machine.compositeFeedback(sample,clock,32,32),
-    /GPU history composite draw failed \\(WebGL 0x502\\)/);
+    /GPU history composite draw failed \(WebGL 0x502\)/);
   assert.equal(machine.current().readIndex,previous);
   assert.equal(machine.current().valid,false);
   assert.equal(fake.bindings.get(0),null);
@@ -156,8 +156,8 @@ test("composite failure cannot advance history index or pretend it succeeded",()
 
 test("no other user effects or animation settings are altered by the fix",()=>{
   const exportSource=readFileSync(new URL("../src/export.js",import.meta.url),"utf8");
-  assert.match(exportSource,/renderer = createRenderer\\(canvas,\\{exactEffects\\}\\)/);
-  assert.match(exportSource,/await primeFrameHistory\\(renderer,state,timeline,size,signal\\)/);
-  assert.match(exportSource,/renderer\\.readFrame\\(bytes\\)/);
-  assert.match(renderer,/const hasMemoryEffects = \\(s.afterimage > 0 \\|\\| s.datamosh > 0\\)/);
+  assert.match(exportSource,/renderer = createRenderer\(canvas,\{exactEffects\}\)/);
+  assert.match(exportSource,/await primeFrameHistory\(renderer,state,timeline,size,signal\)/);
+  assert.match(exportSource,/renderer\.readFrame\(bytes\)/);
+  assert.match(renderer,/const hasMemoryEffects = \(s.afterimage > 0 \|\| s.datamosh > 0\)/);
 });

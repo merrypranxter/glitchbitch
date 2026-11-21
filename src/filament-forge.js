@@ -2025,10 +2025,12 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   // Link flux is zero when there's no real first-parent donor or contact.
   // The phase delay makes recipient fibers respond after their donor.
   float contactTransfer=clamp(incomingCore*core*incomingCarrier,0.0,1.0);
-  float delayed=.5+.5*cos(contagionAlong*1.4-contagionClock*
-    (.4+.65*(1.0-filamentContagionLag)));
+  // Lag shifts the recipient's response in PHASE instead of merely
+  // changing its animation speed.
+  float delayed=.5+.5*cos(contagionAlong*1.4-contagionClock+
+    filamentContagionLag*3.1415926);
   float neighborhood=clamp(contagionSignal*(.56+.44*delayed)+
-    contactTransfer*filamentContagionReach,0.0,1.0);
+    contactTransfer*filamentContagionReach*delayed,0.0,1.0);
   morphField=mix(morphField,max(morphField,neighborhood*2.0-1.0),
     filamentContagionAmount);
 #endif

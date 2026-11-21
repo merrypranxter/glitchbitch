@@ -1601,6 +1601,9 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       if (drawWithMemory) {
         try {
+          // Diagnose an offscreen *scene* render error separately from the
+          // feedback and presentation draws; never blame the history copy.
+          assertMemoryGl("GPU source scene draw failed");
           compositeFeedback(s, timeline, width, height);
           lastMemoryTime = timeline.time;
           lastMemoryColorTime = timeline.colorTime;
@@ -1646,7 +1649,10 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       releaseLettering();
       if(textOverlayProgram)gl.deleteProgram(textOverlayProgram);
       gl.deleteTexture(emptyBioTexture);
-      if (memoryShader) gl.deleteProgram(memoryShader.program);
+      if (memoryShader){
+        gl.deleteProgram(memoryShader.program);
+        gl.deleteProgram(memoryShader.displayProgram);
+      }
       memoryShader = null;
       programs.forEach((p) => gl.deleteProgram(p.program));
       programs.clear();

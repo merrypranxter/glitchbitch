@@ -17,7 +17,7 @@ import { backdropGLSL, backdropModes, specializeBackdropGLSL } from "./backdrops
 import { microGLSL, microModes, specializeMicroGLSL } from "./microstructure.js";
 import { substanceGLSL, substanceModes, specializeSubstanceGLSL } from "./substance.js";
 import { photonGLSL, photonSpecies, specializePhotonGeometry } from "./photon-zoo.js";
-import { filamentGLSL, filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, specializeFilamentGeometry, specializeFilamentStitchMotion, specializeFilamentSculptMotion } from "./filament-forge.js";
+import { filamentGLSL, filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, specializeFilamentGeometry, specializeFilamentStitchMotion, specializeFilamentSculptMotion, specializeFilamentMaterials } from "./filament-forge.js";
 import { underlayGLSL, underlayModes, specializeUnderlayGLSL } from "./living-underlay.js";
 import { tunnelGLSL } from "./tunnels.js";
 import { strangeFieldsGLSL } from "./strange-fields.js";
@@ -732,13 +732,16 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
             "#define filamentSecondMaterial "+Math.max(0,filamentMaterials.indexOf(s.filamentSecondMaterial)))
       : "";
     const selectedFilament=withFilament
-      ? specializeFilamentSculptMotion(
-          specializeFilamentStitchMotion(
-            specializeFilamentGeometry(rawFilament,
-              filamentSpecies.indexOf(s.filamentSpecies),
-              withHybrid?filamentSpecies.indexOf(s.filamentSecondSpecies):null),
-            withStitch?filamentStitchModes.indexOf(s.filamentStitchMode):null),
-          withSculpt?filamentSculptModes.indexOf(s.filamentSculptMode):null)
+      ? specializeFilamentMaterials(
+          specializeFilamentSculptMotion(
+            specializeFilamentStitchMotion(
+              specializeFilamentGeometry(rawFilament,
+                filamentSpecies.indexOf(s.filamentSpecies),
+                withHybrid?filamentSpecies.indexOf(s.filamentSecondSpecies):null),
+              withStitch?filamentStitchModes.indexOf(s.filamentStitchMode):null),
+            withSculpt?filamentSculptModes.indexOf(s.filamentSculptMode):null),
+          withFiberDetail?filamentMaterials.indexOf(s.filamentMaterial):null,
+          withFiberDetail&&withHybrid?filamentMaterials.indexOf(s.filamentSecondMaterial):null)
       : "";
     source=source.replace("/* FILAMENT_MODULE */",selectedFilament);
     source=source.replace("/* FILAMENT_POST */",

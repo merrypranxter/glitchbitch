@@ -6,7 +6,7 @@ import {sectionMeta,findControls} from "../src/ui-index.js";
 import {
   filamentAdornmentModes,filamentAdornmentFamilies,filamentAdornmentDescriptions,
   filamentAdornmentControls,filamentAdornmentPresets,
-  applyFilamentAdornmentPreset,remixFilamentAdornments,
+  applyFilamentAdornmentPreset,remixFilamentAdornments,remixThreadCouture,
   specializeFilamentAdornments,specializeFilamentGeometry,
   specializeFilamentStitchMotion,specializeFilamentMaterials,filamentGLSL,
   filamentSpecies,filamentStitchModes,filamentMaterials
@@ -95,6 +95,25 @@ test("new jewelry randomizers only change jewelry and can target the weird six",
   }
 });
 
+test("entire garments can be randomized without touching their existing art or thread laws",()=>{
+  for(const rng of [()=>0,()=>.44,()=>.999,()=>NaN]){
+    for(const onlyWeird of [false,true]){
+      const dressed=remixThreadCouture(artwork,rng,onlyWeird);
+      for(const k of protectedKeys)assert.deepEqual(dressed[k],artwork[k],k);
+      assert.ok(dressed.filamentAdornmentAmount>=82);
+      assert.notEqual(dressed.filamentMaterial,artwork.filamentMaterial);
+      assert.notEqual(dressed.filamentAdornmentMode,"Bare threads");
+      if(onlyWeird){
+        assert.ok(weird.includes(dressed.filamentAdornmentMode));
+        assert.ok(["Fiber-optic rainbow","Gelatin nerve cord","Oil-slick latex",
+          "Bioluminescent mycelium"].includes(dressed.filamentMaterial));
+      }
+      assert.deepEqual(dressed,remixThreadCouture(artwork,rng,onlyWeird));
+      assert.deepEqual(validateRecipe(dressed),dressed);
+    }
+  }
+});
+
 test("13×13 parent jewelry combinations specialize to exactly selected GLSL branches",()=>{
   for(let a=0;a<filamentAdornmentModes.length;a++)
     for(let b=0;b<filamentAdornmentModes.length;b++){
@@ -136,7 +155,8 @@ test("same main shader covers preview and export, Find and Reset recognize every
     assert.ok(render.includes(token),token);
   for(const token of ["THREAD JEWELRY","Adorn the threads",
     "Shuffle all thread jewelry","Shuffle cursed jewelry",
-    "Strip jewelry (keep materials)","filamentAdornmentFamilies.map"])
+    "Strip jewelry (keep materials)","filamentAdornmentFamilies.map",
+    "Outfit roulette","Full cursed couture"])
     assert.ok(ui.includes(token),token);
   assert.ok(sectionMeta("filament").reset.includes("filamentAdornmentAmount"));
   for(const mode of filamentAdornmentModes.slice(1))

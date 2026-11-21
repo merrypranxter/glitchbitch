@@ -78,6 +78,7 @@ import {resurrectionModes,canResurrectRecord,resurrectFossil,
   resurrectOldest,resurrectWholeArchive} from "../ancestral-resurrection.js";
 import {echoModes,evolveAncestralGeneration,evolveAncestralEpochs} from "../ancestral-echoes.js";
 import {speciationModes,branchSpecies,contestTerritory,lineageCensus} from "../speciation-lab.js";
+import {coevolutionModes,encounterNetwork,stageEncounter,evolveCoevolution} from "../coevolution-lab.js";
 import { ensureValidEcosystemState } from "../ecosystem-randomizer.js";
 import { shuffleColonies, shuffleColonyLife, shuffleEcosystem,
   fullWeirdShuffle, chaosLevels } from "../ecosystem-randomizer.js";
@@ -272,6 +273,8 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [echoIntensity,setEchoIntensity]=React.useState(65);
   const [speciesMode,setSpeciesMode]=React.useState(speciationModes[0]);
   const [speciesStrength,setSpeciesStrength]=React.useState(75);
+  const [coevoMode,setCoevoMode]=React.useState(coevolutionModes[2]);
+  const [coevoIntensity,setCoevoIntensity]=React.useState(75);
   const [chaosLevel,setChaosLevel]=React.useState("Wild");
   const [preserveColors,setPreserveColors]=React.useState(true);
   const [preserveText,setPreserveText]=React.useState(true);
@@ -555,6 +558,82 @@ export function EffectsInspector({ history, onTool, tool }) {
         and pigmentation, and normal spore offspring inherit their clade.
         To fight, move rivals into contact with Touch first. Contest is a
         single undoable step, never automatic. Sixteen live seeds maximum.
+      </p>
+    </>,
+    "coevolution-lab": <>
+      <p className="control-note">
+        COEVOLUTION LAB — let neighboring species change each other's
+        actual inherited genome and occupied territory. Predator/prey
+        pressure, mimicry, defensive arms races or cooperation all use
+        your existing moving painted organisms and palette.
+      </p>
+      <Select label="Relationship between bloodlines" value={coevoMode}
+        onChange={setCoevoMode}>
+        {coevolutionModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <label className="control-note" htmlFor="coevo-intensity">
+        Interaction pressure · {coevoIntensity}%
+      </label>
+      <input id="coevo-intensity" type="range" min="0" max="100"
+        value={coevoIntensity}
+        onChange={e=>setCoevoIntensity(Number(e.target.value))}/>
+      <p className="control-note">
+        Committed encounters: {s.coevoRound||0}/4095
+        {" · "}Nearby rival pairs: {encounterNetwork(s).length}.
+        No pair nearby? Stage an encounter, or move organisms together in Touch.
+      </p>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          disabled={(s.habitatStamps||[]).length<2}
+          onClick={()=>history.change(stageEncounter)}>
+          <Move size={13}/> Stage closest rivals
+        </button>
+        <button type="button" className="button secondary"
+          disabled={!encounterNetwork(s).length||coevoIntensity<=0||
+            (s.coevoRound||0)>=4095}
+          onClick={()=>history.change(x=>evolveCoevolution(
+            x,coevoMode,coevoIntensity))}>
+          <Dna size={13}/> Evolve one encounter
+        </button>
+        <button type="button" className="button secondary"
+          disabled={!encounterNetwork(s).length||coevoIntensity<=0||
+            (s.coevoRound||0)>=4095}
+          onClick={()=>history.change(x=>evolveCoevolution(
+            x,coevoMode,coevoIntensity,3))}>
+          <Orbit size={13}/> Evolve three encounters
+        </button>
+        <button type="button" className="button secondary"
+          disabled={(s.habitatStamps||[]).length<2||
+            (s.coevoRound||0)>=4095}
+          onClick={()=>history.change(x=>evolveCoevolution(
+            stageEncounter(x),
+            coevolutionModes[Math.floor(Math.random()*coevolutionModes.length)],
+            45+Math.random()*55))}>
+          <Dices size={13}/> Surprise me with coevolution
+        </button>
+      </div>
+      <details className="filament-crossbreeder">
+        <summary>Encounter network · {encounterNetwork(s).length} relationships</summary>
+        {encounterNetwork(s).length===0
+          ?<p className="control-note">
+            No genetic contact yet. Stage a meeting or use Touch to
+            move rival families together.
+          </p>
+          :<ol>
+            {encounterNetwork(s).slice(0,10).map(pair=><li
+              key={pair.i+"-"+pair.j}>
+              {pair.first} ↔ {pair.second}
+              {" · "}contact {Math.round(pair.influence*100)}%
+            </li>)}
+          </ol>}
+      </details>
+      <p className="control-note">
+        Each button commits an explicit genetic encounter: DNA changes real
+        outline geometry and pigmentation, while territory size changes
+        the visible colony. Mimics copy fitter models; prey adapt defensive
+        alleles; arms races diverge; mutualists converge. No hidden deaths,
+        no changes during playback, and no new shaders. Three rounds = one
+        Undo. Fossils, palettes and text remain untouched.
       </p>
     </>,
     "apocalypse-clock": <>

@@ -15,6 +15,7 @@ import {shuffleApocalypse} from "./apocalypse-clock.js";
 import {archiveFossils,shuffleFossils} from "./fossil-record.js";
 import { MAX_HABITAT_STAMPS } from "./habitat-painter.js";
 import {branchSpecies,speciationModes} from "./speciation-lab.js";
+import {coevolutionModes,evolveCoevolution,stageEncounter} from "./coevolution-lab.js";
 
 const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
 const unit=rng=>{
@@ -154,6 +155,7 @@ export function shuffleColonies(state,rng=Math.random,opts={}){
     ...opts,needA:true,needB:second,
   });
   s.sporeGeneration=0;
+  s.coevoRound=0;
   const settled=ensureValidEcosystemState(s,rng);
   return settled.geneAmount>0 ? seedGenePool(settled,rng) : settled;
 }
@@ -192,6 +194,19 @@ const maybeSpeciate=(state,rng,opts={})=>{
     !roll(.43,rng))return state;
   return branchSpecies(state,choose(speciationModes,rng),range(35,100,rng));
 };
+// Mutation is committed only by an explicit shuffle action; normal
+// playback remains read-only. A single-parent request never awakens B.
+const maybeCoevolve=(state,rng,opts={})=>{
+  if(!state.habitatStamps||state.habitatStamps.length<2||
+    (state.coevoRound||0)>=4095||state.geneAmount<=0||
+    (opts.allowDual===false&&state.habitatStamps.some(m=>m.parent===1))||
+    !roll(.32,rng))return state;
+  const staged=stageEncounter(state);
+  return evolveCoevolution(staged,choose(coevolutionModes,rng),
+    range(45,95,rng),roll(.33,rng)?2:1);
+};
+const evolveRandomEcosystem=(state,rng,opts)=>
+  maybeCoevolve(maybeSpeciate(state,rng,opts),rng,opts);
 export function shuffleEcosystem(state,rng=Math.random,opts={}){
   const s={...state};
   const dual=opts.allowDual!==false&&roll(opts.dualChance??.63,rng);
@@ -224,6 +239,7 @@ export function shuffleEcosystem(state,rng=Math.random,opts={}){
   else{s.substrateMode="Bare canvas";s.substrateAmount=0;s.substratePressure=0;}
   s.habitatStamps=[];
   s.sporeGeneration=0;
+  s.coevoRound=0;
   s.fossilRecords=[];
   s.fossilAmount=0;s.fossilMode="Dormant";
   const lifeChance=opts.lifeChance??(.27+.55*intensity);
@@ -305,11 +321,15 @@ export function shuffleEcosystem(state,rng=Math.random,opts={}){
     const genePool=seedGenePool(settled,rng);
     if(genePool.substrateAmount>0 &&
        genePool.substrateMode!=="Bare canvas"&&roll(.66,rng)){
-      return maybeSpeciate(spawnFossilMemory(shuffleSelection(genePool,rng),rng,opts),rng,opts);
+      return evolveRandomEcosystem(
+        spawnFossilMemory(shuffleSelection(genePool,rng),rng,opts),rng,
+        {...opts,allowDual:dual});
     }
     genePool.selectionMode="Dormant";
     genePool.selectionPressure=0;
-    return maybeSpeciate(spawnFossilMemory(genePool,rng,opts),rng,opts);
+    return evolveRandomEcosystem(
+      spawnFossilMemory(genePool,rng,opts),rng,
+      {...opts,allowDual:dual});
   }
   settled.geneAmount=0;
   settled.selectionMode="Dormant";
@@ -397,7 +417,7 @@ export function mixEcosystemIntoSurprise(state,rng=Math.random,opts={}){
     s.colonyAnatomyAmount=0;s.colonyAnatomyPores=0;s.colonyAnatomyRim=0;
     s.colonyCortexA="Bare cortex";s.colonyCortexB="Bare cortex";
     s.colonyCortexAmount=0;
-    s.sporeMode="Dormant";s.sporeAmount=0;s.sporeGeneration=0;
+    s.sporeMode="Dormant";s.sporeAmount=0;s.sporeGeneration=0;s.coevoRound=0;
     s.substrateMode="Bare canvas";s.substrateAmount=0;s.substratePressure=0;
     s.symbiosisMode="Dormant";s.symbiosisAmount=0;
     s.geneAmount=0;

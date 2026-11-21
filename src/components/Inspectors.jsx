@@ -38,7 +38,8 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   xenoVascularSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
   filamentMaterials,filamentMaterialPresets,applyFilamentMaterialPreset,
-  remixFilamentMaterials,filamentStitchModes,filamentStitchPresets,
+  remixFilamentMaterials,filamentStitchModes,filamentStitchFamilies,
+  filamentStitchDescriptions,remixFilamentStitchMotion,filamentStitchPresets,
   applyFilamentStitchPreset,stopFilamentStitching,
   filamentSculptModes,filamentSculptPresets,applyFilamentSculptPreset,disableFilamentSculpt } from "../filament-forge.js";
 import { underlayModes, underlayPresets, applyUnderlayPreset,
@@ -1634,13 +1635,17 @@ export function EffectsInspector({ history, onTool, tool }) {
       </details>
       <details className="filament-crossbreeder filament-stitch-lab">
         <summary>🪡 SELF-WEAVING LOOM — STITCH IN MOTION</summary>
-        <p className="control-note">Watch the threads sew themselves, chase a glowing needle, advance in running stitches, or unfurl and resew. The stitch travels along the generated geometry instead of fading an unrelated full-screen texture.</p>
+        <p className="control-note">Fifteen distinct moving stitch behaviors, from original needle chases to alien code transmissions, vascular growth and reverse repairs. Each animation follows the actual selected thread geometry; no separate screen overlay. Select a mode or use the remix buttons.</p>
         <Select label="Stitch motion" value={s.filamentStitchMode}
           onChange={mode=>history.change(x=>({...x,filamentStitchMode:mode,
             filamentStitchAmount:Math.max(68,x.filamentStitchAmount),
             filamentAmount:Math.max(55,x.filamentAmount)}))}>
-          {filamentStitchModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+          {filamentStitchFamilies.map(family=><optgroup
+            key={family.name} label={family.name}>
+            {family.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+          </optgroup>)}
         </Select>
+        <p className="control-note">{filamentStitchDescriptions[s.filamentStitchMode]}</p>
         <Parameter label="Self-weaving presence" name="filamentStitchAmount" history={history}/>
         <Parameter label="Stitch travel speed" name="filamentStitchSpeed" history={history}/>
         <Parameter label="Stitch tail length / spacing" name="filamentStitchLength" history={history}/>
@@ -1652,6 +1657,14 @@ export function EffectsInspector({ history, onTool, tool }) {
           <button type="button" className="button secondary"
             onClick={()=>history.change(x=>applyFilamentStitchPreset(x,stitchPreset))}>
             Start weaving
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentStitchMotion(x))}>
+            <Shuffle size={13}/> Shuffle stitch motions
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentStitchMotion(x,Math.random,true))}>
+            <Dices size={13}/> Shuffle new weird stitches
           </button>
           <button type="button" className="button secondary"
             disabled={s.filamentStitchAmount<=0}

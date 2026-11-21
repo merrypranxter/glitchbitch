@@ -1841,6 +1841,12 @@ export function EffectsInspector({ history, onTool, tool }) {
             filamentAmount:mode==="Off"?x.filamentAmount:Math.max(70,x.filamentAmount),
             filamentMorphMode:mode==="Off"?x.filamentMorphMode:
               x.filamentMorphMode==="Off"?"Seam sweep":x.filamentMorphMode,
+            // If someone already dressed a thread in the target material,
+            // picking a transmission law must still create a visible change.
+            filamentMorphTarget:mode==="Off"||x.filamentMorphTarget!==x.filamentMaterial?
+              x.filamentMorphTarget:filamentMaterials.find(m=>m!=="Original thread"&&m!==x.filamentMaterial),
+            filamentSecondMorphTarget:mode==="Off"||x.filamentSecondMorphTarget!==x.filamentSecondMaterial?
+              x.filamentSecondMorphTarget:filamentMaterials.find(m=>m!=="Original thread"&&m!==x.filamentSecondMaterial),
             filamentMorphAmount:mode==="Off"?x.filamentMorphAmount:Math.max(82,x.filamentMorphAmount),
             filamentContagionAmount:mode==="Off"?x.filamentContagionAmount:
               Math.max(82,x.filamentContagionAmount)}))}>

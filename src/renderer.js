@@ -1,4 +1,5 @@
 import { appearanceGLSL } from "./appearance.js";
+import { artworkParityError } from "./export-parity.js";
 import { geometryGLSL } from "./geometry.js";
 import { motionGLSL } from "./motion.js";
 import { feedbackVertex, feedbackFragment } from "./feedback.js";
@@ -155,7 +156,7 @@ float luma=dot(col,vec3(.2126,.7152,.0722));col=mix(vec3(luma),col,saturation*2.
 col=applyAppearance(col,uv);
 gl_FragColor=vec4(clamp(col,0.,1.),1.);}`;
 
-export function createRenderer(canvas) {
+export function createRenderer(canvas, {exactEffects=false} = {}) {
   const options = {
     preserveDrawingBuffer: true,
     antialias: false,
@@ -478,8 +479,9 @@ export function createRenderer(canvas) {
       // The biology engine must never take the original art down with it.
       biologyDisabled = true;
       releaseBiology();
-      console.warn("Biology simulation disabled; original art preserved.", error);
       gl.activeTexture(gl.TEXTURE0);
+      if(exactEffects)throw artworkParityError("Biological growth failed",error);
+      console.warn("Biology simulation disabled; original art preserved.", error);
       return false;
     }
   }
@@ -1057,23 +1059,35 @@ export function createRenderer(canvas) {
   return {
     maxSize,
     readFrame(target) {
+      if(exactEffects && gl.isContextLost())
+        throw artworkParityError("GPU context lost during readback");
+      if(exactEffects && gl.getError()!==gl.NO_ERROR)
+        throw artworkParityError("GPU error before readback");
       gl.readPixels(
-        0,
-        0,
-        canvas.width,
-        canvas.height,
-        gl.RGBA,
-        gl.UNSIGNED_BYTE,
-        target,
+        0,0,canvas.width,canvas.height,
+        gl.RGBA,gl.UNSIGNED_BYTE,target,
       );
+      if(exactEffects && gl.getError()!==gl.NO_ERROR)
+        throw artworkParityError("GPU could not read back the finished effects");
     },
     ready() {
-      if (gl.isContextLost()) return false;
-      if (!fence) return true;
+      if (gl.isContextLost()) {
+        if(exactEffects)throw artworkParityError("GPU context lost before capture");
+        return false;
+      }
+      if (!fence) {
+        if(exactEffects && gl.getError()!==gl.NO_ERROR)
+          throw artworkParityError("GPU reported a failed frame draw");
+        return true;
+      }
       const status = gl.clientWaitSync(fence, 0, 0);
       if (status === gl.TIMEOUT_EXPIRED) return false;
+      if(exactEffects && status===gl.WAIT_FAILED)
+        throw artworkParityError("GPU frame fence failed");
       gl.deleteSync(fence);
       fence = null;
+      if(exactEffects && gl.getError()!==gl.NO_ERROR)
+        throw artworkParityError("GPU reported a failed completed frame");
       return true;
     },
     draw(s, timeline, width = canvas.width, height = canvas.height) {
@@ -1103,6 +1117,8 @@ export function createRenderer(canvas) {
           break;
         }catch(e){
           lastCompileError=e;
+          // Preview may downgrade gracefully; exported art must NEVER be downgraded.
+          if(exactEffects)throw artworkParityError("Full-effect shader failed to compile",e);
           if(candidate.injuryAmount>0 && !injuryUnavailable){
             injuryUnavailable=true;
             console.warn("Print & Spectrum Injury unsupported by this GPU; keeping every earlier layer and Color Sorcery.",e);
@@ -1207,6 +1223,7 @@ export function createRenderer(canvas) {
           // A device with inadequate texture/FBO support must retain the original artwork.
           memoryDisabled = true;
           releaseMemory();
+          if(exactEffects)throw artworkParityError("Frame-memory effects could not initialize",e);
           console.warn("Frame-memory effects disabled; using original art renderer.", e);
         }
       } else if (memory) {
@@ -1508,7 +1525,9 @@ export function createRenderer(canvas) {
           lastMemoryTime = timeline.time;
           lastMemoryColorTime = timeline.colorTime;
         } catch (e) {
-          // GPU failure cannot black out the art: redraw original output to the canvas.
+          // Export cannot replace the feedback result with an unrelated original frame.
+          if(exactEffects)throw artworkParityError("Frame-memory composite failed",e);
+          // Preview may still show the underlying art.
           gl.bindFramebuffer(gl.FRAMEBUFFER, null);
           gl.viewport(0, 0, width, height);
           gl.useProgram(active.program);

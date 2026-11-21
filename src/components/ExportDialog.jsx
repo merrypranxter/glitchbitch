@@ -9,7 +9,7 @@ import { normalTextBlendState } from "../text-blend-proof.js";
 import { canvasImageFiltersWork } from "../lettering-filter-fallback.js";
 import { withoutTextForExport, exportBlobPixels, analyzeTextExportFrames,
   exportDiagnosticReport } from "../text-export-diagnostics.js";
-export default function ExportDialog({ state, title, timelineRef, onClose, onNotice }) {
+export default function ExportDialog({ state, title, timelineRef, onClose, onNotice, onExportBusy }) {
   const [tab,setTab]=useState("Image"),
     [longEdge,setLongEdge]=useState(2160),
     [videoSize,setVideoSize]=useState(720),
@@ -29,6 +29,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
   const controller=useRef(null), mounted=useRef(true), proofUrl=useRef(null), blendUrls=useRef([]);
   const capability=videoFormat();
   useEffect(()=>()=>{mounted.current=false;controller.current?.abort();
+    onExportBusy?.(false);
     if(proofUrl.current) URL.revokeObjectURL(proofUrl.current);
     blendUrls.current.forEach(url=>URL.revokeObjectURL(url));
   },[]);
@@ -42,6 +43,8 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     setBusy(true);setError("");setProof(null);
     const snapshot={...state,ratio},timeline={...timelineRef.current};
     try {
+      onExportBusy?.(true);
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
       // This is the SAME compositing function used by the PNG and video
       // workspace, not a screenshot of the CSS live preview.
       const blob=await renderImage(snapshot,timeline,480);
@@ -53,6 +56,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     }catch(e){
       if(mounted.current)setError("Export proof could not render: "+e.message);
     }finally{
+      onExportBusy?.(false);
       if(mounted.current)setBusy(false);
     }
   }
@@ -62,6 +66,8 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     const snapshot={...state,ratio},timeline={...timelineRef.current};
     const temporary=[];
     try{
+      onExportBusy?.(true);
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
       // Sequential 480px renders bound mobile WebGL memory. Both captures
       // use the identical timeline and Canvas compositor used by actual MP4.
       const normal=await renderImage(normalTextBlendState(snapshot),timeline,480);
@@ -102,6 +108,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     }catch(e){
       if(mounted.current)setError("Blend comparison failed: "+e.message);
     }finally{
+      onExportBusy?.(false);
       if(!mounted.current)temporary.forEach(url=>URL.revokeObjectURL(url));
       if(mounted.current)setBusy(false);
     }
@@ -119,6 +126,9 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     if(tab==="Video")controller.current=new AbortController();
     const snapshot={...state,ratio},timeline={...timelineRef.current};
     try {
+      if(tab!=="Recipe")onExportBusy?.(true);
+      // Let React unmount and free the live WebGL context before opening
+      // the capture context on Safari/iPhone; preview resumes afterwards.
       await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
       if(tab==="Image"){
         const blob=await renderImage(snapshot,timeline,longEdge);
@@ -142,7 +152,11 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       }
     } catch(e) {
       if(mounted.current)setError(e.name==="AbortError"?"Export cancelled; your artwork is unchanged.":e.message);
-    } finally {if(mounted.current)setBusy(false);controller.current=null;}
+    } finally {
+      onExportBusy?.(false);
+      if(mounted.current)setBusy(false);
+      controller.current=null;
+    }
   }
   function canShare() {
     if(!ready || typeof File==="undefined" || typeof navigator==="undefined" || !navigator.canShare)return false;
@@ -212,6 +226,9 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
                 ?"Encodes H.264 video at explicit frame times when WebCodecs is available; Safari can use native MP4 recording as fallback. Larger clips demand more processing and storage."
                 :"Real looping GIF, 15 fps, up to 1080px and 10 seconds. For smoother, longer high-resolution motion choose MP4."}
               {" "}Keep this tab visible while rendering.
+              {" "}If your device can't reproduce all active shader effects,
+              the exporter now stops with an error instead of downloading a
+              deceptively simplified MP4. Try a lower resolution.
             </p>
             {clipFormat==="mp4"&&!capability&&<p className="field-error">
               This browser doesn't expose an MP4 encoder. GIF, PNG and recipes still work.
@@ -276,9 +293,10 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
                 Attach it here if the export still looks wrong.</p>
             </details>}
         </>}
-        <p className="export-note">These previews are rendered by the actual PNG/GIF/MP4
-          compositor, not by the browser text overlay. The A/B pair uses the
-          exact same frame and colors. Modes like Screen on a bright backdrop
+        <p className="export-note">These previews are rendered by the same strict-effects
+          renderer as PNG/GIF/MP4, not by the browser text overlay. If an effect
+          cannot be rendered, an error appears rather than a downgraded proof.
+          The A/B pair uses the exact same frame and colors. Modes like Screen on a bright backdrop
           can appear subtle; try Difference or Multiply to verify the effect.</p>
       </div>}
       {error&&<p className="field-error" role="alert">{error}</p>}

@@ -670,6 +670,26 @@ export function remixFilamentContagion(state,rng=Math.random,onlyWeird=false){
     filamentAmount:Math.max(70,state.filamentAmount||0)};
 }
 
+/** Narrow contagion compilation to the selected transmission law on iOS. */
+export function specializeFilamentContagion(source,index){
+  if(index==null||!Number.isInteger(index)||index<1||
+    index>=filamentContagionModes.length)return source;
+  const opener=id=>id===1?"  if(filamentContagionMode==1){":
+    "  }else if(filamentContagionMode=="+id+"){";
+  const starts=filamentContagionModes.slice(1)
+    .map((_,k)=>source.indexOf(opener(k+1)));
+  if(starts.some((p,k)=>p<0||(k>0&&p<=starts[k-1])))return source;
+  const end=source.indexOf("  // Link flux is zero",starts.at(-1));
+  if(end<0)return source;
+  const close=source.lastIndexOf("  }\n",end);
+  if(close<starts.at(-1))return source;
+  const stop=index===filamentContagionModes.length-1?close:starts[index];
+  const body=source.slice(starts[index-1]+opener(index).length,stop);
+  return source.slice(0,starts[0])+
+    "  if(filamentContagionMode=="+index+"){"+body+
+    "  }\n"+source.slice(end);
+}
+
 export const filamentAdornmentModes=[
   "Bare threads",
   "Pearl stations",

@@ -84,6 +84,9 @@ import {MAX_SUCCESSION,successionModes,prepareSuccession,
   shuffleSuccession,hideSuccession,clearSuccession} from "../ecological-succession.js";
 import { ensureValidEcosystemState } from "../ecosystem-randomizer.js";
 import {substrateResourceAt} from "../substrate-alchemy.js";
+import {foodWebModes,foodWebLinks,foodWebActive,foodWebLedger,
+  prepareFoodWeb,stageFoodWeb,feedFoodWeb,shuffleFoodWeb,
+  hideFoodWeb,MAX_FOOD_WEB_LINKS} from "../living-food-web.js";
 import { shuffleColonies, shuffleColonyLife, shuffleEcosystem,
   fullWeirdShuffle, chaosLevels } from "../ecosystem-randomizer.js";
 export { TextInspector } from "./TextInspector";
@@ -339,6 +342,94 @@ export function EffectsInspector({ history, onTool, tool }) {
         Uncheck Preserve colors to randomize the palette too. Your text stays
         intact unless you explicitly uncheck its protection. Manual controls
         and all planted seeds remain editable afterward.
+      </p>
+    </>,
+    "living-food-web": <>
+      <p className="control-note">
+        THE LIVING FOOD WEB — fluorescent feeding highways between
+        neighbors. Colonies hold a real, saved nutrient reserve.
+        Feeding rounds trade or steal that reserve and change individual
+        growth and inherited genes. No invisible deaths or playback edits.
+      </p>
+      <Select label="Ecological relationship" value={s.foodWebMode}
+        onChange={mode=>history.change(x=>({...x,foodWebMode:mode}))}>
+        {foodWebModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <Parameter label="Luminous web visibility" name="foodWebAmount" history={history}/>
+      <Parameter label="How far food pathways connect" name="foodWebReach" history={history}/>
+      <Parameter label="Nutrient exchange intensity" name="foodWebPressure" history={history}/>
+      <Parameter label="Traveling energy pulse speed" name="foodWebPulse" history={history}/>
+      <Parameter label="Mycelial thread thickness" name="foodWebWidth" history={history}/>
+      <Parameter label="Bioluminescent brightness" name="foodWebGlow" history={history}/>
+      <Parameter label="Feeding pathway palette offset" name="foodWebHue" history={history}/>
+      <p className="control-note">
+        Connected pathways: {foodWebLinks(s).length}/{MAX_FOOD_WEB_LINKS}
+        {" · "}Completed feeding rounds: {s.foodWebRound||0}/4095.
+        Connections follow the real colony positions; drag the organisms
+        in Touch to rewire the network.
+      </p>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          disabled={!s.habitatStamps?.length}
+          onClick={()=>history.change(prepareFoodWeb)}>
+          <Flower2 size={13}/> Awaken food web
+        </button>
+        <button type="button" className="button secondary"
+          disabled={(s.habitatStamps||[]).length<2}
+          onClick={()=>history.change(x=>prepareFoodWeb(stageFoodWeb(x)))}>
+          <Orbit size={13}/> Stage nearest connection
+        </button>
+        <button type="button" className="button secondary"
+          disabled={!foodWebActive(s)||s.foodWebRound>=4095||
+            s.foodWebPressure<=0}
+          onClick={()=>history.change(feedFoodWeb)}>
+          <Dna size={13}/> Feed once
+        </button>
+        <button type="button" className="button secondary"
+          disabled={!foodWebActive(s)||s.foodWebRound>=4095||
+            s.foodWebPressure<=0}
+          onClick={()=>history.change(x=>feedFoodWeb(x,3))}>
+          <Orbit size={13}/> Feed three rounds
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>prepareFoodWeb(shuffleFoodWeb(x)))}>
+          <Dices size={13}/> Shuffle the food web
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.foodWebAmount<=0}
+          onClick={()=>history.change(hideFoodWeb)}>
+          <EyeOff size={13}/> Hide web / pause feeding
+        </button>
+      </div>
+      <details className="filament-crossbreeder">
+        <summary>Connection map · {foodWebLinks(s).length} nutrient highways</summary>
+        <ol>
+          {foodWebLinks(s).map(link=><li key={link.from+"-"+link.to}>
+            {link.from} ↔ {link.to}
+            {" · "}contact {Math.round(link.strength*100)}%
+          </li>)}
+        </ol>
+        {!foodWebLinks(s).length&&<p className="control-note">
+          No organisms close enough. Drag two near each other in Touch
+          or stage a nearest connection.
+        </p>}
+      </details>
+      <details className="filament-crossbreeder">
+        <summary>Stored nutrient reserves · {foodWebLedger(s).length} organisms</summary>
+        <ol>
+          {foodWebLedger(s).map(m=><li key={m.id}>
+            {m.parent===0?"A":"B"} · {m.id}
+            {" · "}{m.energy}% energy
+          </li>)}
+        </ol>
+      </details>
+      <p className="control-note">
+        Mutualists even out resources; parasites siphon them; mycelial
+        relays distribute reserves rapidly; and trophic cascades reward
+        stronger feeders. Total stored energy is conserved per feeding
+        round, except for natural saturation at the 0–100 boundaries.
+        The network animates in the existing GIF and MP4 renderer.
+        Every feeding batch is one Undo; no extra canvas or render pass.
       </p>
     </>,
     "ecological-succession": <>

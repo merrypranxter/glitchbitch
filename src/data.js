@@ -16,6 +16,7 @@ import { symbiosisModes, symbiosisPresets, ensureSymbioticContact } from "./symb
 import { genePresets } from "./colony-genetics.js";
 import {selectionModes,selectionPresets} from "./selection-chamber.js";
 import {successionModes,successionControls,MAX_SUCCESSION} from "./ecological-succession.js";
+import {foodWebModes,foodWebControls} from "./living-food-web.js";
 import {apocalypseModes,apocalypsePresets} from "./apocalypse-clock.js";
 import {fossilModes,fossilPresets,MAX_FOSSILS} from "./fossil-record.js";
 import { mixEcosystemIntoSurprise, generateHabitatStamps } from "./ecosystem-randomizer.js";
@@ -419,6 +420,13 @@ export const numericRanges = {
   successionGlow: [0, 100],
   successionHue: [0, 100],
   successionBurial: [0, 100],
+  foodWebAmount: [0, 100],
+  foodWebReach: [0, 100],
+  foodWebPressure: [0, 100],
+  foodWebPulse: [0, 100],
+  foodWebWidth: [0, 100],
+  foodWebGlow: [0, 100],
+  foodWebHue: [0, 100],
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
@@ -717,6 +725,15 @@ export const initial = {
   successionBurial: 60,
   successionEpoch: 0,
   successionRecords: [],
+  foodWebMode: "Mutualist exchange",
+  foodWebAmount: 0,
+  foodWebReach: 58,
+  foodWebPressure: 67,
+  foodWebPulse: 55,
+  foodWebWidth: 35,
+  foodWebGlow: 70,
+  foodWebHue: 65,
+  foodWebRound: 0,
   invert: false,
   saturation: 50,
   contrast: 50,
@@ -823,6 +840,7 @@ export function validateRecipe(input) {
     apocalypseMode: apocalypseModes,
     fossilMode: fossilModes,
     successionMode: successionModes,
+    foodWebMode: foodWebModes,
   })) {
     if (x[key] !== undefined) {
       if (!choices.includes(x[key])) throw Error(`Unknown ${key}.`);
@@ -947,6 +965,11 @@ export function validateRecipe(input) {
       x.coevoRound>4095)throw Error("Invalid coevolution round.");
     s.coevoRound=x.coevoRound;
   }
+  if(x.foodWebRound!==undefined){
+    if(!Number.isInteger(x.foodWebRound)||x.foodWebRound<0||x.foodWebRound>4095)
+      throw Error("Invalid food web feeding round.");
+    s.foodWebRound=x.foodWebRound;
+  }
   if(x.successionEpoch!==undefined){
     if(!Number.isInteger(x.successionEpoch)||x.successionEpoch<0||
        x.successionEpoch>4095)throw Error("Invalid succession epoch.");
@@ -1008,12 +1031,16 @@ export function validateRecipe(input) {
       if(m.mate!==undefined&&
          (typeof m.mate!=="string"||!m.mate||m.mate.length>80))
         throw Error("Invalid colony genetic mate.");
+      if(m.webEnergy!==undefined&&(!Number.isInteger(m.webEnergy)||
+         m.webEnergy<0||m.webEnergy>100))
+        throw Error("Invalid colony nutrient reserve.");
       if(m.clade!==undefined&&
          (typeof m.clade!=="string"||!/^[AB]-[a-z0-9-]{1,30}$/.test(m.clade)))
         throw Error("Invalid colony clade.");
       return {id:m.id,x:m.x,y:m.y,radius:m.radius,parent:m.parent,
         ...(m.clade!==undefined?{clade:m.clade}:{}),
         ...(m.gene!==undefined?{gene:m.gene}:{}),
+        ...(m.webEnergy!==undefined?{webEnergy:m.webEnergy}:{}),
         ...(m.generation!==undefined?{generation:m.generation}:{}),
         ...(m.ancestor!==undefined?{ancestor:m.ancestor}:{}),
         ...(m.mate!==undefined?{mate:m.mate}:{})};
@@ -1234,6 +1261,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "fossilAmount","fossilDepth","fossilMotion",
       "fossilGlow","fossilHue","fossilBurial",
       ...successionControls,
+      ...foodWebControls,
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
@@ -1251,6 +1279,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key==="apocalypseAmount"&&state.apocalypseAmount<=0)continue; // Geology stays stable on old art.
       if(key==="fossilAmount"&&state.fossilAmount<=0)continue; // Burying the past remains opt-in.
       if(key==="successionAmount"&&state.successionAmount<=0)continue; // Soil memory stays opt-in.
+      if(key==="foodWebAmount"&&state.foodWebAmount<=0)continue; // Food webs stay opt-in.
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
@@ -1512,6 +1541,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.successionDepth=70;s.successionSpread=58;s.successionMotion=54;
   s.successionGlow=76;s.successionHue=45;s.successionBurial=60;
   s.successionEpoch=0;s.successionRecords=[];
+  s.foodWebMode="Mutualist exchange";s.foodWebAmount=0;
+  s.foodWebReach=58;s.foodWebPressure=67;s.foodWebPulse=55;
+  s.foodWebWidth=35;s.foodWebGlow=70;s.foodWebHue=65;s.foodWebRound=0;
   s.motionMode=different(motionModes,state.motionMode,random);
   s.motionAmount=42+random()*58;s.motionRate=28+random()*72;
   s.lightMotion=38+random()*62;

@@ -20,7 +20,7 @@ test("section ids are unique and every inspector section id is indexed", () => {
   const effects = readFileSync(new URL("../src/components/Inspectors.jsx", import.meta.url), "utf8");
   for (const s of sections.filter((x) => x.tab === "Effects" && x.id !== "fx-toggles")) {
     assert.ok(effectGroups.includes(s.group), `${s.id} has a filter group`);
-    assert.match(effects, new RegExp(`\\\\b${s.id}["']?: <>`), `${s.id} has controls`);
+    assert.match(effects, new RegExp(`\\b${s.id}["']?: <>`), `${s.id} has controls`);
   }
 });
 

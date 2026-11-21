@@ -219,6 +219,7 @@ const maybeSuccede=(s,rng,opts={})=>{
 };
 const maybeFoodWeb=(s,rng,opts={})=>{
   if((s.habitatStamps||[]).length<2||!foodWebLinks(s).length||
+    (opts.allowDual===false&&s.habitatStamps.some(m=>m.parent===1))||
     ((s.fossilAmount>0&&s.fossilRecords?.length)&&
      (s.successionAmount>0&&s.successionRecords?.length)&&
      opts.allowHeavy!==true)||

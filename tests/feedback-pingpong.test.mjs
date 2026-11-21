@@ -50,7 +50,8 @@ function makeFakeGL(){
     },
     getError(){const e=error;error=0;return e;},
   };
-  return {gl,calls,attachments,bindings,deleted,forceError:(value)=>error=value};
+  return {gl,calls,attachments,bindings,deleted,
+    textureCount:()=>textures.size,forceError:(value)=>error=value};
 }
 function actualFeedbackMachine(fake,webgl2=false){
   const start=renderer.indexOf("  function releaseMemory() {");
@@ -140,6 +141,23 @@ for(const webgl2 of [false,true]){
     assert.equal(machine.current(),null);
   });
 }
+
+test("900 full-size frames retain exactly three bounded GPU textures",()=>{
+  const fake=makeFakeGL(),machine=actualFeedbackMachine(fake,true);
+  machine.prepareMemory(1080,1080);
+  assert.equal(fake.textureCount(),3,
+    "scene + two history ping-pong targets, regardless of clip duration");
+  for(let frame=0;frame<900;frame++){
+    machine.compositeFeedback(sample,{time:frame/30,colorTime:frame/30},1080,1080);
+    assert.equal(machine.current().readIndex,(frame+1)%2);
+  }
+  assert.equal(fake.textureCount(),3,"no per-frame GPU texture allocation");
+  assert.equal(fake.calls.filter(x=>x[0]==="draw").length,1800);
+  assert.equal(fake.deleted.length,0,"no unnecessary reallocation during clip");
+  machine.releaseMemory();
+  assert.equal(fake.deleted.filter(x=>x.kind==="texture").length,3);
+  assert.equal(fake.deleted.filter(x=>x.kind==="fbo").length,2);
+});
 
 test("composite failure cannot advance history index or pretend it succeeded",()=>{
   const fake=makeFakeGL(),machine=actualFeedbackMachine(fake);

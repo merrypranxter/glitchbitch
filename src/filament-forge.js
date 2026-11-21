@@ -478,6 +478,14 @@ export function remixFilamentAdornments(state,rng=Math.random,onlyWeird=false){
     filamentAdornmentMotion:20+unit()*78,
     filamentAdornmentGlow:54+unit()*45};
 }
+/** One press dresses and jewels BOTH parents without changing their pattern,
+ * clocks, thread species, text, colors or underlying mathematical artwork. */
+export function remixThreadCouture(state,rng=Math.random,onlyWeird=false){
+  const fibers=onlyWeird?remixUnusualFilamentMaterials(state,rng):
+    remixFilamentMaterials(state,rng);
+  return remixFilamentAdornments(fibers,rng,onlyWeird);
+}
+
 export function specializeFilamentAdornments(source,first,second=null){
   if(first==null||!Number.isInteger(first)||first<0||
     first>=filamentAdornmentModes.length)return source;

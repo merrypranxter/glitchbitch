@@ -49,6 +49,8 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   xenoVascularSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies, remixFreshFilaments,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
   filamentMaterials,filamentMaterialPresets,applyFilamentMaterialPreset,remixUnusualFilamentMaterials,
+  filamentAdornmentModes,filamentAdornmentFamilies,filamentAdornmentDescriptions,
+  filamentAdornmentPresets,applyFilamentAdornmentPreset,remixFilamentAdornments,
   remixFilamentMaterials,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
@@ -278,6 +280,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [filamentPreset,setFilamentPreset]=React.useState(filamentPresets[0].name);
   const [hybridPreset,setHybridPreset]=React.useState(filamentHybridPresets[0].name);
   const [materialPreset,setMaterialPreset]=React.useState(filamentMaterialPresets[0].name);
+  const [adornmentPreset,setAdornmentPreset]=React.useState(filamentAdornmentPresets[0].name);
   const [stitchPreset,setStitchPreset]=React.useState(filamentStitchPresets[0].name);
   const [sculptPreset,setSculptPreset]=React.useState(filamentSculptPresets[0].name);
   const [underlayPreset,setUnderlayPreset]=React.useState(underlayPresets[0].name);
@@ -1588,7 +1591,7 @@ export function EffectsInspector({ history, onTool, tool }) {
       <p className="control-note">Underlay is an independent layer: hide it without losing your lace, text, Photon Zoo or underlying math art. It uses the existing palette and normal PNG/GIF/MP4 renderer.</p>
     </>,
     filament: <>
-      <p className="control-note">Sixteen animated mathematical thread species. Your original lace and Fractal veinwork are untouched; ten new aliens, living vessels, roots and nerves have their own continuously moving geometry. They share palettes, materials, stitching, crossbreeding and GIF/MP4 timelines.</p>
+      <p className="control-note">Twenty-two animated geometries with thirty-one stitch laws, fourteen fiber materials and an independent thread-jewelry cabinet. Mix practical sewing with gloriously deranged textile mathematics.</p>
       <Select label="Thread geometry" value={s.filamentSpecies}
         onChange={v=>history.change(x=>({...x,filamentSpecies:v,
           filamentAmount:Math.max(73,x.filamentAmount),
@@ -1768,6 +1771,56 @@ export function EffectsInspector({ history, onTool, tool }) {
           </button>
         </div>
         <p className="control-note">The color offset applies to the second parent when crossbreeding is on. Material details compile only when used, and the old shader remains the fallback.</p>
+      </details>
+      <details className="filament-crossbreeder filament-adornment-lab">
+        <summary>💎 THREAD JEWELRY — CHARMS, FRINGE & WEIRD SHIT</summary>
+        <p className="control-note">Twelve stitch-attached ornaments, from pearls and French knots to opal barnacles, tiny eyes and haunted teeth. Each hybrid parent can wear DIFFERENT jewelry over its own material. No random screen-wide stickers.</p>
+        <Select label="First parent jewelry" value={s.filamentAdornmentMode}
+          onChange={mode=>history.change(x=>({...x,filamentAdornmentMode:mode,
+            filamentAdornmentAmount:mode==="Bare threads"?x.filamentAdornmentAmount:
+              Math.max(72,x.filamentAdornmentAmount),
+            filamentAmount:Math.max(65,x.filamentAmount)}))}>
+          {filamentAdornmentFamilies.map(group=><optgroup key={group.name} label={group.name}>
+            {group.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+          </optgroup>)}
+        </Select>
+        <p className="control-note">{filamentAdornmentDescriptions[s.filamentAdornmentMode]}</p>
+        <Select label="Second parent jewelry (when crossbred)" value={s.filamentSecondAdornmentMode}
+          onChange={mode=>history.change(x=>({...x,filamentSecondAdornmentMode:mode,
+            filamentAdornmentAmount:mode==="Bare threads"?x.filamentAdornmentAmount:
+              Math.max(72,x.filamentAdornmentAmount)}))}>
+          {filamentAdornmentFamilies.map(group=><optgroup key={group.name} label={group.name}>
+            {group.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+          </optgroup>)}
+        </Select>
+        <Parameter label="Jewelry presence" name="filamentAdornmentAmount" history={history}/>
+        <Parameter label="Stations / ornament spacing" name="filamentAdornmentSpacing" history={history}/>
+        <Parameter label="Jewelry size / fringe reach" name="filamentAdornmentSize" history={history}/>
+        <Parameter label="Living ornaments / movement" name="filamentAdornmentMotion" history={history}/>
+        <Parameter label="Jewel shine / phosphor" name="filamentAdornmentGlow" history={history}/>
+        <Select label="Thread jewelry recipe" value={adornmentPreset} onChange={setAdornmentPreset}>
+          {filamentAdornmentPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>applyFilamentAdornmentPreset(x,adornmentPreset))}>
+            Adorn the threads
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentAdornments(x))}>
+            <Shuffle size={13}/> Shuffle all thread jewelry
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentAdornments(x,Math.random,true))}>
+            <Dices size={13}/> Shuffle cursed jewelry
+          </button>
+          <button type="button" className="button secondary"
+            disabled={s.filamentAdornmentAmount<=0}
+            onClick={()=>history.change(x=>({...x,filamentAdornmentAmount:0}))}>
+            Strip jewelry (keep materials)
+          </button>
+        </div>
+        <p className="control-note">Each ornament follows the current thread’s own geometry, stitch reveal and clock. Choosing bare or presence 0 adds nothing. Jewelry preserves your words, colors, shape, fiber dressing and crossbred parents; PNG, GIF and MP4 use the same shader.</p>
       </details>
       <details className="filament-crossbreeder">
         <summary>🧬 CROSSBREED TWO THREAD SPECIES</summary>

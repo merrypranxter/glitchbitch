@@ -49,12 +49,13 @@ async function primeFrameHistory(renderer,state,timeline,size,signal){
     await waitForGraphics(renderer,signal);
   }
 }
-export async function renderImage(state, timeline, longEdge = 2160, type = "image/png") {
+export async function renderImage(state, timeline, longEdge = 2160,
+  type = "image/png", {exactEffects=true} = {}) {
   await waitForLetteringFonts(state);
   const canvas = document.createElement("canvas");
   let renderer;
   try {
-    renderer = createRenderer(canvas,{exactEffects:true});
+    renderer = createRenderer(canvas,{exactEffects});
     const { width, height } = dimensions(state.ratio, longEdge);
     await primeFrameHistory(renderer,state,timeline,{width,height});
     if(!renderer.draw(state, timeline, width, height))
@@ -85,7 +86,10 @@ export async function renderImage(state, timeline, longEdge = 2160, type = "imag
   }
 }
 export async function thumbnail(state, timeline) {
-  const blob = await renderImage(state, timeline, 240, "image/jpeg");
+  // Thumbnails are previews, not downloadable originals; never block a
+  // saved recipe merely because its tiny 240px preview needed a GPU fallback.
+  const blob = await renderImage(state, timeline, 240, "image/jpeg",
+    {exactEffects:false});
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);

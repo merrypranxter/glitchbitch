@@ -1075,13 +1075,19 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         if(exactEffects)throw artworkParityError("GPU context lost before capture");
         return false;
       }
-      if (!fence) return true;
+      if (!fence) {
+        if(exactEffects && gl.getError()!==gl.NO_ERROR)
+          throw artworkParityError("GPU reported a failed frame draw");
+        return true;
+      }
       const status = gl.clientWaitSync(fence, 0, 0);
       if (status === gl.TIMEOUT_EXPIRED) return false;
       if(exactEffects && status===gl.WAIT_FAILED)
         throw artworkParityError("GPU frame fence failed");
       gl.deleteSync(fence);
       fence = null;
+      if(exactEffects && gl.getError()!==gl.NO_ERROR)
+        throw artworkParityError("GPU reported a failed completed frame");
       return true;
     },
     draw(s, timeline, width = canvas.width, height = canvas.height) {

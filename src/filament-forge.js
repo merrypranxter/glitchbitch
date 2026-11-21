@@ -21,6 +21,12 @@ export const filamentSpecies = [
   "Root filigree",
   "Coral vasculature",
   "Nerve net",
+  "Basket twill",
+  "Chevron herringbone",
+  "Macramé diamonds",
+  "Bobbin lace",
+  "Möbius cable",
+  "Parasitic ladder",
 ];
 
 // Named families are UI/grouping metadata, never GPU or saved-state data.
@@ -32,8 +38,21 @@ export const filamentSpeciesFamilies=[
     "Lightning lace","Root filigree","Coral vasculature","Nerve net"]},
   {name:"Alien inscriptions & nonhuman ornaments",species:[
     "Alien lattice","Alien scriptwork","Glyph swarm","Xeno filament"]},
+  {name:"Traditional woven cloth & lace",species:filamentSpecies.slice(16,20)},
+  {name:"Impossible and parasitic textiles",species:filamentSpecies.slice(20)},
 ];
-export const xenoVascularSpecies=filamentSpecies.slice(6);
+export const xenoVascularSpecies=[...filamentSpecies.slice(6,16),...filamentSpecies.slice(20)];
+export const freshFilamentSpecies=filamentSpecies.slice(16);
+export function remixFreshFilaments(state,rng=Math.random){
+  const pool=freshFilamentSpecies.filter(name=>name!==state.filamentSpecies);
+  const value=Number(rng());
+  const n=Number.isFinite(value)?Math.min(.999999,Math.max(0,value)):0;
+  return {...state,filamentSpecies:pool[Math.floor(n*pool.length)],
+    filamentAmount:Math.max(70,state.filamentAmount||0),
+    filamentScale:35+n*55,filamentDensity:55+n*42,
+    filamentMotion:30+n*68};
+}
+
 
 // Ship just the selected structural branches to the iPhone GPU.
 // Even in a hybrid, no more than two species paths are needed.
@@ -84,7 +103,28 @@ export const filamentMaterials = [
   "Opaline glass",
   "Velvet flock",
   "Electroluminescent yarn",
+  "Mercerized cotton",
+  "Metallic tinsel",
+  "Chenille plush",
+  "Pearl embroidery floss",
+  "Fiber-optic rainbow",
+  "Gelatin nerve cord",
+  "Oil-slick latex",
+  "Bioluminescent mycelium",
 ];
+export const unusualFilamentMaterials=filamentMaterials.slice(10);
+export function remixUnusualFilamentMaterials(state,rng=Math.random){
+  const unit=()=>{const x=Number(rng());return Number.isFinite(x)?
+    Math.min(.999999,Math.max(0,x)):0;};
+  const take=old=>{const p=unusualFilamentMaterials.filter(x=>x!==old);
+    return p[Math.floor(unit()*p.length)];};
+  return {...state,filamentAmount:Math.max(65,state.filamentAmount||0),
+    filamentMaterial:take(state.filamentMaterial),
+    filamentSecondMaterial:take(state.filamentSecondMaterial),
+    filamentNap:15+unit()*82,filamentLuster:38+unit()*62,
+    filamentBeads:unit()*75};
+}
+
 
 export const filamentMaterialControls=[
   "filamentNap","filamentLuster","filamentBeads","filamentBeadSize",
@@ -123,7 +163,31 @@ export const filamentMaterialPresets=[
     filamentLuster:91,filamentBeads:33,filamentBeadSize:48,filamentSecondHue:72},
   {name:"Alien seed-bead couture",filamentMaterial:"Iridescent silk",
     filamentSecondMaterial:"Opaline glass",filamentNap:10,
-    filamentLuster:96,filamentBeads:99,filamentBeadSize:82,filamentSecondHue:62}
+    filamentLuster:96,filamentBeads:99,filamentBeadSize:82,filamentSecondHue:62},
+  {name:"Heirloom cotton work",filamentMaterial:"Mercerized cotton",
+    filamentSecondMaterial:"Pearl embroidery floss",filamentNap:22,
+    filamentLuster:63,filamentBeads:11,filamentBeadSize:34,filamentSecondHue:24},
+  {name:"Disco tinsel embroidery",filamentMaterial:"Metallic tinsel",
+    filamentSecondMaterial:"Iridescent silk",filamentNap:7,
+    filamentLuster:97,filamentBeads:45,filamentBeadSize:52,filamentSecondHue:58},
+  {name:"Rainbow chenille shrine",filamentMaterial:"Chenille plush",
+    filamentSecondMaterial:"Mercerized cotton",filamentNap:89,
+    filamentLuster:22,filamentBeads:6,filamentBeadSize:23,filamentSecondHue:16},
+  {name:"Mother-of-pearl floss",filamentMaterial:"Pearl embroidery floss",
+    filamentSecondMaterial:"Opaline glass",filamentNap:11,
+    filamentLuster:87,filamentBeads:53,filamentBeadSize:66,filamentSecondHue:43},
+  {name:"Fiber-optic disco veins",filamentMaterial:"Fiber-optic rainbow",
+    filamentSecondMaterial:"Molten chrome",filamentNap:13,
+    filamentLuster:100,filamentBeads:31,filamentBeadSize:54,filamentSecondHue:84},
+  {name:"Glassy nerve couture",filamentMaterial:"Gelatin nerve cord",
+    filamentSecondMaterial:"Pearl embroidery floss",filamentNap:32,
+    filamentLuster:82,filamentBeads:17,filamentBeadSize:41,filamentSecondHue:73},
+  {name:"Petroleum wedding lace",filamentMaterial:"Oil-slick latex",
+    filamentSecondMaterial:"Metallic tinsel",filamentNap:9,
+    filamentLuster:99,filamentBeads:20,filamentBeadSize:53,filamentSecondHue:68},
+  {name:"Mycelium after midnight",filamentMaterial:"Bioluminescent mycelium",
+    filamentSecondMaterial:"Fiber-optic rainbow",filamentNap:71,
+    filamentLuster:89,filamentBeads:62,filamentBeadSize:59,filamentSecondHue:57}
 ];
 
 export function applyFilamentMaterialPreset(state,name){
@@ -189,6 +253,24 @@ export const filamentPresets = [
   {name:"Neural signal embroidery",species:"Nerve net",
     filamentAmount:97,filamentScale:58,filamentDensity:85,filamentMotion:94,
     filamentWidth:20,filamentRelief:91,filamentHue:96,filamentVariation:84},
+  {name:"Traditional basket twill",species:"Basket twill",
+    filamentAmount:91,filamentScale:43,filamentDensity:68,filamentMotion:42,
+    filamentWidth:32,filamentRelief:73,filamentHue:21,filamentVariation:17},
+  {name:"Chromatic herringbone",species:"Chevron herringbone",
+    filamentAmount:92,filamentScale:48,filamentDensity:72,filamentMotion:51,
+    filamentWidth:30,filamentRelief:77,filamentHue:32,filamentVariation:30},
+  {name:"Electric macramé diamonds",species:"Macramé diamonds",
+    filamentAmount:93,filamentScale:53,filamentDensity:76,filamentMotion:60,
+    filamentWidth:28,filamentRelief:81,filamentHue:43,filamentVariation:43},
+  {name:"Bobbin-made fairy lace",species:"Bobbin lace",
+    filamentAmount:94,filamentScale:58,filamentDensity:80,filamentMotion:69,
+    filamentWidth:26,filamentRelief:85,filamentHue:54,filamentVariation:56},
+  {name:"Möbius cable infestation",species:"Möbius cable",
+    filamentAmount:95,filamentScale:63,filamentDensity:84,filamentMotion:78,
+    filamentWidth:24,filamentRelief:89,filamentHue:65,filamentVariation:69},
+  {name:"Parasitic ladder loom",species:"Parasitic ladder",
+    filamentAmount:96,filamentScale:68,filamentDensity:88,filamentMotion:87,
+    filamentWidth:22,filamentRelief:93,filamentHue:76,filamentVariation:82}
 ];
 
 export function applyFilamentPreset(state,name){
@@ -272,7 +354,17 @@ export const filamentStitchModes=[
   "Spasm tatting",
   "Hologram darning",
   "Ritual overlock",
-  "Witch-knot relay"
+  "Witch-knot relay",
+  "Chain stitch",
+  "Cross-stitch",
+  "Satin fill",
+  "Blanket stitch",
+  "Feather stitch",
+  "Cable knit",
+  "Ghost bobbin",
+  "Quantum unpick",
+  "Mutant zipper",
+  "Fractal mending",
 ];
 // Human-facing organization only; saved names and numerical shader IDs
 // for the original five motions are preserved exactly.
@@ -284,9 +376,11 @@ export const filamentStitchFamilies=[
     "Knot cascade","Coral accretion","Tidal darning"]},
   {name:"Kinetic sewing machines",modes:[
     "Helix handoff","Reverse unpick","Ricochet needle"]},
-  {name:"Funky ritual & parasite stitching",modes:filamentStitchModes.slice(15)},
+  {name:"Funky ritual & parasite stitching",modes:filamentStitchModes.slice(15,21)},
+  {name:"Traditional embroidery & knitting",modes:filamentStitchModes.slice(21,27)},
+  {name:"Haunted sewing machines",modes:filamentStitchModes.slice(27)},
 ];
-export const ritualFilamentStitchModes=filamentStitchModes.slice(15);
+export const ritualFilamentStitchModes=filamentStitchModes.slice(15,21);
 export function remixRitualStitches(state,rng=Math.random){
   const unit=()=>{const n=Number(rng());return Number.isFinite(n)?
     Math.min(1-Number.EPSILON,Math.max(0,n)):0;};
@@ -323,6 +417,16 @@ export const filamentStitchDescriptions={
   "Hologram darning":"Two phase-shifted virtual stitch grids alternate in shimmering scans.",
   "Ritual overlock":"Countermoving serpentine edge stitches overtake the yarn.",
   "Witch-knot relay":"Sequential knotted signal packets pass through a cyclic chain.",
+  "Chain stitch":"Interlocking loops climb along the real yarn in a rhythmic procession.",
+  "Cross-stitch":"Alternating X-shaped stitch beats sew a classic patterned rhythm.",
+  "Satin fill":"Closely packed satin strokes shimmer as the thread is laid down.",
+  "Blanket stitch":"Edge-wrapping loops tighten around the filament in rows.",
+  "Feather stitch":"Feathery mirrored needle passes zigzag along the strand.",
+  "Cable knit":"Interleaved cable stitches seem to roll over and under each other.",
+  "Ghost bobbin":"An invisible shuttle intermittently reveals luminous absent stitches.",
+  "Quantum unpick":"Sutures flicker between sewn and unsewn states in a double-beat wave.",
+  "Mutant zipper":"Two serrated lips latch and unlatch with a hunting metal tooth.",
+  "Fractal mending":"Repairs recursively split into miniature repairs along each thread.",
 };
 export function remixFilamentStitchMotion(state,rng=Math.random,onlyNew=false){
   const unit=()=>{
@@ -417,7 +521,37 @@ export const filamentStitchPresets=[
   {"name":"Spasm Lace Possession","filamentStitchMode":"Spasm tatting","filamentStitchAmount":96,"filamentStitchSpeed":76,"filamentStitchLength":60,"filamentStitchGlow":96},
   {"name":"Darning a Hologram","filamentStitchMode":"Hologram darning","filamentStitchAmount":92,"filamentStitchSpeed":83,"filamentStitchLength":71,"filamentStitchGlow":85},
   {"name":"Ritual Seam Summons","filamentStitchMode":"Ritual overlock","filamentStitchAmount":94,"filamentStitchSpeed":90,"filamentStitchLength":82,"filamentStitchGlow":92},
-  {"name":"Witch Knot Transmission","filamentStitchMode":"Witch-knot relay","filamentStitchAmount":96,"filamentStitchSpeed":63,"filamentStitchLength":93,"filamentStitchGlow":99}
+  {"name":"Witch Knot Transmission","filamentStitchMode":"Witch-knot relay","filamentStitchAmount":96,"filamentStitchSpeed":63,"filamentStitchLength":93,"filamentStitchGlow":99},
+  {name:"Gilded chain couture",
+    filamentStitchMode:"Chain stitch",filamentStitchAmount:90,
+    filamentStitchSpeed:38,filamentStitchLength:38,filamentStitchGlow:65},
+  {name:"Pixel cross-stitch",
+    filamentStitchMode:"Cross-stitch",filamentStitchAmount:93,
+    filamentStitchSpeed:43,filamentStitchLength:43,filamentStitchGlow:68},
+  {name:"Spectral satin work",
+    filamentStitchMode:"Satin fill",filamentStitchAmount:96,
+    filamentStitchSpeed:48,filamentStitchLength:48,filamentStitchGlow:71},
+  {name:"Heirloom blanket hem",
+    filamentStitchMode:"Blanket stitch",filamentStitchAmount:90,
+    filamentStitchSpeed:53,filamentStitchLength:53,filamentStitchGlow:74},
+  {name:"Feathered alien sampler",
+    filamentStitchMode:"Feather stitch",filamentStitchAmount:93,
+    filamentStitchSpeed:58,filamentStitchLength:58,filamentStitchGlow:77},
+  {name:"Cabled sweater nebula",
+    filamentStitchMode:"Cable knit",filamentStitchAmount:96,
+    filamentStitchSpeed:63,filamentStitchLength:63,filamentStitchGlow:80},
+  {name:"The ghost bobbin",
+    filamentStitchMode:"Ghost bobbin",filamentStitchAmount:90,
+    filamentStitchSpeed:68,filamentStitchLength:68,filamentStitchGlow:83},
+  {name:"Quantum seam ripper",
+    filamentStitchMode:"Quantum unpick",filamentStitchAmount:93,
+    filamentStitchSpeed:73,filamentStitchLength:73,filamentStitchGlow:86},
+  {name:"Zipper beast",
+    filamentStitchMode:"Mutant zipper",filamentStitchAmount:96,
+    filamentStitchSpeed:78,filamentStitchLength:78,filamentStitchGlow:89},
+  {name:"Recursive repair ritual",
+    filamentStitchMode:"Fractal mending",filamentStitchAmount:90,
+    filamentStitchSpeed:83,filamentStitchLength:83,filamentStitchGlow:92}
 ];
 export function applyFilamentStitchPreset(state,name){
  const preset=filamentStitchPresets.find(p=>p.name===name);
@@ -798,6 +932,60 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     mask=1.0-smoothstep(.41,.61,r);
     phase=r*3.7+a*.7+h+t*.19;
     highlight=pow(.5+.5*sin(r*29.0-t*2.8+a*3.0),4.0);
+  }else if(species==16){ // BASKET TWILL: alternating over-under warp and weft.
+    vec2 loom=q*(.8+density*.78);
+    vec2 cell=floor(loom),f=fract(loom)-.5;
+    float twill=mod(cell.x+2.0*cell.y,4.0);
+    float warp=abs(f.x),weft=abs(f.y);
+    threadD=min(warp,weft)*.16;
+    phase=loom.x*1.7+loom.y*1.37;
+    highlight=.5+.5*cos(twill*1.5708+phase*.12+t*.32);
+  }else if(species==17){ // HERRINGBONE: mirrored directional woven chevrons.
+    vec2 loom=q*(.62+density*.84);
+    float stripe=floor(loom.y*.42);
+    float direction=mix(-1.0,1.0,mod(stripe,2.0));
+    float v=abs(fract(loom.x+direction*loom.y*.58)-.5);
+    float cross=abs(fract(loom.y*.79)-.5);
+    threadD=min(v*.15,cross*.19);
+    phase=loom.x*.82+direction*loom.y*.63;
+    highlight=.5+.5*sin(phase*5.2+t*.45+stripe);
+  }else if(species==18){ // MACRAMÉ: symmetric diamond loops and knots.
+    vec2 loom=q*(.56+density*.54),cell=floor(loom);
+    vec2 p=fract(loom)-.5;
+    float diamond=abs(abs(p.x)+abs(p.y)-.34);
+    float crossings=abs(p.x*p.y);
+    float knot=abs(length(p)-.095);
+    threadD=min(min(diamond*.28,crossings*.75),knot*.22);
+    phase=(p.x-p.y)*9.0+cell.x*1.9-cell.y*1.4;
+    highlight=.5+.5*cos(phase*1.7+t*.38);
+  }else if(species==19){ // BOBBIN LACE: diagonal pairs and pinhole rosettes.
+    vec2 loom=q*(.65+density*.66);
+    vec2 p=fract(loom)-.5;
+    float crossing=min(abs(p.x+p.y),abs(p.x-p.y));
+    float rosette=abs(length(p)-.27);
+    float pins=abs(sin(atan(p.y,p.x)*8.0+t*.16));
+    threadD=min(crossing*.16,rosette*(.18+.06*pins));
+    phase=(loom.x+loom.y)*.93+atan(p.y,p.x);
+    highlight=.5+.5*cos(phase*4.3+t*.27);
+  }else if(species==20){ // MOBIUS CABLE: twisting paired strands on a spiral band.
+    float angle=atan(q.y,q.x),radial=length(q);
+    float twist=angle*2.0+log(1.0+radial)*9.0+t*.31;
+    float cable=sin(twist*3.0+sin(angle*2.0)*1.8);
+    float partner=cos(twist*3.0-angle*2.0+t*.23);
+    threadD=min(abs(cable)*.081,abs(partner)*.083);
+    mask=1.0-smoothstep(7.0,11.5,radial);
+    phase=twist*1.3;
+    highlight=.5+.5*sin(twist*6.0+t*.74);
+  }else if(species==21){ // PARASITIC LADDER: rungs crawl over a growing scaffold.
+    vec2 loom=q*(.54+density*.67);
+    float serpent=sin(loom.y*.7+t*.55+sin(loom.x*.41)*.5);
+    float rail=abs(abs(fract(loom.x*.28+serpent*.13)-.5)-.29);
+    float rung=abs(fract(loom.y*.79+sin(loom.x*.4+t*.32)*.16)-.5);
+    float bar=min(rail*.19,rung*.21+rail*.13);
+    float parasite=abs(sin(loom.x*1.3+loom.y*.61-t*.94));
+    threadD=min(bar,parasite*.073+.015);
+    phase=loom.y*.73+serpent*2.1;
+    highlight=.5+.5*cos(phase*4.0-t*1.3);
   }else{
     // The branch is intentionally unreachable for validated species IDs.
     threadD=1.0;
@@ -978,6 +1166,61 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     float relay=pow(awake,5.0);
     visibleStitch=.12+.88*(.15+.85*relay*knot);
     needle=pow(awake,16.0)*knot;
+  }else if(filamentStitchMode==21){ // CHAIN STITCH: interlocking loop waves.
+    float loop=.5+.5*cos(localProgress*21.0-sewClock*.78);
+    float chain=.5+.5*cos(localProgress*10.5+sewClock*.36);
+    visibleStitch=.13+.87*smoothstep(.28,.71,loop)*(.55+.45*chain);
+    needle=pow(loop,15.0)*pow(chain,3.0);
+  }else if(filamentStitchMode==22){ // CROSS STITCH: alternating X passes.
+    float cross=.5+.5*cos(localProgress*32.0-sewClock*.48);
+    float reverse=.5+.5*cos(localProgress*32.0+sewClock*.51+1.5708);
+    visibleStitch=.12+.88*smoothstep(.29,.79,max(cross,reverse)*.82);
+    needle=pow(max(cross,reverse),17.0);
+  }else if(filamentStitchMode==23){ // SATIN FILL: dense comb of fine strokes.
+    float comb=.5+.5*cos(localProgress*69.0-sewClock*.59);
+    float sweep=.5+.5*sin(q.y*.47+sewClock*.27);
+    visibleStitch=.17+.83*smoothstep(.32,.64,comb)*(.6+.4*sweep);
+    needle=pow(comb,22.0)*sweep;
+  }else if(filamentStitchMode==24){ // BLANKET STITCH: hems advance around edges.
+    float hem=.5+.5*cos(localProgress*24.0-sewClock*.65);
+    float wrap=.5+.5*sin(q.y*1.4+sewClock*.26+seedPhase*.17);
+    visibleStitch=.12+.88*smoothstep(.3,.72,hem)*(.45+.55*wrap);
+    needle=pow(hem,13.0)*pow(wrap,4.0);
+  }else if(filamentStitchMode==25){ // FEATHER STITCH: branching mirrored passes.
+    float feather=sin(localProgress*28.0-sewClock*.65+
+      sin(q.y*.85+t*.22)*1.2);
+    float branch=.5+.5*cos(localProgress*12.0+sewClock*.21);
+    visibleStitch=.1+.9*smoothstep(-.25,.61,feather)*(.49+.51*branch);
+    needle=pow(.5+.5*feather,10.0)*branch;
+  }else if(filamentStitchMode==26){ // CABLE KNIT: crossing rolling stitches.
+    float cableA=.5+.5*cos(localProgress*19.0-sewClock*.59);
+    float cableB=.5+.5*cos(localProgress*19.0+sewClock*.43+2.094);
+    float knitting=max(cableA,cableB);
+    visibleStitch=.14+.86*smoothstep(.31,.79,knitting);
+    needle=pow(cableA*cableB+.5*knitting,12.0);
+  }else if(filamentStitchMode==27){ // GHOST BOBBIN: transparent missing stitches.
+    float haunt=.5+.5*sin(localProgress*15.0-sewClock*.61);
+    float echo=.5+.5*cos(localProgress*47.0+sewClock*.91+seedPhase);
+    visibleStitch=.04+.96*smoothstep(.13,.75,haunt*.7+echo*.3);
+    needle=pow(echo,19.0)*pow(haunt,4.0);
+  }else if(filamentStitchMode==28){ // QUANTUM UNPICK: superposed stitch gaps.
+    float pair=cos(localProgress*17.0-sewClock*.87);
+    float alternate=sin(localProgress*31.0+sewClock*.77+seedPhase*.4);
+    float superposed=abs(pair*.57+alternate*.43);
+    visibleStitch=.06+.94*smoothstep(.11,.74,superposed);
+    needle=pow(superposed,12.0);
+  }else if(filamentStitchMode==29){ // MUTANT ZIPPER: locking luminous teeth.
+    float teeth=.5+.5*cos(localProgress*57.0-sewClock*.42);
+    float jaws=.5+.5*sin(localProgress*8.0-sewClock*.94+q.x*.42);
+    visibleStitch=.11+.89*smoothstep(.28,.83,teeth)*(.25+.75*jaws);
+    needle=pow(teeth,17.0)*pow(jaws,7.0);
+  }else if(filamentStitchMode==30){ // FRACTAL MENDING: repairs within repairs.
+    float mother=sin(localProgress*7.0-sewClock*.41);
+    float child=sin(localProgress*27.0-sewClock*1.19+mother*2.2);
+    float grandchild=sin(localProgress*81.0-sewClock*2.1+child*2.0);
+    float repair=.49*mother+.33*child+.18*grandchild;
+    visibleStitch=.1+.9*smoothstep(-.28,.49,repair);
+    needle=pow(.5+.5*repair,12.0);
   }else{ // Invalid stored mode: leave the drawn thread untouched.
     visibleStitch=1.0;
     needle=0.0;
@@ -1047,9 +1290,54 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
       vec3(.92,.97,1.0)*helix*(.23+.6*luster);
     thread*=.75+.3*spun;
     extraHalo=.18+.33*luster;
+  }else if(fiberMaterial==6){ // MERCERIZED COTTON: fine dry twisted matte staple.
+    float staple=.5+.5*sin(phase*34.0+q.y*11.0+t*.18);
+    thread=mix(thread*.68,ink*(.72+.24*staple),.72);
+    thread+=glimmer*cord*glisten*luster*.19;
+    extraHalo=.012+.035*nap;
+  }else if(fiberMaterial==7){ // METALLIC TINSEL: flat reflective foil facets.
+    float foil=.5+.5*cos(phase*43.0+q.x*13.0-t*.62);
+    float flash=pow(max(0.0,.5+.5*cos(across*4.2-foil*3.0)),13.0);
+    thread=ink*.33+glimmer*(.32+.63*foil)+vec3(1.0,.99,.94)*flash*luster;
+    extraHalo=.08+.1*luster;
+  }else if(fiberMaterial==8){ // CHENILLE PLUSH: soft bulky crushed pile.
+    float shag=.5+.5*cos(phase*62.0+q.y*31.0+t*.21);
+    thread=ink*(.4+.38*fibers+.2*shag)+glimmer*.08;
+    thread*=.84+.13*spun;
+    extraHalo=.06+.1*nap;
+  }else if(fiberMaterial==9){ // PEARL FLOSS: satin-pearl diffraction stripes.
+    vec3 pearl=.5+.5*cos(vec3(0.0,2.094,4.188)+
+      phase*3.1+across*2.2+colorTime*.04);
+    thread=mix(ink*.7+glimmer*.29,pearl*.65+vec3(.53,.57,.63),.45+.32*luster);
+    thread+=vec3(1.0,.98,.94)*glisten*cord*.3;
+  }else if(fiberMaterial==10){ // FIBER OPTIC: bright travelling rainbow light.
+    vec3 ray=.5+.5*cos(vec3(0.0,2.094,4.188)+
+      phase*2.7-t*1.9+across*4.5);
+    float pulse=pow(.5+.5*cos(phase*9.0-t*2.3),7.0);
+    thread=ink*.3+ray*(.57+.55*pulse)+vec3(.92,.97,1.0)*pulse*luster*.5;
+    extraHalo=.22+.28*luster;
+  }else if(fiberMaterial==11){ // GELATIN NERVE: translucent internal axonal waves.
+    float axon=.5+.5*sin(phase*22.0-t*1.23+sin(q.y*2.0));
+    vec3 gel=ink*.45+glimmer*(.17+.32*axon)+vec3(.73,.96,.94)*axon*.26;
+    thread=mix(thread*.28,gel,.76);
+    thread+=vec3(1.0,.96,1.0)*glisten*.36*luster;
+    extraHalo=.14+.2*luster;
+  }else if(fiberMaterial==12){ // OIL SLICK LATEX: spectral reflective viscous skin.
+    vec3 oil=.5+.5*cos(vec3(0.0,2.094,4.188)+
+      across*8.1+phase*.73-t*.58+seedPhase*.21);
+    float wet=pow(max(0.0,.5+.5*sin(spun*3.0+across*3.7)),8.0);
+    thread=ink*.19+oil*(.37+.67*luster)+vec3(.98,.99,1.0)*wet*.42;
+    extraHalo=.1+.18*luster;
+  }else if(fiberMaterial==13){ // BIOLUMINESCENT MYCELIUM: pulsing spore-laced hyphae.
+    float hyphae=.5+.5*sin(phase*43.0+sin(q.x*4.0)*2.1-t*.71);
+    float spores=pow(hyphae,18.0);
+    thread=ink*.48+glimmer*(.3+.4*hyphae)+vec3(.84,1.0,.82)*spores*.58;
+    thread*=.7+.32*fibers;
+    extraHalo=.15+.28*hyphae;
   }
   // Edge nap is geometric: it expands only near the actual stitch edge.
-  float fuzz=nap*(fiberMaterial==4?1.0:.53);
+  float fuzz=nap*((fiberMaterial==4||fiberMaterial==8)?1.0:
+    (fiberMaterial==13?.81:.53));
   float fray=(1.0-smoothstep(width,width*3.2+aa,threadD))*
     (1.0-core)*fibers*fuzz*filamentAmount;
   // Beads are pearls separated along the local filament path, not a

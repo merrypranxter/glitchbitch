@@ -1534,8 +1534,9 @@ export function EffectsInspector({ history, onTool, tool }) {
           {family.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
         </optgroup>)}
       </Select>
-      {underlayDescriptions[s.underlayMode]&&
+      {underlayDescriptions[s.underlayMode] && (
         <p className="control-note">{underlayDescriptions[s.underlayMode]}</p>
+      )}
       <Parameter label="Underlay presence" name="underlayAmount" history={history}/>
       <Parameter label="Fabric pattern scale" name="underlayScale" history={history}/>
       <Parameter label="Weave / pile density" name="underlayDensity" history={history}/>

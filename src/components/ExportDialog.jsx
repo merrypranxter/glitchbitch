@@ -212,6 +212,9 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
                 ?"Encodes H.264 video at explicit frame times when WebCodecs is available; Safari can use native MP4 recording as fallback. Larger clips demand more processing and storage."
                 :"Real looping GIF, 15 fps, up to 1080px and 10 seconds. For smoother, longer high-resolution motion choose MP4."}
               {" "}Keep this tab visible while rendering.
+              {" "}If your device can't reproduce all active shader effects,
+              the exporter now stops with an error instead of downloading a
+              deceptively simplified MP4. Try a lower resolution.
             </p>
             {clipFormat==="mp4"&&!capability&&<p className="field-error">
               This browser doesn't expose an MP4 encoder. GIF, PNG and recipes still work.
@@ -276,9 +279,10 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
                 Attach it here if the export still looks wrong.</p>
             </details>}
         </>}
-        <p className="export-note">These previews are rendered by the actual PNG/GIF/MP4
-          compositor, not by the browser text overlay. The A/B pair uses the
-          exact same frame and colors. Modes like Screen on a bright backdrop
+        <p className="export-note">These previews are rendered by the same strict-effects
+          renderer as PNG/GIF/MP4, not by the browser text overlay. If an effect
+          cannot be rendered, an error appears rather than a downgraded proof.
+          The A/B pair uses the exact same frame and colors. Modes like Screen on a bright backdrop
           can appear subtle; try Difference or Multiply to verify the effect.</p>
       </div>}
       {error&&<p className="field-error" role="alert">{error}</p>}

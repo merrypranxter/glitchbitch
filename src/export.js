@@ -1,5 +1,5 @@
 import { createRenderer } from "./renderer.js";
-import { isArtworkParityError } from "./export-parity.js";
+import { isArtworkParityError, artworkParityError } from "./export-parity.js";
 import { ratios } from "./data.js";
 import { hasVisibleLettering, paintLettering, waitForLetteringFonts } from "./text-compositor.js";
 
@@ -45,7 +45,7 @@ async function primeFrameHistory(renderer,state,timeline,size,signal){
   for(let i=5;i>=1;i--){
     checkExport(signal);
     if(!renderer.draw(state,clockAt(state,timeline,-i/20),size.width,size.height))
-      throw Error("GPU context lost while preparing the effect history.");
+      throw artworkParityError("GPU context lost during feedback preparation");
     await waitForGraphics(renderer,signal);
   }
 }
@@ -58,7 +58,7 @@ export async function renderImage(state, timeline, longEdge = 2160, type = "imag
     const { width, height } = dimensions(state.ratio, longEdge);
     await primeFrameHistory(renderer,state,timeline,{width,height});
     if(!renderer.draw(state, timeline, width, height))
-      throw Error("Graphics context was lost during PNG capture.");
+      throw artworkParityError("GPU context lost during PNG capture");
     // PNG should wait for the exact same GPU fence used by GIF/MP4.
     // Otherwise toBlob may race a newly compiled/large shader frame.
     await waitForGraphics(renderer);
@@ -148,7 +148,7 @@ function createFrameWorkspace(state, timeline, size, signal) {
     }
     const frameClock = clockAt(state, timeline, seconds);
     if(!renderer.draw(state, frameClock, size.width, size.height))
-      throw Error("Graphics context was lost during video capture.");
+      throw artworkParityError("GPU context lost during video capture");
     await waitForGraphics(renderer,signal);
     renderer.readFrame(bytes);
     for(let y=0;y<size.height;y++)

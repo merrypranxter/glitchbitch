@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {initial,validateRecipe,randomize} from "../src/data.js";
 import {photonSpecies,photonPresets,photonControlNames,photonPresetState,nextPhotonSpecies,photonGLSL} from "../src/photon-zoo.js";
-test("Eighteen different optical art species and presets are defined",()=>{
- assert.equal(photonSpecies.length,18);
- assert.equal(new Set(photonSpecies).size,18);
- assert.equal(photonPresets.length,18);
+test("Twenty-six different optical art species and presets are defined",()=>{
+ assert.equal(photonSpecies.length,26);
+ assert.equal(new Set(photonSpecies).size,26);
+ assert.equal(photonPresets.length,26);
  for(const p of photonPresets){
   assert.ok(photonSpecies.includes(p.species),p.name);
   for(const key of photonControlNames){
@@ -57,7 +57,7 @@ test("Full Surprise and Mutate include new optical family and preserve existing 
  assert.equal(mutated.photonSpecies,state.photonSpecies);
  assert.equal(mutated.lettering,state.lettering);
 });
-test("Shader code has eighteen species and uses existing time, palette and math coordinates",()=>{
+test("Shader code has twenty-six species and uses existing time, palette and math coordinates",()=>{
  assert.match(photonGLSL,/vec3 livingPhotonZoo\(/);
  assert.match(photonGLSL,/uniform int photonSpecies;/);
  assert.match(photonGLSL,/uniform float photonAmount,photonScale,photonMotion,photonDensity/);

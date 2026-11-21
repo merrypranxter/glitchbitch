@@ -25,3 +25,14 @@ void main() {
   mixed = mix(mixed, slipped, corruption * .23 * hasMemory);
   gl_FragColor = vec4(clamp(mixed, 0.0, 1.0), 1.0);
 }`;
+
+
+// Fullscreen presentation pass for ping-pong feedback. Unlike copying the
+// browser's default framebuffer back into a texture, both history writes
+// happen in explicit, complete GPU framebuffers (works on WebGL1 and WebGL2).
+export const feedbackDisplayFragment = `precision highp float;
+varying vec2 texUV;
+uniform sampler2D outputTex;
+void main() {
+  gl_FragColor = texture2D(outputTex, texUV);
+}`;

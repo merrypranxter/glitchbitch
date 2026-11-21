@@ -168,7 +168,10 @@ test("memory renderer only activates when explicitly enabled", async () => {
   const shader = readFileSync(new URL("../src/renderer.js", import.meta.url), "utf8");
   const memory = readFileSync(new URL("../src/feedback.js", import.meta.url), "utf8");
   assert.match(shader, /s.afterimage > 0 \|\| s.datamosh > 0/);
-  assert.match(shader, /gl.copyTexSubImage2D/);
+  assert.doesNotMatch(shader, /gl\.copyTexSubImage2D\(/);
+  assert.match(shader, /history:\[first,second\]/);
+  assert.match(shader, /memory\.readIndex=writeIndex/);
+  assert.match(shader, /gl\.framebufferTexture2D\(gl\.FRAMEBUFFER,gl\.COLOR_ATTACHMENT0,/);
   assert.match(shader, /resetFeedback\(\)/);
   assert.match(memory, /uniform sampler2D sceneTex, historyTex/);
 });

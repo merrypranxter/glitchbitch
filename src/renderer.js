@@ -2,7 +2,7 @@ import { appearanceGLSL } from "./appearance.js";
 import { artworkParityError } from "./export-parity.js";
 import { geometryGLSL } from "./geometry.js";
 import { motionGLSL } from "./motion.js";
-import { feedbackVertex, feedbackFragment } from "./feedback.js";
+import { feedbackVertex, feedbackFragment, feedbackDisplayFragment } from "./feedback.js";
 import { createBiology, BIO_SIZE } from "./biology.js";
 import { bioGLSL } from "./bio-shader.js";
 import { stereoGLSL } from "./stereo.js";
@@ -490,8 +490,9 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
   function releaseMemory() {
     if (memory) {
       gl.deleteTexture(memory.scene);
-      gl.deleteTexture(memory.history);
+      for (const texture of memory.history) gl.deleteTexture(texture);
       gl.deleteFramebuffer(memory.fbo);
+      gl.deleteFramebuffer(memory.outputFbo);
       memory = null;
     }
     memoryIdentity = "";
@@ -512,92 +513,148 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
     if (memoryShader) return memoryShader;
     const vs = gl2 ? "#version 300 es\n" +
       feedbackVertex.replace("attribute vec2", "in vec2").replace("varying vec2", "out vec2") : feedbackVertex;
-    const fs = gl2 ? "#version 300 es\n" +
-      feedbackFragment.replace("precision highp float;", "precision highp float;\nout vec4 fragColor;")
+    const fragmentSource = (raw) => gl2 ? "#version 300 es\n" +
+      raw.replace("precision highp float;", "precision highp float;\nout vec4 fragColor;")
         .replace("varying vec2", "in vec2").replaceAll("texture2D(", "texture(")
-        .replaceAll("gl_FragColor", "fragColor") : feedbackFragment;
-    let vert, frag, program;
-    try {
-      vert = compile(gl.VERTEX_SHADER, vs);
-      frag = compile(gl.FRAGMENT_SHADER, fs);
-      program = gl.createProgram();
-      gl.attachShader(program, vert);
-      gl.attachShader(program, frag);
-      gl.bindAttribLocation(program, 0, "position");
-      gl.linkProgram(program);
-      if (!gl.getProgramParameter(program, gl.LINK_STATUS))
-        throw Error(gl.getProgramInfoLog(program));
-      memoryShader = {
-        program,
-        uniforms: new Map(),
-      };
+        .replaceAll("gl_FragColor", "fragColor") : raw;
+    // A separate fullscreen presentation shader avoids default-framebuffer
+    // copyTexSubImage2D: that copy is rejected by some iOS WebGL backbuffers.
+    const link = (source) => {
+      let vert, frag, program;
+      try {
+        vert = compile(gl.VERTEX_SHADER, vs);
+        frag = compile(gl.FRAGMENT_SHADER, fragmentSource(source));
+        program = gl.createProgram();
+        if(!program)throw Error("Frame-memory shader program allocation failed.");
+        gl.attachShader(program, vert);
+        gl.attachShader(program, frag);
+        gl.bindAttribLocation(program, 0, "position");
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS))
+          throw Error(gl.getProgramInfoLog(program) || "Frame-memory shader link failed.");
+        return program;
+      } catch(e) {
+        if(program)gl.deleteProgram(program);
+        throw e;
+      } finally {
+        if(vert)gl.deleteShader(vert);
+        if(frag)gl.deleteShader(frag);
+      }
+    };
+    let program, displayProgram;
+    try{
+      program=link(feedbackFragment);
+      displayProgram=link(feedbackDisplayFragment);
+      memoryShader={program,displayProgram,uniforms:new Map(),displayUniforms:new Map()};
       return memoryShader;
-    } catch (e) {
-      if (program) gl.deleteProgram(program);
+    } catch(e){
+      if(program)gl.deleteProgram(program);
+      if(displayProgram)gl.deleteProgram(displayProgram);
       throw e;
-    } finally {
-      if (vert) gl.deleteShader(vert);
-      if (frag) gl.deleteShader(frag);
     }
+  }
+  function assertMemoryGl(label){
+    const error=gl.getError();
+    if(error!==gl.NO_ERROR)
+      throw Error(label+" (WebGL 0x"+error.toString(16)+")");
   }
   function prepareMemory(w, h) {
     const shader = memoryProgram();
     if (memory && memory.width === w && memory.height === h) return { shader, memory };
     releaseMemory();
-    let scene, history, fbo;
+    let scene, first, second, fbo, outputFbo;
     try {
       gl.activeTexture(gl.TEXTURE0);
-      scene = createMemoryTexture(w, h);
-      history = createMemoryTexture(w, h);
-      fbo = gl.createFramebuffer();
-      if (!fbo) throw Error("GPU framebuffer allocation failed.");
-      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, scene, 0);
-      if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE)
-        throw Error("Previous-frame buffer unsupported by this device.");
-      memory = { scene, history, fbo, width: w, height: h, valid: false };
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      return { shader, memory };
-    } catch (e) {
-      if (scene) gl.deleteTexture(scene);
-      if (history) gl.deleteTexture(history);
-      if (fbo) gl.deleteFramebuffer(fbo);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      scene=createMemoryTexture(w,h);
+      first=createMemoryTexture(w,h);
+      second=createMemoryTexture(w,h);
+      fbo=gl.createFramebuffer();
+      outputFbo=gl.createFramebuffer();
+      if(!fbo||!outputFbo)throw Error("Frame-memory FBO allocation failed.");
+      gl.bindFramebuffer(gl.FRAMEBUFFER,fbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,scene,0);
+      if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)
+        throw Error("Current-scene frame-memory buffer incomplete.");
+      gl.bindFramebuffer(gl.FRAMEBUFFER,outputFbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,second,0);
+      if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)
+        throw Error("Ping-pong history framebuffer incomplete.");
+      assertMemoryGl("Frame-memory texture or FBO initialization failed");
+      memory={scene,history:[first,second],fbo,outputFbo,width:w,height:h,
+        readIndex:0,valid:false};
+      return {shader,memory};
+    } catch(e){
+      if(scene)gl.deleteTexture(scene);
+      if(first)gl.deleteTexture(first);
+      if(second)gl.deleteTexture(second);
+      if(fbo)gl.deleteFramebuffer(fbo);
+      if(outputFbo)gl.deleteFramebuffer(outputFbo);
       throw e;
+    } finally {
+      gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D,null);
     }
   }
-  function compositeFeedback(s, timeline, w, h) {
-    const shader = memoryShader;
-    const uniform = (name) => {
-      if (!shader.uniforms.has(name))
-        shader.uniforms.set(name, gl.getUniformLocation(shader.program, name));
+  function compositeFeedback(s,timeline,w,h) {
+    const shader=memoryShader;
+    const uniform=(name)=>{
+      if(!shader.uniforms.has(name))
+        shader.uniforms.set(name,gl.getUniformLocation(shader.program,name));
       return shader.uniforms.get(name);
     };
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, w, h);
-    gl.useProgram(shader.program);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, memory.scene);
-    gl.uniform1i(uniform("sceneTex"), 0);
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, memory.history);
-    gl.uniform1i(uniform("historyTex"), 1);
-    gl.uniform2f(uniform("resolution"), w, h);
-    gl.uniform1f(uniform("time"), timeline.time + timeline.colorTime * .17);
-    gl.uniform1f(uniform("seed"), s.seed);
-    for (const k of ["afterimage", "datamosh", "memoryDrift", "memoryDecay"])
-      gl.uniform1f(uniform(k), s[k] / 100);
-    gl.uniform1f(uniform("hasMemory"), memory.valid ? 1 : 0);
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-    // Copy the displayed, fully composited frame into the previous-frame texture.
-    // No CPU readback or accumulating frame array: memory use stays bounded.
-    gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, memory.history);
-    gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 0, 0, w, h);
-    if (gl.getError() !== gl.NO_ERROR)
-      throw Error("GPU history texture copy failed.");
-    gl.activeTexture(gl.TEXTURE0);
-    memory.valid = true;
+    const displayUniform=(name)=>{
+      if(!shader.displayUniforms.has(name))
+        shader.displayUniforms.set(name,gl.getUniformLocation(shader.displayProgram,name));
+      return shader.displayUniforms.get(name);
+    };
+    const readIndex=memory.readIndex;
+    const writeIndex=1-readIndex;
+    try{
+      // Render feedback into a texture attached to our own FBO, while
+      // reading the OTHER history texture. Never read/write the same texture.
+      gl.bindFramebuffer(gl.FRAMEBUFFER,memory.outputFbo);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,
+        gl.TEXTURE_2D,memory.history[writeIndex],0);
+      if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)
+        throw Error("History target framebuffer incomplete.");
+      gl.viewport(0,0,w,h);
+      gl.useProgram(shader.program);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D,memory.scene);
+      gl.uniform1i(uniform("sceneTex"),0);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D,memory.history[readIndex]);
+      gl.uniform1i(uniform("historyTex"),1);
+      gl.uniform2f(uniform("resolution"),w,h);
+      gl.uniform1f(uniform("time"),timeline.time+timeline.colorTime*.17);
+      gl.uniform1f(uniform("seed"),s.seed);
+      for(const k of ["afterimage","datamosh","memoryDrift","memoryDecay"])
+        gl.uniform1f(uniform(k),s[k]/100);
+      gl.uniform1f(uniform("hasMemory"),memory.valid?1:0);
+      gl.drawArrays(gl.TRIANGLES,0,6);
+      assertMemoryGl("GPU history composite draw failed");
+      // Present the EXACT composited texture. No copy from the default
+      // framebuffer, no GPU→CPU readback and no lossy proxy render.
+      gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+      gl.viewport(0,0,w,h);
+      gl.useProgram(shader.displayProgram);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D,null);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D,memory.history[writeIndex]);
+      gl.uniform1i(displayUniform("outputTex"),0);
+      gl.drawArrays(gl.TRIANGLES,0,6);
+      assertMemoryGl("GPU history presentation draw failed");
+      memory.readIndex=writeIndex;
+      memory.valid=true;
+    } finally {
+      gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D,null);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D,null);
+    }
   }
   function compile(type, source) {
     const shader = gl.createShader(type);
@@ -1544,6 +1601,9 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       gl.drawArrays(gl.TRIANGLES, 0, 6);
       if (drawWithMemory) {
         try {
+          // Diagnose an offscreen *scene* render error separately from the
+          // feedback and presentation draws; never blame the history copy.
+          assertMemoryGl("GPU source scene draw failed");
           compositeFeedback(s, timeline, width, height);
           lastMemoryTime = timeline.time;
           lastMemoryColorTime = timeline.colorTime;
@@ -1589,7 +1649,10 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       releaseLettering();
       if(textOverlayProgram)gl.deleteProgram(textOverlayProgram);
       gl.deleteTexture(emptyBioTexture);
-      if (memoryShader) gl.deleteProgram(memoryShader.program);
+      if (memoryShader){
+        gl.deleteProgram(memoryShader.program);
+        gl.deleteProgram(memoryShader.displayProgram);
+      }
       memoryShader = null;
       programs.forEach((p) => gl.deleteProgram(p.program));
       programs.clear();

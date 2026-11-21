@@ -51,6 +51,8 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentMaterials,filamentMaterialPresets,applyFilamentMaterialPreset,remixUnusualFilamentMaterials,
   filamentAdornmentModes,filamentAdornmentFamilies,filamentAdornmentDescriptions,
   filamentAdornmentPresets,applyFilamentAdornmentPreset,remixFilamentAdornments,remixThreadCouture,
+  filamentMorphModes,filamentMorphFamilies,filamentMorphDescriptions,
+  filamentMorphPresets,applyFilamentMorphPreset,remixFilamentMorph,
   remixFilamentMaterials,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
@@ -281,6 +283,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [hybridPreset,setHybridPreset]=React.useState(filamentHybridPresets[0].name);
   const [materialPreset,setMaterialPreset]=React.useState(filamentMaterialPresets[0].name);
   const [adornmentPreset,setAdornmentPreset]=React.useState(filamentAdornmentPresets[0].name);
+  const [morphPreset,setMorphPreset]=React.useState(filamentMorphPresets[0].name);
   const [stitchPreset,setStitchPreset]=React.useState(filamentStitchPresets[0].name);
   const [sculptPreset,setSculptPreset]=React.useState(filamentSculptPresets[0].name);
   const [underlayPreset,setUnderlayPreset]=React.useState(underlayPresets[0].name);
@@ -1775,6 +1778,57 @@ export function EffectsInspector({ history, onTool, tool }) {
           </button>
         </div>
         <p className="control-note">The color offset applies to the second parent when crossbreeding is on. Material details compile only when used, and the old shader remains the fallback.</p>
+      </details>
+      <details className="filament-crossbreeder filament-metamorphosis">
+        <summary>🦋 THREAD METAMORPHOSIS — FABRIC THAT CHANGES MATERIAL</summary>
+        <p className="control-note">Your original Dress the Threads selection stays intact. Pick what each parent's material MUTATES INTO, then choose how the transformation travels through the actual moving threads. Silk can turn opaline, gelatin can sprout luminous mycelium, and every combination still uses the real fiber shading. Off by default.</p>
+        <Select label="Transformation law" value={s.filamentMorphMode}
+          onChange={mode=>history.change(x=>({...x,filamentMorphMode:mode,
+            filamentAmount:mode==="Off"?x.filamentAmount:Math.max(72,x.filamentAmount),
+            filamentMorphAmount:mode==="Off"?x.filamentMorphAmount:Math.max(80,x.filamentMorphAmount)}))}>
+          {filamentMorphFamilies.map(family=><optgroup key={family.name} label={family.name}>
+            {family.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+          </optgroup>)}
+        </Select>
+        <p className="control-note">{filamentMorphDescriptions[s.filamentMorphMode]}</p>
+        <Select label="First parent transforms into" value={s.filamentMorphTarget}
+          onChange={target=>history.change(x=>({...x,filamentMorphTarget:target,
+            filamentAmount:Math.max(72,x.filamentAmount)}))}>
+          {filamentMaterials.map(name=><option key={name} value={name}>{name}</option>)}
+        </Select>
+        <Select label="Second parent transforms into" value={s.filamentSecondMorphTarget}
+          onChange={target=>history.change(x=>({...x,filamentSecondMorphTarget:target,
+            filamentAmount:Math.max(72,x.filamentAmount)}))}>
+          {filamentMaterials.map(name=><option key={name} value={name}>{name}</option>)}
+        </Select>
+        <Parameter label="Material transformation strength" name="filamentMorphAmount" history={history}/>
+        <Parameter label="Transformation patch scale" name="filamentMorphScale" history={history}/>
+        <Parameter label="Transformation speed" name="filamentMorphSpeed" history={history}/>
+        <Parameter label="Seam sharpness / diffusion" name="filamentMorphSharpness" history={history}/>
+        <Parameter label="Transformation frontier glow" name="filamentMorphGlow" history={history}/>
+        <Select label="Metamorphosis preset" value={morphPreset} onChange={setMorphPreset}>
+          {filamentMorphPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>applyFilamentMorphPreset(x,morphPreset))}>
+            Metamorphose threads
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentMorph(x))}>
+            <Dices size={13}/> Shuffle transformations
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentMorph(x,Math.random,true))}>
+            <Shuffle size={13}/> Shuffle fungal & impossible
+          </button>
+          <button type="button" className="button secondary"
+            disabled={s.filamentMorphAmount===0}
+            onClick={()=>history.change(x=>({...x,filamentMorphAmount:0}))}>
+            Stop morphing — keep fabric
+          </button>
+        </div>
+        <p className="control-note">Separate from stitch motion, geometric weaving, jewelry, color and lettering. Crossbred parents can transform toward completely different materials. The same deterministic shader is used for the artwork preview and MP4/GIF/PNG exports.</p>
       </details>
       <details className="filament-crossbreeder filament-adornment-lab">
         <summary>💎 THREAD JEWELRY — CHARMS, FRINGE & WEIRD SHIT</summary>

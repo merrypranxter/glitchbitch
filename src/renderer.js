@@ -13,7 +13,7 @@ import { compositionGLSL } from "./composition.js";
 import { backdropGLSL } from "./backdrops.js";
 import { microGLSL } from "./microstructure.js";
 import { substanceGLSL } from "./substance.js";
-import { photonGLSL, photonSpecies } from "./photon-zoo.js";
+import { photonGLSL, photonSpecies, specializePhotonGeometry } from "./photon-zoo.js";
 import { filamentGLSL, filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, specializeFilamentGeometry, specializeFilamentStitchMotion } from "./filament-forge.js";
 import { underlayGLSL, underlayModes } from "./living-underlay.js";
 import { tunnelGLSL } from "./tunnels.js";
@@ -671,11 +671,12 @@ export function createRenderer(canvas) {
     source=source.replace("/* SUBSTANCE_MODULE */",withSubstance?substanceGLSL:"");
     source=source.replace("/* SUBSTANCE_POST */",
       withSubstance?"col=livingSubstance(col,uv,p,v);":"");
-    // Specialize to the chosen species: dead branches disappear at compile
-    // time instead of making iPhone GPUs carry all eight architectures.
+    // Extract only the selected optical geometry before shader compilation.
+    // Full Surprise may choose from 18; an active canvas still compiles just 1.
     const specializedPhoton = withPhoton
-      ? photonGLSL.replace("uniform int photonSpecies;",
-          "#define photonSpecies "+Math.max(0,photonSpecies.indexOf(s.photonSpecies)))
+      ? specializePhotonGeometry(photonGLSL.replace("uniform int photonSpecies;",
+          "#define photonSpecies "+Math.max(0,photonSpecies.indexOf(s.photonSpecies))),
+          photonSpecies.indexOf(s.photonSpecies))
       : "";
     source=source.replace("/* PHOTON_MODULE */",specializedPhoton);
     source=source.replace("/* PHOTON_POST */",withPhoton?"col=livingPhotonZoo(col,uv,p,v);":"");

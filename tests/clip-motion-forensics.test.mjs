@@ -163,7 +163,8 @@ test("UI decodes the ACTUAL blob, uses matched strict PNG clocks, and lets user 
   assert.match(ui,/decodeGifMotionSamples\(ready\.blob,samples\)/);
   assert.match(ui,/decodeMp4MotionSamples\(ready\.blob,samples,ready\.fps\)/);
   assert.match(ui,/const seconds=ready\.format==="gif"\?sample\.seconds:picture\.mediaTime/);
-  assert.match(ui,/clockAt\(ready\.snapshot,ready\.timeline,seconds\)/);
+  assert.match(ui,/const originalSeconds=playbackTimeForMediaTime\(/);
+  assert.match(ui,/clockAt\(ready\.snapshot,ready\.timeline,originalSeconds\)/);
   assert.match(ui,/exactEffects:true,outputSize:ready\.frameSize/);
   assert.match(ui,/analyzeClipMotion\(references,decoded\)/);
   assert.match(ui,/verifyMotionDecodeTimes\(/);

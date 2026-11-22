@@ -5,6 +5,8 @@ import { Select } from "./Controls";
 import { ratios, recipeDocument } from "../data";
 import { dimensions, videoDimensions, renderImage, download, recordClip, videoFormat, clockAt } from "../export";
 import {LOOP_MODES,LOOP_BLEND_SECONDS} from "../loop-closure.js";
+import {PLAYBACK_MODES,BOOMERANG_CACHE_LIMIT,boomerangMemoryBytes,
+  playbackTimeForMediaTime} from "../boomerang-playback.js";
 import {analyzeEncodedFrame,differenceHeatmap,decodeStaticExport,
   decodeMp4Export,frameBlob,frameAuditReport} from "../encoded-frame-truth-serum.js";
 import {selectMotionSamples,analyzeClipMotion,decodeGifMotionSamples,
@@ -27,6 +29,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     [bitrate,setBitrate]=useState(16000000),
     [loopMode,setLoopMode]=useState("Off"),
     [loopBlendSeconds,setLoopBlendSeconds]=useState(.75),
+    [playbackMode,setPlaybackMode]=useState("Forward"),
     [ratio,setRatio]=useState(state.ratio),
     [busy,setBusy]=useState(false),
     [progress,setProgress]=useState(0),
@@ -76,6 +79,9 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     : dimensions(ratio,longEdge);
   const fps=clipFormat==="gif" ? 15 : frameRate;
   const clipDuration=clipFormat==="gif"?Math.min(duration,10):duration;
+  const boomerangCacheMiB=Math.ceil(
+    boomerangMemoryBytes(size,Math.round(clipDuration*fps),"Boomerang")/1048576);
+  const boomerangTooLarge=boomerangCacheMiB>BOOMERANG_CACHE_LIMIT/1048576;
   async function makeProof(){
     if(busy)return;
     setBusy(true);setError("");setProof(null);
@@ -181,18 +187,18 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       } else if(tab==="Video"){
         const result=await recordClip(snapshot,timeline,{
           format:clipFormat,longEdge:clipFormat==="gif"?gifSize:videoSize,
-          duration:clipDuration,fps,bitrate,loopMode,loopBlendSeconds,
+          duration:clipDuration,fps,bitrate,loopMode,loopBlendSeconds,playbackMode,
           onProgress:p=>{if(mounted.current)setProgress(p);},
           signal:controller.current.signal,
         });
         const loopSuffix=loopMode==="Off"?"":loopMode==="Soft closure"?"-softloop":
           loopMode==="Weft zipper"?"-weftloop":"-irisloop";
-        const filename=`glitch-${state.seed}-${size.width}x${size.height}-${Math.round(clipDuration)}s${loopSuffix}.${result.extension}`;
+        const filename=`glitch-${state.seed}-${size.width}x${size.height}-${Math.round(clipDuration)}s${playbackMode==="Boomerang"?"-boomerang":loopSuffix}.${result.extension}`;
         download(result.blob,filename);
         if(mounted.current)setReady({blob:result.blob,filename,type:result.mime,
           snapshot,timeline,frameSize:{...size},method:result.method,
           duration:clipDuration,fps:result.fps,frames:result.frames,
-          loopMode,loopBlendSeconds,format:clipFormat});
+          loopMode,loopBlendSeconds,playbackMode,format:clipFormat});
         onNotice(`${result.extension.toUpperCase()} exported. No WebM conversion necessary.`);
       } else {
         download(new Blob([JSON.stringify(recipeDocument(snapshot,title,timeline),null,2)],{type:"application/json"}),
@@ -223,7 +229,9 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       const decoded=gif?await decodeStaticExport(ready.blob):
         await decodeMp4Export(ready.blob);
       const seconds=Math.max(0,Math.min(Number(decoded.mediaTime)||0,ready.duration));
-      const matchedClock=clockAt(ready.snapshot,ready.timeline,seconds);
+      const matchedClock=clockAt(ready.snapshot,ready.timeline,
+        playbackTimeForMediaTime(seconds,ready.frames,ready.fps,
+          ready.playbackMode||"Forward"));
       const png=await renderImage(ready.snapshot,matchedClock,
         Math.max(ready.frameSize.width,ready.frameSize.height),"image/png",
         {exactEffects:true,outputSize:ready.frameSize});
@@ -285,7 +293,9 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
         // rendered the logical frame at index/fps, not its GIF display time.
         const seconds=ready.format==="gif"?sample.seconds:picture.mediaTime;
         setMotionAuditStage("Rendering strict PNG reference "+(i+1)+" / 3…");
-        const clock=clockAt(ready.snapshot,ready.timeline,seconds);
+        const originalSeconds=playbackTimeForMediaTime(
+          seconds,ready.frames,ready.fps,ready.playbackMode||"Forward");
+        const clock=clockAt(ready.snapshot,ready.timeline,originalSeconds);
         const png=await renderImage(ready.snapshot,clock,
           Math.max(ready.frameSize.width,ready.frameSize.height),"image/png",
           {exactEffects:true,outputSize:ready.frameSize});
@@ -300,7 +310,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
         references.push(ref);
         rows.push({
           label:sample.label,index:sample.index,
-          referenceTime:seconds,decodedTime:picture.mediaTime,
+          referenceTime:originalSeconds,decodedTime:picture.mediaTime,
           discrepancy:difference.discrepancy,
           difference,urls,
           sourceWidth:picture.sourceWidth,
@@ -467,6 +477,37 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
               {(clipFormat==="gif"?[2,3,5,10]:[2,3,5,6,10,15,30])
                 .map(v=><option key={v} value={v}>{v} seconds</option>)}
             </Select>
+            <Select label="Playback direction" value={playbackMode}
+              onChange={v=>{
+                setPlaybackMode(v);
+                if(v==="Boomerang")setLoopMode("Off");
+                setReady(null);
+                clearFrameAudit();clearMotionAudit();clearSeamAudit();
+              }}>
+              {PLAYBACK_MODES.map(mode=><option key={mode} value={mode}>
+                {mode==="Forward"?"Forward · original timeline":
+                  "Boomerang · real rendered frames, then exact reverse"}
+              </option>)}
+            </Select>
+            {playbackMode==="Boomerang"&&<>
+              <p className="export-note">
+                True Boomerang renders the first half once, caches the complete
+                image after ALL shaders, optics and lettering, then plays those
+                exact source frames backward. The selected {clipDuration}s duration
+                includes both directions. A middle turnaround may hold for one
+                frame at odd frame counts. The last frame is adjacent to the
+                first, making a natural one-frame loop seam.</p>
+              <p className={boomerangTooLarge?"field-error":"export-note"}>
+                iPhone frame cache estimate: {boomerangCacheMiB} MiB
+                {" "} / {BOOMERANG_CACHE_LIMIT/1048576} MiB safety limit.
+                {boomerangTooLarge?
+                  " Lower resolution, duration or frame rate to export this real, unflattened Boomerang.":
+                  " Frames are released as the reverse playback finishes."}
+                {" "}MP4 compression or Safari native recording may still alter the
+                decoded result; no WebP or fake reverse shader preview is used.
+              </p>
+            </>}
+            {playbackMode==="Forward"&&<>
             <Select label="Loop surgery" value={loopMode}
               onChange={v=>{setLoopMode(v);setReady(null);clearFrameAudit();clearMotionAudit();clearSeamAudit();}}>
               {LOOP_MODES.map(mode=><option key={mode} value={mode}>
@@ -493,6 +534,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
                 keeps running underneath. Edges, ghosting or motion changes
                 during the transition are intentional. Not a guarantee of
                 physically seamless velocity. Works with real GIF and MP4.</p>
+            </>}
             </>}
             {clipFormat==="mp4"&&<>
               <Select label="Frame rate" value={frameRate} onChange={v=>setFrameRate(+v)}>
@@ -686,6 +728,13 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
               <span key={step.between}> {step.between}: PNG {step.reference.meanRGBChange}
                 {" / "} encoded {step.encoded.meanRGBChange};</span>)}
           </p>
+          {ready.playbackMode==="Boomerang"&&<p className="export-note">
+            Exact Boomerang reverses the real stored composite frames after
+            the midpoint. For the second half, this PNG reference uses the
+            mirrored source time; feedback-dependent artwork may still differ
+            from a freshly primed single-frame PNG. Use the decoded motion
+            measurements and loop seam inspector for the final encoded file.
+          </p>}
           {ready.loopMode!=="Off"&&<p className="export-note">
             Loop Surgery was enabled for this clip. The strict PNG references
             do not include the optional closing blend, so the final-frame
@@ -777,7 +826,8 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
         <Share2 size={17}/> Share finished {ready.type==="image/gif"?"GIF":"MP4"} to Photos / apps
       </button>}
       <button className="button primary export-submit"
-        disabled={busy||(tab==="Video"&&clipFormat==="mp4"&&!capability)} onClick={run}>
+        disabled={busy||(tab==="Video"&&clipFormat==="mp4"&&!capability)||
+          (tab==="Video"&&playbackMode==="Boomerang"&&boomerangTooLarge)} onClick={run}>
         {busy?<LoaderCircle className="spin" size={17}/>:<Download size={17}/>}{" "}
         {busy?"Rendering your creation…":
           tab==="Image"?"Export PNG":tab==="Recipe"?"Export recipe":

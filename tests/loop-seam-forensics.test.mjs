@@ -147,6 +147,11 @@ test("UI uses real exported Blob and never re-encodes or creates seven expensive
   assert.match(ui,/Math\.max\(ready\.frameSize\.width,ready\.frameSize\.height\)>720/);
   assert.match(ui,/Save loop-seam report/);
   assert.match(decoder,/\!\[3,7\]\.includes\(indices\.length\)/);
+  // A previous seek bug accepted the still-ready OLD frame for close targets.
+  // The helper must demand a NEW decoder event before sampling another frame.
+  assert.match(decoder,/requireNewEvent=false/);
+  assert.match(decoder,/if\(!requireNewEvent&&check\(\)\)return Promise\.resolve\(\)/);
+  assert.match(decoder,/Math\.max\(\.012,\.45\/fps\),\s*12000,true/);
   assert.match(ui,/End → Start/);
   assert.match(scanner,/seamToEdgeRatio/);
   const fn=ui.slice(ui.indexOf("async function inspectLoopSeam"),ui.indexOf("function saveSeamAudit"));

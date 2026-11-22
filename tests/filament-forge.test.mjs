@@ -6,9 +6,9 @@ import {filamentSpecies,filamentPresets,filamentControls,
   applyFilamentPreset,nextFilamentSpecies,filamentGLSL} from "../src/filament-forge.js";
 import {sections,sectionMeta,sectionActive,findControls} from "../src/ui-index.js";
 
-test("Filament Forge has twenty-two distinct species and full art presets",()=>{
- assert.equal(filamentSpecies.length,22);
- assert.equal(new Set(filamentSpecies).size,16);
+test("Filament Forge retains its 22 legacy geometries and appends Feral Jacquard",()=>{
+ assert.equal(filamentSpecies.length,23);
+ assert.equal(new Set(filamentSpecies).size,23);
  assert.equal(filamentPresets.length,22);
  for(const p of filamentPresets){
    assert.ok(filamentSpecies.includes(p.species),p.name);

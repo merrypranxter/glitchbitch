@@ -162,7 +162,9 @@ export async function decodeMp4Export(blob,longEdge=auditMaxEdge){
   let attached=false;
   video.playsInline=true;video.muted=true;video.preload="auto";
   video.setAttribute("playsinline","");
-  video.style.position="fixed";video.style.left="-9999px";
+  // Keep the decoder element technically on-screen but invisible. Some
+  // Safari/iOS versions suspend offscreen video frame production.
+  video.style.position="fixed";video.style.left="0";
   video.style.top="0";video.style.width="1px";video.style.height="1px";
   video.style.pointerEvents="none";video.style.opacity="0";
   try{

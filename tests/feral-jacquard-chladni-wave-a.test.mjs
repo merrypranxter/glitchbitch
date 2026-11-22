@@ -22,7 +22,7 @@ test("new species and stitch append exactly after legacy IDs",()=>{
   assert.equal(filamentSpecies.length,24);
   assert.equal(filamentSpecies[21],"Parasitic ladder");
   assert.equal(filamentSpecies[22],"Feral Jacquard");
-  assert.equal(filamentStitchModes.length,32);
+  assert.equal(filamentStitchModes.length,33);
   assert.equal(filamentStitchModes[30],"Fractal mending");
   assert.equal(filamentStitchModes[31],"Chladni Needle Orchestra");
   assert.deepEqual(filamentStitchControls,["filamentStitchAmount","filamentStitchSpeed",

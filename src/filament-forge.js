@@ -28,6 +28,7 @@ export const filamentSpecies = [
   "Möbius cable",
   "Parasitic ladder",
   "Feral Jacquard",
+  "Quasicrystal Brocade",
 ];
 
 // Named families are UI/grouping metadata, never GPU or saved-state data.
@@ -1467,6 +1468,42 @@ export function specializeFilamentAdornments(source,first,second=null){
   return source.slice(0,starts[0])+branches+source.slice(fallback,end)+source.slice(end);
 }
 
+
+/** A five-grid de Bruijn-inspired quasiperiodic thread family, not the old sine-sum brocade. */
+export const quasicrystalBrocadeControls=[
+  "filamentQuasiSpacing","filamentQuasiPhason","filamentQuasiDrift",
+  "filamentQuasiRelief","filamentQuasiElevation","filamentQuasiOrnament"
+];
+export const quasicrystalBrocadePresets=[
+  {name:"Quasi — Heirloom pentagrid",filamentQuasiSpacing:41,filamentQuasiPhason:13,
+    filamentQuasiDrift:12,filamentQuasiRelief:63,filamentQuasiElevation:48,filamentQuasiOrnament:33},
+  {name:"Quasi — Golden cathedral",filamentQuasiSpacing:62,filamentQuasiPhason:38,
+    filamentQuasiDrift:27,filamentQuasiRelief:90,filamentQuasiElevation:82,filamentQuasiOrnament:74},
+  {name:"Quasi — Alien silk circuit",filamentQuasiSpacing:77,filamentQuasiPhason:67,
+    filamentQuasiDrift:63,filamentQuasiRelief:77,filamentQuasiElevation:61,filamentQuasiOrnament:91},
+  {name:"Quasi — Phason ghost lace",filamentQuasiSpacing:29,filamentQuasiPhason:85,
+    filamentQuasiDrift:92,filamentQuasiRelief:52,filamentQuasiElevation:39,filamentQuasiOrnament:76},
+  {name:"Quasi — Opal star-brocade",filamentQuasiSpacing:55,filamentQuasiPhason:48,
+    filamentQuasiDrift:46,filamentQuasiRelief:100,filamentQuasiElevation:100,filamentQuasiOrnament:100},
+  {name:"Quasi — Impossible textile ruin",filamentQuasiSpacing:96,filamentQuasiPhason:99,
+    filamentQuasiDrift:86,filamentQuasiRelief:98,filamentQuasiElevation:86,filamentQuasiOrnament:96},
+];
+export function applyQuasicrystalBrocadePreset(state,name){
+  const p=quasicrystalBrocadePresets.find(p=>p.name===name);
+  if(!p)return state;
+  const {name:label,...settings}=p;
+  return {...state,...settings,filamentSpecies:"Quasicrystal Brocade",
+    filamentAmount:Math.max(70,state.filamentAmount||0)};
+}
+export function remixQuasicrystalBrocade(state,rng=Math.random){
+  const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(.999999,n)):0;};
+  return {...state,filamentSpecies:"Quasicrystal Brocade",
+    filamentAmount:Math.max(75,state.filamentAmount||0),
+    filamentQuasiSpacing:20+unit()*80,filamentQuasiPhason:unit()*100,
+    filamentQuasiDrift:unit()*100,filamentQuasiRelief:35+unit()*65,
+    filamentQuasiElevation:30+unit()*70,filamentQuasiOrnament:unit()*100};
+}
+
 export const filamentStitchModes=[
   "Needle chase",
   "Loom sweep",
@@ -1914,6 +1951,8 @@ uniform float filamentStitchAmount,filamentStitchSpeed;
 uniform float filamentStitchLength,filamentStitchGlow;
 uniform float filamentFeralCorruption,filamentFeralMigration,filamentFeralOrder;
 uniform float filamentFeralKnots,filamentFeralMutation;
+uniform float filamentQuasiSpacing,filamentQuasiPhason,filamentQuasiDrift;
+uniform float filamentQuasiRelief,filamentQuasiElevation,filamentQuasiOrnament;
 uniform float filamentChladniOrder,filamentChladniResonance,filamentChladniDensity;
 uniform float filamentChladniPhase,filamentChladniDetune;
 uniform float filamentNap,filamentLuster,filamentBeads,filamentBeadSize,filamentSecondHue;
@@ -1954,6 +1993,8 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   q+=nerveDisplacement*filamentNeuralAmount*.064;
 #endif
   float threadD=1.0,phase=0.0,mask=1.0,highlight=0.0;
+  // These remain zero for ALL old thread geometries.
+  float quasiLift=0.0,quasiJunction=0.0;
   if(species==0){
     // Two five-axis quasiperiodic thread families, never a repeating tile.
     float a=0.0,b=0.0;
@@ -2278,6 +2319,48 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
       (1.0-knotMask)*.16);
     phase=warpCoord*.93+weftCoord*.82+warpAbove*1.71;
     highlight=clamp(.30+.53*warpAbove+.17*sin(phase*5.2+migration),0.0,1.0);
+  }else if(species==23){ // QUASICRYSTAL BROCADE — 5-grid intersection embroidery.
+    // de Bruijn-inspired multigrid: five angular line families with distinct
+    // phason offsets. NOT the original Fivefold brocade's sinusoidal sum.
+    // Irrationally related line directions yield quasiperiodic intersections.
+    vec2 grid=q*(.32+filamentQuasiSpacing*.70);
+    float phason=filamentQuasiPhason*6.2831853+seedPhase*.23;
+    float drift=filamentQuasiDrift;
+    float nearest=1.0,runnerUp=1.0,nearPhase=0.0,neighborPhase=0.0;
+    float variation=0.0;
+    for(int i=0;i<5;i++){
+      float fi=float(i);
+      float angle=fi*1.2566370614;
+      vec2 normal=vec2(cos(angle),sin(angle));
+      float move=drift*.27*sin(t*(.15+.34*drift)+fi*2.39996323+phason*.63);
+      float offset=(.21+.43*filamentQuasiPhason)*sin(fi*2.39996323+phason);
+      float coord=dot(grid,normal)*( .85+.42*filamentQuasiSpacing )+offset+move;
+      // Smooth distance to one infinitely extended yarn line of this family.
+      float signedLine=fract(coord+.5)-.5;
+      float distance=abs(signedLine);
+      if(distance<nearest){
+        runnerUp=nearest;neighborPhase=nearPhase;
+        nearest=distance;nearPhase=coord+fi*.618034;
+      }else if(distance<runnerUp){
+        runnerUp=distance;neighborPhase=coord+fi*.618034;
+      }
+      variation+=sin(coord*6.2831853+fi*1.256637)*.2;
+    }
+    // The primary yarn line follows whichever of the five families is closest.
+    // At overlaps, introduce rare fivefold picot collars anchored to *two*
+    // crossing yarn families, not a periodic overlay or checkerboard.
+    float junction=(1.0-smoothstep(.015,.17,runnerUp))*
+      (1.0-smoothstep(.035,.19,nearest));
+    float piquet=abs(sin((nearPhase-neighborPhase)*5.0+variation*2.0));
+    float ornament=filamentQuasiOrnament;
+    float collar=abs(nearest-(.09+.055*piquet))*.49+.02*(1.0-junction);
+    float extra=collar+(1.0-junction*ornament)*.3;
+    threadD=min(nearest*(.19+.07*(1.0-filamentQuasiSpacing)),extra);
+    quasiJunction=junction;
+    quasiLift=clamp((.48+.52*cos(nearPhase*6.2831853+variation))* 
+      (.38+.62*junction)+ornament*junction*.42,0.0,1.0);
+    phase=nearPhase*.67+neighborPhase*.21+variation*.38;
+    highlight=.5+.5*cos(phase*3.3+variation*2.4+t*.23);
   }else{
     // The branch is intentionally unreachable for validated species IDs.
     threadD=1.0;
@@ -3185,6 +3268,20 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
 #endif
   float amount=filamentAmount;
   vec3 result=mix(background,background*.48+thread*1.06,core*amount*.91);
+  if(species==23){ // Embossed quasicrystal thread itself; no separate post pass.
+    float lift=filamentQuasiRelief*filamentQuasiElevation;
+    float crown=pow(clamp(1.0-threadD/max(width+aa,.002),0.0,1.0),.56);
+    float sheen=.45+.55*highlight;
+    float shoulder=(1.0-crown)*edge;
+    result*=1.0-core*lift*(.08+.14*(1.0-sheen));
+    result+=mix(ink,glimmer,.34+.4*quasiLift)*core*amount*
+      lift*(.19+.45*crown)*sheen;
+    result+=vec3(.94,.97,1.0)*core*amount*lift*
+      pow(max(0.0,.26+.74*crown*sheen),9.0)*.37;
+    result+=glimmer*shoulder*amount*lift*(.08+.18*quasiJunction);
+    // Soft dark channel directly beside raised embroidered strand.
+    result*=1.0-shoulder*lift*.11;
+  }
   result+=glimmer*halo*amount*(.045+.115*filamentRelief);
   result+=vec3(.89,.95,1.0)*edge*amount*filamentRelief*.11;
 #ifdef FILAMENT_STITCHING

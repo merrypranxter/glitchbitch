@@ -2353,7 +2353,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float rootToTip=clamp((localArc+.5)*1.3,0.0,1.0);
   float drawn=1.0-smoothstep(tip-.06,tip+.055,rootToTip);
   float footprint=(1.0-smoothstep(.12,.47,abs(localArc)))*drawn;
-  float sproutReach=width*(1.1+filamentRegenHealing*4.9)*
+  float sproutReach=width*(.65+filamentRegenHealing*1.8)*
     pow(max(0.0,1.0-abs(localArc)*1.8),1.2)*tip;
   float curl=sin(localArc*15.0+growthClock*.67+siteNoise*6.28318);
   float fibRadius=max(width*(.11+.20*filamentRegenHealing),aa*.55);
@@ -2366,7 +2366,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     newAccent=.54+.46*abs(curl);
   }else if(filamentRegenMode==2){ // WOUND BRIDGES
     float gap=1.0-smoothstep(.09,.37,abs(localArc));
-    float bridge=width*(.9+filamentRegenHealing*3.3)*gap*tip;
+    float bridge=width*(.55+filamentRegenHealing*1.45)*gap*tip;
     newDist=abs(threadD-bridge);
     footprint*=gap;
     newAccent=.6;
@@ -2378,7 +2378,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     newAccent=.58+.42*siteNoise;
   }else if(filamentRegenMode==4){ // PEARLY CALLUS
     float node=pow(.5+.5*cos(localArc*20.0+siteNoise*6.28),5.0);
-    newDist=abs(threadD-width*(1.18+filamentRegenHealing*3.6*node*tip));
+    newDist=abs(threadD-width*(.85+filamentRegenHealing*1.7*node*tip));
     newAccent=.41+.59*node;
   }else if(filamentRegenMode==5){ // GOLD REPAIR VINES
     float vein=sin(localArc*29.0+sin(localArc*13.0+growthClock*.24)*2.1);

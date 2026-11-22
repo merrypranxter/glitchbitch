@@ -2,6 +2,7 @@ import { createRenderer } from "./renderer.js";
 import { isArtworkParityError, artworkParityError } from "./export-parity.js";
 import { ratios } from "./data.js";
 import { hasVisibleLettering, paintLettering, waitForLetteringFonts } from "./text-compositor.js";
+import {loopClosureFrames,loopClosureMix} from "./loop-closure.js";
 
 export function dimensions(ratio, longEdge) {
   const r = ratios.find((x) => x.id === ratio)?.value || 1;
@@ -139,7 +140,8 @@ export async function waitForGraphics(renderer, signal, timeoutMs=30000) {
   checkExport(signal);
 }
 // A reusable, bounded renderer: only one RGBA frame, one WebGL canvas and one 2D canvas.
-function createFrameWorkspace(state, timeline, size, signal) {
+function createFrameWorkspace(state, timeline, size, signal,
+  {fps=30,frameCount=180,loopMode="Off",loopBlendSeconds=.75}={}) {
   const canvas = document.createElement("canvas");
   const capture = document.createElement("canvas");
   capture.width = size.width; capture.height = size.height;
@@ -152,7 +154,14 @@ function createFrameWorkspace(state, timeline, size, signal) {
   const bytes = new Uint8Array(size.width * size.height * 4);
   const stride = size.width * 4;
   const lettered = hasVisibleLettering(state);
-  let historyPrimed=false;
+  const closureFrames=loopClosureFrames(loopMode,loopBlendSeconds,fps,frameCount);
+  // A single additional opaque canvas holds the exact FIRST composited
+  // frame (shader effects AND text). No second GL context or simplified pass.
+  const loopAnchor=closureFrames>0?document.createElement("canvas"):null;
+  if(loopAnchor){loopAnchor.width=size.width;loopAnchor.height=size.height;}
+  const loopContext=loopAnchor?.getContext("2d",{alpha:false});
+  if(loopAnchor&&!loopContext)throw Error("Canvas2D loop closure is unavailable.");
+  let historyPrimed=false,anchorSaved=false;
   async function render(seconds, includePixels = false) {
     checkExport(signal);
     if(!historyPrimed){
@@ -168,19 +177,38 @@ function createFrameWorkspace(state, timeline, size, signal) {
       frame.data.set(bytes.subarray((size.height-1-y)*stride,(size.height-y)*stride), y*stride);
     ctx.putImageData(frame,0,0);
     if (lettered) paintLettering(ctx, state, frameClock, size.width, size.height);
-    return lettered && includePixels ? ctx.getImageData(0,0,size.width,size.height).data : frame.data;
+    const index=Math.min(frameCount-1,Math.max(0,Math.round(seconds*fps)));
+    if(closureFrames>0 && index===0 && !anchorSaved){
+      loopContext.drawImage(capture,0,0);
+      anchorSaved=true;
+    }
+    const closureMix=loopClosureMix(index,frameCount,closureFrames);
+    if(closureMix>0){
+      if(!anchorSaved)
+        throw artworkParityError("Soft loop anchor was never captured at frame zero");
+      ctx.save();
+      ctx.globalCompositeOperation="source-over";
+      ctx.globalAlpha=closureMix;
+      ctx.drawImage(loopAnchor,0,0);
+      ctx.restore();
+    }
+    // GIF must quantize the ACTUAL post-closure pixels. Previous raw GPU
+    // frame.data remains valid only when no letters and no loop blend exist.
+    return includePixels && (lettered||closureMix>0)
+      ?ctx.getImageData(0,0,size.width,size.height).data:frame.data;
   }
   function destroy() {
     renderer.destroy(true);
     canvas.width = canvas.height = 1;
     capture.width = capture.height = 1;
+    if(loopAnchor)loopAnchor.width=loopAnchor.height=1;
   }
-  return { capture, render, destroy };
+  return { capture, render, destroy, hasClosure:closureFrames>0 };
 }
 /** Deterministic fixed-rate H.264 MP4. No WebM output or mislabeled codecs. */
 async function encodeMp4WebCodecs(state, timeline, opts) {
   const { Output, Mp4OutputFormat, BufferTarget, CanvasSource, Quality, canEncodeVideo } = await import("mediabunny");
-  const { fps, duration, bitrate, size, signal, onProgress } = opts;
+  const { fps, duration, bitrate, size, signal, onProgress,loopMode,loopBlendSeconds } = opts;
   const quality = new Quality({ bitrate });
   const supported = await canEncodeVideo("avc", {
     width: size.width, height: size.height, frameRate: fps, quality, latencyMode: "quality",
@@ -189,7 +217,8 @@ async function encodeMp4WebCodecs(state, timeline, opts) {
   let work, output, source, encoded = 0;
   try {
     checkExport(signal);
-    work = createFrameWorkspace(state, timeline, size, signal);
+    work = createFrameWorkspace(state, timeline, size, signal,
+      {fps,frameCount:Math.round(duration*fps),loopMode,loopBlendSeconds});
     const target = new BufferTarget();
     output = new Output({format: new Mp4OutputFormat(), target});
     source = new CanvasSource(work.capture, {
@@ -220,13 +249,14 @@ async function encodeMp4WebCodecs(state, timeline, opts) {
 /** Safari native H.264 recorder fallback when WebCodecs H.264 cannot encode.
  * Records in wall-clock time, unlike the deterministic WebCodecs path. */
 async function encodeMp4Recorder(state, timeline, opts) {
-  const {fps,duration,bitrate,size,signal,onProgress}=opts;
+  const {fps,duration,bitrate,size,signal,onProgress,loopMode,loopBlendSeconds}=opts;
   const mime=nativeMp4Mime();
   if(!mime)throw Error("This browser cannot encode H.264 MP4. Try current Safari or Chrome with hardware video encoding.");
   let work, recorder, stream;
   const chunks=[];
   try{
-    work=createFrameWorkspace(state,timeline,size,signal);
+    work=createFrameWorkspace(state,timeline,size,signal,
+      {fps,frameCount:Math.round(duration*fps),loopMode,loopBlendSeconds});
     if(typeof work.capture.captureStream!=="function")
       throw Error("This browser cannot record a canvas as MP4.");
     await work.render(0);
@@ -243,7 +273,11 @@ async function encodeMp4Recorder(state, timeline, opts) {
       checkExport(signal);
       const target=start+i*1000/fps;
       if(performance.now()<target)await sleep(target-performance.now());
-      await work.render(i/fps);
+      // A native recorder pre-renders frame zero for captureStream.
+      // In soft-closure mode we must not render it a second time: doing so
+      // would advance feedback, making the saved loop anchor differ from the
+      // actual first encoded frame. Legacy "Off" timing is unchanged.
+      if(i>0||!work.hasClosure)await work.render(i/fps);
       stream.getVideoTracks()[0]?.requestFrame?.();
       onProgress((i+1)/count);
     }
@@ -264,8 +298,9 @@ async function encodeMp4Recorder(state, timeline, opts) {
 /** Locally encoded real animated GIF, with individually quantized color tables. */
 async function encodeGif(state, timeline, opts) {
   const {GIFEncoder,quantize,applyPalette}=await import("./vendor/gifenc.js");
-  const {fps,duration,size,signal,onProgress}=opts;
-  const work=createFrameWorkspace(state,timeline,size,signal);
+  const {fps,duration,size,signal,onProgress,loopMode,loopBlendSeconds}=opts;
+  const work=createFrameWorkspace(state,timeline,size,signal,
+    {fps,frameCount:Math.round(duration*fps),loopMode,loopBlendSeconds});
   const gif=GIFEncoder();
   const count=Math.round(duration*fps);
   try {
@@ -285,6 +320,7 @@ async function encodeGif(state, timeline, opts) {
 }
 export async function recordClip(state, timeline, {
   format="mp4", longEdge=720, duration=6, fps=30, bitrate=16000000,
+  loopMode="Off",loopBlendSeconds=.75,
   onProgress=()=>{}, signal,
 } = {}) {
   if(!["mp4","gif"].includes(format))throw Error("Only MP4 and GIF formats are available.");
@@ -295,7 +331,10 @@ export async function recordClip(state, timeline, {
   if(format==="gif" && (longEdge>1080||duration>10))
     throw Error("GIF is limited to 1080px and 10 seconds to protect mobile memory. Use MP4 for larger clips.");
   const size=format==="mp4"?videoDimensions(state.ratio,longEdge):dimensions(state.ratio,longEdge);
-  const opts={fps,duration,bitrate,size,onProgress,signal};
+  // Validate before starting either encoder. "Off" performs zero extra
+  // canvas work and remains byte-for-byte equivalent in the render path.
+  loopClosureFrames(loopMode,loopBlendSeconds,fps,Math.round(duration*fps));
+  const opts={fps,duration,bitrate,size,onProgress,signal,loopMode,loopBlendSeconds};
   checkExport(signal);
   // Export must NOT silently rasterize a fallback font while the chosen face
   // is still loading. This also applies to iPhone-native MP4 recording.

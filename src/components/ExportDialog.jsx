@@ -650,6 +650,69 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
             onClick={saveMotionAudit}>Save motion-forensics report (JSON; no artwork pixels)</button>
         </div>}
       </div>}
+      {ready&&ready.format&&tab==="Video"&&<div className="export-proof-panel">
+        <button type="button" className="button secondary" disabled={busy}
+          onClick={inspectLoopSeam}>
+          <Film size={15}/> Loop Seam Scanner · seven decoded checkpoints
+        </button>
+        <p className="export-note">Does the last frame snap back to the first?
+          This samples seven ACTUAL encoded GIF/MP4 frames and compares the
+          loop jump with normal frame-to-frame motion. Also checks transitions
+          around the midpoint. No new video encoding or shader rendering;
+          480/720px clips only to protect mobile memory.</p>
+        {seamAudit&&seamAudit.filename===ready.filename&&<div className="export-truth-panel">
+          <strong>🪡 {seamAudit.results.status}</strong>
+          <div className="export-truth-metrics">
+            <div><strong>{seamAudit.results.seamMeanRGB}</strong>
+              <span>Last → first · mean RGB jump / 255</span></div>
+            <div><strong>{seamAudit.results.edgeBaselineRGB}</strong>
+              <span>Ordinary one-frame edge motion / 255</span></div>
+            <div><strong>{seamAudit.results.seamToEdgeRatio}×</strong>
+              <span>Seam jump vs adjacent edge motion</span></div>
+            <div><strong>{seamAudit.results.largestMidpointRGB}</strong>
+              <span>Largest midpoint one-frame change / 255</span></div>
+          </div>
+          <div className="pane-actions" aria-label="Choose loop seam or midpoint frame comparison">
+            {["wrap","midIn","midOut"].map(key=><button type="button" key={key}
+              disabled={busy}
+              className={selectedSeamView===key?"button primary":"button secondary"}
+              onClick={()=>setSelectedSeamView(key)}>
+              {seamAudit.views[key].label}
+            </button>)}
+          </div>
+          <div className="blend-proof-grid" aria-label="Actual encoded frame-to-frame discontinuity">
+            <figure><img src={seamAudit.views[selectedSeamView].urls[0]}
+              alt="Earlier actual encoded MP4 or GIF frame of selected pair"/>
+              <figcaption>Real frame {seamAudit.views[selectedSeamView].leftIndex}</figcaption></figure>
+            <figure><img src={seamAudit.views[selectedSeamView].urls[1]}
+              alt="Later actual encoded MP4 or GIF frame of selected pair"/>
+              <figcaption>Real frame {seamAudit.views[selectedSeamView].rightIndex}</figcaption></figure>
+            <figure><img src={seamAudit.views[selectedSeamView].urls[2]}
+              alt="Amplified heatmap of differences between those two real encoded frames"/>
+              <figcaption>Discontinuity heatmap (4×)</figcaption></figure>
+          </div>
+          {seamAudit.results.decodedTimingWarning&&
+            <p className="field-error">Decoder uncertainty: {seamAudit.results.decodedTimingWarning}.
+              This is NOT proof that the exported animation is broken.</p>}
+          <p className="export-note">Actual opening step:
+            {" "+seamAudit.results.openingStep.meanRGBChange}/255.
+            Actual ending step:
+            {" "+seamAudit.results.endingStep.meanRGBChange}/255.
+            Midpoint before/after:
+            {" "+seamAudit.results.midpointBefore.meanRGBChange} /
+            {" "+seamAudit.results.midpointAfter.meanRGBChange}/255.
+            A strong loop snap means the end-to-start transition is unusually
+            different from the normal changes near both ends.</p>
+          <p className="export-note">An intentional glitch, camera cut, rhythmic
+            pulse or abrupt transformation may trigger a warning on purpose.
+            This is a visual clue, not automatic proof of an encoder bug or
+            a mathematically perfect seamless loop. MP4 seeking is approximate;
+            GIF playback delays are quantized to 10ms. Seven checkpoints
+            cannot reveal every possible jump elsewhere in the clip.</p>
+          <button type="button" className="button secondary" disabled={busy}
+            onClick={saveSeamAudit}>Save loop-seam report (JSON; no image pixels)</button>
+        </div>}
+      </div>}
       {ready&&!busy&&canShare()&&<button className="button secondary export-submit" onClick={share}>
         <Share2 size={17}/> Share finished {ready.type==="image/gif"?"GIF":"MP4"} to Photos / apps
       </button>}

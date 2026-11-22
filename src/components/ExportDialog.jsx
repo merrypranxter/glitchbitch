@@ -373,6 +373,46 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
           <button onClick={()=>controller.current?.abort()}><Square size={10}/> Cancel render</button>
         </p>
       </div>}
+      {ready&&ready.format&&tab==="Video"&&<div className="export-proof-panel">
+        <button type="button" className="button secondary" disabled={busy}
+          onClick={checkEncodedFrame}>
+          <Film size={15}/> Inspect REAL {ready.format.toUpperCase()} frame vs PNG
+        </button>
+        <p className="export-note">Checks the already-exported <strong>{ready.filename}</strong>, not a pretend video test.
+          Decodes an actual compressed frame, renders a matched-clock strict PNG,
+          and compares their pixels. 1080px maximum for this diagnostic.
+          This does not compare the DOM text overlay or certify the whole clip.</p>
+        {frameAudit&&frameAudit.filename===ready.filename&&<div className="export-truth-panel">
+          <strong>🧪 Encoded Frame Truth Serum — {frameAudit.report.metrics.discrepancy} discrepancy</strong>
+          <div className="export-truth-metrics">
+            <div><strong>{frameAudit.report.metrics.meanRGBDifference}</strong>
+              <span>Mean RGB difference / 255</span></div>
+            <div><strong>{frameAudit.report.metrics.pixelsOverThresholdPercent}%</strong>
+              <span>Pixels with any channel more than 36/255 apart</span></div>
+            <div><strong>{frameAudit.report.metrics.p95PeakDifference}</strong>
+              <span>95th-percentile peak channel difference</span></div>
+            <div><strong>{frameAudit.report.firstDecodedFrameSeconds}s</strong>
+              <span>Actual decoded MP4/GIF frame time</span></div>
+          </div>
+          <div className="blend-proof-grid" aria-label="Real decoded video-frame pixel comparison">
+            <figure><img src={frameAudit.urls[0]} alt="Matched-timestamp strict PNG reference"/>
+              <figcaption>A · Same-clock strict PNG</figcaption></figure>
+            <figure><img src={frameAudit.urls[1]} alt="Decoded first GIF or MP4 frame, not a renderer simulation"/>
+              <figcaption>B · REAL decoded {ready.format.toUpperCase()}</figcaption></figure>
+            <figure><img src={frameAudit.urls[2]} alt="Amplified pixel differences: bright orange means stronger disagreement"/>
+              <figcaption>C · Difference heatmap (4× amplified)</figcaption></figure>
+          </div>
+          <p className="export-note">{frameAudit.report.actualSize.width} × {frameAudit.report.actualSize.height} decoded using {frameAudit.report.decoder}.
+            {frameAudit.report.actualSize.width!==frameAudit.report.requestedSize.width||
+              frameAudit.report.actualSize.height!==frameAudit.report.requestedSize.height?
+              " The codec changed output dimensions; inspect cropping or padding.":""}
+            {" "}High discrepancy warrants investigation; H.264 compression, GIF palettes,
+            native-recorder timing and frame-memory effects can legitimately shift pixels.
+            It's a single-frame comparison, not automatic proof of missing effects.</p>
+          <button type="button" className="button secondary" disabled={busy}
+            onClick={saveFrameAudit}>Save frame-integrity report (JSON; no art/text)</button>
+        </div>}
+      </div>}
       {ready&&!busy&&canShare()&&<button className="button secondary export-submit" onClick={share}>
         <Share2 size={17}/> Share finished {ready.type==="image/gif"?"GIF":"MP4"} to Photos / apps
       </button>}

@@ -8,6 +8,8 @@ import {analyzeEncodedFrame,differenceHeatmap,decodeStaticExport,
   decodeMp4Export,frameBlob,frameAuditReport} from "../encoded-frame-truth-serum.js";
 import {selectMotionSamples,analyzeClipMotion,decodeGifMotionSamples,
   decodeMp4MotionSamples,verifyMotionDecodeTimes,motionForensicsReport} from "../clip-motion-forensics.js";
+import {selectSeamSamples,assessSeamDecoderTiming,analyzeSeamContinuity,
+  seamForensicsReport} from "../loop-seam-forensics.js";
 import { hasVisibleLettering } from "../text-compositor.js";
 import { normalTextBlendState } from "../text-blend-proof.js";
 import { canvasImageFiltersWork } from "../lettering-filter-fallback.js";
@@ -33,10 +35,12 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     [frameAudit,setFrameAudit]=useState(null),
     [motionAudit,setMotionAudit]=useState(null),
     [selectedMotionIndex,setSelectedMotionIndex]=useState(0),
+    [seamAudit,setSeamAudit]=useState(null),
+    [selectedSeamView,setSelectedSeamView]=useState("wrap"),
     [motionAuditStage,setMotionAuditStage]=useState(""),
     [auditing,setAuditing]=useState(false);
   const controller=useRef(null), mounted=useRef(true), proofUrl=useRef(null), blendUrls=useRef([]),
-    frameAuditUrls=useRef([]),motionAuditUrls=useRef([]);
+    frameAuditUrls=useRef([]),motionAuditUrls=useRef([]),seamAuditUrls=useRef([]);
   function clearFrameAudit(){
     frameAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
     frameAuditUrls.current=[];
@@ -49,6 +53,12 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     setSelectedMotionIndex(0);
     setMotionAuditStage("");
   }
+  function clearSeamAudit(){
+    seamAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
+    seamAuditUrls.current=[];
+    setSeamAudit(null);
+    setSelectedSeamView("wrap");
+  }
   const capability=videoFormat();
   useEffect(()=>()=>{mounted.current=false;controller.current?.abort();
     onExportBusy?.(false);
@@ -56,6 +66,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     blendUrls.current.forEach(url=>URL.revokeObjectURL(url));
     frameAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
     motionAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
+    seamAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
   },[]);
   const size=tab==="Video" ? clipFormat==="mp4"
     ? videoDimensions(ratio,videoSize) : dimensions(ratio,gifSize)
@@ -151,6 +162,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
   async function run() {
     clearFrameAudit();
     clearMotionAudit();
+    clearSeamAudit();
     setError("");setProgress(0);setBusy(true);setReady(null);
     if(tab==="Video")controller.current=new AbortController();
     const snapshot={...state,ratio},timeline={...timelineRef.current};
@@ -337,7 +349,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       <div className="export-tabs">
         {[[Image,"Image"],[Film,"Video"],[Braces,"Recipe"]].map(([Icon,name])=>(
           <button disabled={busy} className={tab===name?"selected":""}
-            onClick={()=>{setTab(name);setError("");setReady(null);clearFrameAudit();clearMotionAudit();}} key={name}>
+            onClick={()=>{setTab(name);setError("");setReady(null);clearFrameAudit();clearMotionAudit();clearSeamAudit();}} key={name}>
             <Icon size={17}/>{name}
           </button>
         ))}
@@ -345,7 +357,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       <fieldset disabled={busy} className="export-options">
         {tab!=="Recipe"?<>
           {tab==="Video"&&<Select label="Output format" value={clipFormat}
-            onChange={v=>{setClipFormat(v);setReady(null);clearFrameAudit();clearMotionAudit();}}>
+            onChange={v=>{setClipFormat(v);setReady(null);clearFrameAudit();clearMotionAudit();clearSeamAudit();}}>
             <option value="mp4">MP4 · H.264 (real video)</option>
             <option value="gif">GIF · animated image</option>
           </Select>}

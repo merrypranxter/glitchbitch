@@ -75,6 +75,8 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
 import {structuralOpticsModes,structuralOpticsDescriptions,structuralOpticsPresets,
   applyStructuralOpticsPreset,remixStructuralOptics,disableStructuralOptics,
   swapStructuralOptics} from "../structural-thread-optics.js";
+import {semanticGravityModes,semanticGravityDescriptions,semanticGravityPresets,
+  applySemanticGravityPreset,remixSemanticGravity,disableSemanticGravity} from "../semantic-gravity.js";
 import { underlayModes,underlayFamilies,underlayDescriptions,remixUnderlay,
   underlayPresets,applyUnderlayPreset,changeUnderlayMode,
   nextUnderlayMode,disableUnderlay } from "../living-underlay.js";
@@ -312,6 +314,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [quasiPreset,setQuasiPreset]=React.useState(quasicrystalBrocadePresets[0].name);
   const [chladniPreset,setChladniPreset]=React.useState(chladniNeedlePresets[0].name);
   const [retroPreset,setRetroPreset]=React.useState(retrocausalEmbroideryPresets[0].name);
+  const [semanticPreset,setSemanticPreset]=React.useState(semanticGravityPresets[0].name);
   const [sculptPreset,setSculptPreset]=React.useState(filamentSculptPresets[0].name);
   const [underlayPreset,setUnderlayPreset]=React.useState(underlayPresets[0].name);
   const [atmoPreset,setAtmoPreset]=React.useState(atmospherePresets[0].name);
@@ -1640,6 +1643,47 @@ export function EffectsInspector({ history, onTool, tool }) {
       <Parameter label="Raised relief / sheen" name="filamentRelief" history={history}/>
       <Parameter label="Palette shift" name="filamentHue" history={history}/>
       <Parameter label="Variation" name="filamentVariation" history={history}/>
+      <details className="filament-crossbreeder filament-semantic-gravity">
+        <summary>🪄 SEMANTIC GRAVITY — LET WORDS BEND THE WEAVE</summary>
+        <p className="control-note">This is actual type-to-thread physics-inspired geometry: your own visible letters become moving gravitational fields that attract, repel, orbit, shear and even cut holes through the yarn. It borrows the SAME glyph shapes and animation from the real text-export compositor. No default slogans are ever generated.</p>
+        <p className="control-note"><strong>First, enter words in the Text tab and turn their visibility/opacity up.</strong> If no words are visible, gravity stays dormant. Existing text layers, rich styling and font choices are kept, not overwritten.</p>
+        <Select label="Semantic force law" value={s.semanticGravityMode}
+          onChange={mode=>history.change(x=>({...x,semanticGravityMode:mode,
+            filamentAmount:mode==="Off"?x.filamentAmount:Math.max(68,x.filamentAmount),
+            semanticGravityAmount:mode==="Off"?0:Math.max(70,x.semanticGravityAmount)}))}>
+          {semanticGravityModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </Select>
+        <p className="control-note">{semanticGravityDescriptions[s.semanticGravityMode]}</p>
+        <Parameter label="Word gravitational strength" name="semanticGravityAmount" history={history}/>
+        <Parameter label="Text influence radius" name="semanticGravityRadius" history={history}/>
+        <Parameter label="Influence falloff / sharpness" name="semanticGravityFalloff" history={history}/>
+        <Parameter label="Orbit and shear swirl" name="semanticGravitySwirl" history={history}/>
+        <Parameter label="Time-varying pull" name="semanticGravityPulse" history={history}/>
+        <Parameter label="Nonlinear textile variation" name="semanticGravityVariation" history={history}/>
+        <Select label="Word-warped textile specimen" value={semanticPreset} onChange={setSemanticPreset}>
+          {semanticGravityPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>applySemanticGravityPreset(x,semanticPreset))}>
+            Let the words haunt the fibers
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixSemanticGravity(x))}>
+            <Shuffle size={13}/> Shuffle text gravity
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixSemanticGravity(x,Math.random,true))}>
+            <Dices size={13}/> Feral linguistic gravity
+          </button>
+          <button type="button" className="button secondary"
+            disabled={s.semanticGravityAmount<=0}
+            onClick={()=>history.change(disableSemanticGravity)}>
+            Release the words (keep text and fibers)
+          </button>
+        </div>
+        <p className="control-note">The field moves the actual filaments before their geometry, stitching, material and crossbreeding are drawn. The letter-shaped void law also subtracts from fiber coverage. Your words remain visible on top as usual. This is a glyph-shaped force field, not an AI interpretation of their meaning.</p>
+      </details>
       <details className="filament-crossbreeder filament-quasi-lab">
         <summary>💠 QUASICRYSTAL BROCADE — IMPOSSIBLE RAISED EMBROIDERY</summary>
         <p className="control-note">Genuinely new five-direction quasiperiodic multigrid threads—not the old fivefold sine-pattern. Each of the five thread families has its own phason offset. Where yarns meet, raised star collars and local highlights catch the light. It works with both hybrid parents, material dressing, the needle orchestra, and your existing palettes.</p>

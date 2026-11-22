@@ -13,7 +13,7 @@ export function loopClosureFrames(mode,seconds,fps,count){
   if(!Number.isFinite(seconds)||seconds<.25||seconds>2)
     throw Error("Loop closure duration must be between 0.25 and 2 seconds.");
   if(!Number.isInteger(fps)||fps<10||fps>60||
-    !Number.isInteger(count)||count<2)
+    !Number.isInteger(count)||count<4)
     throw Error("Loop closure needs a real fixed-rate encoded clip.");
   if(mode==="Off")return 0;
   // Preserve an opening segment and leave at least one original movement

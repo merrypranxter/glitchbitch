@@ -14,7 +14,7 @@ const read=(file)=>readFileSync(new URL("../src/"+file,import.meta.url),"utf8");
 const balance=s=>[...s].reduce((n,c)=>n+(c==="{")-(c==="}"),0);
 const original={...initial,seed:291182,engine:6,ratio:"9:16",
   filamentAmount:82,filamentSpecies:"Bobbin lace",
-  filamentSecondSpecies:"Opaline glass",filamentSecondMaterial:"Velvet flock",
+  filamentSecondSpecies:"Voronoi lace",filamentSecondMaterial:"Velvet flock",
   filamentCrossbreed:71,filamentStitchMode:"Cross-stitch",filamentStitchAmount:80,
   lettering:"DONT EAT MY NEON",colors:["#ff00ff","#00eeff","#ffff22"]};
 

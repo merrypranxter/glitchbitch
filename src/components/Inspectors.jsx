@@ -61,6 +61,8 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentPlasticPresets,applyFilamentPlasticPreset,remixFilamentPlastic,
   filamentScarModes,filamentScarFamilies,filamentScarDescriptions,
   filamentScarPresets,applyFilamentScarPreset,remixFilamentScars,
+  filamentRegenModes,filamentRegenFamilies,filamentRegenDescriptions,
+  filamentRegenPresets,applyFilamentRegenPreset,remixFilamentRegeneration,
   remixFilamentMaterials,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
@@ -296,6 +298,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [neuralPreset,setNeuralPreset]=React.useState(filamentNeuralPresets[0].name);
   const [plasticPreset,setPlasticPreset]=React.useState(filamentPlasticPresets[0].name);
   const [scarPreset,setScarPreset]=React.useState(filamentScarPresets[0].name);
+  const [regenPreset,setRegenPreset]=React.useState(filamentRegenPresets[0].name);
   const [stitchPreset,setStitchPreset]=React.useState(filamentStitchPresets[0].name);
   const [sculptPreset,setSculptPreset]=React.useState(filamentSculptPresets[0].name);
   const [underlayPreset,setUnderlayPreset]=React.useState(underlayPresets[0].name);
@@ -2025,6 +2028,56 @@ export function EffectsInspector({ history, onTool, tool }) {
           </button>
         </div>
         <p className="control-note">Old recipes stay scar-free until you opt in. Keep dressing, stitches, geometry, crossbreeding, lettering and palette exactly as they are. Scars render with the same strict-effects shader as GIF/MP4. For hardware-heavy recipes, test a short MP4 first.</p>
+      </details>
+      <details className="filament-crossbreeder filament-regeneration-lab">
+        <summary>🌱 REGENERATION LOOM — GROW NEW THREADS FROM THE SCARS</summary>
+        <p className="control-note">Spawn actual extra daughter-line geometry from the moving scarred fibers: bifurcations, bridges, fungal filaments, pearly calluses, golden repair vines and synaptic grafts. New fibers are formed before shading, so they inherit the existing palette, fabric material, and nerve effects. Animated regrowth cycles are deterministic and do not use expensive previous-frame memory.</p>
+        <Select label="Regrowth anatomy" value={s.filamentRegenMode}
+          onChange={mode=>history.change(x=>({...x,filamentRegenMode:mode,
+            filamentAmount:mode==="Off"?x.filamentAmount:Math.max(72,x.filamentAmount),
+            filamentNeuralMode:mode==="Off"?x.filamentNeuralMode:
+              x.filamentNeuralMode==="Off"?"Axon train":x.filamentNeuralMode,
+            filamentNeuralAmount:mode==="Off"?x.filamentNeuralAmount:
+              Math.max(82,x.filamentNeuralAmount),
+            filamentScarMode:mode==="Off"?x.filamentScarMode:
+              x.filamentScarMode==="Off"?"Phosphor aftertrace":x.filamentScarMode,
+            filamentScarAmount:mode==="Off"?x.filamentScarAmount:
+              Math.max(65,x.filamentScarAmount),
+            filamentRegenAmount:mode==="Off"?x.filamentRegenAmount:
+              Math.max(82,x.filamentRegenAmount)}))}>
+          {filamentRegenFamilies.map(group=><optgroup key={group.name} label={group.name}>
+            {group.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+          </optgroup>)}
+        </Select>
+        <p className="control-note">{filamentRegenDescriptions[s.filamentRegenMode]}</p>
+        <Parameter label="Daughter-thread presence" name="filamentRegenAmount" history={history}/>
+        <Parameter label="Branching frequency" name="filamentRegenBranches" history={history}/>
+        <Parameter label="Growth and repair cycle speed" name="filamentRegenSpeed" history={history}/>
+        <Parameter label="Regrowth reach / repair thickness" name="filamentRegenHealing" history={history}/>
+        <Parameter label="Fresh fiber glow" name="filamentRegenGlow" history={history}/>
+        <Select label="Regeneration recipe" value={regenPreset} onChange={setRegenPreset}>
+          {filamentRegenPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>applyFilamentRegenPreset(x,regenPreset))}>
+            Regrow the weave
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentRegeneration(x))}>
+            <Dices size={13}/> Shuffle regeneration
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentRegeneration(x,Math.random,true))}>
+            <Shuffle size={13}/> Shuffle alien healing
+          </button>
+          <button type="button" className="button secondary"
+            disabled={s.filamentRegenAmount<=0}
+            onClick={()=>history.change(x=>({...x,filamentRegenAmount:0}))}>
+            Stop growing — keep scars
+          </button>
+        </div>
+        <p className="control-note">A procedural growth/recede cycle, not permanently accumulating yarn. Existing threads, text, jewelry, materials, sewing and original artwork stay intact. GPU-heavy combinations should be proof-exported at 480px before a long MP4.</p>
       </details>
       <details className="filament-crossbreeder filament-adornment-lab">
         <summary>💎 THREAD JEWELRY — CHARMS, FRINGE & WEIRD SHIT</summary>

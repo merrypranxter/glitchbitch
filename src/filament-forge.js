@@ -980,6 +980,139 @@ export function specializeFilamentPlasticity(source,index){
     body+"  }\n"+source.slice(end);
 }
 
+
+/**
+ * GHOST SCARS — six opt-in, deterministic optical scar behaviors,
+ * mapped onto existing filament geometry and neural contact masks.
+ * A phase-offset pulse looks like an afterimage but does NOT preserve past
+ * frames or require the repaired iPhone feedback compositor.
+ */
+export const filamentScarModes=[
+  "Off",
+  "Phosphor aftertrace",
+  "Lichtenberg burn",
+  "Kintsugi sutures",
+  "Spectral bruising",
+  "Ghost knot fossils",
+  "Mycelial nerve scars"
+];
+export const filamentScarFamilies=[
+  {name:"Dormant",modes:filamentScarModes.slice(0,1)},
+  {name:"Electrically burned fibers",modes:filamentScarModes.slice(1,3)},
+  {name:"Repaired and chromatic scars",modes:filamentScarModes.slice(3,5)},
+  {name:"Ghost imprints and biological oddities",modes:filamentScarModes.slice(5)}
+];
+export const filamentScarDescriptions={
+  "Off": "No traces; leave Neural Loom and every existing filament effect unchanged.",
+  "Phosphor aftertrace": "Bright electrical trails slide behind recent-looking impulses along the living stitch.",
+  "Lichtenberg burn": "Dark branching lightning marks crawl along activated woven fibers.",
+  "Kintsugi sutures": "Fractured lines appear stitched back together with iridescent metallic light.",
+  "Spectral bruising": "Soft multilayered prismatic halos make the moving nerves look chromatically bruised.",
+  "Ghost knot fossils": "Tiny concentric impressions linger like nerve pulses buried in the thread.",
+  "Mycelial nerve scars": "Fuzzy branching scarlets and spore-like points take over the conductive thread."
+};
+export const filamentScarControls=["filamentScarAmount","filamentScarDensity",
+  "filamentScarPersistence","filamentScarRoughness","filamentScarGlow"];
+export const filamentScarPresets=[
+  {
+    "name": "Afterburn silk",
+    "filamentScarMode": "Phosphor aftertrace",
+    "filamentScarAmount": 90,
+    "filamentScarDensity": 57,
+    "filamentScarPersistence": 81,
+    "filamentScarRoughness": 38,
+    "filamentScarGlow": 96
+  },
+  {
+    "name": "Black lightning velvet",
+    "filamentScarMode": "Lichtenberg burn",
+    "filamentScarAmount": 91,
+    "filamentScarDensity": 72,
+    "filamentScarPersistence": 63,
+    "filamentScarRoughness": 78,
+    "filamentScarGlow": 55
+  },
+  {
+    "name": "Gold-healed nervous lace",
+    "filamentScarMode": "Kintsugi sutures",
+    "filamentScarAmount": 93,
+    "filamentScarDensity": 46,
+    "filamentScarPersistence": 69,
+    "filamentScarRoughness": 38,
+    "filamentScarGlow": 95
+  },
+  {
+    "name": "Opaline bruises",
+    "filamentScarMode": "Spectral bruising",
+    "filamentScarAmount": 95,
+    "filamentScarDensity": 54,
+    "filamentScarPersistence": 86,
+    "filamentScarRoughness": 55,
+    "filamentScarGlow": 88
+  },
+  {
+    "name": "Ghost bobbin fossils",
+    "filamentScarMode": "Ghost knot fossils",
+    "filamentScarAmount": 92,
+    "filamentScarDensity": 76,
+    "filamentScarPersistence": 76,
+    "filamentScarRoughness": 70,
+    "filamentScarGlow": 77
+  },
+  {
+    "name": "Fungal lightning scars",
+    "filamentScarMode": "Mycelial nerve scars",
+    "filamentScarAmount": 96,
+    "filamentScarDensity": 69,
+    "filamentScarPersistence": 69,
+    "filamentScarRoughness": 91,
+    "filamentScarGlow": 90
+  }
+];
+export function applyFilamentScarPreset(state,name){
+  const preset=filamentScarPresets.find(x=>x.name===name);
+  if(!preset)return state;
+  const {name:unused,...values}=preset;
+  return {...state,...values,
+    filamentAmount:Math.max(72,state.filamentAmount||0),
+    filamentNeuralMode:state.filamentNeuralMode==="Off"?"Axon train":state.filamentNeuralMode,
+    filamentNeuralAmount:Math.max(82,state.filamentNeuralAmount||0)};
+}
+export function remixFilamentScars(state,rng=Math.random,oddOnly=false){
+  const unit=()=>{const n=Number(rng());return Number.isFinite(n)?
+    Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
+  const choices=oddOnly?filamentScarModes.slice(4):filamentScarModes.slice(1);
+  const pool=choices.filter(x=>x!==state.filamentScarMode);
+  const list=pool.length?pool:choices;
+  return {...state,
+    filamentScarMode:list[Math.floor(unit()*list.length)],
+    filamentScarAmount:78+unit()*21,
+    filamentScarDensity:23+unit()*76,
+    filamentScarPersistence:19+unit()*80,
+    filamentScarRoughness:19+unit()*80,
+    filamentScarGlow:35+unit()*64,
+    filamentAmount:Math.max(72,state.filamentAmount||0),
+    filamentNeuralMode:state.filamentNeuralMode==="Off"?"Axon train":state.filamentNeuralMode,
+    filamentNeuralAmount:Math.max(82,state.filamentNeuralAmount||0)};
+}
+/** Keep only the chosen scar morphology in GPU fragment source. */
+export function specializeFilamentScars(source,index){
+  if(index==null||!Number.isInteger(index)||index<1||
+    index>=filamentScarModes.length)return source;
+  const opener=i=>i===1?"  if(filamentScarMode==1){":
+    "  }else if(filamentScarMode=="+i+"){";
+  const starts=filamentScarModes.slice(1).map((_,i)=>source.indexOf(opener(i+1)));
+  if(starts.some((p,i)=>p<0||(i>0&&p<=starts[i-1])))return source;
+  const ending=source.indexOf("  // Ghost traces are strictly confined",starts.at(-1));
+  if(ending<0)return source;
+  const close=source.lastIndexOf("  }\n",ending);
+  if(close<starts.at(-1))return source;
+  const stop=index===filamentScarModes.length-1?close:starts[index];
+  const body=source.slice(starts[index-1]+opener(index).length,stop);
+  return source.slice(0,starts[0])+"  if(filamentScarMode=="+index+"){"+
+    body+"  }\n"+source.slice(ending);
+}
+
 export const filamentAdornmentModes=[
   "Bare threads",
   "Pearl stations",
@@ -1467,6 +1600,9 @@ uniform int filamentMorphMode;
 uniform int filamentContagionMode;
 uniform int filamentNeuralMode;
 uniform int filamentPlasticMode;
+uniform int filamentScarMode;
+uniform float filamentScarAmount,filamentScarDensity;
+uniform float filamentScarPersistence,filamentScarRoughness,filamentScarGlow;
 uniform float filamentPlasticAmount,filamentPlasticRate;
 uniform float filamentPlasticInhibition,filamentPlasticRetention,filamentPlasticGlow;
 uniform float filamentNeuralAmount,filamentNeuralSpeed;
@@ -2493,6 +2629,76 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   thread*=1.0-plasticShadow*(.15+.43*filamentPlasticInhibition)*core;
   thread+=mix(ink,glimmer,.62)*core*filamentPlasticAmount*
     filamentPlasticGlow*plasticEdge*.42;
+#endif
+#ifdef FILAMENT_GHOST_SCARS
+  // The "old" pulse is an analytic phase offset, not a saved video frame.
+  // Both current and delayed pulses use the same deterministic export clock.
+  float scarClock=nerveClock*(.74+.68*filamentScarPersistence);
+  float scarFreq=3.0+filamentScarDensity*13.0;
+  float scarAxis=axonPhase*.65+q.x*.13-q.y*.08;
+  float scarNoise=fract(sin(dot(floor(q*(.2+.05*scarFreq)),
+    vec2(43.71,19.43))+seedPhase)*43758.5453);
+  float delayedPulse=pow(.5+.5*cos(scarAxis*scarFreq*.31-
+    scarClock*1.3+filamentScarPersistence*4.4),5.0);
+  float olderPulse=pow(.5+.5*cos(scarAxis*scarFreq*.31-
+    scarClock*1.3+filamentScarPersistence*7.8),5.0);
+  float electricTrace=max(delayedPulse,olderPulse*.69);
+  float scarPattern=0.0;
+  float scarBurn=0.0;
+  float scarTint=0.0;
+  if(filamentScarMode==1){ // PHOSPHOR AFTERTRACE
+    float grain=.5+.5*sin(scarAxis*scarFreq*1.7+scarNoise*4.3);
+    scarPattern=electricTrace*(.46+.54*grain);
+    scarTint=.18;
+  }else if(filamentScarMode==2){ // LICHTENBERG BURN
+    float fork=sin(q.x*scarFreq*.41+
+      sin(q.y*scarFreq*.33+scarClock*.27)*2.3);
+    float branch=1.0-smoothstep(.08,.45,abs(fork));
+    scarPattern=branch*(.35+.65*electricTrace);
+    scarBurn=.9;
+  }else if(filamentScarMode==3){ // KINTSUGI SUTURES
+    float fracture=sin(scarAxis*scarFreq*1.9+
+      sin(q.x*.9+scarClock*.13)*1.7);
+    scarPattern=(1.0-smoothstep(.02,.21,abs(fracture)))*
+      (.36+.64*electricTrace);
+    scarTint=.74;
+  }else if(filamentScarMode==4){ // SPECTRAL BRUISING
+    float bruise=sin(scarAxis*scarFreq*.34-
+      scarClock*.23+sin(q.y*.61)*1.3);
+    scarPattern=(.5+.5*bruise)*(.42+.58*electricTrace);
+    scarTint=.58;
+    scarBurn=.3;
+  }else if(filamentScarMode==5){ // GHOST KNOT FOSSILS
+    vec2 site=fract(q*(.14+.038*scarFreq))-.5;
+    float rings=abs(sin(length(site)*32.0-scarClock*.21));
+    scarPattern=(1.0-smoothstep(.11,.43,rings))*
+      (.27+.73*electricTrace);
+    scarBurn=.34;
+    scarTint=.36;
+  }else if(filamentScarMode==6){ // MYCELIAL NERVE SCARS
+    float hypha=sin(q.x*.42*scarFreq+
+      sin(q.y*.29*scarFreq-scarClock*.38)*2.7);
+    float filaments=1.0-smoothstep(.09,.46,abs(hypha));
+    float spores=pow(.5+.5*cos(scarAxis*scarFreq*2.1-
+      scarClock*.53+scarNoise*6.28318),8.0);
+    scarPattern=filaments*.73+spores*.43;
+    scarTint=.41;
+  }
+  // Ghost traces are strictly confined to the current sewn filament mask.
+  // Changing history depth is an optical phase approximation, not a cache.
+  float scarAge=clamp(.27+.73*electricTrace,0.0,1.0);
+  float scarPresence=clamp(scarPattern*scarAge*
+    (.52+.48*neuralSignal+contactNeural*.31)*
+    filamentScarAmount,0.0,1.0);
+  float scarRough=clamp(mix(1.0,.55+scarNoise*.92,
+    filamentScarRoughness),0.0,1.55);
+  float scarInk=clamp(scarPresence*scarRough,0.0,1.0)*core;
+  vec3 scarColor=mix(glimmer,
+    palette(fract(pigmentPhase+.33+scarNoise*.17)),scarTint);
+  // Bruised/burnt regions dim first; only the positive scar seam glows.
+  thread*=1.0-scarInk*scarBurn*.67;
+  thread+=scarColor*scarInk*filamentScarGlow*
+    (.23+.75*(.45+.55*delayedPulse));
 #endif
 #endif
   float amount=filamentAmount;

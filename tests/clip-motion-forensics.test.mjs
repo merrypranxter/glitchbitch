@@ -4,7 +4,7 @@ import {readFileSync} from "node:fs";
 import {GIFEncoder} from "../src/vendor/gifenc.js";
 import {
   selectMotionSamples,measureMotionFrames,analyzeClipMotion,
-  decodeOwnGifSamples,motionForensicsReport
+  decodeOwnGifSamples,verifyMotionDecodeTimes,motionForensicsReport
 } from "../src/clip-motion-forensics.js";
 const src=p=>readFileSync(new URL("../src/"+p,import.meta.url),"utf8");
 function canvasFrame(color,width=32,height=20){
@@ -14,7 +14,7 @@ function canvasFrame(color,width=32,height=20){
   }
   return {width,height,data};
 }
-function gifWithFrames(width=96,height=64,count=9,pattern=(i,j)=>((i+Math.floor(j/7))%4)){
+function gifWithFrames(width=96,height=64,count=9,pattern=(i,j)=>((Math.floor(i/3)+Math.floor(j/7))%4)){
   const gif=GIFEncoder();
   const palette=[[0,0,0],[250,10,20],[0,245,60],[25,30,240]];
   for(let i=0;i<count;i++){
@@ -39,6 +39,11 @@ test("real bundled gifenc GIF frames decode at opening/middle/final, including p
   const {bytes,palette,pattern}=gifWithFrames(96,64,9);
   const frames=decodeOwnGifSamples(bytes,[0,4,8]);
   assert.deepEqual(frames.map(f=>f.index),[0,4,8]);
+  assert.equal(frames[0].encodedDisplayTime,0);
+  assert.ok(Math.abs(frames[1].encodedDisplayTime-.28)<.000001);
+  assert.ok(Math.abs(frames[2].encodedDisplayTime-.56)<.000001);
+  assert.notDeepEqual([...frames[0].data.slice(0,3)],
+    [...frames[1].data.slice(0,3)],"Actual GIF frames must change");
   for(const frame of frames){
     assert.equal(frame.width,96);assert.equal(frame.height,64);
     assert.equal(frame.encodedDisplayDuration,.07);
@@ -110,6 +115,25 @@ test("shape-mismatched/invalid motion comparisons fail visibly",()=>{
   assert.throws(()=>analyzeClipMotion([a,a,a],[a,a,canvasFrame([1,2,3],2,2)]),
     /different dimensions/);
 });
+test("decoder seek artifacts cannot falsely accuse a correctly changing MP4 of frozen output",()=>{
+  const png=[canvasFrame([250,0,0]),canvasFrame([0,250,0]),canvasFrame([0,0,250])];
+  const stuck=[png[0],png[0],png[0]];
+  const samples=selectMotionSamples(91,30);
+  const motion=analyzeClipMotion(png,stuck);
+  assert.equal(motion.possibleMotionLoss,true);
+  const badTimes=verifyMotionDecodeTimes(motion,
+    [{mediaTime:0},{mediaTime:0},{mediaTime:.001}],samples,"mp4");
+  assert.equal(badTimes.possibleMotionLoss,false);
+  assert.equal(badTimes.decoderTimeWarning,true);
+  assert.match(badTimes.status,/Inconclusive: decoder timestamps/);
+  const good=verifyMotionDecodeTimes(motion,
+    [{mediaTime:0},{mediaTime:1.5},{mediaTime:3}],samples,"mp4");
+  assert.equal(good.possibleMotionLoss,true);
+  assert.equal(good.decoderTimeWarning,false);
+  const gif=verifyMotionDecodeTimes(motion,
+    [{mediaTime:0},{mediaTime:0},{mediaTime:0}],samples,"gif");
+  assert.equal(gif.possibleMotionLoss,true);
+});
 test("motion JSON report contains only timing, coarse metrics and encoder metadata",()=>{
   const state=[
     canvasFrame([100,10,20]),canvasFrame([10,100,20]),canvasFrame([10,20,100])
@@ -142,6 +166,7 @@ test("UI decodes the ACTUAL blob, uses matched strict PNG clocks, and lets user 
   assert.match(ui,/clockAt\(ready\.snapshot,ready\.timeline,seconds\)/);
   assert.match(ui,/exactEffects:true,outputSize:ready\.frameSize/);
   assert.match(ui,/analyzeClipMotion\(references,decoded\)/);
+  assert.match(ui,/verifyMotionDecodeTimes\(/);
   assert.match(ui,/selectedMotionIndex===i/);
   assert.match(ui,/Full-Clip Motion Forensics/);
   assert.match(ui,/Math\.max\(ready\.frameSize\.width,ready\.frameSize\.height\)>720/);

@@ -17,6 +17,8 @@ test("actual source-frame index sequence is a continuous true boomerang on even 
   assert.equal(playbackFrameSeconds(6,10,30,"Boomerang"),4/30);
   assert.equal(playbackFrameSeconds(6,10,30,"Forward"),6/30);
   assert.equal(playbackTimeForMediaTime(6/30,10,30,"Boomerang"),4/30);
+  assert.equal(playbackTimeForMediaTime(.0341,90,30,"Forward"),.0341,
+    "existing forward diagnostics must retain their sub-frame precision");
 });
 test("odd GIF frame counts hold apex once, but never repeat opening at wrap",()=>{
   assert.deepEqual(Array.from({length:9},(_,i)=>boomerangFrameIndex(i,9)),
@@ -139,6 +141,7 @@ test("export backends all feed the SAME compositor output into shared boomerang 
   assert.match(exporter,/player\?\.destroy\(\)/);
   assert.match(ui,/label="Playback direction"/);
   assert.match(ui,/boomerangCacheMiB/);
+  assert.match(ui,/tab==="Video"&&playbackMode==="Boomerang"&&boomerangTooLarge/);
   assert.match(ui,/-boomerang/);
 });
 test("strict export diagnostics use mirrored source clock and retain real decoded media timestamps",()=>{

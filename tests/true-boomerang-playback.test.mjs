@@ -149,3 +149,67 @@ test("strict export diagnostics use mirrored source clock and retain real decode
   assert.match(ui,/feedback-dependent artwork may still differ/);
   assert.match(ui,/setLoopMode\("Off"\)/);
 });
+
+test("PRODUCTION capture workspace reverses complete GPU+styled-lettering pixels exactly",async()=>{
+  const exporter=source("export.js");
+  const from=exporter.indexOf("function createFrameWorkspace(");
+  const to=exporter.indexOf("/** Deterministic fixed-rate H.264",from);
+  assert.ok(from>0&&to>from);
+  const document={createElement(type){
+    assert.equal(type,"canvas");
+    const canvas={width:0,height:0,_pixels:null,_ctx:null,
+      getContext(kind){
+        assert.equal(kind,"2d");
+        if(this._ctx)return this._ctx;
+        return this._ctx={
+          createImageData(w,h){return {data:new Uint8ClampedArray(w*h*4)};},
+          putImageData(image){canvas._pixels=new Uint8ClampedArray(image.data);},
+          getImageData(){return {data:new Uint8ClampedArray(canvas._pixels)};}
+        };
+      }
+    };return canvas;
+  }};
+  let renders=0,letteringPasses=0;
+  const createRenderer=()=>({
+    draw(){renders++;return true;},
+    readFrame(data){
+      for(let i=0;i<data.length;i+=4)
+        data.set([(renders*31)%256,89,(200+renders*7)%256,255],i);
+    },
+    ready(){return true;},destroy(){}
+  });
+  const closure=new Function(source("loop-closure.js").replace(/\bexport\s+(?=(const|function)\b)/g,"")+
+    "return {loopClosureFrames,loopClosureMix,weftRevealRects,irisRevealRadius};")();
+  const make=new Function("document","createRenderer","loopClosureFrames",
+    "loopClosureMix","weftRevealRects","irisRevealRadius",
+    "hasVisibleLettering","primeFrameHistory","clockAt","checkExport",
+    "waitForGraphics","paintLettering","artworkParityError",
+    exporter.slice(from,to)+"return createFrameWorkspace;");
+  const work=make(document,createRenderer,
+    closure.loopClosureFrames,closure.loopClosureMix,
+    closure.weftRevealRects,closure.irisRevealRadius,
+    ()=>true,async()=>{},
+    (_,__,seconds)=>({time:seconds,colorTime:seconds,textTime:seconds}),
+    ()=>{},async()=>{},ctx=>{
+      letteringPasses++;
+      const img=ctx.getImageData(0,0,2,2);
+      img.data[0]=255;
+      img.data[1]=letteringPasses*8;
+      ctx.putImageData(img,0,0);
+    },message=>Error(message))({}, {time:0}, {width:2,height:2}, null,
+      {fps:10,frameCount:10,loopMode:"Off"});
+  const playback=createPlaybackFrames(work,
+    {fps:10,frameCount:10,playbackMode:"Boomerang"});
+  const encoded=[];
+  for(let i=0;i<10;i++)
+    encoded.push([...await playback.render(i,true)]);
+  assert.equal(renders,6,"GPU + feedback advanced only on the forward leg");
+  assert.equal(letteringPasses,6,"authored styled lettering was not repainted on reverse");
+  for(const [a,b] of [[4,6],[3,7],[2,8],[1,9]])
+    assert.deepEqual(encoded[a],encoded[b],
+      "forward and backward source pixels must match for ALL effects, including text");
+  assert.notDeepEqual(encoded[0],encoded[9]);
+  assert.equal(encoded[0][0],255);
+  assert.equal(encoded[1][0],255);
+  playback.destroy();work.destroy();
+});

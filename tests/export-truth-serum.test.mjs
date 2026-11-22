@@ -149,12 +149,13 @@ test("Export UI renders three deterministic frames, shows metrics and saves JSON
  const exportPath=readFileSync(new URL("../src/export.js",import.meta.url),"utf8");
  assert.match(ui,/renderImage\(normalTextBlendState\(snapshot\),timeline,480\)/);
  assert.match(ui,/renderImage\(snapshot,timeline,480\)/);
- assert.match(ui,/renderImage\(withoutTextForExport\(snapshot\),timeline,480\)/);
+ assert.match(ui,/renderImage\(snapshot,timeline,480,\s*"image\/png",\{compositeLettering:false\}\)/);
  assert.match(ui,/analyzeTextExportFrames\(/);
  assert.match(ui,/canvasImageFiltersWork\(\)/);
  assert.match(ui,/Save diagnostic report \(JSON\)/);
  assert.match(ui,/URL\.revokeObjectURL/);
  assert.match(ui,/blendProof\.stateAt===state/);
+ assert.match(exportPath,/compositeLettering && hasVisibleLettering\(state\)/);
  assert.match(exportPath,/paintLettering\(ctx, state, timeline, width, height\)/);
  assert.match(exportPath,/paintLettering\(ctx, state, frameClock, size.width, size.height\)/);
 });

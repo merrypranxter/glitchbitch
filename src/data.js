@@ -1532,12 +1532,14 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key.startsWith("filamentQuasi") && (state.filamentAmount<=0 ||
         (state.filamentSpecies!=="Quasicrystal Brocade" &&
           !(state.filamentCrossbreed>0 && state.filamentSecondSpecies==="Quasicrystal Brocade"))))continue;
-      if(key.startsWith("filamentFeral") && state.filamentSpecies!=="Feral Jacquard" &&
-        state.filamentSecondSpecies!=="Feral Jacquard")continue;
+      if(key.startsWith("filamentFeral") && (state.filamentAmount<=0 ||
+        (state.filamentSpecies!=="Feral Jacquard" &&
+          !(state.filamentCrossbreed>0 && state.filamentSecondSpecies==="Feral Jacquard"))))continue;
       if(key.startsWith("filamentRetro") && (state.filamentAmount<=0 ||
         state.filamentStitchMode!=="Retrocausal Embroidery" ||
         state.filamentStitchAmount<=0))continue;
-      if(key.startsWith("filamentChladni") && (state.filamentStitchMode!=="Chladni Needle Orchestra" ||
+      if(key.startsWith("filamentChladni") && (state.filamentAmount<=0 ||
+        state.filamentStitchMode!=="Chladni Needle Orchestra" ||
         state.filamentStitchAmount<=0))continue;
       if(key==="atmoBAmount" && state.atmoBAmount<=0)continue; // Never wake a hidden second parent by mutating old art.
       if(["colonyLifeAmount","colonyFrontGlow","colonyCompetition"].includes(key)

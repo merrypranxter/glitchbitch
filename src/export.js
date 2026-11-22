@@ -3,6 +3,7 @@ import { isArtworkParityError, artworkParityError } from "./export-parity.js";
 import { ratios } from "./data.js";
 import { hasVisibleLettering, paintLettering, waitForLetteringFonts } from "./text-compositor.js";
 import {loopClosureFrames,loopClosureMix,weftRevealRects,irisRevealRadius} from "./loop-closure.js";
+import {createPlaybackFrames,validateBoomerangCache} from "./boomerang-playback.js";
 
 export function dimensions(ratio, longEdge) {
   const r = ratios.find((x) => x.id === ratio)?.value || 1;
@@ -217,28 +218,38 @@ function createFrameWorkspace(state, timeline, size, signal,
     return includePixels && (lettered||closureMix>0)
       ?ctx.getImageData(0,0,size.width,size.height).data:frame.data;
   }
+  function restoreFrame(pixels,includePixels=false) {
+    checkExport(signal);
+    if(!(pixels instanceof Uint8Array||pixels instanceof Uint8ClampedArray)||
+       pixels.length!==frame.data.length)
+      throw Error("Boomerang cached frame has invalid RGBA dimensions.");
+    frame.data.set(pixels);
+    ctx.putImageData(frame,0,0);
+    return includePixels?frame.data:null;
+  }
   function destroy() {
     renderer.destroy(true);
     canvas.width = canvas.height = 1;
     capture.width = capture.height = 1;
     if(loopAnchor)loopAnchor.width=loopAnchor.height=1;
   }
-  return { capture, render, destroy, hasClosure:closureFrames>0 };
+  return { capture, render, restoreFrame, destroy, hasClosure:closureFrames>0 };
 }
 /** Deterministic fixed-rate H.264 MP4. No WebM output or mislabeled codecs. */
 async function encodeMp4WebCodecs(state, timeline, opts) {
   const { Output, Mp4OutputFormat, BufferTarget, CanvasSource, Quality, canEncodeVideo } = await import("mediabunny");
-  const { fps, duration, bitrate, size, signal, onProgress,loopMode,loopBlendSeconds } = opts;
+  const { fps, duration, bitrate, size, signal, onProgress,loopMode,loopBlendSeconds,playbackMode } = opts;
   const quality = new Quality({ bitrate });
   const supported = await canEncodeVideo("avc", {
     width: size.width, height: size.height, frameRate: fps, quality, latencyMode: "quality",
   });
   if (!supported) throw Error("H.264 WebCodecs encoding is unavailable.");
-  let work, output, source, encoded = 0;
+  let work, player, output, source, encoded = 0;
   try {
     checkExport(signal);
     work = createFrameWorkspace(state, timeline, size, signal,
       {fps,frameCount:Math.round(duration*fps),loopMode,loopBlendSeconds});
+    player=createPlaybackFrames(work,{fps,frameCount:Math.round(duration*fps),playbackMode});
     const target = new BufferTarget();
     output = new Output({format: new Mp4OutputFormat(), target});
     source = new CanvasSource(work.capture, {
@@ -249,7 +260,7 @@ async function encodeMp4WebCodecs(state, timeline, opts) {
     await output.start();
     const count = Math.round(duration * fps);
     for(let i=0;i<count;i++) {
-      await work.render(i / fps);
+      await player.render(i);
       await source.add(i / fps, 1 / fps);
       onProgress((i+1)/count);
       if(i%3===0)await yieldUI();
@@ -263,23 +274,25 @@ async function encodeMp4WebCodecs(state, timeline, opts) {
   } finally {
     if(output && output.state!=="finalized" && output.state!=="canceled")
       await output.cancel().catch(()=>{});
+    player?.destroy();
     work?.destroy();
   }
 }
 /** Safari native H.264 recorder fallback when WebCodecs H.264 cannot encode.
  * Records in wall-clock time, unlike the deterministic WebCodecs path. */
 async function encodeMp4Recorder(state, timeline, opts) {
-  const {fps,duration,bitrate,size,signal,onProgress,loopMode,loopBlendSeconds}=opts;
+  const {fps,duration,bitrate,size,signal,onProgress,loopMode,loopBlendSeconds,playbackMode}=opts;
   const mime=nativeMp4Mime();
   if(!mime)throw Error("This browser cannot encode H.264 MP4. Try current Safari or Chrome with hardware video encoding.");
-  let work, recorder, stream;
+  let work,player,recorder, stream;
   const chunks=[];
   try{
     work=createFrameWorkspace(state,timeline,size,signal,
       {fps,frameCount:Math.round(duration*fps),loopMode,loopBlendSeconds});
+    player=createPlaybackFrames(work,{fps,frameCount:Math.round(duration*fps),playbackMode});
     if(typeof work.capture.captureStream!=="function")
       throw Error("This browser cannot record a canvas as MP4.");
-    await work.render(0);
+    await player.render(0);
     stream=work.capture.captureStream(fps);
     recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:bitrate});
     const done=new Promise((resolve,reject)=>{
@@ -297,7 +310,12 @@ async function encodeMp4Recorder(state, timeline, opts) {
       // In soft-closure mode we must not render it a second time: doing so
       // would advance feedback, making the saved loop anchor differ from the
       // actual first encoded frame. Legacy "Off" timing is unchanged.
-      if(i>0||!work.hasClosure)await work.render(i/fps);
+      if(i>0)await player.render(i);
+      // Preserve the untouched legacy Forward recorder behavior: only the
+      // original Off mode used a redundant first render. For Boomerang the
+      // exact first rendered frame has already been cached/captured.
+      else if(playbackMode==="Forward"&&!work.hasClosure)
+        await work.render(0);
       stream.getVideoTracks()[0]?.requestFrame?.();
       onProgress((i+1)/count);
     }
@@ -312,20 +330,22 @@ async function encodeMp4Recorder(state, timeline, opts) {
   } finally {
     if(recorder?.state==="recording")recorder.stop();
     stream?.getTracks().forEach(track=>track.stop());
+    player?.destroy();
     work?.destroy();
   }
 }
 /** Locally encoded real animated GIF, with individually quantized color tables. */
 async function encodeGif(state, timeline, opts) {
   const {GIFEncoder,quantize,applyPalette}=await import("./vendor/gifenc.js");
-  const {fps,duration,size,signal,onProgress,loopMode,loopBlendSeconds}=opts;
+  const {fps,duration,size,signal,onProgress,loopMode,loopBlendSeconds,playbackMode}=opts;
   const work=createFrameWorkspace(state,timeline,size,signal,
     {fps,frameCount:Math.round(duration*fps),loopMode,loopBlendSeconds});
   const gif=GIFEncoder();
   const count=Math.round(duration*fps);
+  const player=createPlaybackFrames(work,{fps,frameCount:count,playbackMode});
   try {
     for(let i=0;i<count;i++) {
-      const rgba=await work.render(i/fps, true);
+      const rgba=await player.render(i,true);
       const palette=quantize(rgba,256,{format:"rgb565"});
       const indexed=applyPalette(rgba,palette,"rgb565");
       gif.writeFrame(indexed,size.width,size.height,{palette,delay:Math.round(1000/fps),repeat:0});
@@ -336,11 +356,11 @@ async function encodeGif(state, timeline, opts) {
     gif.finish();
     return {blob:new Blob([gif.bytes()],{type:"image/gif"}),extension:"gif",
       mime:"image/gif",seconds:duration,frames:count,fps,method:"gif"};
-  } finally { work.destroy(); }
+  } finally { player.destroy();work.destroy(); }
 }
 export async function recordClip(state, timeline, {
   format="mp4", longEdge=720, duration=6, fps=30, bitrate=16000000,
-  loopMode="Off",loopBlendSeconds=.75,
+  loopMode="Off",loopBlendSeconds=.75,playbackMode="Forward",
   onProgress=()=>{}, signal,
 } = {}) {
   if(!["mp4","gif"].includes(format))throw Error("Only MP4 and GIF formats are available.");
@@ -354,7 +374,11 @@ export async function recordClip(state, timeline, {
   // Validate before starting either encoder. "Off" performs zero extra
   // canvas work and remains byte-for-byte equivalent in the render path.
   loopClosureFrames(loopMode,loopBlendSeconds,fps,Math.round(duration*fps));
-  const opts={fps,duration,bitrate,size,onProgress,signal,loopMode,loopBlendSeconds};
+  if(playbackMode==="Boomerang"&&loopMode!=="Off")
+    throw Error("Exact Boomerang and Loop Surgery are separate video modes. Choose Loop Surgery Off.");
+  validateBoomerangCache(size,Math.round(duration*fps),playbackMode);
+  const opts={fps,duration,bitrate,size,onProgress,signal,
+    loopMode,loopBlendSeconds,playbackMode};
   checkExport(signal);
   // Export must NOT silently rasterize a fallback font while the chosen face
   // is still loading. This also applies to iPhone-native MP4 recording.

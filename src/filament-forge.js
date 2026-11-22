@@ -1603,10 +1603,9 @@ export function specializeFilamentStitchMotion(source,index){
     source.slice(fallback,end)+source.slice(end);
 }
 export const filamentStitchControls=[
+  // Four universal stitch controls, maintained for every legacy preset.
   "filamentStitchAmount","filamentStitchSpeed",
-  "filamentStitchLength","filamentStitchGlow",
-  "filamentChladniOrder","filamentChladniResonance",
-  "filamentChladniDensity","filamentChladniPhase","filamentChladniDetune"
+  "filamentStitchLength","filamentStitchGlow"
 ];
 export const filamentStitchPresets=[
   {name:"Electric needle chase",filamentStitchMode:"Needle chase",

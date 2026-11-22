@@ -39,7 +39,7 @@ test("the live editor may recover but exact export refuses shader downgrades",()
 test("downloadable PNG, GIF and MP4 share the exact-effect renderer",()=>{
   assert.match(exporter,/renderer = createRenderer\(canvas,\{exactEffects\}\)/);
   assert.match(exporter,/try \{ renderer = createRenderer\(canvas,\{exactEffects:true\}\); \}/);
-  assert.match(exporter,/type = "image\/png", \{exactEffects=true\} = \{\}\)/);
+  assert.match(exporter,/type = "image\/png", \{exactEffects=true,compositeLettering=true,outputSize=null\} = \{\}\)/);
   assert.match(exporter,/await primeFrameHistory\(renderer,state,timeline,\{width,height\}\)/);
   assert.match(exporter,/await primeFrameHistory\(renderer,state,timeline,size,signal\)/);
   assert.match(exporter,/renderer\.readFrame\(bytes\)/);
@@ -93,8 +93,10 @@ test("preview GPU is released before exact-effect capture and resumed afterward"
   assert.match(dialog,/onExportBusy\?\.\(false\)/);
   const starts=dialog.match(/onExportBusy\?\.\(true\)/g)||[];
   const stops=dialog.match(/onExportBusy\?\.\(false\)/g)||[];
-  assert.equal(starts.length,3,"PNG/MP4, quick proof and blend proof each park preview");
-  assert.ok(stops.length>=4,"all finally/cleanup routes restore the preview");
+  assert.ok(starts.length>=3,
+    "PNG/MP4, quick proof, blend proof and forensic inspections park preview");
+  assert.ok(stops.length>=starts.length+1,
+    "all finally/cleanup routes restore the preview including unmount cleanup");
   assert.match(dialog,/requestAnimationFrame\(\(\)=>requestAnimationFrame\(resolve\)\)/);
 });
 

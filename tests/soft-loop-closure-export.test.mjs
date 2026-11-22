@@ -150,4 +150,22 @@ test("production render workspace under a simulated Canvas2D produces equal firs
   assert.notDeepEqual([...rawStart],[...rawEnd],
     "default Off must not secretly blend or rewrite the last frame");
   raw.destroy();
+  // Verify the anchor is taken AFTER the real lettering compositor, not
+  // from the unlettered WebGL pixel array. No white text export regression.
+  const letteredFactory=build(fakeDocument,mockRenderer,loopClosureFrames,loopClosureMix,
+    ()=>true,async()=>{},
+    (_,__,seconds)=>({time:seconds,colorTime:seconds,textTime:seconds}),
+    ()=>{},async()=>{},ctx=>{
+      const image=ctx.getImageData(0,0,size.width,size.height);
+      image.data[0]=224;
+      ctx.putImageData(image,0,0);
+    },message=>Error(message));
+  const withText=letteredFactory(state,{time:0},size,null,
+    {fps:10,frameCount:20,loopMode:"Soft closure",loopBlendSeconds:.5});
+  const firstWithText=new Uint8Array(await withText.render(0,true));
+  assert.equal(firstWithText[0],224,"the authored text pass must be visible in the saved anchor");
+  const finalWithText=new Uint8Array(await withText.render(1.9,true));
+  assert.deepEqual([...finalWithText],[...firstWithText],
+    "end-frame closure must include all composited lettering and optical pixels");
+  withText.destroy();
 });

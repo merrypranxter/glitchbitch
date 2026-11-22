@@ -7,7 +7,7 @@ import {LOOP_MODES,LOOP_BLEND_SECONDS,loopClosureFrames,loopClosureMix}
 const source=p=>readFileSync(new URL("../src/"+p,import.meta.url),"utf8");
 
 test("original format stays Off by default; new time options have bounded artist controls",()=>{
-  assert.deepEqual(LOOP_MODES,["Off","Soft closure","Weft zipper","Iris portal"]);
+  assert.deepEqual(LOOP_MODES,["Off","Soft closure","Weft zipper","Iris portal","Quilt Reassembly","Clockwork Sweep","Crystal Bloom"]);
   assert.ok(LOOP_BLEND_SECONDS.includes(.75));
   assert.equal(loopClosureFrames("Off",.75,30,180),0);
   assert.equal(loopClosureMix(179,180,0),0);
@@ -49,7 +49,7 @@ test("invalid modes, FPS, durations and frame indices throw instead of silently 
 test("default GIF, H264 and native export paths all use one opt-in post-lettering closure canvas",()=>{
   const code=source("export.js");
   const ui=source("components/ExportDialog.jsx");
-  assert.match(code,/import \{loopClosureFrames,loopClosureMix,weftRevealRects,irisRevealRadius\} from "\.\/loop-closure\.js"/);
+  assert.match(code,/import \{loopClosureFrames,loopClosureMix,weftRevealRects,irisRevealRadius,\s*quiltReassemblyTiles,clockworkSweep,crystalBloomDiamonds\} from "\.\/loop-closure\.js"/);
   assert.match(code,/loopMode="Off",loopBlendSeconds=\.75/);
   assert.match(code,/const closureFrames=loopClosureFrames\(loopMode,loopBlendSeconds,fps,frameCount\)/);
   assert.match(code,/if \(lettered\) paintLettering\(ctx, state, frameClock, size\.width, size\.height\)/);

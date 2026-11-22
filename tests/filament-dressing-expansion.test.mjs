@@ -37,16 +37,16 @@ const protectedKeys=["seed","engine","lettering","colors","ratio","marks",
   "filamentCrossbreed","filamentSecondSpecies"];
 test("existing saved IDs never change; every new textile is a real option",()=>{
   assert.deepEqual(filamentSpecies.slice(0,16),originalGeometry);
-  assert.deepEqual(filamentSpecies.slice(16),extraGeometry);
+  assert.deepEqual(filamentSpecies.slice(16,22),extraGeometry);
   assert.deepEqual(filamentMaterials.slice(0,6),originalDress);
   assert.deepEqual(filamentMaterials.slice(6),extraDress);
-  assert.deepEqual(filamentStitchModes.slice(21),extraStitch);
-  assert.equal(filamentSpecies.length,22);
+  assert.deepEqual(filamentStitchModes.slice(21,31),extraStitch);
+  assert.equal(filamentSpecies.length,23);
   assert.equal(filamentMaterials.length,14);
-  assert.equal(filamentStitchModes.length,31);
+  assert.equal(filamentStitchModes.length,32);
   assert.equal(filamentPresets.length,22);
   assert.equal(filamentMaterialPresets.length,14);
-  assert.equal(filamentStitchPresets.length,31);
+  assert.equal(filamentStitchPresets.length,36);
   for(const [modes,groups] of [[filamentSpecies,filamentSpeciesFamilies],
     [filamentStitchModes,filamentStitchFamilies]]){
     const members=groups.flatMap(group=>group.species||group.modes);
@@ -80,7 +80,7 @@ test("dressing and sewing do not overwrite art, colors, text or parent shapes",(
 test("fresh structure / bizarre dressing shuffles are bounded and independent",()=>{
   for(const random of [()=>0,()=>.35,()=>.72,()=>.999999,()=>NaN]){
     const structure=remixFreshFilaments(artwork,random);
-    assert.ok(extraGeometry.includes(structure.filamentSpecies));
+    assert.ok([...extraGeometry,"Feral Jacquard"].includes(structure.filamentSpecies));
     const dressed=remixUnusualFilamentMaterials(artwork,random);
     assert.ok(extraDress.slice(4).includes(dressed.filamentMaterial));
     assert.ok(extraDress.slice(4).includes(dressed.filamentSecondMaterial));

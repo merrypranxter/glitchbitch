@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import { createRenderer, previewDimensions } from "./renderer";
 import { retroFontRevision } from "./retro-fonts";
 import LiveTextOverlay from "./LiveTextOverlay.jsx";
+import {hasSemanticLettering} from "./semantic-gravity.js";
 import { TouchSession } from "./gestures";
 import { HabitatSession, habitatTools } from "./habitat-painter.js";
 import { ratios, touchModes } from "./data";
@@ -63,6 +64,7 @@ export default function ArtCanvas({
       lastH = 0,
       lastTime = -1,
       lastColorTime = -1,
+      lastTextTime = -1,
       lastFontRevision = -1,
       // Keep the preview alive through an optional-effect shader failure.
       renderRetryAt = 0,
@@ -99,10 +101,15 @@ export default function ArtCanvas({
         if (!state.freezeColor)
           timelineRef.current.colorTime += (dt * state.colorSpeed) / 30;
       }
+      // The words have their own textTime clock. Semantic Gravity's glyph
+      // alpha texture follows THAT clock, even if geometry and palette are
+      // frozen. Otherwise the CSS letters move but the real yarn stays stuck.
+      const textDrivenFilaments=hasSemanticLettering(state);
       const animated =
         rt.playing &&
         ((!state.freezeGeometry && state.speed > 0) ||
-          (!state.freezeColor && state.colorSpeed > 0));
+          (!state.freezeColor && state.colorSpeed > 0) ||
+          textDrivenFilaments);
       const cssW = canvas.clientWidth,
         cssH = canvas.clientHeight;
       const dims = previewDimensions(cssW, cssH, rt.quality, previewScale);
@@ -116,7 +123,9 @@ export default function ArtCanvas({
       const seeked =
         !animated &&
         (lastTime !== timelineRef.current.time ||
-          lastColorTime !== timelineRef.current.colorTime);
+          lastColorTime !== timelineRef.current.colorTime ||
+          (textDrivenFilaments &&
+            lastTextTime !== (timelineRef.current.textTime || 0)));
       if (
         !hidden &&
         retryAllowed &&
@@ -143,6 +152,7 @@ export default function ArtCanvas({
           lastDraw = now;
           lastTime = timelineRef.current.time;
           lastColorTime = timelineRef.current.colorTime;
+          lastTextTime = timelineRef.current.textTime || 0;
         } catch (e) {
           failedState=state;
           failedSize=sizeKey;

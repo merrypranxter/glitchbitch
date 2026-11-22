@@ -309,6 +309,12 @@ export const numericRanges = {
   filamentFeralOrder: [0, 100],
   filamentFeralKnots: [0, 100],
   filamentFeralMutation: [0, 100],
+  filamentQuasiSpacing: [0, 100],
+  filamentQuasiPhason: [0, 100],
+  filamentQuasiDrift: [0, 100],
+  filamentQuasiRelief: [0, 100],
+  filamentQuasiElevation: [0, 100],
+  filamentQuasiOrnament: [0, 100],
   filamentCrossbreed: [0, 100],
   filamentInterlace: [0, 100],
   filamentTwist: [0, 100],
@@ -642,6 +648,12 @@ export const initial = {
   filamentFeralOrder: 59,
   filamentFeralKnots: 52,
   filamentFeralMutation: 46,
+  filamentQuasiSpacing: 48,
+  filamentQuasiPhason: 32,
+  filamentQuasiDrift: 37,
+  filamentQuasiRelief: 79,
+  filamentQuasiElevation: 76,
+  filamentQuasiOrnament: 58,
   filamentSecondSpecies: "Truchet knotwork",
   filamentCrossbreed: 0,
   filamentInterlace: 72,
@@ -1379,6 +1391,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "filamentWidth","filamentRelief","filamentHue","filamentVariation",
       "filamentFeralCorruption","filamentFeralMigration","filamentFeralOrder",
       "filamentFeralKnots","filamentFeralMutation",
+      "filamentQuasiSpacing","filamentQuasiPhason","filamentQuasiDrift",
+      "filamentQuasiRelief","filamentQuasiElevation","filamentQuasiOrnament",
       "filamentCrossbreed","filamentInterlace","filamentTwist","filamentPhase",
       "filamentNap","filamentLuster","filamentBeads","filamentBeadSize",
       "filamentSecondHue",
@@ -1436,6 +1450,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
       // New behavior settings do not mutate old artwork or wake hidden modes.
+      if(key.startsWith("filamentQuasi") && (state.filamentAmount<=0 ||
+        (state.filamentSpecies!=="Quasicrystal Brocade" &&
+          !(state.filamentCrossbreed>0 && state.filamentSecondSpecies==="Quasicrystal Brocade"))))continue;
       if(key.startsWith("filamentFeral") && state.filamentSpecies!=="Feral Jacquard" &&
         state.filamentSecondSpecies!=="Feral Jacquard")continue;
       if(key.startsWith("filamentChladni") && (state.filamentStitchMode!=="Chladni Needle Orchestra" ||

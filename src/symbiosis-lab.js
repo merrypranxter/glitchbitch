@@ -126,7 +126,7 @@ vec3 livingSymbiosis(vec3 base,vec2 uv,float a,float b){
   vec3 aInk=palette(phaseA);
   vec3 bInk=palette(phaseB);
   vec3 third=palette((phaseA+phaseB)*.5+.31);
-  float interface=4.*a*(1.-a)+4.*b*(1.-b);
+  float contactRim=4.*a*(1.-a)+4.*b*(1.-b);
   float tissue=0.;
   if(symbiosisMode==1){
     // Mutualism: stitched cross-threads and interlinked fluorescent
@@ -148,7 +148,7 @@ vec3 livingSymbiosis(vec3 base,vec2 uv,float a,float b){
     float invader=symbiosisDominance;
     vec3 infection=mix(aInk,bInk,invader);
     base=mix(base,base*(.12+.19*infection),overlap*lesions*.79);
-    tissue=lesions*(.35+.65*interface*.40);
+    tissue=lesions*(.35+.65*contactRim*.40);
   }else if(symbiosisMode==3){
     // Third-kingdom membranes: neither parental color owns the
     // interference surface; a new prismatic compound is born there.
@@ -172,7 +172,7 @@ vec3 livingSymbiosis(vec3 base,vec2 uv,float a,float b){
   }
   // Exposed edges always have an independently tunable light trace.
   float intensity=overlap*symbiosisGlow*
-    (.16+min(1.,tissue)*.84)*(.34+.66*min(1.,interface*.6));
+    (.16+min(1.,tissue)*.84)*(.34+.66*min(1.,contactRim*.6));
   base+=mix(third,mix(aInk,bInk,symbiosisDominance),.31)*
     intensity*.86;
   return clamp(base,vec3(0.),vec3(2.));

@@ -149,10 +149,10 @@ uniform int selectionMode;
 uniform float selectionPressure,selectionGlow;
 float selectionFieldA=0.;
 float selectionFieldB=0.;
-float adaptiveFitness(float allele,float resource,float parent){
-  float match=1.-abs(allele-resource);
+float adaptiveFitness(float allele,float nutrientLevel,float parent){
+  float match=1.-abs(allele-nutrientLevel);
   float affinity=parent<.5?substrateAffinityA:substrateAffinityB;
-  float pref=mix(1.-resource,resource,affinity);
+  float pref=mix(1.-nutrientLevel,nutrientLevel,affinity);
   float core=.75*match+.25*pref;
   if(selectionMode==2)
     return clamp(.65*core+.35*abs(allele-.5)*2.,0.,1.);

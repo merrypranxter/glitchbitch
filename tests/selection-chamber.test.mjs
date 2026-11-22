@@ -270,7 +270,7 @@ test("GPU uses same CPU fitness law, reuses masks, and omits dormant code",()=>{
   assert.match(renderer,/tintAdaptiveSurvival\(col,atmoBMask,selectionFieldB/);
   assert.match(renderer,/gl\.uniform1i\(loc\("selectionMode"\),selectionModes\.indexOf\(s\.selectionMode\)\)/);
   assert.match(selectionGLSL,/vec3 tintAdaptiveSurvival/);
-  assert.match(selectionGLSL,/float adaptiveFitness\(float allele,float resource,float parent\)/);
+  assert.match(selectionGLSL,/float adaptiveFitness\(float allele,float nutrientLevel,float parent\)/);
   assert.doesNotMatch(selectionGLSL,/sampler|texture2D|discard|uniform\s+vec[234]\s+\w+\s*\[/);
   assert.ok(habitatGLSL.includes("/* SELECTION_MODULE */"));
   assert.ok(habitatGLSL.includes("/* SELECTION_EDGE */"));

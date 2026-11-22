@@ -122,7 +122,7 @@ uniform float successionMotion,successionGlow,successionHue,successionEpoch;
 float successionTrace=0.;
 float successionTint=0.;
 float successionResource(vec2 uv,float original){
-  float resource=original;
+  float nutrientLevel=original;
   float pressure=successionAmount*successionDepth;
   float spread=.85+successionSpread*1.15;
   for(int i=0;i<6;i++){
@@ -141,15 +141,15 @@ float successionResource(vec2 uv,float original){
     if(kind<.5)polarity=.62;
     else if(kind<1.5)polarity=-.60;
     else if(kind<2.5)polarity=mark.w>0.?-.54:.36;
-    else if(kind<3.5)polarity=(1.-2.*resource)*.78;
+    else if(kind<3.5)polarity=(1.-2.*nutrientLevel)*.78;
     else polarity=.32;
-    resource=clamp(resource+weight*pressure*polarity,0.,1.);
+    nutrientLevel=clamp(nutrientLevel+weight*pressure*polarity,0.,1.);
     if(weight>successionTrace){
       successionTrace=weight;
       successionTint=(kind/5.+(mark.w>0.?.1:.57));
     }
   }
-  return resource;
+  return nutrientLevel;
 }
 vec3 shadeSuccession(vec3 col,vec2 uv){
   if(successionTrace<=0.||successionGlow<=0.)return col;

@@ -13,6 +13,7 @@ import {alchemyModes,alchemyGLSL,specializeAlchemyGLSL} from "./chromatic-alchem
 import {injuryModes,injuryGLSL,specializeInjuryGLSL} from "./print-spectrum-injury.js";
 import { kineticGLSL, glyphCanvas } from "./kinetic-type.js";
 import {paintLettering} from "./text-compositor.js";
+import {normalTextBlendState} from "./text-blend-proof.js";
 import {semanticGravityGLSL,semanticGravityModes,hasSemanticLettering} from "./semantic-gravity.js";
 import { ensureRetroFontLoaded, retroFontReady, retroFontRevision } from "./retro-fonts.js";
 import { compositionGLSL } from "./composition.js";
@@ -355,9 +356,14 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
     if(semanticGlyphCanvas.width!==maskW || semanticGlyphCanvas.height!==maskH){
       semanticGlyphCanvas.width=maskW;semanticGlyphCanvas.height=maskH;
     }
-    // The same compositor transforms multi-layer text, rich font layouts,
-    // motion, letter warps and glyph styles at the same timeline.
-    paintLettering(semanticGlyphContext,state,timeline,maskW,maskH,true);
+    // For glyph *geometry*, normalize the compositing blend to Normal.
+    // This still uses the same REAL words, fonts, outline, positions, rich
+    // glyph layout, motion and material, but ensures switching Screen/Multiply/
+    // Difference changes only the final text overlay, never the thread field.
+    // Without this, an export A/B text-blend check can accidentally compare
+    // two different underlying textile geometries.
+    const glyphLayoutState=normalTextBlendState(state);
+    paintLettering(semanticGlyphContext,glyphLayoutState,timeline,maskW,maskH,true);
     if(!semanticGlyphTexture){
       semanticGlyphTexture=gl.createTexture();
       if(!semanticGlyphTexture)throw Error("Cannot allocate semantic glyph texture.");

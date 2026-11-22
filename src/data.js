@@ -9,6 +9,7 @@ export { microModes, substanceModes };
 import { photonSpecies } from "./photon-zoo.js";
 import { alchemyModes } from "./chromatic-alchemy.js";
 import { injuryModes } from "./print-spectrum-injury.js";
+import { colorMathModes } from "./color-math-lab.js";
 export { injuryModes };
 export { alchemyModes };
 import { backdropModes } from "./backdrops.js";
@@ -483,6 +484,10 @@ export const numericRanges = {
   colorRepeat: [0, 100],
   colorSpeed: [0, 100],
   colorAmount: [0, 100],
+  colorMathAmount: [0, 100],
+  colorMathDepth: [0, 100],
+  colorMathMotion: [0, 100],
+  colorMathVariation: [0, 100],
 };
 export const initial = {
   engine: 0,
@@ -847,6 +852,12 @@ export const initial = {
   foodWebHue: 65,
   foodWebRound: 0,
   invert: false,
+  colorMathMode: "Off",
+  colorMathAmount: 0,
+  colorMathDepth: 60,
+  colorMathMotion: 0,
+  colorMathVariation: 50,
+  colorMathPreserveLuma: true,
   saturation: 50,
   contrast: 50,
   brightness: 50,
@@ -864,6 +875,7 @@ const bools = [
   "posterize",
   "mirror",
   "invert",
+  "colorMathPreserveLuma",
   "freezeGeometry",
   "freezeColor",
   "alchemyPalette",
@@ -914,6 +926,7 @@ export function validateRecipe(input) {
     ratio: ratios.map((r) => r.id),
     blendMode: ["Mix", "Multiply", "Difference"],
     colorMode: ["Traveling wave", "Color canon", "Phase vortex"],
+    colorMathMode: colorMathModes,
     motionMode: motionModes,
     tunnelMode: tunnelModes,
     stereoShape: stereoShapes,
@@ -1407,8 +1420,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       ...successionControls,
       ...foodWebControls,
       "saturation","contrast","brightness","colorOffset",
-      "colorRepeat","colorAmount","speed","colorSpeed"];
+      "colorRepeat","colorAmount","colorMathAmount","colorMathDepth","colorMathMotion","colorMathVariation","speed","colorSpeed"];
     for(const key of nudges){
+      if(key.startsWith("colorMath") && (state.colorMathMode==="Off"||state.colorMathAmount<=0))continue;
       if(key==="atmoBAmount" && state.atmoBAmount<=0)continue; // Never wake a hidden second parent by mutating old art.
       if(["colonyLifeAmount","colonyFrontGlow","colonyCompetition"].includes(key)
         && state.colonyLifeAmount<=0)continue; // Keep old artwork dormant.
@@ -1464,6 +1478,12 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.rotation=random()*360;
   s.symmetry=sample([1,1,2,3,4,5,6,8,10,12],random);
   s.mirror=random()<.43;s.bloom=random()<.8;s.posterize=random()<.27;s.invert=random()<.12;
+  s.colorMathMode=random()<.45?"Off":sample(colorMathModes.slice(1),random);
+  s.colorMathAmount=s.colorMathMode==="Off"?0:52+random()*48;
+  s.colorMathDepth=25+random()*75;
+  s.colorMathMotion=random()*80;
+  s.colorMathVariation=random()*100;
+  s.colorMathPreserveLuma=random()<.55;
   s.split=random()<.65?random()*60:0;
   s.scan=random()<.5?random()*40:0;
   s.grain=random()<.6?random()*32:0;

@@ -28,14 +28,14 @@ const authored={...initial,engine:17,ratio:"9:16",seed:98736,
 
 test("original five modes keep their exact saved identities and source order",()=>{
  assert.deepEqual(filamentStitchModes.slice(0,5),originals);
- assert.deepEqual(filamentStitchModes.slice(5),newModes);
- assert.deepEqual(newFilamentStitchModes,newModes);
- assert.equal(filamentStitchModes.length,31);
- assert.equal(new Set(filamentStitchModes).size,31);
- assert.equal(filamentStitchPresets.length,31);
+ assert.deepEqual(filamentStitchModes.slice(5,31),newModes);
+ assert.deepEqual(newFilamentStitchModes.slice(0,26),newModes);
+ assert.equal(filamentStitchModes.length,32);
+ assert.equal(new Set(filamentStitchModes).size,32);
+ assert.equal(filamentStitchPresets.length,36);
  assert.deepEqual(filamentStitchPresets.slice(0,5).map(x=>x.filamentStitchMode),originals);
- assert.deepEqual(filamentStitchFamilies.flatMap(f=>f.modes).length,31);
- assert.equal(new Set(filamentStitchFamilies.flatMap(f=>f.modes)).size,31);
+ assert.deepEqual(filamentStitchFamilies.flatMap(f=>f.modes).length,32);
+ assert.equal(new Set(filamentStitchFamilies.flatMap(f=>f.modes)).size,32);
  for(const mode of filamentStitchModes)assert.ok(filamentStitchDescriptions[mode],mode);
 });
 
@@ -100,7 +100,7 @@ test("two targeted stitch shuffles are deterministic and do not change colors, t
    for(const n of [0,.10,.49,.87,.9999]){
      const first=remixFilamentStitchMotion(base,()=>n,newOnly);
      assert.deepEqual(first,remixFilamentStitchMotion(base,()=>n,newOnly));
-     const choices=newOnly?newModes:filamentStitchModes;
+     const choices=newOnly?newFilamentStitchModes:filamentStitchModes;
      assert.ok(choices.includes(first.filamentStitchMode));
      assert.notEqual(first.filamentStitchMode,base.filamentStitchMode);
      assert.ok(first.filamentStitchAmount>=78&&first.filamentAmount>=65);

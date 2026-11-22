@@ -457,7 +457,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
           can appear subtle; try Difference or Multiply to verify the effect.</p>
       </div>}
       {error&&<p className="field-error" role="alert">{error}</p>}
-      {busy&&auditing&&<p className="export-note">Inspecting the decoded video frame and comparing real pixels…</p>}
+      {busy&&auditing&&<p className="export-note">{motionAuditStage||"Inspecting decoded video frames and comparing real pixels…"}</p>}
       {busy&&!auditing&&tab==="Video"&&<div className="record-progress">
         <div><span style={{width:`${progress*100}%`}}/></div>
         <p><i/>{Math.round(progress*clipDuration*fps)} / {Math.round(clipDuration*fps)} frames{" "}
@@ -502,6 +502,66 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
             It's a single-frame comparison, not automatic proof of missing effects.</p>
           <button type="button" className="button secondary" disabled={busy}
             onClick={saveFrameAudit}>Save frame-integrity report (JSON; no art/text)</button>
+        </div>}
+      </div>}
+      {ready&&ready.format&&tab==="Video"&&<div className="export-proof-panel">
+        <button type="button" className="button secondary" disabled={busy}
+          onClick={inspectClipMotion}>
+          <Film size={15}/> Full-Clip Motion Forensics · opening / middle / final
+        </button>
+        <p className="export-note">Samples THREE frames from the actual saved {ready.format.toUpperCase()} file,
+          compares each with its true-clock strict PNG, and checks whether motion
+          survived encoding. 480/720px clips only, to protect iPhone memory.
+          It never re-encodes your work or generates replacement art.</p>
+        {motionAudit&&motionAudit.filename===ready.filename&&<div className="export-truth-panel">
+          <strong>🕵️ {motionAudit.motion.status}</strong>
+          <div className="export-truth-metrics">
+            <div><strong>{motionAudit.motion.referenceMeanRGBMotion}</strong>
+              <span>Reference motion · mean RGB change / 255</span></div>
+            <div><strong>{motionAudit.motion.encodedMeanRGBMotion}</strong>
+              <span>Actual encoded motion · mean RGB change / 255</span></div>
+            <div><strong>{motionAudit.motion.motionRetention===null?"—":
+              Math.round(motionAudit.motion.motionRetention*100)+"%"}</strong>
+              <span>Encoded/reference motion ratio (not an accuracy score)</span></div>
+            <div><strong>3</strong>
+              <span>Real decoded frames inspected</span></div>
+          </div>
+          <div className="pane-actions" aria-label="Choose the decoded frame to inspect">
+            {motionAudit.rows.map((row,i)=><button type="button"
+              key={row.label} disabled={busy}
+              className={selectedMotionIndex===i?"button primary":"button secondary"}
+              onClick={()=>setSelectedMotionIndex(i)}>
+              {row.label} · {row.referenceTime.toFixed(2)}s
+            </button>)}
+          </div>
+          <div className="blend-proof-grid" aria-label="Three-frame full-clip export inspection">
+            <figure><img src={motionAudit.rows[selectedMotionIndex].urls[0]}
+              alt="Strict PNG rendered at the corresponding video frame's clock"/>
+              <figcaption>Strict PNG · {motionAudit.rows[selectedMotionIndex].label}</figcaption></figure>
+            <figure><img src={motionAudit.rows[selectedMotionIndex].urls[1]}
+              alt="Frame actually decoded from the exported GIF or MP4"/>
+              <figcaption>Actual decoded {ready.format.toUpperCase()}</figcaption></figure>
+            <figure><img src={motionAudit.rows[selectedMotionIndex].urls[2]}
+              alt="Amplified encoded-versus-PNG pixel discrepancy heatmap"/>
+              <figcaption>Difference heatmap (4×)</figcaption></figure>
+          </div>
+          <p className="export-note">Selected frame: mean RGB difference
+            {" "+motionAudit.rows[selectedMotionIndex].difference.meanRGBDifference}/255;
+            {" "+motionAudit.rows[selectedMotionIndex].difference.pixelsOverThresholdPercent}%
+            of pixels have a color channel more than 36/255 apart.</p>
+          <p className="export-note">Motion intervals:
+            {motionAudit.motion.betweenSamples.map(step=>
+              <span key={step.between}> {step.between}: PNG {step.reference.meanRGBChange}
+                {" / "} encoded {step.encoded.meanRGBChange};</span>)}
+          </p>
+          <p className="export-note">A possible freeze warning requires the reference to
+            demonstrate meaningful motion while the encoded frames barely change.
+            Static artwork, H.264 compression, GIF palette reduction, native-recorder
+            frame timing and GPU feedback history can distort these results.
+            This checks three sampled frames—not every frame, seamless loops or
+            DOM/CSS live-preview typography.</p>
+          <button type="button" className="button secondary" disabled={busy}
+            onClick={saveMotionAudit}>Save motion-forensics report (JSON; no artwork pixels)</button>
         </div>}
       </div>}
       {ready&&!busy&&canShare()&&<button className="button secondary export-submit" onClick={share}>

@@ -34,6 +34,9 @@ test("all static exported GLSL modules avoid reserved identifiers",()=>{
   const renderer=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
   const imports=[...new Set([...renderer.matchAll(/from ["']\.\/([^"']+\.js)["']/g)]
     .map(m=>m[1]))];
+  // The renderer also builds GLSL in inline template literals.
+  assert.deepEqual(declarations(renderer),[],
+    "renderer.js inline GLSL contains a reserved variable");
   let scanned=0;
   for(const file of imports){
     const source=readFileSync(new URL("../src/"+file,import.meta.url),"utf8");

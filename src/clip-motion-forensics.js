@@ -238,9 +238,12 @@ export async function decodeGifMotionSamples(blob,samples){
     ...frame,mediaTime:frame.encodedDisplayTime
   }));
 }
-function waitForVideo(video,events,check,timeout=12000){
+function waitForVideo(video,events,check,timeout=12000,requireNewEvent=false){
   const signals=Array.isArray(events)?events:[events];
-  if(check())return Promise.resolve();
+  // For a SEEK, the previously decoded frame may still have HAVE_CURRENT_DATA,
+  // and currentTime may already be within the loose target tolerance. Waiting
+  // must not resolve from that stale frame before the new seek even starts.
+  if(!requireNewEvent&&check())return Promise.resolve();
   return new Promise((resolve,reject)=>{
     let timer;
     const cleanup=()=>{
@@ -289,7 +292,8 @@ export async function decodeMp4MotionSamples(blob,samples,fps=30){
          video.readyState<video.HAVE_CURRENT_DATA){
         const pending=waitForVideo(video,["seeked","loadeddata","canplay"],()=>
           !video.seeking&&video.readyState>=video.HAVE_CURRENT_DATA&&
-          Math.abs(video.currentTime-seek)<.12);
+          Math.abs(video.currentTime-seek)<Math.max(.012,.45/fps),
+          12000,true);
         // Safari sometimes doesn't trigger seeked for a zero-time reset.
         video.currentTime=seek===0?0.001:seek;
         await pending;

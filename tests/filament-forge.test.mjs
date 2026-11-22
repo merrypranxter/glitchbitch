@@ -7,8 +7,8 @@ import {filamentSpecies,filamentPresets,filamentControls,
 import {sections,sectionMeta,sectionActive,findControls} from "../src/ui-index.js";
 
 test("Filament Forge retains its 22 legacy geometries and appends Feral Jacquard",()=>{
- assert.equal(filamentSpecies.length,23);
- assert.equal(new Set(filamentSpecies).size,23);
+ assert.equal(filamentSpecies.length,24);
+ assert.equal(new Set(filamentSpecies).size,24);
  assert.equal(filamentPresets.length,22);
  for(const p of filamentPresets){
    assert.ok(filamentSpecies.includes(p.species),p.name);

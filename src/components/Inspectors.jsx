@@ -67,6 +67,7 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
   feralJacquardPresets,applyFeralJacquardPreset,remixFeralJacquard,
+  quasicrystalBrocadePresets,applyQuasicrystalBrocadePreset,remixQuasicrystalBrocade,
   chladniNeedlePresets,applyChladniNeedlePreset,remixChladniNeedles,
   filamentSculptModes,filamentSculptFamilies,filamentSculptPresets,
   applyFilamentSculptPreset,remixFilamentSculpt,disableFilamentSculpt } from "../filament-forge.js";
@@ -303,6 +304,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [regenPreset,setRegenPreset]=React.useState(filamentRegenPresets[0].name);
   const [stitchPreset,setStitchPreset]=React.useState(filamentStitchPresets[0].name);
   const [feralPreset,setFeralPreset]=React.useState(feralJacquardPresets[0].name);
+  const [quasiPreset,setQuasiPreset]=React.useState(quasicrystalBrocadePresets[0].name);
   const [chladniPreset,setChladniPreset]=React.useState(chladniNeedlePresets[0].name);
   const [sculptPreset,setSculptPreset]=React.useState(filamentSculptPresets[0].name);
   const [underlayPreset,setUnderlayPreset]=React.useState(underlayPresets[0].name);
@@ -1613,7 +1615,7 @@ export function EffectsInspector({ history, onTool, tool }) {
       <p className="control-note">Underlay is an independent layer: hide it without losing your lace, text, Photon Zoo or underlying math art. It uses the existing palette and normal PNG/GIF/MP4 renderer.</p>
     </>,
     filament: <>
-      <p className="control-note">Twenty-three animated geometries with thirty-two stitch laws, fourteen fiber materials and an independent thread-jewelry cabinet. Mix practical sewing with gloriously deranged textile mathematics.</p>
+      <p className="control-note">Twenty-four animated geometries with thirty-two stitch laws, fourteen fiber materials and an independent thread-jewelry cabinet. Mix practical sewing with gloriously deranged textile mathematics.</p>
       <Select label="Thread geometry" value={s.filamentSpecies}
         onChange={v=>history.change(x=>({...x,filamentSpecies:v,
           filamentAmount:Math.max(73,x.filamentAmount),
@@ -1632,6 +1634,34 @@ export function EffectsInspector({ history, onTool, tool }) {
       <Parameter label="Raised relief / sheen" name="filamentRelief" history={history}/>
       <Parameter label="Palette shift" name="filamentHue" history={history}/>
       <Parameter label="Variation" name="filamentVariation" history={history}/>
+      <details className="filament-crossbreeder filament-quasi-lab">
+        <summary>💠 QUASICRYSTAL BROCADE — IMPOSSIBLE RAISED EMBROIDERY</summary>
+        <p className="control-note">Genuinely new five-direction quasiperiodic multigrid threads—not the old fivefold sine-pattern. Each of the five thread families has its own phason offset. Where yarns meet, raised star collars and local highlights catch the light. It works with both hybrid parents, material dressing, the needle orchestra, and your existing palettes.</p>
+        <Select label="Quasicrystal embroidery specimen" value={quasiPreset} onChange={setQuasiPreset}>
+          {quasicrystalBrocadePresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <Parameter label="Pentagrid line spacing" name="filamentQuasiSpacing" history={history}/>
+        <Parameter label="Phason offset / pattern identity" name="filamentQuasiPhason" history={history}/>
+        <Parameter label="Phason drift / living motion" name="filamentQuasiDrift" history={history}/>
+        <Parameter label="Embroidered raised relief" name="filamentQuasiRelief" history={history}/>
+        <Parameter label="Thread elevation / crown sheen" name="filamentQuasiElevation" history={history}/>
+        <Parameter label="Star-point collar ornaments" name="filamentQuasiOrnament" history={history}/>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>applyQuasicrystalBrocadePreset(x,quasiPreset))}>
+            Embroider selected specimen
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixQuasicrystalBrocade(x))}>
+            <Dices size={13}/> Shuffle quasicrystal geometry
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>({...x,filamentQuasiPhason:(x.filamentQuasiPhason+23+Math.random()*64)%100}))}>
+            <Shuffle size={13}/> Reseed phason
+          </button>
+        </div>
+        <p className="control-note">The six controls modify the actual selected thread geometry and highlight, not a screen-wide effect. Presets preserve your current palette, fiber dresses, second parent, original text and stitch motion. Selecting another geometry leaves old art unchanged.</p>
+      </details>
       <details className="filament-crossbreeder filament-feral-lab">
         <summary>🧶 FERAL JACQUARD — STRUCTURAL CORRUPTION</summary>
         <p className="control-note">A genuine warp/weft geometry: moving strands shear, exchange over-under precedence, and form knot collars within actual thread outlines. No glitch overlay. Use as either parent in hybrid fabrics.</p>

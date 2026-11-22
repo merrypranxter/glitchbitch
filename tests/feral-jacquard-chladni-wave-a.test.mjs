@@ -19,7 +19,7 @@ const original={...initial,seed:291182,engine:6,ratio:"9:16",
   lettering:"DONT EAT MY NEON",colors:["#ff00ff","#00eeff","#ffff22"]};
 
 test("new species and stitch append exactly after legacy IDs",()=>{
-  assert.equal(filamentSpecies.length,23);
+  assert.equal(filamentSpecies.length,24);
   assert.equal(filamentSpecies[21],"Parasitic ladder");
   assert.equal(filamentSpecies[22],"Feral Jacquard");
   assert.equal(filamentStitchModes.length,32);

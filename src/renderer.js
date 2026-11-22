@@ -1458,6 +1458,8 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "filamentWidth","filamentRelief","filamentHue","filamentVariation",
         "filamentFeralCorruption","filamentFeralMigration","filamentFeralOrder",
         "filamentFeralKnots","filamentFeralMutation",
+        "filamentQuasiSpacing","filamentQuasiPhason","filamentQuasiDrift",
+        "filamentQuasiRelief","filamentQuasiElevation","filamentQuasiOrnament",
         "filamentCrossbreed","filamentInterlace","filamentTwist","filamentPhase",
         "filamentNap","filamentLuster","filamentBeads","filamentBeadSize","filamentSecondHue",
         "filamentStitchAmount","filamentStitchSpeed",

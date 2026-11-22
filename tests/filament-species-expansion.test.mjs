@@ -21,8 +21,8 @@ test("preserves original indices while grouping every new mode exactly once",()=
  assert.deepEqual(filamentSpecies.slice(6,16),additions);
  assert.deepEqual(xenoVascularSpecies,[...additions,...filamentSpecies.slice(20)]);
  const all=filamentSpeciesFamilies.flatMap(g=>g.species);
- assert.equal(all.length,23);
- assert.equal(new Set(all).size,23);
+ assert.equal(all.length,24);
+ assert.equal(new Set(all).size,24);
  assert.deepEqual(new Set(all),new Set(filamentSpecies));
  assert.equal(filamentPresets.length,22);
  assert.equal(new Set(filamentPresets.map(p=>p.species)).size,22);

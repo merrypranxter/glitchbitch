@@ -151,7 +151,7 @@ test("all three encoders still quantize/capture the post-closure composite; Off 
   assert.match(exporter,/weftRevealRects\(size.width,size.height,closureMix\)/);
   assert.match(exporter,/irisRevealRadius\(size.width,size.height,closureMix\)/);
   assert.match(exporter,/return includePixels && \(lettered\|\|closureMix>0\)/);
-  assert.match(exporter,/const rgba=await work.render\(i\/fps, true\)/);
+  assert.match(exporter,/const rgba=await player.render\(i,true\)/);
   assert.match(exporter,/source = new CanvasSource\(work.capture/);
   assert.match(exporter,/stream=work.capture.captureStream\(fps\)/);
   assert.match(ui,/mode==="Weft zipper"/);

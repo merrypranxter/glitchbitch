@@ -28,7 +28,8 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     [blendProof,setBlendProof]=useState(null),
     [diagnostics,setDiagnostics]=useState(null),
     [ready,setReady]=useState(null),
-    [frameAudit,setFrameAudit]=useState(null);
+    [frameAudit,setFrameAudit]=useState(null),
+    [auditing,setAuditing]=useState(false);
   const controller=useRef(null), mounted=useRef(true), proofUrl=useRef(null), blendUrls=useRef([]),
     frameAuditUrls=useRef([]);
   function clearFrameAudit(){
@@ -180,7 +181,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       setError("Frame-integrity inspection is capped at 1080px to protect iPhone memory. Export a 480p, 720p, or 1080p sample to inspect.");
       return;
     }
-    setBusy(true);setError("");clearFrameAudit();
+    setBusy(true);setAuditing(true);setError("");clearFrameAudit();
     const fresh=[];
     try{
       // Free the preview GPU before decoding and rendering one exact PNG.
@@ -216,7 +217,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     }finally{
       if(!mounted.current)fresh.forEach(url=>URL.revokeObjectURL(url));
       onExportBusy?.(false);
-      if(mounted.current)setBusy(false);
+      if(mounted.current){setBusy(false);setAuditing(false);}
     }
   }
   function saveFrameAudit(){
@@ -246,7 +247,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       <div className="export-tabs">
         {[[Image,"Image"],[Film,"Video"],[Braces,"Recipe"]].map(([Icon,name])=>(
           <button disabled={busy} className={tab===name?"selected":""}
-            onClick={()=>{setTab(name);setError("");setReady(null);}} key={name}>
+            onClick={()=>{setTab(name);setError("");setReady(null);clearFrameAudit();}} key={name}>
             <Icon size={17}/>{name}
           </button>
         ))}
@@ -254,7 +255,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       <fieldset disabled={busy} className="export-options">
         {tab!=="Recipe"?<>
           {tab==="Video"&&<Select label="Output format" value={clipFormat}
-            onChange={v=>{setClipFormat(v);setReady(null);}}>
+            onChange={v=>{setClipFormat(v);setReady(null);clearFrameAudit();}}>
             <option value="mp4">MP4 · H.264 (real video)</option>
             <option value="gif">GIF · animated image</option>
           </Select>}
@@ -367,7 +368,8 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
           can appear subtle; try Difference or Multiply to verify the effect.</p>
       </div>}
       {error&&<p className="field-error" role="alert">{error}</p>}
-      {busy&&tab==="Video"&&<div className="record-progress">
+      {busy&&auditing&&<p className="export-note">Inspecting the decoded video frame and comparing real pixels…</p>}
+      {busy&&!auditing&&tab==="Video"&&<div className="record-progress">
         <div><span style={{width:`${progress*100}%`}}/></div>
         <p><i/>{Math.round(progress*clipDuration*fps)} / {Math.round(clipDuration*fps)} frames{" "}
           <button onClick={()=>controller.current?.abort()}><Square size={10}/> Cancel render</button>

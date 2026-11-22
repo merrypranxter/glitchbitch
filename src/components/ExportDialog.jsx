@@ -826,7 +826,8 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
         <Share2 size={17}/> Share finished {ready.type==="image/gif"?"GIF":"MP4"} to Photos / apps
       </button>}
       <button className="button primary export-submit"
-        disabled={busy||(tab==="Video"&&clipFormat==="mp4"&&!capability)} onClick={run}>
+        disabled={busy||(tab==="Video"&&clipFormat==="mp4"&&!capability)||
+          (tab==="Video"&&playbackMode==="Boomerang"&&boomerangTooLarge)} onClick={run}>
         {busy?<LoaderCircle className="spin" size={17}/>:<Download size={17}/>}{" "}
         {busy?"Rendering your creation…":
           tab==="Image"?"Export PNG":tab==="Recipe"?"Export recipe":

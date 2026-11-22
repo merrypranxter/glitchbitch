@@ -3,7 +3,9 @@ import { Download, Image, Film, Braces, Check, Square, LoaderCircle, Share2 } fr
 import Modal from "./Modal";
 import { Select } from "./Controls";
 import { ratios, recipeDocument } from "../data";
-import { dimensions, videoDimensions, renderImage, download, recordClip, videoFormat } from "../export";
+import { dimensions, videoDimensions, renderImage, download, recordClip, videoFormat, clockAt } from "../export";
+import {analyzeEncodedFrame,differenceHeatmap,decodeStaticExport,
+  decodeMp4Export,frameBlob,frameAuditReport} from "../encoded-frame-truth-serum.js";
 import { hasVisibleLettering } from "../text-compositor.js";
 import { normalTextBlendState } from "../text-blend-proof.js";
 import { canvasImageFiltersWork } from "../lettering-filter-fallback.js";
@@ -25,13 +27,21 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     [proof,setProof]=useState(null),
     [blendProof,setBlendProof]=useState(null),
     [diagnostics,setDiagnostics]=useState(null),
-    [ready,setReady]=useState(null);
-  const controller=useRef(null), mounted=useRef(true), proofUrl=useRef(null), blendUrls=useRef([]);
+    [ready,setReady]=useState(null),
+    [frameAudit,setFrameAudit]=useState(null);
+  const controller=useRef(null), mounted=useRef(true), proofUrl=useRef(null), blendUrls=useRef([]),
+    frameAuditUrls=useRef([]);
+  function clearFrameAudit(){
+    frameAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
+    frameAuditUrls.current=[];
+    setFrameAudit(null);
+  }
   const capability=videoFormat();
   useEffect(()=>()=>{mounted.current=false;controller.current?.abort();
     onExportBusy?.(false);
     if(proofUrl.current) URL.revokeObjectURL(proofUrl.current);
     blendUrls.current.forEach(url=>URL.revokeObjectURL(url));
+    frameAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
   },[]);
   const size=tab==="Video" ? clipFormat==="mp4"
     ? videoDimensions(ratio,videoSize) : dimensions(ratio,gifSize)
@@ -125,6 +135,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       `glitchbitch-export-truth-${state.seed}.json`);
   }
   async function run() {
+    clearFrameAudit();
     setError("");setProgress(0);setBusy(true);setReady(null);
     if(tab==="Video")controller.current=new AbortController();
     const snapshot={...state,ratio},timeline={...timelineRef.current};
@@ -146,7 +157,9 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
         });
         const filename=`glitch-${state.seed}-${size.width}x${size.height}-${Math.round(clipDuration)}s.${result.extension}`;
         download(result.blob,filename);
-        if(mounted.current)setReady({blob:result.blob,filename,type:result.mime});
+        if(mounted.current)setReady({blob:result.blob,filename,type:result.mime,
+          snapshot,timeline,frameSize:{...size},method:result.method,
+          duration:clipDuration,fps:result.fps,format:clipFormat});
         onNotice(`${result.extension.toUpperCase()} exported. No WebM conversion necessary.`);
       } else {
         download(new Blob([JSON.stringify(recipeDocument(snapshot,title,timeline),null,2)],{type:"application/json"}),

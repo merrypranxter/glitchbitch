@@ -15,6 +15,7 @@ import { backdropModes } from "./backdrops.js";
 export { backdropModes };
 import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, filamentMorphModes, filamentContagionModes, filamentNeuralModes, filamentPlasticModes, filamentScarModes, filamentRegenModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
+import {semanticGravityModes,hasSemanticLettering} from "./semantic-gravity.js";
 import {structuralOpticsModes} from "./structural-thread-optics.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
@@ -316,6 +317,13 @@ export const numericRanges = {
   filamentQuasiRelief: [0, 100],
   filamentQuasiElevation: [0, 100],
   filamentQuasiOrnament: [0, 100],
+  // Opt-in only: actual visible author text required.
+  semanticGravityAmount: [0, 100],
+  semanticGravityRadius: [0, 100],
+  semanticGravityFalloff: [0, 100],
+  semanticGravitySwirl: [0, 100],
+  semanticGravityPulse: [0, 100],
+  semanticGravityVariation: [0, 100],
   filamentCrossbreed: [0, 100],
   filamentInterlace: [0, 100],
   filamentTwist: [0, 100],
@@ -677,6 +685,13 @@ export const initial = {
   filamentQuasiRelief: 79,
   filamentQuasiElevation: 76,
   filamentQuasiOrnament: 58,
+  semanticGravityMode: "Off",
+  semanticGravityAmount: 0,
+  semanticGravityRadius: 57,
+  semanticGravityFalloff: 62,
+  semanticGravitySwirl: 61,
+  semanticGravityPulse: 35,
+  semanticGravityVariation: 47,
   filamentSecondSpecies: "Truchet knotwork",
   filamentCrossbreed: 0,
   filamentInterlace: 72,
@@ -1012,6 +1027,7 @@ export function validateRecipe(input) {
     alchemyMode: alchemyModes,
     injuryMode: injuryModes,
     filamentSpecies: filamentSpecies,
+    semanticGravityMode: semanticGravityModes,
     filamentSecondSpecies: filamentSpecies,
     filamentMaterial: filamentMaterials,
     filamentSecondMaterial: filamentMaterials,
@@ -1440,6 +1456,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "filamentFeralKnots","filamentFeralMutation",
       "filamentQuasiSpacing","filamentQuasiPhason","filamentQuasiDrift",
       "filamentQuasiRelief","filamentQuasiElevation","filamentQuasiOrnament",
+      "semanticGravityAmount","semanticGravityRadius","semanticGravityFalloff",
+      "semanticGravitySwirl","semanticGravityPulse","semanticGravityVariation",
       "filamentCrossbreed","filamentInterlace","filamentTwist","filamentPhase",
       "filamentNap","filamentLuster","filamentBeads","filamentBeadSize",
       "filamentSecondHue",
@@ -1504,6 +1522,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
       // New behavior settings do not mutate old artwork or wake hidden modes.
+      if(key.startsWith("semanticGravity") && !hasSemanticLettering(state))continue;
       // Do not silently activate optical coats on previously saved artwork.
       if(key.startsWith("filamentOptics") && (state.filamentAmount<=0 ||
         state.filamentOpticsMode==="Off" || state.filamentOpticsAmount<=0))continue;

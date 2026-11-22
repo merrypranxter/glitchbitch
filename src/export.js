@@ -30,7 +30,7 @@ function hasFeedback(state) {
     state.engine === 15 || state.bioAmount > 0 ||
     (state.secondaryEngine === 15 && state.blend > 0);
 }
-function clockAt(state, timeline, seconds) {
+export function clockAt(state, timeline, seconds) {
   return {
     time: Math.max(0, timeline.time + (state.freezeGeometry ? 0 : seconds * state.speed / 30)),
     colorTime: Math.max(0, timeline.colorTime + (state.freezeColor ? 0 : seconds * state.colorSpeed / 30)),
@@ -50,13 +50,19 @@ async function primeFrameHistory(renderer,state,timeline,size,signal){
   }
 }
 export async function renderImage(state, timeline, longEdge = 2160,
-  type = "image/png", {exactEffects=true,compositeLettering=true} = {}) {
+  type = "image/png", {exactEffects=true,compositeLettering=true,outputSize=null} = {}) {
   await waitForLetteringFonts(state);
   const canvas = document.createElement("canvas");
   let renderer;
   try {
     renderer = createRenderer(canvas,{exactEffects});
-    const { width, height } = dimensions(state.ratio, longEdge);
+    // Encoder diagnostics can request the exact MP4 canvas dimensions,
+    // including the one-pixel H.264 even-size rounding. The default PNG
+    // resolution and its 1:1 / 9:16 export contract are unchanged.
+    const { width, height } = outputSize || dimensions(state.ratio, longEdge);
+    if(!Number.isInteger(width)||!Number.isInteger(height)||
+       width<1||height<1||width>4096||height>4096)
+      throw Error("Invalid exact-sized PNG reference dimensions.");
     await primeFrameHistory(renderer,state,timeline,{width,height});
     if(!renderer.draw(state, timeline, width, height))
       throw artworkParityError("GPU context lost during PNG capture");

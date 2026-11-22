@@ -3,7 +3,9 @@ import { Download, Image, Film, Braces, Check, Square, LoaderCircle, Share2 } fr
 import Modal from "./Modal";
 import { Select } from "./Controls";
 import { ratios, recipeDocument } from "../data";
-import { dimensions, videoDimensions, renderImage, download, recordClip, videoFormat } from "../export";
+import { dimensions, videoDimensions, renderImage, download, recordClip, videoFormat, clockAt } from "../export";
+import {analyzeEncodedFrame,differenceHeatmap,decodeStaticExport,
+  decodeMp4Export,frameBlob,frameAuditReport} from "../encoded-frame-truth-serum.js";
 import { hasVisibleLettering } from "../text-compositor.js";
 import { normalTextBlendState } from "../text-blend-proof.js";
 import { canvasImageFiltersWork } from "../lettering-filter-fallback.js";
@@ -25,13 +27,22 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     [proof,setProof]=useState(null),
     [blendProof,setBlendProof]=useState(null),
     [diagnostics,setDiagnostics]=useState(null),
-    [ready,setReady]=useState(null);
-  const controller=useRef(null), mounted=useRef(true), proofUrl=useRef(null), blendUrls=useRef([]);
+    [ready,setReady]=useState(null),
+    [frameAudit,setFrameAudit]=useState(null),
+    [auditing,setAuditing]=useState(false);
+  const controller=useRef(null), mounted=useRef(true), proofUrl=useRef(null), blendUrls=useRef([]),
+    frameAuditUrls=useRef([]);
+  function clearFrameAudit(){
+    frameAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
+    frameAuditUrls.current=[];
+    setFrameAudit(null);
+  }
   const capability=videoFormat();
   useEffect(()=>()=>{mounted.current=false;controller.current?.abort();
     onExportBusy?.(false);
     if(proofUrl.current) URL.revokeObjectURL(proofUrl.current);
     blendUrls.current.forEach(url=>URL.revokeObjectURL(url));
+    frameAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
   },[]);
   const size=tab==="Video" ? clipFormat==="mp4"
     ? videoDimensions(ratio,videoSize) : dimensions(ratio,gifSize)
@@ -125,6 +136,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       `glitchbitch-export-truth-${state.seed}.json`);
   }
   async function run() {
+    clearFrameAudit();
     setError("");setProgress(0);setBusy(true);setReady(null);
     if(tab==="Video")controller.current=new AbortController();
     const snapshot={...state,ratio},timeline={...timelineRef.current};
@@ -146,7 +158,9 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
         });
         const filename=`glitch-${state.seed}-${size.width}x${size.height}-${Math.round(clipDuration)}s.${result.extension}`;
         download(result.blob,filename);
-        if(mounted.current)setReady({blob:result.blob,filename,type:result.mime});
+        if(mounted.current)setReady({blob:result.blob,filename,type:result.mime,
+          snapshot,timeline,frameSize:{...size},method:result.method,
+          duration:clipDuration,fps:result.fps,format:clipFormat});
         onNotice(`${result.extension.toUpperCase()} exported. No WebM conversion necessary.`);
       } else {
         download(new Blob([JSON.stringify(recipeDocument(snapshot,title,timeline),null,2)],{type:"application/json"}),
@@ -160,6 +174,57 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       if(mounted.current)setBusy(false);
       controller.current=null;
     }
+  }
+  async function checkEncodedFrame(){
+    if(!ready||busy)return;
+    if(Math.max(ready.frameSize.width,ready.frameSize.height)>1080){
+      setError("Frame-integrity inspection is capped at 1080px to protect iPhone memory. Export a 480p, 720p, or 1080p sample to inspect.");
+      return;
+    }
+    setBusy(true);setAuditing(true);setError("");clearFrameAudit();
+    const fresh=[];
+    try{
+      // Free the preview GPU before decoding and rendering one exact PNG.
+      onExportBusy?.(true);
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      const gif=ready.format==="gif";
+      const decoded=gif?await decodeStaticExport(ready.blob):
+        await decodeMp4Export(ready.blob);
+      const seconds=Math.max(0,Math.min(Number(decoded.mediaTime)||0,ready.duration));
+      const matchedClock=clockAt(ready.snapshot,ready.timeline,seconds);
+      const png=await renderImage(ready.snapshot,matchedClock,
+        Math.max(ready.frameSize.width,ready.frameSize.height),"image/png",
+        {exactEffects:true,outputSize:ready.frameSize});
+      const reference=await decodeStaticExport(png);
+      const metrics=analyzeEncodedFrame(reference,decoded,
+        {format:gif?"gif":"mp4"});
+      const delta=differenceHeatmap(reference,decoded);
+      const previews=await Promise.all([frameBlob(reference),
+        frameBlob(decoded),frameBlob(delta)]);
+      if(!mounted.current)return;
+      const urls=previews.map(blob=>URL.createObjectURL(blob));
+      fresh.push(...urls);
+      const report=frameAuditReport({
+        metrics,mediaTime:seconds,decoder:decoded.decoder,
+        encoderMethod:ready.method,requestedSize:ready.frameSize,
+        actualSize:{width:decoded.sourceWidth,height:decoded.sourceHeight},
+        format:ready.format,seed:ready.snapshot.seed
+      });
+      frameAuditUrls.current=urls;
+      setFrameAudit({urls,report,filename:ready.filename});
+    }catch(e){
+      if(mounted.current)setError("Encoded frame inspection failed: "+e.message);
+    }finally{
+      if(!mounted.current)fresh.forEach(url=>URL.revokeObjectURL(url));
+      onExportBusy?.(false);
+      if(mounted.current){setBusy(false);setAuditing(false);}
+    }
+  }
+  function saveFrameAudit(){
+    if(!frameAudit)return;
+    download(new Blob([JSON.stringify(frameAudit.report,null,2)],
+      {type:"application/json"}),
+      "glitchbitch-frame-integrity-"+frameAudit.report.seed+".json");
   }
   function canShare() {
     if(!ready || typeof File==="undefined" || typeof navigator==="undefined" || !navigator.canShare)return false;
@@ -182,7 +247,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       <div className="export-tabs">
         {[[Image,"Image"],[Film,"Video"],[Braces,"Recipe"]].map(([Icon,name])=>(
           <button disabled={busy} className={tab===name?"selected":""}
-            onClick={()=>{setTab(name);setError("");setReady(null);}} key={name}>
+            onClick={()=>{setTab(name);setError("");setReady(null);clearFrameAudit();}} key={name}>
             <Icon size={17}/>{name}
           </button>
         ))}
@@ -190,7 +255,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       <fieldset disabled={busy} className="export-options">
         {tab!=="Recipe"?<>
           {tab==="Video"&&<Select label="Output format" value={clipFormat}
-            onChange={v=>{setClipFormat(v);setReady(null);}}>
+            onChange={v=>{setClipFormat(v);setReady(null);clearFrameAudit();}}>
             <option value="mp4">MP4 · H.264 (real video)</option>
             <option value="gif">GIF · animated image</option>
           </Select>}
@@ -303,11 +368,52 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
           can appear subtle; try Difference or Multiply to verify the effect.</p>
       </div>}
       {error&&<p className="field-error" role="alert">{error}</p>}
-      {busy&&tab==="Video"&&<div className="record-progress">
+      {busy&&auditing&&<p className="export-note">Inspecting the decoded video frame and comparing real pixels…</p>}
+      {busy&&!auditing&&tab==="Video"&&<div className="record-progress">
         <div><span style={{width:`${progress*100}%`}}/></div>
         <p><i/>{Math.round(progress*clipDuration*fps)} / {Math.round(clipDuration*fps)} frames{" "}
           <button onClick={()=>controller.current?.abort()}><Square size={10}/> Cancel render</button>
         </p>
+      </div>}
+      {ready&&ready.format&&tab==="Video"&&<div className="export-proof-panel">
+        <button type="button" className="button secondary" disabled={busy}
+          onClick={checkEncodedFrame}>
+          <Film size={15}/> Inspect REAL {ready.format.toUpperCase()} frame vs PNG
+        </button>
+        <p className="export-note">Checks the already-exported <strong>{ready.filename}</strong>, not a pretend video test.
+          Decodes an actual compressed frame, renders a matched-clock strict PNG,
+          and compares their pixels. 1080px maximum for this diagnostic.
+          This does not compare the DOM text overlay or certify the whole clip.</p>
+        {frameAudit&&frameAudit.filename===ready.filename&&<div className="export-truth-panel">
+          <strong>🧪 Encoded Frame Truth Serum — {frameAudit.report.metrics.discrepancy} discrepancy</strong>
+          <div className="export-truth-metrics">
+            <div><strong>{frameAudit.report.metrics.meanRGBDifference}</strong>
+              <span>Mean RGB difference / 255</span></div>
+            <div><strong>{frameAudit.report.metrics.pixelsOverThresholdPercent}%</strong>
+              <span>Pixels with any channel more than 36/255 apart</span></div>
+            <div><strong>{frameAudit.report.metrics.p95PeakDifference}</strong>
+              <span>95th-percentile peak channel difference</span></div>
+            <div><strong>{frameAudit.report.firstDecodedFrameSeconds}s</strong>
+              <span>Actual decoded MP4/GIF frame time</span></div>
+          </div>
+          <div className="blend-proof-grid" aria-label="Real decoded video-frame pixel comparison">
+            <figure><img src={frameAudit.urls[0]} alt="Matched-timestamp strict PNG reference"/>
+              <figcaption>A · Same-clock strict PNG</figcaption></figure>
+            <figure><img src={frameAudit.urls[1]} alt="Decoded first GIF or MP4 frame, not a renderer simulation"/>
+              <figcaption>B · REAL decoded {ready.format.toUpperCase()}</figcaption></figure>
+            <figure><img src={frameAudit.urls[2]} alt="Amplified pixel differences: bright orange means stronger disagreement"/>
+              <figcaption>C · Difference heatmap (4× amplified)</figcaption></figure>
+          </div>
+          <p className="export-note">{frameAudit.report.actualSize.width} × {frameAudit.report.actualSize.height} decoded using {frameAudit.report.decoder}.
+            {frameAudit.report.actualSize.width!==frameAudit.report.requestedSize.width||
+              frameAudit.report.actualSize.height!==frameAudit.report.requestedSize.height?
+              " The codec changed output dimensions; inspect cropping or padding.":""}
+            {" "}High discrepancy warrants investigation; H.264 compression, GIF palettes,
+            native-recorder timing and frame-memory effects can legitimately shift pixels.
+            It's a single-frame comparison, not automatic proof of missing effects.</p>
+          <button type="button" className="button secondary" disabled={busy}
+            onClick={saveFrameAudit}>Save frame-integrity report (JSON; no art/text)</button>
+        </div>}
       </div>}
       {ready&&!busy&&canShare()&&<button className="button secondary export-submit" onClick={share}>
         <Share2 size={17}/> Share finished {ready.type==="image/gif"?"GIF":"MP4"} to Photos / apps

@@ -191,8 +191,12 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
           onProgress:p=>{if(mounted.current)setProgress(p);},
           signal:controller.current.signal,
         });
-        const loopSuffix=loopMode==="Off"?"":loopMode==="Soft closure"?"-softloop":
-          loopMode==="Weft zipper"?"-weftloop":"-irisloop";
+        const suffixes={
+          "Off":"","Soft closure":"-softloop","Weft zipper":"-weftloop",
+          "Iris portal":"-irisloop","Quilt Reassembly":"-quiltloop",
+          "Clockwork Sweep":"-clockloop","Crystal Bloom":"-crystalloop"
+        };
+        const loopSuffix=suffixes[loopMode]??"";
         const filename=`glitch-${state.seed}-${size.width}x${size.height}-${Math.round(clipDuration)}s${playbackMode==="Boomerang"?"-boomerang":loopSuffix}.${result.extension}`;
         download(result.blob,filename);
         if(mounted.current)setReady({blob:result.blob,filename,type:result.mime,
@@ -514,7 +518,10 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
                 {mode==="Off"?"Off · untouched original":
                   mode==="Soft closure"?"Soft closure · gentle full-frame fade":
                   mode==="Weft zipper"?"Weft zipper · alternating woven reveal":
-                  "Iris portal · circular reveal to frame one"}
+                  mode==="Iris portal"?"Iris portal · circular reveal to frame one":
+                  mode==="Quilt Reassembly"?"Quilt Reassembly · patches sew themselves back":
+                  mode==="Clockwork Sweep"?"Clockwork Sweep · rotating radial wedge":
+                  "Crystal Bloom · diamonds grow from the center"}
               </option>)}
             </Select>
             {loopMode!=="Off"&&<>
@@ -529,7 +536,12 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
                 opening image using your chosen treatment:
                 {loopMode==="Soft closure"?" a gradual full-frame fade.":
                   loopMode==="Weft zipper"?" alternating woven ribbons that zip closed.":
-                  " a circular iris expanding from the center."}
+                  loopMode==="Iris portal"?" a circular iris expanding from the center.":
+                  loopMode==="Quilt Reassembly"?
+                    " scattered patchwork squares growing until the picture is stitched back together.":
+                  loopMode==="Clockwork Sweep"?
+                    " a rotating clock-hand wedge wiping around the canvas.":
+                    " crystalline diamonds blooming outward from the center."}
                 {" "}The last source frame meets the first; the rest of the art
                 keeps running underneath. Edges, ghosting or motion changes
                 during the transition are intentional. Not a guarantee of

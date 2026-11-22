@@ -158,7 +158,7 @@ export function decodeOwnGifSamples(bytes,indices){
   const globalColors=hasGct?readColors(1<<((packed&7)+1)):null;
   const selected=new Map();
   const selectedSet=new Set(indices);
-  let frameIndex=0,delay=0,transparency=false,disposal=0;
+  let frameIndex=0,displayTime=0,delay=0,transparency=false,disposal=0;
   while(pos<bytes.length){
     const token=bytes[pos++];
     if(token===0x3b)break;
@@ -201,8 +201,10 @@ export function decodeOwnGifSamples(bytes,indices){
         rgba[4*i+2]=colors[j+2];rgba[4*i+3]=255;
       }
       selected.set(frameIndex,{width,height,data:rgba,index:frameIndex,
-        encodedDisplayDuration:delay,decoder:"Glitchbitch full-frame GIF LZW"});
+        encodedDisplayTime:displayTime,encodedDisplayDuration:delay,
+        decoder:"Glitchbitch full-frame GIF LZW"});
     }
+    displayTime+=delay;
     frameIndex++;delay=0;transparency=false;disposal=0;
   }
   if(selected.size!==3)throw Error("GIF file is missing one or more requested animation frames.");
@@ -229,7 +231,11 @@ export async function decodeGifMotionSamples(blob,samples){
     throw Error("GIF file is empty or too large for an on-device motion audit.");
   const bytes=new Uint8Array(await blob.arrayBuffer());
   const decoded=decodeOwnGifSamples(bytes,samples.map(s=>s.index));
-  return decoded.map((frame,i)=>downsampleFrame({...frame,mediaTime:samples[i].seconds}));
+  // Two distinct clocks: GIF presentation time includes 10ms GIF delay
+  // rounding; shader reference time remains index/fps. Never conflate them.
+  return decoded.map(frame=>downsampleFrame({
+    ...frame,mediaTime:frame.encodedDisplayTime
+  }));
 }
 function waitForVideo(video,event,check,timeout=12000){
   if(check())return Promise.resolve();
@@ -309,6 +315,21 @@ export async function decodeMp4MotionSamples(blob,samples,fps=30){
     if(appended)video.remove();
     URL.revokeObjectURL(url);
   }
+}
+export function verifyMotionDecodeTimes(motion,decoded,requested,format){
+  if(format==="gif")return motion;
+  if(!Array.isArray(decoded)||decoded.length!==3)return motion;
+  for(let i=1;i<3;i++){
+    const expectedGap=requested[i].seconds-requested[i-1].seconds;
+    const actualGap=decoded[i].mediaTime-decoded[i-1].mediaTime;
+    if(!Number.isFinite(actualGap)||actualGap<
+      Math.min(.15,expectedGap*.3)){
+      return {...motion,possibleMotionLoss:false,
+        status:"Inconclusive: decoder timestamps did not advance across samples",
+        decoderTimeWarning:true};
+    }
+  }
+  return {...motion,decoderTimeWarning:false};
 }
 export function motionForensicsReport({samples,motion,format,method,seed,size}){
   return {type:"glitchbitch-full-clip-motion-forensics",version:1,

@@ -6,6 +6,8 @@ import { ratios, recipeDocument } from "../data";
 import { dimensions, videoDimensions, renderImage, download, recordClip, videoFormat, clockAt } from "../export";
 import {analyzeEncodedFrame,differenceHeatmap,decodeStaticExport,
   decodeMp4Export,frameBlob,frameAuditReport} from "../encoded-frame-truth-serum.js";
+import {selectMotionSamples,analyzeClipMotion,decodeGifMotionSamples,
+  decodeMp4MotionSamples,verifyMotionDecodeTimes,motionForensicsReport} from "../clip-motion-forensics.js";
 import { hasVisibleLettering } from "../text-compositor.js";
 import { normalTextBlendState } from "../text-blend-proof.js";
 import { canvasImageFiltersWork } from "../lettering-filter-fallback.js";
@@ -29,13 +31,23 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     [diagnostics,setDiagnostics]=useState(null),
     [ready,setReady]=useState(null),
     [frameAudit,setFrameAudit]=useState(null),
+    [motionAudit,setMotionAudit]=useState(null),
+    [selectedMotionIndex,setSelectedMotionIndex]=useState(0),
+    [motionAuditStage,setMotionAuditStage]=useState(""),
     [auditing,setAuditing]=useState(false);
   const controller=useRef(null), mounted=useRef(true), proofUrl=useRef(null), blendUrls=useRef([]),
-    frameAuditUrls=useRef([]);
+    frameAuditUrls=useRef([]),motionAuditUrls=useRef([]);
   function clearFrameAudit(){
     frameAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
     frameAuditUrls.current=[];
     setFrameAudit(null);
+  }
+  function clearMotionAudit(){
+    motionAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
+    motionAuditUrls.current=[];
+    setMotionAudit(null);
+    setSelectedMotionIndex(0);
+    setMotionAuditStage("");
   }
   const capability=videoFormat();
   useEffect(()=>()=>{mounted.current=false;controller.current?.abort();
@@ -43,6 +55,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     if(proofUrl.current) URL.revokeObjectURL(proofUrl.current);
     blendUrls.current.forEach(url=>URL.revokeObjectURL(url));
     frameAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
+    motionAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
   },[]);
   const size=tab==="Video" ? clipFormat==="mp4"
     ? videoDimensions(ratio,videoSize) : dimensions(ratio,gifSize)
@@ -137,6 +150,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
   }
   async function run() {
     clearFrameAudit();
+    clearMotionAudit();
     setError("");setProgress(0);setBusy(true);setReady(null);
     if(tab==="Video")controller.current=new AbortController();
     const snapshot={...state,ratio},timeline={...timelineRef.current};
@@ -160,7 +174,8 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
         download(result.blob,filename);
         if(mounted.current)setReady({blob:result.blob,filename,type:result.mime,
           snapshot,timeline,frameSize:{...size},method:result.method,
-          duration:clipDuration,fps:result.fps,format:clipFormat});
+          duration:clipDuration,fps:result.fps,frames:result.frames,
+          format:clipFormat});
         onNotice(`${result.extension.toUpperCase()} exported. No WebM conversion necessary.`);
       } else {
         download(new Blob([JSON.stringify(recipeDocument(snapshot,title,timeline),null,2)],{type:"application/json"}),
@@ -226,6 +241,81 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       {type:"application/json"}),
       "glitchbitch-frame-integrity-"+frameAudit.report.seed+".json");
   }
+  async function inspectClipMotion(){
+    if(!ready||busy)return;
+    // Three exact-resolution PNG renders plus three decoded frame comparisons.
+    // Cap at 720px so iPhone Safari has space to open the reference GPU.
+    if(Math.max(ready.frameSize.width,ready.frameSize.height)>720){
+      setError("Full-Clip Motion Forensics supports 480px and 720px clips. Export a smaller diagnostic clip; your original high-resolution file is unchanged.");
+      return;
+    }
+    setBusy(true);setAuditing(true);clearMotionAudit();setError("");
+    const created=[];
+    try{
+      onExportBusy?.(true);
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      const samples=selectMotionSamples(ready.frames,ready.fps);
+      setMotionAuditStage("Decoding three frames from the actual exported file…");
+      const decoded=ready.format==="gif"?
+        await decodeGifMotionSamples(ready.blob,samples):
+        await decodeMp4MotionSamples(ready.blob,samples,ready.fps);
+      // Decode ALL samples and close the video before allocating a new WebGL
+      // renderer. This reduces simultaneous iOS graphics/video pressure.
+      const references=[],rows=[];
+      for(let i=0;i<samples.length;i++){
+        const sample=samples[i],picture=decoded[i];
+        // GIF delays are quantized to 10ms (67ms => 70ms). The encoder
+        // rendered the logical frame at index/fps, not its GIF display time.
+        const seconds=ready.format==="gif"?sample.seconds:picture.mediaTime;
+        setMotionAuditStage("Rendering strict PNG reference "+(i+1)+" / 3…");
+        const clock=clockAt(ready.snapshot,ready.timeline,seconds);
+        const png=await renderImage(ready.snapshot,clock,
+          Math.max(ready.frameSize.width,ready.frameSize.height),"image/png",
+          {exactEffects:true,outputSize:ready.frameSize});
+        const ref=await decodeStaticExport(png);
+        // All per-frame measurements use identical downscaled dimensions.
+        const delta=differenceHeatmap(ref,picture);
+        const difference=analyzeEncodedFrame(ref,picture,{format:ready.format});
+        const three=await Promise.all([frameBlob(ref),frameBlob(picture),
+          frameBlob(delta)]);
+        const urls=three.map(blob=>URL.createObjectURL(blob));
+        created.push(...urls);
+        references.push(ref);
+        rows.push({
+          label:sample.label,index:sample.index,
+          referenceTime:seconds,decodedTime:picture.mediaTime,
+          discrepancy:difference.discrepancy,
+          difference,urls,
+          sourceWidth:picture.sourceWidth,
+          sourceHeight:picture.sourceHeight
+        });
+      }
+      const motion=verifyMotionDecodeTimes(
+        analyzeClipMotion(references,decoded),decoded,samples,ready.format);
+      const report=motionForensicsReport({
+        samples:rows,motion,format:ready.format,method:ready.method,
+        seed:ready.snapshot.seed,size:ready.frameSize
+      });
+      if(!mounted.current)return;
+      motionAuditUrls.current=created.slice();
+      setMotionAudit({rows,motion,report,filename:ready.filename});
+      setSelectedMotionIndex(0);
+      setMotionAuditStage("");
+    }catch(e){
+      created.forEach(url=>URL.revokeObjectURL(url));
+      if(mounted.current)setError("Full-clip motion inspection failed: "+e.message);
+    }finally{
+      if(!mounted.current)created.forEach(url=>URL.revokeObjectURL(url));
+      onExportBusy?.(false);
+      if(mounted.current){setBusy(false);setAuditing(false);setMotionAuditStage("");}
+    }
+  }
+  function saveMotionAudit(){
+    if(!motionAudit)return;
+    download(new Blob([JSON.stringify(motionAudit.report,null,2)],
+      {type:"application/json"}),
+      "glitchbitch-motion-forensics-"+motionAudit.report.seed+".json");
+  }
   function canShare() {
     if(!ready || typeof File==="undefined" || typeof navigator==="undefined" || !navigator.canShare)return false;
     try {
@@ -247,7 +337,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       <div className="export-tabs">
         {[[Image,"Image"],[Film,"Video"],[Braces,"Recipe"]].map(([Icon,name])=>(
           <button disabled={busy} className={tab===name?"selected":""}
-            onClick={()=>{setTab(name);setError("");setReady(null);clearFrameAudit();}} key={name}>
+            onClick={()=>{setTab(name);setError("");setReady(null);clearFrameAudit();clearMotionAudit();}} key={name}>
             <Icon size={17}/>{name}
           </button>
         ))}
@@ -255,7 +345,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       <fieldset disabled={busy} className="export-options">
         {tab!=="Recipe"?<>
           {tab==="Video"&&<Select label="Output format" value={clipFormat}
-            onChange={v=>{setClipFormat(v);setReady(null);clearFrameAudit();}}>
+            onChange={v=>{setClipFormat(v);setReady(null);clearFrameAudit();clearMotionAudit();}}>
             <option value="mp4">MP4 · H.264 (real video)</option>
             <option value="gif">GIF · animated image</option>
           </Select>}
@@ -368,7 +458,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
           can appear subtle; try Difference or Multiply to verify the effect.</p>
       </div>}
       {error&&<p className="field-error" role="alert">{error}</p>}
-      {busy&&auditing&&<p className="export-note">Inspecting the decoded video frame and comparing real pixels…</p>}
+      {busy&&auditing&&<p className="export-note">{motionAuditStage||"Inspecting decoded video frames and comparing real pixels…"}</p>}
       {busy&&!auditing&&tab==="Video"&&<div className="record-progress">
         <div><span style={{width:`${progress*100}%`}}/></div>
         <p><i/>{Math.round(progress*clipDuration*fps)} / {Math.round(clipDuration*fps)} frames{" "}
@@ -413,6 +503,74 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
             It's a single-frame comparison, not automatic proof of missing effects.</p>
           <button type="button" className="button secondary" disabled={busy}
             onClick={saveFrameAudit}>Save frame-integrity report (JSON; no art/text)</button>
+        </div>}
+      </div>}
+      {ready&&ready.format&&tab==="Video"&&<div className="export-proof-panel">
+        <button type="button" className="button secondary" disabled={busy}
+          onClick={inspectClipMotion}>
+          <Film size={15}/> Full-Clip Motion Forensics · opening / middle / final
+        </button>
+        <p className="export-note">Samples THREE frames from the actual saved {ready.format.toUpperCase()} file,
+          compares each with its true-clock strict PNG, and checks whether motion
+          survived encoding. 480/720px clips only, to protect iPhone memory.
+          It never re-encodes your work or generates replacement art.</p>
+        {motionAudit&&motionAudit.filename===ready.filename&&<div className="export-truth-panel">
+          <strong>🕵️ {motionAudit.motion.status}</strong>
+          <div className="export-truth-metrics">
+            <div><strong>{motionAudit.motion.referenceMeanRGBMotion}</strong>
+              <span>Reference motion · mean RGB change / 255</span></div>
+            <div><strong>{motionAudit.motion.encodedMeanRGBMotion}</strong>
+              <span>Actual encoded motion · mean RGB change / 255</span></div>
+            <div><strong>{motionAudit.motion.motionRetention===null?"—":
+              Math.round(motionAudit.motion.motionRetention*100)+"%"}</strong>
+              <span>Encoded/reference motion ratio (not an accuracy score)</span></div>
+            <div><strong>3</strong>
+              <span>Real decoded frames inspected</span></div>
+          </div>
+          <div className="pane-actions" aria-label="Choose the decoded frame to inspect">
+            {motionAudit.rows.map((row,i)=><button type="button"
+              key={row.label} disabled={busy}
+              className={selectedMotionIndex===i?"button primary":"button secondary"}
+              onClick={()=>setSelectedMotionIndex(i)}>
+              {row.label} · {row.referenceTime.toFixed(2)}s
+            </button>)}
+          </div>
+          <div className="blend-proof-grid" aria-label="Three-frame full-clip export inspection">
+            <figure><img src={motionAudit.rows[selectedMotionIndex].urls[0]}
+              alt="Strict PNG rendered at the corresponding video frame's clock"/>
+              <figcaption>Strict PNG · {motionAudit.rows[selectedMotionIndex].label}</figcaption></figure>
+            <figure><img src={motionAudit.rows[selectedMotionIndex].urls[1]}
+              alt="Frame actually decoded from the exported GIF or MP4"/>
+              <figcaption>Actual decoded {ready.format.toUpperCase()}</figcaption></figure>
+            <figure><img src={motionAudit.rows[selectedMotionIndex].urls[2]}
+              alt="Amplified encoded-versus-PNG pixel discrepancy heatmap"/>
+              <figcaption>Difference heatmap (4×)</figcaption></figure>
+          </div>
+          <p className="export-note">Reference shader time:
+            {" "+motionAudit.rows[selectedMotionIndex].referenceTime.toFixed(3)}s.
+            Decoded presentation time:
+            {" "+motionAudit.rows[selectedMotionIndex].decodedTime.toFixed(3)}s.
+            GIF display delays are rounded to 10ms; the shader renders
+            at exact frame-index/FPS time.</p>
+          <p className="export-note">Selected frame: mean RGB difference
+            {" "+motionAudit.rows[selectedMotionIndex].difference.meanRGBDifference}/255;
+            {" "+motionAudit.rows[selectedMotionIndex].difference.pixelsOverThresholdPercent}%
+            of pixels have a color channel more than 36/255 apart.</p>
+          <p className="export-note">Motion intervals:
+            {motionAudit.motion.betweenSamples.map(step=>
+              <span key={step.between}> {step.between}: PNG {step.reference.meanRGBChange}
+                {" / "} encoded {step.encoded.meanRGBChange};</span>)}
+          </p>
+          <p className="export-note">A possible freeze warning requires the reference to
+            demonstrate meaningful motion while the encoded frames barely change.
+            Static artwork, H.264 compression, GIF palette reduction, native-recorder
+            frame timing and GPU feedback history can distort these results.
+            If the MP4 decoder returns repeated timestamps, the audit marks
+            motion inconclusive rather than falsely accusing the encoder.
+            This checks three sampled frames—not every frame, seamless loops or
+            DOM/CSS live-preview typography.</p>
+          <button type="button" className="button secondary" disabled={busy}
+            onClick={saveMotionAudit}>Save motion-forensics report (JSON; no artwork pixels)</button>
         </div>}
       </div>}
       {ready&&!busy&&canShare()&&<button className="button secondary export-submit" onClick={share}>

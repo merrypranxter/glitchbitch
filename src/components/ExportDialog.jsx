@@ -174,6 +174,57 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       controller.current=null;
     }
   }
+  async function checkEncodedFrame(){
+    if(!ready||busy)return;
+    if(Math.max(ready.frameSize.width,ready.frameSize.height)>1080){
+      setError("Frame-integrity inspection is capped at 1080px to protect iPhone memory. Export a 480p, 720p, or 1080p sample to inspect.");
+      return;
+    }
+    setBusy(true);setError("");clearFrameAudit();
+    const fresh=[];
+    try{
+      // Free the preview GPU before decoding and rendering one exact PNG.
+      onExportBusy?.(true);
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      const gif=ready.format==="gif";
+      const decoded=gif?await decodeStaticExport(ready.blob):
+        await decodeMp4Export(ready.blob);
+      const seconds=Math.max(0,Math.min(Number(decoded.mediaTime)||0,ready.duration));
+      const matchedClock=clockAt(ready.snapshot,ready.timeline,seconds);
+      const png=await renderImage(ready.snapshot,matchedClock,
+        Math.max(ready.frameSize.width,ready.frameSize.height),"image/png",
+        {exactEffects:true,outputSize:ready.frameSize});
+      const reference=await decodeStaticExport(png);
+      const metrics=analyzeEncodedFrame(reference,decoded,
+        {format:gif?"gif":"mp4"});
+      const delta=differenceHeatmap(reference,decoded);
+      const previews=await Promise.all([frameBlob(reference),
+        frameBlob(decoded),frameBlob(delta)]);
+      if(!mounted.current)return;
+      const urls=previews.map(blob=>URL.createObjectURL(blob));
+      fresh.push(...urls);
+      const report=frameAuditReport({
+        metrics,mediaTime:seconds,decoder:decoded.decoder,
+        encoderMethod:ready.method,requestedSize:ready.frameSize,
+        actualSize:{width:decoded.sourceWidth,height:decoded.sourceHeight},
+        format:ready.format,seed:ready.snapshot.seed
+      });
+      frameAuditUrls.current=urls;
+      setFrameAudit({urls,report,filename:ready.filename});
+    }catch(e){
+      if(mounted.current)setError("Encoded frame inspection failed: "+e.message);
+    }finally{
+      if(!mounted.current)fresh.forEach(url=>URL.revokeObjectURL(url));
+      onExportBusy?.(false);
+      if(mounted.current)setBusy(false);
+    }
+  }
+  function saveFrameAudit(){
+    if(!frameAudit)return;
+    download(new Blob([JSON.stringify(frameAudit.report,null,2)],
+      {type:"application/json"}),
+      "glitchbitch-frame-integrity-"+frameAudit.report.seed+".json");
+  }
   function canShare() {
     if(!ready || typeof File==="undefined" || typeof navigator==="undefined" || !navigator.canShare)return false;
     try {

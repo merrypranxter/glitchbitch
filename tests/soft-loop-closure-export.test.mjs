@@ -7,7 +7,7 @@ import {LOOP_MODES,LOOP_BLEND_SECONDS,loopClosureFrames,loopClosureMix}
 const source=p=>readFileSync(new URL("../src/"+p,import.meta.url),"utf8");
 
 test("original format stays Off by default; new time options have bounded artist controls",()=>{
-  assert.deepEqual(LOOP_MODES,["Off","Soft closure"]);
+  assert.deepEqual(LOOP_MODES,["Off","Soft closure","Weft zipper","Iris portal"]);
   assert.ok(LOOP_BLEND_SECONDS.includes(.75));
   assert.equal(loopClosureFrames("Off",.75,30,180),0);
   assert.equal(loopClosureMix(179,180,0),0);
@@ -49,13 +49,15 @@ test("invalid modes, FPS, durations and frame indices throw instead of silently 
 test("default GIF, H264 and native export paths all use one opt-in post-lettering closure canvas",()=>{
   const code=source("export.js");
   const ui=source("components/ExportDialog.jsx");
-  assert.match(code,/import \{loopClosureFrames,loopClosureMix\} from "\.\/loop-closure\.js"/);
+  assert.match(code,/import \{loopClosureFrames,loopClosureMix,weftRevealRects,irisRevealRadius\} from "\.\/loop-closure\.js"/);
   assert.match(code,/loopMode="Off",loopBlendSeconds=\.75/);
   assert.match(code,/const closureFrames=loopClosureFrames\(loopMode,loopBlendSeconds,fps,frameCount\)/);
   assert.match(code,/if \(lettered\) paintLettering\(ctx, state, frameClock, size\.width, size\.height\)/);
   assert.match(code,/loopContext\.drawImage\(capture,0,0\)/);
   assert.match(code,/const closureMix=loopClosureMix\(index,frameCount,closureFrames\)/);
   assert.match(code,/ctx\.drawImage\(loopAnchor,0,0\)/);
+  assert.match(code,/weftRevealRects\(size\.width,size\.height,closureMix\)/);
+  assert.match(code,/irisRevealRadius\(size\.width,size\.height,closureMix\)/);
   assert.match(code,/return includePixels && \(lettered\|\|closureMix>0\)/);
   assert.match(code,/ctx\.getImageData\(0,0,size\.width,size\.height\)\.data:frame\.data/);
   assert.match(code,/if\(i>0\|\|!work\.hasClosure\)await work\.render\(i\/fps\)/);
@@ -73,7 +75,7 @@ test("export diagnostics explicitly disclose intentional soft-loop tail modifica
   const ui=source("components/ExportDialog.jsx");
   assert.match(ui,/Loop Surgery was enabled for this clip/);
   assert.match(ui,/Inconclusive: Loop Surgery intentionally changes ending frames/);
-  assert.match(ui,/Loop Surgery softened this exported loop/);
+  assert.match(ui,/Loop Surgery treated this exported loop/);
 });
 test("production render workspace under a simulated Canvas2D produces equal first and last raw frames",async()=>{
   const exporter=source("export.js");

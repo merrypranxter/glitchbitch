@@ -1,12 +1,12 @@
 /**
- * Soft Loop Closure — compositing a finite, artist-controlled fade to frame 0.
+ * Loop Surgery — artist-controlled composited closure to the first frame.
  *
  * Works on complete WebGL + Canvas2D composited frames, not a simplified
  * shader or a fake "seamless" timebase. Opt-in and never alters the recipe.
  * The last SOURCE frame equals the saved first SOURCE frame, while lossy
  * H.264/GIF playback and temporal velocity can still reveal a transition.
  */
-export const LOOP_MODES=["Off","Soft closure"];
+export const LOOP_MODES=["Off","Soft closure","Weft zipper","Iris portal"];
 export const LOOP_BLEND_SECONDS=[0.25,0.5,0.75,1,1.5,2];
 export function loopClosureFrames(mode,seconds,fps,count){
   if(!LOOP_MODES.includes(mode))throw Error("Unknown video loop closure mode.");
@@ -32,4 +32,39 @@ export function loopClosureMix(index,count,closureFrames){
   // Smoothstep keeps the onset and tail of the crossfade gentle, and makes
   // the last source frame exactly identical to the first source frame.
   return t*t*(3-2*t);
+}
+
+/**
+ * Spatial-reveal masks for *fully composited* video. These do not alter any
+ * shader, typography, palette or feedback simulation. Only the rasterized
+ * opening frame is revealed through Canvas2D clipping at the tail.
+ */
+function clamp01(value){return Math.max(0,Math.min(1,value));}
+export function weftRevealRects(width,height,mix){
+  if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||
+     !Number.isFinite(mix)||mix<0||mix>1)throw Error("Invalid weave loop mask.");
+  const bandCount=Math.min(48,Math.max(8,Math.round(height/36)));
+  const rectangles=[];
+  for(let row=0;row<bandCount;row++){
+    const y0=Math.floor(row*height/bandCount);
+    const y1=Math.floor((row+1)*height/bandCount);
+    if(y1<=y0)continue;
+    // Stagger rows with a tiny deterministic phase so alternating strips
+    // braid into place without injecting random seed or hidden pixels.
+    const stagger=((row*7)%11)/10*.13;
+    const t=clamp01((mix-stagger)/(1-stagger));
+    const eased=t*t*(3-2*t);
+    const w=Math.min(width,Math.max(0,Math.round(width*eased)));
+    if(w>0)rectangles.push({
+      x:row%2===0?0:width-w,
+      y:y0,width:w,height:y1-y0,row
+    });
+  }
+  return rectangles;
+}
+export function irisRevealRadius(width,height,mix){
+  if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1||
+     !Number.isFinite(mix)||mix<0||mix>1)throw Error("Invalid iris loop mask.");
+  // Expanded beyond the farthest corner to account for Canvas2D antialiasing.
+  return mix*Math.hypot(width,height)*.5+ (mix>0?2*mix:0);
 }

@@ -185,7 +185,9 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
           onProgress:p=>{if(mounted.current)setProgress(p);},
           signal:controller.current.signal,
         });
-        const filename=`glitch-${state.seed}-${size.width}x${size.height}-${Math.round(clipDuration)}s${loopMode!=="Off"?"-softloop":""}.${result.extension}`;
+        const loopSuffix=loopMode==="Off"?"":loopMode==="Soft closure"?"-softloop":
+          loopMode==="Weft zipper"?"-weftloop":"-irisloop";
+        const filename=`glitch-${state.seed}-${size.width}x${size.height}-${Math.round(clipDuration)}s${loopSuffix}.${result.extension}`;
         download(result.blob,filename);
         if(mounted.current)setReady({blob:result.blob,filename,type:result.mime,
           snapshot,timeline,frameSize:{...size},method:result.method,
@@ -468,7 +470,10 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
             <Select label="Loop surgery" value={loopMode}
               onChange={v=>{setLoopMode(v);setReady(null);clearFrameAudit();clearMotionAudit();clearSeamAudit();}}>
               {LOOP_MODES.map(mode=><option key={mode} value={mode}>
-                {mode==="Off"?"Off · untouched original":"Soft closure · fade ending into the opening"}
+                {mode==="Off"?"Off · untouched original":
+                  mode==="Soft closure"?"Soft closure · gentle full-frame fade":
+                  mode==="Weft zipper"?"Weft zipper · alternating woven reveal":
+                  "Iris portal · circular reveal to frame one"}
               </option>)}
             </Select>
             {loopMode!=="Off"&&<>
@@ -477,12 +482,17 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
                 {LOOP_BLEND_SECONDS.filter(n=>n<=clipDuration*.75)
                   .map(n=><option key={n} value={n}>{n} seconds</option>)}
               </Select>
-              <p className="export-note">Loop Surgery stores the first FULL artwork frame
-                (all thread effects and text), then gradually blends the final
-                {loopBlendSeconds}s back to it. The last raw frame meets the first.
-                This softens visible loop jumps, but moving patterns may briefly
-                ghost or slow near the seam. It is NOT reversible physics or
-                guaranteed perfect velocity. Works for real MP4 and GIF.</p>
+              <p className="export-note">Loop Surgery saves the first FULL artwork frame —
+                all thread effects, optical materials, text and everything.
+                Over the last {loopBlendSeconds}s, the video returns to that
+                opening image using your chosen treatment:
+                {loopMode==="Soft closure"?" a gradual full-frame fade.":
+                  loopMode==="Weft zipper"?" alternating woven ribbons that zip closed.":
+                  " a circular iris expanding from the center."}
+                {" "}The last source frame meets the first; the rest of the art
+                keeps running underneath. Edges, ghosting or motion changes
+                during the transition are intentional. Not a guarantee of
+                physically seamless velocity. Works with real GIF and MP4.</p>
             </>}
             {clipFormat==="mp4"&&<>
               <Select label="Frame rate" value={frameRate} onChange={v=>setFrameRate(+v)}>
@@ -748,7 +758,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
             A strong loop snap means the end-to-start transition is unusually
             different from the normal changes near both ends.</p>
           {ready.loopMode!=="Off"&&<p className="export-note">
-            Loop Surgery softened this exported loop using a
+            Loop Surgery treated this exported loop using a
             {" "+ready.loopBlendSeconds}s tail crossfade to the actual opening
             frame. End→Start should be much gentler. MP4 codec differences,
             moving textures and temporary ghosting can still be visible.

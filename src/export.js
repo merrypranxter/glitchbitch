@@ -2,7 +2,7 @@ import { createRenderer } from "./renderer.js";
 import { isArtworkParityError, artworkParityError } from "./export-parity.js";
 import { ratios } from "./data.js";
 import { hasVisibleLettering, paintLettering, waitForLetteringFonts } from "./text-compositor.js";
-import {loopClosureFrames,loopClosureMix} from "./loop-closure.js";
+import {loopClosureFrames,loopClosureMix,weftRevealRects,irisRevealRadius} from "./loop-closure.js";
 
 export function dimensions(ratio, longEdge) {
   const r = ratios.find((x) => x.id === ratio)?.value || 1;
@@ -188,8 +188,28 @@ function createFrameWorkspace(state, timeline, size, signal,
         throw artworkParityError("Soft loop anchor was never captured at frame zero");
       ctx.save();
       ctx.globalCompositeOperation="source-over";
-      ctx.globalAlpha=closureMix;
-      ctx.drawImage(loopAnchor,0,0);
+      // Soft keeps the exact historical alpha crossfade. The other two
+      // options reveal the same complete opening frame through a moving
+      // spatial mask — NO fallback shader or missing special effects.
+      if(loopMode==="Soft closure"||closureMix>=1){
+        ctx.globalAlpha=loopMode==="Soft closure"?closureMix:1;
+        ctx.drawImage(loopAnchor,0,0);
+      }else if(loopMode==="Weft zipper"){
+        const rectangles=weftRevealRects(size.width,size.height,closureMix);
+        if(rectangles.length){
+          ctx.beginPath();
+          for(const rect of rectangles)
+            ctx.rect(rect.x,rect.y,rect.width,rect.height);
+          ctx.clip();
+          ctx.drawImage(loopAnchor,0,0);
+        }
+      }else if(loopMode==="Iris portal"){
+        const radius=irisRevealRadius(size.width,size.height,closureMix);
+        ctx.beginPath();
+        ctx.arc(size.width/2,size.height/2,radius,0,Math.PI*2);
+        ctx.clip();
+        ctx.drawImage(loopAnchor,0,0);
+      }
       ctx.restore();
     }
     // GIF must quantize the ACTUAL post-closure pixels. Previous raw GPU

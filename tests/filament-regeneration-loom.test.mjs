@@ -15,7 +15,9 @@ import {
 } from "../src/filament-forge.js";
 
 const modes=["Off","Forked nerve shoots","Wound bridges","Mycelial fan",
- "Pearly callus","Gold repair vines","Synaptic grafts"];
+ "Pearly callus","Gold repair vines","Synaptic grafts",
+ "Darning ladders","Sashiko crosshatch","Coral anastomosis",
+ "Axolotl frills","Opal vesicle lattice","Impossible graft loops"];
 const art={...initial,engine:12,ratio:"9:16",seed:89648,
  lettering:"DO NOT EAT THE LOOM",colors:["#ff00ee","#00fafa","#ffff08"],
  filamentAmount:79,filamentSpecies:"Bobbin lace",
@@ -37,10 +39,10 @@ const preserve=["engine","ratio","seed","lettering","colors",
  "filamentAdornmentAmount"];
 const braces=s=>[...s].reduce((n,c)=>n+(c==="{")-(c==="}"),0);
 
-test("six geometry-creation modes, six presets and bounded sliders",()=>{
+test("twelve geometry-creation modes, twelve presets and bounded sliders",()=>{
  assert.deepEqual(filamentRegenModes,modes);
  assert.deepEqual(filamentRegenFamilies.flatMap(x=>x.modes),modes);
- assert.equal(filamentRegenPresets.length,6);
+ assert.equal(filamentRegenPresets.length,12);
  for(const mode of modes)assert.ok(filamentRegenDescriptions[mode]);
  for(const k of filamentRegenControls)assert.deepEqual(numericRanges[k],[0,100]);
  for(const p of filamentRegenPresets){
@@ -66,7 +68,7 @@ test("legacy artwork remains 100% unchanged until regrowth is explicitly enabled
    /Invalid filamentRegenBranches/);
 });
 
-test("six regeneration recipes can enable scars/neurons without changing underlying art",()=>{
+test("twelve regeneration recipes can enable scars/neurons without changing underlying art",()=>{
  for(const p of filamentRegenPresets){
    const updated=applyFilamentRegenPreset({...art,
      filamentNeuralMode:"Off",filamentNeuralAmount:0,
@@ -93,14 +95,14 @@ test("regrowth shuffles respect protected work, deterministic RNG and weird-only
      assert.ok(next.filamentNeuralAmount>=82);
      assert.ok(next.filamentScarAmount>=65);
      assert.notEqual(next.filamentRegenMode,"Off");
-     if(weird)assert.ok(modes.slice(3).includes(next.filamentRegenMode));
+     if(weird)assert.ok([...modes.slice(3,7),...modes.slice(9)].includes(next.filamentRegenMode));
      for(const k of preserve)assert.deepEqual(next[k],art[k],k);
      assert.deepEqual(validateRecipe(next),next);
    }
  }
 });
 
-test("all six regeneration geometry GLSL branches specialize individually",()=>{
+test("all twelve regeneration geometry GLSL branches specialize individually",()=>{
  for(let i=1;i<modes.length;i++){
    const shader=specializeFilamentRegeneration(filamentGLSL,i);
    assert.deepEqual([...shader.matchAll(/(?:if|else if)\(filamentRegenMode==(\d+)\)/g)]
@@ -113,6 +115,37 @@ test("all six regeneration geometry GLSL branches specialize individually",()=>{
  }
  assert.equal(specializeFilamentRegeneration(filamentGLSL,null),filamentGLSL);
  assert.equal(specializeFilamentRegeneration(filamentGLSL,99),filamentGLSL);
+});
+
+test("growth and senescence meet invisibly at the cycle wrap without reversing the tip",()=>{
+ assert.match(filamentGLSL,/float tip=smoothstep\(\.025,\.67,age\)/);
+ assert.match(filamentGLSL,/float senescence=1\.0-smoothstep\(\.79,\.985,age\)/);
+ assert.match(filamentGLSL,/drawn\*senescence/);
+ const smoothstep=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));
+   return t*t*(3-2*t);};
+ const density=age=>
+   smoothstep(.025,.67,age)*(1-smoothstep(.79,.985,age));
+ assert.equal(density(0),0);
+ assert.equal(density(1),0);
+ assert.ok(density(.75)>.95);
+ assert.ok(density(.98)<.05);
+});
+
+test("new daughter geometries have independent spatial signatures",()=>{
+ const signatures=[
+   "float rungRadial=abs(threadD-sproutReach*.87)",
+   "float diagonalA=abs(threadD-sproutReach*(.11+.94*along))",
+   "float armA=abs(threadD-sproutReach*(.15+.9*arch))",
+   "float station=fract((localArc+.5)*fingers)",
+   "newDist=abs(ring-width*(.39+.29*filamentRegenHealing))",
+   "float loopA=abs(threadD-sproutReach*(.65+.37*twist))"
+ ];
+ for(let i=7;i<=12;i++){
+   const shader=specializeFilamentRegeneration(filamentGLSL,i);
+   assert.ok(shader.includes(signatures[i-7]),modes[i]);
+   assert.deepEqual([...shader.matchAll(/(?:if|else if)\(filamentRegenMode==(\d+)\)/g)]
+     .map(v=>Number(v[1])),[i]);
+ }
 });
 
 test("new geometry is constructed before material, neural, and export coloring",()=>{

@@ -2031,7 +2031,7 @@ export function EffectsInspector({ history, onTool, tool }) {
       </details>
       <details className="filament-crossbreeder filament-regeneration-lab">
         <summary>🌱 REGENERATION LOOM — GROW NEW THREADS FROM THE SCARS</summary>
-        <p className="control-note">Spawn actual extra daughter-line geometry from the moving scarred fibers: bifurcations, bridges, fungal filaments, pearly calluses, golden repair vines and synaptic grafts. New fibers are formed before shading, so they inherit the existing palette, fabric material, and nerve effects. Animated regrowth cycles are deterministic and do not use expensive previous-frame memory.</p>
+        <p className="control-note">Twelve actual daughter-thread geometries: classic darning ladders and Sashiko repairs, coral branches that reconnect, axolotl frills, vesicle loops, and impossible grafts alongside the original six. New fibers are constructed before palette, material, and nerve shading. Growth now advances forward and softly fades before repeating: no abrupt vanishing frames and no extra GPU history.</p>
         <Select label="Regrowth anatomy" value={s.filamentRegenMode}
           onChange={mode=>history.change(x=>({...x,filamentRegenMode:mode,
             filamentAmount:mode==="Off"?x.filamentAmount:Math.max(72,x.filamentAmount),
@@ -2077,7 +2077,7 @@ export function EffectsInspector({ history, onTool, tool }) {
             Stop growing — keep scars
           </button>
         </div>
-        <p className="control-note">A procedural growth/recede cycle, not permanently accumulating yarn. Existing threads, text, jewelry, materials, sewing and original artwork stay intact. GPU-heavy combinations should be proof-exported at 480px before a long MP4.</p>
+        <p className="control-note">An advancing growth-and-fade cycle, not reversed or permanently accumulated yarn. Existing threads, text, jewelry, materials, sewing and original artwork stay intact. GPU-heavy combinations should be proof-exported at 480px before a long MP4.</p>
       </details>
       <details className="filament-crossbreeder filament-adornment-lab">
         <summary>💎 THREAD JEWELRY — CHARMS, FRINGE & WEIRD SHIT</summary>

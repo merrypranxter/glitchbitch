@@ -6,7 +6,9 @@ Glitch Bitch's previous Ghost Scars shader changed the lighting, color and surfa
 
 This is **procedural 2.5D line growth**, not permanently accumulated yarn meshes or a stateful cellular-growth simulation. It uses the current frame time to simulate repeatable growth/recede cycles. Exporting any frame at the same time reproduces the same result without storing prior GPU frames.
 
-## Six new regrowth behaviors
+## Original six regrowth behaviors
+
+*The engine now has twelve total anatomies. See [Regeneration Loom II](REGENERATION_LOOM_II.md) for six additional daughter-fiber structures and seamless forward-growing life cycles.*
 
 1. **Forked nerve shoots** — diverging daughter fibers follow a scar-centered local phase.
 2. **Wound bridges** — thin bridging sutures across local gaps in the daughter growth field (not removal of the original thread).

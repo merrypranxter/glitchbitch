@@ -27,6 +27,7 @@ export const filamentSpecies = [
   "Bobbin lace",
   "Möbius cable",
   "Parasitic ladder",
+  "Feral Jacquard",
 ];
 
 // Named families are UI/grouping metadata, never GPU or saved-state data.
@@ -1498,6 +1499,7 @@ export const filamentStitchModes=[
   "Quantum unpick",
   "Mutant zipper",
   "Fractal mending",
+  "Chladni Needle Orchestra",
 ];
 // Human-facing organization only; saved names and numerical shader IDs
 // for the original five motions are preserved exactly.
@@ -1560,6 +1562,7 @@ export const filamentStitchDescriptions={
   "Quantum unpick":"Sutures flicker between sewn and unsewn states in a double-beat wave.",
   "Mutant zipper":"Two serrated lips latch and unlatch with a hunting metal tooth.",
   "Fractal mending":"Repairs recursively split into miniature repairs along each thread.",
+  "Chladni Needle Orchestra":"Actual needles and thread reveal follow moving standing-wave nodes, detuned into vibrating Chladni embroidery.",
 };
 export function remixFilamentStitchMotion(state,rng=Math.random,onlyNew=false){
   const unit=()=>{
@@ -1600,6 +1603,7 @@ export function specializeFilamentStitchMotion(source,index){
     source.slice(fallback,end)+source.slice(end);
 }
 export const filamentStitchControls=[
+  // Four universal stitch controls, maintained for every legacy preset.
   "filamentStitchAmount","filamentStitchSpeed",
   "filamentStitchLength","filamentStitchGlow"
 ];
@@ -1684,7 +1688,27 @@ export const filamentStitchPresets=[
     filamentStitchSpeed:78,filamentStitchLength:78,filamentStitchGlow:89},
   {name:"Recursive repair ritual",
     filamentStitchMode:"Fractal mending",filamentStitchAmount:90,
-    filamentStitchSpeed:83,filamentStitchLength:83,filamentStitchGlow:92}
+    filamentStitchSpeed:83,filamentStitchLength:83,filamentStitchGlow:92},
+  {name:"Chladni — Violin plate",filamentStitchMode:"Chladni Needle Orchestra",
+    filamentStitchAmount:93,filamentStitchSpeed:38,filamentStitchLength:55,filamentStitchGlow:80,
+    filamentChladniOrder:22,filamentChladniResonance:72,filamentChladniDensity:78,
+    filamentChladniPhase:16,filamentChladniDetune:8},
+  {name:"Chladni — Cymatic samplers",filamentStitchMode:"Chladni Needle Orchestra",
+    filamentStitchAmount:96,filamentStitchSpeed:51,filamentStitchLength:46,filamentStitchGlow:88,
+    filamentChladniOrder:52,filamentChladniResonance:89,filamentChladniDensity:66,
+    filamentChladniPhase:39,filamentChladniDetune:33},
+  {name:"Chladni — Detuned bell choir",filamentStitchMode:"Chladni Needle Orchestra",
+    filamentStitchAmount:97,filamentStitchSpeed:73,filamentStitchLength:63,filamentStitchGlow:94,
+    filamentChladniOrder:43,filamentChladniResonance:98,filamentChladniDensity:82,
+    filamentChladniPhase:68,filamentChladniDetune:78},
+  {name:"Chladni — Broken eigenmode",filamentStitchMode:"Chladni Needle Orchestra",
+    filamentStitchAmount:100,filamentStitchSpeed:82,filamentStitchLength:32,filamentStitchGlow:97,
+    filamentChladniOrder:92,filamentChladniResonance:96,filamentChladniDensity:96,
+    filamentChladniPhase:84,filamentChladniDetune:97},
+  {name:"Chladni — Ghost diapason",filamentStitchMode:"Chladni Needle Orchestra",
+    filamentStitchAmount:86,filamentStitchSpeed:24,filamentStitchLength:81,filamentStitchGlow:70,
+    filamentChladniOrder:72,filamentChladniResonance:56,filamentChladniDensity:89,
+    filamentChladniPhase:11,filamentChladniDetune:17},
 ];
 export function applyFilamentStitchPreset(state,name){
  const preset=filamentStitchPresets.find(p=>p.name===name);
@@ -1692,6 +1716,64 @@ export function applyFilamentStitchPreset(state,name){
  const {name:label,...stitch}=preset;
  return {...state,...stitch,filamentAmount:Math.max(55,state.filamentAmount||0)};
 }
+
+/** Structure-only Jacquard manipulation, leaving existing 22 species untouched. */
+export const feralJacquardControls=[
+  "filamentFeralCorruption","filamentFeralMigration","filamentFeralOrder",
+  "filamentFeralKnots","filamentFeralMutation"
+];
+export const feralJacquardPresets=[
+  {name:"Feral — Heirloom gone feral",filamentFeralCorruption:14,
+    filamentFeralMigration:24,filamentFeralOrder:93,filamentFeralKnots:28,filamentFeralMutation:16},
+  {name:"Feral — Crawling damask",filamentFeralCorruption:41,
+    filamentFeralMigration:76,filamentFeralOrder:67,filamentFeralKnots:37,filamentFeralMutation:39},
+  {name:"Feral — Knot parliament",filamentFeralCorruption:58,
+    filamentFeralMigration:61,filamentFeralOrder:52,filamentFeralKnots:94,filamentFeralMutation:62},
+  {name:"Feral — Warp eating weft",filamentFeralCorruption:84,
+    filamentFeralMigration:93,filamentFeralOrder:24,filamentFeralKnots:56,filamentFeralMutation:87},
+  {name:"Feral — Textile structural collapse",filamentFeralCorruption:99,
+    filamentFeralMigration:99,filamentFeralOrder:7,filamentFeralKnots:99,filamentFeralMutation:100},
+];
+export function applyFeralJacquardPreset(state,name){
+  const p=feralJacquardPresets.find(p=>p.name===name);
+  if(!p)return state;
+  const {name:label,...settings}=p;
+  return {...state,...settings,filamentSpecies:"Feral Jacquard",
+    filamentAmount:Math.max(70,state.filamentAmount||0)};
+}
+export function remixFeralJacquard(state,rng=Math.random){
+  const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(.999999,n)):0;};
+  return {...state,filamentSpecies:"Feral Jacquard",
+    filamentAmount:Math.max(75,state.filamentAmount||0),
+    filamentFeralCorruption:12+unit()*88,
+    filamentFeralMigration:15+unit()*85,
+    filamentFeralOrder:unit()*100,
+    filamentFeralKnots:unit()*100,
+    filamentFeralMutation:unit()*100};
+}
+export const chladniNeedleControls=[
+  "filamentChladniOrder","filamentChladniResonance","filamentChladniDensity",
+  "filamentChladniPhase","filamentChladniDetune"
+];
+export const chladniNeedlePresets=filamentStitchPresets.filter(
+  p=>p.filamentStitchMode==="Chladni Needle Orchestra");
+export function applyChladniNeedlePreset(state,name){
+  const p=chladniNeedlePresets.find(p=>p.name===name);
+  if(!p)return state;
+  const {name:label,...settings}=p;
+  return {...state,...settings,
+    filamentAmount:Math.max(65,state.filamentAmount||0)};
+}
+export function remixChladniNeedles(state,rng=Math.random){
+  const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(.999999,n)):0;};
+  return {...state,filamentStitchMode:"Chladni Needle Orchestra",
+    filamentAmount:Math.max(65,state.filamentAmount||0),
+    filamentStitchAmount:Math.max(88,state.filamentStitchAmount||0),
+    filamentChladniOrder:12+unit()*88,filamentChladniResonance:32+unit()*68,
+    filamentChladniDensity:25+unit()*75,filamentChladniPhase:unit()*100,
+    filamentChladniDetune:unit()*100};
+}
+
 export function stopFilamentStitching(state){
  return {...state,filamentStitchAmount:0};
 }
@@ -1830,6 +1912,10 @@ uniform float filamentSculptAmount,filamentSculptDepth;
 uniform float filamentSculptLight,filamentSculptShadow,filamentSculptPuff;
 uniform float filamentStitchAmount,filamentStitchSpeed;
 uniform float filamentStitchLength,filamentStitchGlow;
+uniform float filamentFeralCorruption,filamentFeralMigration,filamentFeralOrder;
+uniform float filamentFeralKnots,filamentFeralMutation;
+uniform float filamentChladniOrder,filamentChladniResonance,filamentChladniDensity;
+uniform float filamentChladniPhase,filamentChladniDetune;
 uniform float filamentNap,filamentLuster,filamentBeads,filamentBeadSize,filamentSecondHue;
 uniform float filamentCrossbreed,filamentInterlace,filamentTwist,filamentPhase;
 uniform float filamentAmount,filamentScale,filamentDensity,filamentMotion;
@@ -2157,6 +2243,41 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     threadD=min(bar,parasite*.073+.015);
     phase=loom.y*.73+serpent*2.1;
     highlight=.5+.5*cos(phase*4.0-t*1.3);
+  }else if(species==22){ // FERAL JACQUARD: migration and actual warp/weft corruption.
+    // Two crossing families move independently, instead of a screen-space noise overlay.
+    vec2 loom=q*(.59+density*.88);
+    float migration=t*(.19+filamentFeralMigration*1.38);
+    float wild=filamentFeralCorruption;
+    float mutation=filamentFeralMutation;
+    float warpCoord=loom.x+wild*(.13+.49*mutation)*
+      sin(loom.y*.69+migration+seedPhase*.37);
+    float weftCoord=loom.y+wild*(.13+.49*mutation)*
+      cos(loom.x*.74-migration*.88+seedPhase*.28);
+    warpCoord+=wild*mutation*.26*sin(weftCoord*1.87+migration*.31);
+    weftCoord+=wild*mutation*.26*cos(warpCoord*1.63-migration*.39);
+    float w=fract(warpCoord)-.5;
+    float f=fract(weftCoord)-.5;
+    float order=filamentFeralOrder;
+    // Parity migrates and shears: actual threads exchange over-under precedence.
+    float crossing=sin((floor(warpCoord)+floor(weftCoord))*3.14159265+
+      migration*(.3+wild*2.4)+mutation*sin(loom.x*.27+loom.y*.43));
+    float warpAbove=smoothstep(-.16-.22*order,.16+.22*order,crossing);
+    float overUnder=abs(w)-abs(f);
+    float gap=.06+wild*.13;
+    float crossingNear=(1.0-smoothstep(.12,.39,max(abs(w),abs(f))));
+    float warpGap=crossingNear*warpAbove*(1.0-order)*gap;
+    float weftGap=crossingNear*(1.0-warpAbove)*(1.0-order)*gap;
+    float warpD=abs(w)*.18+warpGap;
+    float weftD=abs(f)*.18+weftGap;
+    threadD=min(warpD,weftD);
+    vec2 cell=vec2(w,f);
+    float collar=abs(length(cell)-(.10+.045*sin(migration*.34+seedPhase)));
+    float knotSeed=.5+.5*cos((floor(warpCoord)*5.17+floor(weftCoord)*3.71)+seedPhase);
+    float knotMask=smoothstep(.3,.83,knotSeed)*filamentFeralKnots;
+    threadD=min(threadD,collar*(.15+.08*(1.0-knotMask))+
+      (1.0-knotMask)*.16);
+    phase=warpCoord*.93+weftCoord*.82+warpAbove*1.71;
+    highlight=clamp(.30+.53*warpAbove+.17*sin(phase*5.2+migration),0.0,1.0);
   }else{
     // The branch is intentionally unreachable for validated species IDs.
     threadD=1.0;
@@ -2392,6 +2513,26 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     float repair=.49*mother+.33*child+.18*grandchild;
     visibleStitch=.1+.9*smoothstep(-.28,.49,repair);
     needle=pow(.5+.5*repair,12.0);
+  }else if(filamentStitchMode==31){ // CHLADNI NEEDLE ORCHESTRA — nodal seam geometry.
+    // Standing-wave eigenmode proxy in the *thread's own local coordinates*.
+    // No history buffers; both hybrid parents inherit their own q/phase offset.
+    float nx=2.0+floor(filamentChladniOrder*6.0);
+    float ny=nx+1.0+floor(filamentChladniDetune*3.0);
+    float resonance=filamentChladniResonance;
+    float modeTime=sewClock*(.11+.37*resonance);
+    float phaseBias=filamentChladniPhase*6.2831853+phaseOffset*.23;
+    vec2 plate=q*(.40+filamentChladniDensity*.42);
+    float harmonicA=sin(nx*plate.x+phaseBias+sin(modeTime)*resonance)*
+      sin(ny*plate.y-phaseBias*.43);
+    float harmonicB=sin(ny*plate.x-phaseBias*.37)*
+      sin(nx*plate.y+phaseBias*.53-cos(modeTime*1.11)*filamentChladniDetune);
+    float mode=abs(harmonicA-harmonicB);
+    float nodalBand=1.0-smoothstep(.035,.12+.22*(1.0-filamentChladniDensity),mode);
+    float stitchPulse=.5+.5*cos(localProgress*(8.0+filamentChladniDensity*13.0)-
+      sewClock*(.27+resonance*.91)+mode*9.0);
+    // Needle only fires along nodal strands. Reveal masks the *real fiber*.
+    visibleStitch=.07+.93*nodalBand*(.19+.81*smoothstep(.26,.78,stitchPulse));
+    needle=nodalBand*pow(stitchPulse,12.0)*( .3+.7*resonance);
   }else{ // Invalid stored mode: leave the drawn thread untouched.
     visibleStitch=1.0;
     needle=0.0;

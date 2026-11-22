@@ -66,6 +66,8 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   remixFilamentMaterials,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
+  feralJacquardPresets,applyFeralJacquardPreset,remixFeralJacquard,
+  chladniNeedlePresets,applyChladniNeedlePreset,remixChladniNeedles,
   filamentSculptModes,filamentSculptFamilies,filamentSculptPresets,
   applyFilamentSculptPreset,remixFilamentSculpt,disableFilamentSculpt } from "../filament-forge.js";
 import { underlayModes,underlayFamilies,underlayDescriptions,remixUnderlay,
@@ -300,6 +302,8 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [scarPreset,setScarPreset]=React.useState(filamentScarPresets[0].name);
   const [regenPreset,setRegenPreset]=React.useState(filamentRegenPresets[0].name);
   const [stitchPreset,setStitchPreset]=React.useState(filamentStitchPresets[0].name);
+  const [feralPreset,setFeralPreset]=React.useState(feralJacquardPresets[0].name);
+  const [chladniPreset,setChladniPreset]=React.useState(chladniNeedlePresets[0].name);
   const [sculptPreset,setSculptPreset]=React.useState(filamentSculptPresets[0].name);
   const [underlayPreset,setUnderlayPreset]=React.useState(underlayPresets[0].name);
   const [atmoPreset,setAtmoPreset]=React.useState(atmospherePresets[0].name);
@@ -1609,7 +1613,7 @@ export function EffectsInspector({ history, onTool, tool }) {
       <p className="control-note">Underlay is an independent layer: hide it without losing your lace, text, Photon Zoo or underlying math art. It uses the existing palette and normal PNG/GIF/MP4 renderer.</p>
     </>,
     filament: <>
-      <p className="control-note">Twenty-two animated geometries with thirty-one stitch laws, fourteen fiber materials and an independent thread-jewelry cabinet. Mix practical sewing with gloriously deranged textile mathematics.</p>
+      <p className="control-note">Twenty-three animated geometries with thirty-two stitch laws, fourteen fiber materials and an independent thread-jewelry cabinet. Mix practical sewing with gloriously deranged textile mathematics.</p>
       <Select label="Thread geometry" value={s.filamentSpecies}
         onChange={v=>history.change(x=>({...x,filamentSpecies:v,
           filamentAmount:Math.max(73,x.filamentAmount),
@@ -1628,6 +1632,29 @@ export function EffectsInspector({ history, onTool, tool }) {
       <Parameter label="Raised relief / sheen" name="filamentRelief" history={history}/>
       <Parameter label="Palette shift" name="filamentHue" history={history}/>
       <Parameter label="Variation" name="filamentVariation" history={history}/>
+      <details className="filament-crossbreeder filament-feral-lab">
+        <summary>🧶 FERAL JACQUARD — STRUCTURAL CORRUPTION</summary>
+        <p className="control-note">A genuine warp/weft geometry: moving strands shear, exchange over-under precedence, and form knot collars within actual thread outlines. No glitch overlay. Use as either parent in hybrid fabrics.</p>
+        <Select label="Jacquard structure recipe" value={feralPreset} onChange={setFeralPreset}>
+          {feralJacquardPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <Parameter label="Controlled corruption" name="filamentFeralCorruption" history={history}/>
+        <Parameter label="Warp / weft migration" name="filamentFeralMigration" history={history}/>
+        <Parameter label="Structural order / interlace" name="filamentFeralOrder" history={history}/>
+        <Parameter label="Knot population" name="filamentFeralKnots" history={history}/>
+        <Parameter label="Mutational branching" name="filamentFeralMutation" history={history}/>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>applyFeralJacquardPreset(x,feralPreset))}>
+            Weave feral recipe
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFeralJacquard(x))}>
+            <Shuffle size={13}/> Shuffle feral structure
+          </button>
+        </div>
+        <p className="control-note">Feral recipes preserve your materials, color palette, text, stitch style and second parent. To crossbreed, choose Feral Jacquard in either thread parent selector.</p>
+      </details>
       <div className="preset-row">
         <Select label="Filament sculpture preset" value={filamentPreset} onChange={setFilamentPreset}>
           {filamentPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
@@ -1704,7 +1731,7 @@ export function EffectsInspector({ history, onTool, tool }) {
       </details>
       <details className="filament-crossbreeder filament-stitch-lab">
         <summary>🪡 SELF-WEAVING LOOM — STITCH IN MOTION</summary>
-        <p className="control-note">Thirty-one animated stitch laws: classic chain, cross, satin, blanket, feather and cable stitches, plus ghost bobbins, quantum unraveling and mutant zipper nightmares. All follow the actual thread paths.</p>
+        <p className="control-note">Thirty-two animated stitch laws: classic chain, cross, satin, blanket, feather and cable stitches, plus ghost bobbins, quantum unraveling and mutant zipper nightmares. All follow the actual thread paths.</p>
         <Select label="Stitch motion" value={s.filamentStitchMode}
           onChange={mode=>history.change(x=>({...x,filamentStitchMode:mode,
             filamentStitchAmount:Math.max(68,x.filamentStitchAmount),
@@ -1719,6 +1746,29 @@ export function EffectsInspector({ history, onTool, tool }) {
         <Parameter label="Stitch travel speed" name="filamentStitchSpeed" history={history}/>
         <Parameter label="Stitch tail length / spacing" name="filamentStitchLength" history={history}/>
         <Parameter label="Traveling needle glow" name="filamentStitchGlow" history={history}/>
+        <details className="filament-crossbreeder filament-chladni-lab">
+          <summary>🎻 CHLADNI NEEDLE ORCHESTRA — CYMATIC STITCHES</summary>
+          <p className="control-note">Real sewing reveals fibers along dynamic standing-wave nodes and eigenmode crossings. Resonance, detuning and mode order change the actual stitched geometry, not a decorative screen pattern.</p>
+          <Select label="Needle orchestra score" value={chladniPreset} onChange={setChladniPreset}>
+            {chladniNeedlePresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+          </Select>
+          <Parameter label="Eigenmode / overtone order" name="filamentChladniOrder" history={history}/>
+          <Parameter label="Resonance / oscillation" name="filamentChladniResonance" history={history}/>
+          <Parameter label="Nodal needle density" name="filamentChladniDensity" history={history}/>
+          <Parameter label="Coupled phase" name="filamentChladniPhase" history={history}/>
+          <Parameter label="Detune / broken symmetry" name="filamentChladniDetune" history={history}/>
+          <div className="pane-actions">
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(x=>applyChladniNeedlePreset(x,chladniPreset))}>
+              Play selected needle score
+            </button>
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(x=>remixChladniNeedles(x))}>
+              <Dices size={13}/> Shuffle Chladni orchestra
+            </button>
+          </div>
+          <p className="control-note">Compatible with all thread species, including Feral Jacquard, both hybrid parents and every fiber dressing. The selected law is compiled once into the shared preview/export shader.</p>
+        </details>
         <Select label="Self-weaving recipe" value={stitchPreset} onChange={setStitchPreset}>
           {filamentStitchPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
         </Select>

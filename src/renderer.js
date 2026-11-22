@@ -1,4 +1,5 @@
 import { appearanceGLSL } from "./appearance.js";
+import { colorMathModes, specializeColorMathGLSL } from "./color-math-lab.js";
 import { artworkParityError } from "./export-parity.js";
 import { geometryGLSL } from "./geometry.js";
 import { motionGLSL } from "./motion.js";
@@ -107,6 +108,7 @@ phase+=source;if(posterize)phase=floor(phase*7.)/7.;return phase;}
 /* ALCHEMY_MODULE */
 /* INJURY_MODULE */
 ${appearanceGLSL}
+/* COLOR_MATH_MODULE */
 void main(){vec2 uv=gl_FragCoord.xy/res;vec2 aspect=vec2(res.x/res.y,1.);vec2 sampleUV=uv;
 if(pixel>.001){float cells=mix(600.,24.,pow(pixel,.65));sampleUV=(floor(uv*vec2(cells*aspect.x,cells))+.5)/vec2(cells*aspect.x,cells);}
 vec2 p=(sampleUV-.5)*aspect*(2.+scale*5.);p=rotate(rotation)*p;
@@ -154,6 +156,7 @@ float luma=dot(col,vec3(.2126,.7152,.0722));col=mix(vec3(luma),col,saturation*2.
 /* ALCHEMY_POST */
 /* INJURY_POST */
 col=applyAppearance(col,uv);
+/* COLOR_MATH_POST */
 gl_FragColor=vec4(clamp(col,0.,1.),1.);}`;
 
 export function createRenderer(canvas, {exactEffects=false} = {}) {
@@ -693,6 +696,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       withPhoton = s.photonAmount>0,
       withUnderlay = s.underlayAmount>0,
       withFilament = s.filamentAmount>0,
+      withColorMath = s.colorMathAmount>0 && s.colorMathMode!=="Off",
       withHybrid = withFilament && s.filamentCrossbreed>0,
       withStitch = withFilament && s.filamentStitchAmount>0,
       withSculpt = withFilament && s.filamentSculptAmount>0,
@@ -743,7 +747,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       ),
       withStrange = (s.engine>=17 && s.engine<=19) ||
         (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAdornment ? "trinket"+filamentAdornmentModes.indexOf(s.filamentAdornmentMode)+(withHybrid?"x"+filamentAdornmentModes.indexOf(s.filamentSecondAdornmentMode):"") : "bare-trinkets"}/${withMorph?"morph"+filamentMaterials.indexOf(s.filamentMorphTarget)+(withHybrid?"x"+filamentMaterials.indexOf(s.filamentSecondMorphTarget):""):"no-morph"}/${withContagion?"contagion"+filamentContagionModes.indexOf(s.filamentContagionMode):"no-contagion"}/${withNeural?"neural"+filamentNeuralModes.indexOf(s.filamentNeuralMode):"no-neural"}/${withPlastic?"plastic"+filamentPlasticModes.indexOf(s.filamentPlasticMode):"no-plastic"}/${withScars?"scars"+filamentScarModes.indexOf(s.filamentScarMode):"no-scars"}/${withRegen?"regen"+filamentRegenModes.indexOf(s.filamentRegenMode):"no-regen"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}/${withAlchemy ? "alchemy"+alchemyModes.indexOf(s.alchemyMode) : "no-alchemy"}/${withInjury ? "injury"+injuryModes.indexOf(s.injuryMode) : "no-injury"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAdornment ? "trinket"+filamentAdornmentModes.indexOf(s.filamentAdornmentMode)+(withHybrid?"x"+filamentAdornmentModes.indexOf(s.filamentSecondAdornmentMode):"") : "bare-trinkets"}/${withMorph?"morph"+filamentMaterials.indexOf(s.filamentMorphTarget)+(withHybrid?"x"+filamentMaterials.indexOf(s.filamentSecondMorphTarget):""):"no-morph"}/${withContagion?"contagion"+filamentContagionModes.indexOf(s.filamentContagionMode):"no-contagion"}/${withNeural?"neural"+filamentNeuralModes.indexOf(s.filamentNeuralMode):"no-neural"}/${withPlastic?"plastic"+filamentPlasticModes.indexOf(s.filamentPlasticMode):"no-plastic"}/${withScars?"scars"+filamentScarModes.indexOf(s.filamentScarMode):"no-scars"}/${withRegen?"regen"+filamentRegenModes.indexOf(s.filamentRegenMode):"no-regen"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}/${withAlchemy ? "alchemy"+alchemyModes.indexOf(s.alchemyMode) : "no-alchemy"}/${withInjury ? "injury"+injuryModes.indexOf(s.injuryMode) : "no-injury"}/${withColorMath ? "cm"+colorMathModes.indexOf(s.colorMathMode) : "no-cm"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -1078,6 +1082,12 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       : "";
     source=source.replace("/* MICRO_MODULE */",textureSource);
     source=source.replace("/* MICRO_POST */",withMicro?"col=movingMicrostructure(col,p,uv,v);":"");
+    // The exact selected law runs in the same GLSL pipeline for live preview and
+    // strict PNG/GIF/MP4 captures. Disabled color math is absent, not a no-op.
+    source=source.replace("/* COLOR_MATH_MODULE */",
+      withColorMath?specializeColorMathGLSL(colorMathModes.indexOf(s.colorMathMode)):"");
+    source=source.replace("/* COLOR_MATH_POST */",
+      withColorMath?"col=applyColorMath(col);":"");
     // The selected atmospheric branch is the only one sent to mobile GPUs.
     // The program cache key includes the chosen backdrop index.
     const selectedBackdrop = withBackdrop
@@ -1424,6 +1434,10 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "colorOffset",
         "colorRepeat",
         "colorAmount",
+        "colorMathAmount",
+        "colorMathDepth",
+        "colorMathMotion",
+        "colorMathVariation",
         "hyperbolicFold",
         "fractalZoom",
         "juliaMix",
@@ -1512,6 +1526,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         gl.uniform1f(loc(k), s[k] / 100);
       gl.uniform1f(loc("alchemyPalette"), s.alchemyPalette ? 1 : 0);
       gl.uniform1f(loc("injuryPalette"), s.injuryPalette ? 1 : 0);
+      gl.uniform1f(loc("colorMathPreserveLuma"),s.colorMathPreserveLuma?1:0);
       gl.uniform1f(loc("rotation"), (s.rotation * Math.PI) / 180);
       gl.uniform1f(loc("symmetry"), s.symmetry);
       for (const k of ["bloom", "posterize", "mirror", "invert"])

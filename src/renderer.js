@@ -203,7 +203,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
        !filamentMaterialUnavailable && !filamentStitchUnavailable &&
        !filamentSculptUnavailable && !filamentAdornmentUnavailable && !filamentMorphUnavailable &&
        !filamentContagionUnavailable && !filamentNeuralUnavailable && !filamentPlasticUnavailable && !filamentScarUnavailable &&
-       !filamentRegenUnavailable && !underlayUnavailable &&
+       !filamentRegenUnavailable && !semanticGravityUnavailable && !underlayUnavailable &&
        !strangeUnavailable && !fossilUnavailable && !successionUnavailable && !foodWebUnavailable && !atmosphereUnavailable &&
        !atmosphereBUnavailable && !habitatUnavailable)return source;
     return {

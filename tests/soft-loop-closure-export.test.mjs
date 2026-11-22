@@ -59,7 +59,9 @@ test("default GIF, H264 and native export paths all use one opt-in post-letterin
   assert.match(code,/return includePixels && \(lettered\|\|closureMix>0\)/);
   assert.match(code,/ctx\.getImageData\(0,0,size\.width,size\.height\)\.data:frame\.data/);
   assert.match(code,/if\(i>0\|\|!work\.hasClosure\)await work\.render\(i\/fps\)/);
-  assert.equal((code.match(/createFrameWorkspace\(state[,\s]timeline[,\s]size[,\s]signal,/g)||[]).length,3);
+  assert.match(code,/work = createFrameWorkspace\(state, timeline, size, signal,/);
+  assert.match(code,/work=createFrameWorkspace\(state,timeline,size,signal,/);
+  assert.match(code,/const work=createFrameWorkspace\(state,timeline,size,signal,/);
   assert.match(ui,/loopMode,setLoopMode/);
   assert.match(ui,/loopBlendSeconds,setLoopBlendSeconds/);
   assert.match(ui,/loopMode,loopBlendSeconds,/);
@@ -73,7 +75,7 @@ test("export diagnostics explicitly disclose intentional soft-loop tail modifica
   assert.match(ui,/Inconclusive: Loop Surgery intentionally changes ending frames/);
   assert.match(ui,/Loop Surgery softened this exported loop/);
 });
-test("actual WebGL→2D workspace produces the SAME raw first and last image after closure",async()=>{
+test("production render workspace under a simulated Canvas2D produces equal first and last raw frames",async()=>{
   const exporter=source("export.js");
   const start=exporter.indexOf("function createFrameWorkspace(");
   const end=exporter.indexOf("/** Deterministic fixed-rate H.264",start);

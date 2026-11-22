@@ -60,7 +60,8 @@ test("default GIF, H264 and native export paths all use one opt-in post-letterin
   assert.match(code,/irisRevealRadius\(size\.width,size\.height,closureMix\)/);
   assert.match(code,/return includePixels && \(lettered\|\|closureMix>0\)/);
   assert.match(code,/ctx\.getImageData\(0,0,size\.width,size\.height\)\.data:frame\.data/);
-  assert.match(code,/if\(i>0\|\|!work\.hasClosure\)await work\.render\(i\/fps\)/);
+  assert.match(code,/if\(i>0\)await player\.render\(i\)/);
+  assert.match(code,/else if\(playbackMode==="Forward"&&!work\.hasClosure\)\s*await work\.render\(0\)/);
   assert.match(code,/work = createFrameWorkspace\(state, timeline, size, signal,/);
   assert.match(code,/work=createFrameWorkspace\(state,timeline,size,signal,/);
   assert.match(code,/const work=createFrameWorkspace\(state,timeline,size,signal,/);

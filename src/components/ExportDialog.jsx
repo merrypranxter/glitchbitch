@@ -328,6 +328,71 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       {type:"application/json"}),
       "glitchbitch-motion-forensics-"+motionAudit.report.seed+".json");
   }
+  async function inspectLoopSeam(){
+    if(!ready||busy)return;
+    if(Math.max(ready.frameSize.width,ready.frameSize.height)>720){
+      setError("Loop Seam Scanner supports 480px and 720px diagnostic clips to protect iPhone memory.");
+      return;
+    }
+    if(ready.frames<7){
+      setError("Loop Seam Scanner needs at least seven video frames.");
+      return;
+    }
+    setBusy(true);setAuditing(true);clearSeamAudit();setError("");
+    const created=[];
+    try{
+      onExportBusy?.(true);
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      const samples=selectSeamSamples(ready.frames,ready.fps);
+      setMotionAuditStage("Decoding seven real encoded frames (no second render)…");
+      const decoded=ready.format==="gif"?
+        await decodeGifMotionSamples(ready.blob,samples):
+        await decodeMp4MotionSamples(ready.blob,samples,ready.fps);
+      const timing=assessSeamDecoderTiming(decoded,samples,ready.format,ready.fps);
+      const results=analyzeSeamContinuity(decoded,{format:ready.format,timing});
+      const report=seamForensicsReport({
+        samples,frames:decoded,results,format:ready.format,
+        encoderMethod:ready.method,seed:ready.snapshot.seed,
+        size:ready.frameSize,fps:ready.fps
+      });
+      // View A and B are ACTUAL decoded media frames, never generated PNGs.
+      // The heatmap highlights the discontinuity between these two frames.
+      const pairs=[
+        {key:"wrap",label:"End → Start · loop seam",left:6,right:0},
+        {key:"midIn",label:"Mid - 1 → Middle",left:2,right:3},
+        {key:"midOut",label:"Middle → Mid + 1",left:3,right:4}
+      ];
+      const views={};
+      for(let i=0;i<pairs.length;i++){
+        const pair=pairs[i];
+        setMotionAuditStage("Preparing seam and midpoint heatmaps "+(i+1)+" / 3…");
+        const left=decoded[pair.left],right=decoded[pair.right];
+        const diff=differenceHeatmap(left,right);
+        const images=await Promise.all([frameBlob(left),frameBlob(right),frameBlob(diff)]);
+        const urls=images.map(blob=>URL.createObjectURL(blob));
+        created.push(...urls);
+        views[pair.key]={label:pair.label,urls,
+          leftIndex:samples[pair.left].index,rightIndex:samples[pair.right].index};
+      }
+      if(!mounted.current)return;
+      seamAuditUrls.current=created.slice();
+      setSeamAudit({filename:ready.filename,results,report,views});
+      setSelectedSeamView("wrap");
+    }catch(e){
+      created.forEach(url=>URL.revokeObjectURL(url));
+      if(mounted.current)setError("Loop-seam inspection failed: "+e.message);
+    }finally{
+      if(!mounted.current)created.forEach(url=>URL.revokeObjectURL(url));
+      onExportBusy?.(false);
+      if(mounted.current){setBusy(false);setAuditing(false);setMotionAuditStage("");}
+    }
+  }
+  function saveSeamAudit(){
+    if(!seamAudit)return;
+    download(new Blob([JSON.stringify(seamAudit.report,null,2)],
+      {type:"application/json"}),
+      "glitchbitch-loop-seam-"+seamAudit.report.seed+".json");
+  }
   function canShare() {
     if(!ready || typeof File==="undefined" || typeof navigator==="undefined" || !navigator.canShare)return false;
     try {

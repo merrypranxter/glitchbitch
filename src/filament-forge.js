@@ -1537,6 +1537,7 @@ export const filamentStitchModes=[
   "Mutant zipper",
   "Fractal mending",
   "Chladni Needle Orchestra",
+  "Retrocausal Embroidery",
 ];
 // Human-facing organization only; saved names and numerical shader IDs
 // for the original five motions are preserved exactly.
@@ -1600,6 +1601,7 @@ export const filamentStitchDescriptions={
   "Mutant zipper":"Two serrated lips latch and unlatch with a hunting metal tooth.",
   "Fractal mending":"Repairs recursively split into miniature repairs along each thread.",
   "Chladni Needle Orchestra":"Actual needles and thread reveal follow moving standing-wave nodes, detuned into vibrating Chladni embroidery.",
+  "Retrocausal Embroidery":"Future-looking analytic stitch echoes appear BEFORE a needle arrives, with temporally reversed seam packets and anticipatory knots. Deterministic, not real time travel.",
 };
 export function remixFilamentStitchMotion(state,rng=Math.random,onlyNew=false){
   const unit=()=>{
@@ -1746,6 +1748,31 @@ export const filamentStitchPresets=[
     filamentStitchAmount:86,filamentStitchSpeed:24,filamentStitchLength:81,filamentStitchGlow:70,
     filamentChladniOrder:72,filamentChladniResonance:56,filamentChladniDensity:89,
     filamentChladniPhase:11,filamentChladniDetune:17},
+
+  {name:"Retrocausal — Ghost of tomorrow",filamentStitchMode:"Retrocausal Embroidery",
+    filamentStitchAmount:94,filamentStitchSpeed:41,filamentStitchLength:52,filamentStitchGlow:88,
+    filamentRetroLead:76,filamentRetroEcho:71,filamentRetroParadox:29,
+    filamentRetroKnots:43,filamentRetroReversal:12,filamentRetroCoherence:81},
+  {name:"Retrocausal — Knots before thread",filamentStitchMode:"Retrocausal Embroidery",
+    filamentStitchAmount:97,filamentStitchSpeed:53,filamentStitchLength:35,filamentStitchGlow:98,
+    filamentRetroLead:61,filamentRetroEcho:47,filamentRetroParadox:71,
+    filamentRetroKnots:100,filamentRetroReversal:19,filamentRetroCoherence:62},
+  {name:"Retrocausal — Reverse causality loom",filamentStitchMode:"Retrocausal Embroidery",
+    filamentStitchAmount:96,filamentStitchSpeed:72,filamentStitchLength:62,filamentStitchGlow:91,
+    filamentRetroLead:79,filamentRetroEcho:89,filamentRetroParadox:94,
+    filamentRetroKnots:66,filamentRetroReversal:91,filamentRetroCoherence:55},
+  {name:"Retrocausal — Phantom seam ledger",filamentStitchMode:"Retrocausal Embroidery",
+    filamentStitchAmount:91,filamentStitchSpeed:29,filamentStitchLength:84,filamentStitchGlow:65,
+    filamentRetroLead:52,filamentRetroEcho:96,filamentRetroParadox:18,
+    filamentRetroKnots:36,filamentRetroReversal:48,filamentRetroCoherence:94},
+  {name:"Retrocausal — Paradox cathedral",filamentStitchMode:"Retrocausal Embroidery",
+    filamentStitchAmount:100,filamentStitchSpeed:83,filamentStitchLength:70,filamentStitchGlow:100,
+    filamentRetroLead:99,filamentRetroEcho:98,filamentRetroParadox:100,
+    filamentRetroKnots:90,filamentRetroReversal:77,filamentRetroCoherence:27},
+  {name:"Retrocausal — Quiet predestination",filamentStitchMode:"Retrocausal Embroidery",
+    filamentStitchAmount:87,filamentStitchSpeed:20,filamentStitchLength:69,filamentStitchGlow:61,
+    filamentRetroLead:41,filamentRetroEcho:31,filamentRetroParadox:7,
+    filamentRetroKnots:27,filamentRetroReversal:2,filamentRetroCoherence:97},
 ];
 export function applyFilamentStitchPreset(state,name){
  const preset=filamentStitchPresets.find(p=>p.name===name);
@@ -1788,6 +1815,33 @@ export function remixFeralJacquard(state,rng=Math.random){
     filamentFeralKnots:unit()*100,
     filamentFeralMutation:unit()*100};
 }
+
+/** A deterministic analytic future-sample of the stitch wave, not stored frames. */
+export const retrocausalEmbroideryControls=[
+  "filamentRetroLead","filamentRetroEcho","filamentRetroParadox",
+  "filamentRetroKnots","filamentRetroReversal","filamentRetroCoherence"
+];
+export const retrocausalEmbroideryPresets=filamentStitchPresets.filter(
+  p=>p.filamentStitchMode==="Retrocausal Embroidery");
+export function applyRetrocausalEmbroideryPreset(state,name){
+  const chosen=retrocausalEmbroideryPresets.find(p=>p.name===name);
+  if(!chosen)return state;
+  const {name:label,...seams}=chosen;
+  return {...state,...seams,filamentAmount:Math.max(65,state.filamentAmount||0)};
+}
+export function remixRetrocausalEmbroidery(state,rng=Math.random,chaos=false){
+  const unit=()=>{const n=Number(rng());return Number.isFinite(n)?
+    Math.max(0,Math.min(.999999,n)):0;};
+  return {...state,filamentStitchMode:"Retrocausal Embroidery",
+    filamentAmount:Math.max(65,state.filamentAmount||0),
+    filamentStitchAmount:Math.max(88,state.filamentStitchAmount||0),
+    filamentRetroLead:chaos?70+unit()*30:20+unit()*80,
+    filamentRetroEcho:chaos?76+unit()*24:15+unit()*85,
+    filamentRetroParadox:chaos?78+unit()*22:unit()*100,
+    filamentRetroKnots:unit()*100,filamentRetroReversal:unit()*100,
+    filamentRetroCoherence:chaos?unit()*42:35+unit()*65};
+}
+
 export const chladniNeedleControls=[
   "filamentChladniOrder","filamentChladniResonance","filamentChladniDensity",
   "filamentChladniPhase","filamentChladniDetune"
@@ -1960,6 +2014,8 @@ uniform float filamentQuasiSpacing,filamentQuasiPhason,filamentQuasiDrift;
 uniform float filamentQuasiRelief,filamentQuasiElevation,filamentQuasiOrnament;
 uniform float filamentChladniOrder,filamentChladniResonance,filamentChladniDensity;
 uniform float filamentChladniPhase,filamentChladniDetune;
+uniform float filamentRetroLead,filamentRetroEcho,filamentRetroParadox;
+uniform float filamentRetroKnots,filamentRetroReversal,filamentRetroCoherence;
 uniform float filamentNap,filamentLuster,filamentBeads,filamentBeadSize,filamentSecondHue;
 uniform float filamentCrossbreed,filamentInterlace,filamentTwist,filamentPhase;
 uniform float filamentAmount,filamentScale,filamentDensity,filamentMotion;
@@ -2623,6 +2679,46 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     // Needle only fires along nodal strands. Reveal masks the *real fiber*.
     visibleStitch=.07+.93*nodalBand*(.19+.81*smoothstep(.26,.78,stitchPulse));
     needle=nodalBand*pow(stitchPulse,12.0)*( .3+.7*resonance);
+
+  }else if(filamentStitchMode==32){ // RETROCAUSAL EMBROIDERY: analytic future-looking needlework.
+    // Deterministic sampling of the seam's analytic phase at t, t+lead
+    // and a backwards-running counter-wave. No history buffers or CPU state.
+    // All signals live in local thread coordinates for both hybrid parents.
+    float lead=.17+filamentRetroLead*2.7;
+    float phi=localProgress*(12.0+filamentStitchLength*13.0)+seedPhase*.41;
+    float sweep=sewClock*(.47+.29*filamentStitchSpeed);
+    float future=sweep+lead;
+    float backwards=sewClock*(.39+.26*filamentRetroReversal);
+    float nowPulse=.5+.5*cos(phi-sweep);
+    float prePulse=.5+.5*cos(phi-future);
+    float secondPre=.5+.5*cos(phi-future*(1.0+.22*filamentRetroParadox));
+    float reversePulse=.5+.5*cos(phi+backwards+phaseOffset*.27);
+    float precision=mix(.24,.74,filamentRetroCoherence);
+    float nowSewn=smoothstep(.19,precision,nowPulse);
+    float approaching=smoothstep(.19,precision,prePulse);
+    float phantom=smoothstep(.22,precision+.08,secondPre);
+    float reversed=smoothstep(.2,precision,reversePulse);
+    // A future knot flashes at a seed-anchored seam station BEFORE the
+    // traveling present-time stitch pulse reaches it.
+    float knotIndex=floor(localProgress*(5.0+filamentStitchLength*9.0)+seedPhase*.071);
+    float knots=pow(.5+.5*cos(knotIndex*2.39996323-
+      future*(.53+.29*filamentRetroParadox)),7.0);
+    float knotStation=pow(.5+.5*cos(localProgress*6.2831853*
+      (5.0+filamentStitchLength*9.0)+seedPhase*.071),11.0);
+    float predictedKnot=knots*knotStation*filamentRetroKnots;
+    float anticipatory=filamentRetroEcho*(.65*approaching+.35*phantom);
+    float timeParadox=filamentRetroParadox*
+      (.52*min(approaching,reversed)+.48*abs(approaching-reversed));
+    float backwardGate=filamentRetroReversal*reversed;
+    // Both revelation and the needle glow are clipped downstream by real
+    // existing core/halo/edge fiber masks — NEVER a loose screen overlay.
+    visibleStitch=.045+.955*clamp(.52*nowSewn+
+      .63*anticipatory+.36*backwardGate+.41*timeParadox+
+      .46*predictedKnot,0.0,1.0);
+    needle=clamp(pow(prePulse,15.0)*(.28+.72*filamentRetroLead)*
+      filamentRetroEcho+pow(nowPulse,18.0)*.65+
+      predictedKnot*.8+pow(reversePulse,18.0)*filamentRetroReversal*.38,
+      0.0,1.0);
   }else{ // Invalid stored mode: leave the drawn thread untouched.
     visibleStitch=1.0;
     needle=0.0;

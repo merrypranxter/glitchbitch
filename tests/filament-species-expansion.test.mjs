@@ -18,14 +18,14 @@ const additions=["Alien lattice","Alien scriptwork","Glyph swarm",
   "Root filigree","Coral vasculature","Nerve net"];
 test("preserves original indices while grouping every new mode exactly once",()=>{
  assert.deepEqual(filamentSpecies.slice(0,6),originalNames);
- assert.deepEqual(filamentSpecies.slice(6),additions);
- assert.deepEqual(xenoVascularSpecies,additions);
+ assert.deepEqual(filamentSpecies.slice(6,16),additions);
+ assert.deepEqual(xenoVascularSpecies,[...additions,...filamentSpecies.slice(20)]);
  const all=filamentSpeciesFamilies.flatMap(g=>g.species);
- assert.equal(all.length,16);
- assert.equal(new Set(all).size,16);
+ assert.equal(all.length,23);
+ assert.equal(new Set(all).size,23);
  assert.deepEqual(new Set(all),new Set(filamentSpecies));
- assert.equal(filamentPresets.length,16);
- assert.equal(new Set(filamentPresets.map(p=>p.species)).size,16);
+ assert.equal(filamentPresets.length,22);
+ assert.equal(new Set(filamentPresets.map(p=>p.species)).size,22);
 });
 test("all new presets are animated on selection and retain authored work",()=>{
  const original={...initial,seed:87832,engine:17,ratio:"9:16",
@@ -74,7 +74,7 @@ test("targeted alien/vascular shuffle stays seeded and preserves artist choices"
  for(const n of [0,.11,.44,.88,.99]){
    const first=remixXenoVascular(original,()=>n);
    assert.deepEqual(first,remixXenoVascular(original,()=>n));
-   assert.ok(additions.includes(first.filamentSpecies));
+   assert.ok(xenoVascularSpecies.includes(first.filamentSpecies));
    assert.notEqual(first.filamentSpecies,original.filamentSpecies);
    assert.ok(first.filamentMotion>=36);
    assert.ok(first.filamentAmount>=73);

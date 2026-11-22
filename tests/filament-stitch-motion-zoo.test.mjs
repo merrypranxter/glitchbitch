@@ -30,12 +30,12 @@ test("original five modes keep their exact saved identities and source order",()
  assert.deepEqual(filamentStitchModes.slice(0,5),originals);
  assert.deepEqual(filamentStitchModes.slice(5,31),newModes);
  assert.deepEqual(newFilamentStitchModes.slice(0,26),newModes);
- assert.equal(filamentStitchModes.length,32);
- assert.equal(new Set(filamentStitchModes).size,32);
- assert.equal(filamentStitchPresets.length,36);
+ assert.equal(filamentStitchModes.length,33);
+ assert.equal(new Set(filamentStitchModes).size,33);
+ assert.equal(filamentStitchPresets.length,42);
  assert.deepEqual(filamentStitchPresets.slice(0,5).map(x=>x.filamentStitchMode),originals);
- assert.deepEqual(filamentStitchFamilies.flatMap(f=>f.modes).length,32);
- assert.equal(new Set(filamentStitchFamilies.flatMap(f=>f.modes)).size,32);
+ assert.deepEqual(filamentStitchFamilies.flatMap(f=>f.modes).length,33);
+ assert.equal(new Set(filamentStitchFamilies.flatMap(f=>f.modes)).size,33);
  for(const mode of filamentStitchModes)assert.ok(filamentStitchDescriptions[mode],mode);
 });
 

@@ -7,9 +7,9 @@ import {filamentStitchModes,filamentStitchControls,filamentStitchPresets,
 import {sectionMeta,findControls} from "../src/ui-index.js";
 
 test("Thirty-two distinct self-weaving patterns retain the four universal sliders",()=>{
- assert.equal(filamentStitchModes.length,32);
- assert.equal(new Set(filamentStitchModes).size,32);
- assert.equal(filamentStitchPresets.length,36);
+ assert.equal(filamentStitchModes.length,33);
+ assert.equal(new Set(filamentStitchModes).size,33);
+ assert.equal(filamentStitchPresets.length,42);
  for(const p of filamentStitchPresets){
   assert.ok(filamentStitchModes.includes(p.filamentStitchMode),p.name);
   for(const k of filamentStitchControls){

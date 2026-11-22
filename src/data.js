@@ -385,6 +385,13 @@ export const numericRanges = {
   filamentChladniDensity: [0, 100],
   filamentChladniPhase: [0, 100],
   filamentChladniDetune: [0, 100],
+  // Analytic future-looking stitch parameters; inactive for all legacy modes.
+  filamentRetroLead: [0, 100],
+  filamentRetroEcho: [0, 100],
+  filamentRetroParadox: [0, 100],
+  filamentRetroKnots: [0, 100],
+  filamentRetroReversal: [0, 100],
+  filamentRetroCoherence: [0, 100],
   filamentSculptAmount: [0, 100],
   filamentSculptDepth: [0, 100],
   filamentSculptLight: [0, 100],
@@ -753,6 +760,12 @@ export const initial = {
   filamentChladniDensity: 67,
   filamentChladniPhase: 41,
   filamentChladniDetune: 27,
+  filamentRetroLead: 60,
+  filamentRetroEcho: 64,
+  filamentRetroParadox: 39,
+  filamentRetroKnots: 58,
+  filamentRetroReversal: 30,
+  filamentRetroCoherence: 72,
   filamentSculptMode: "Raised satin",
   filamentSculptAmount: 0,
   filamentSculptDepth: 60,
@@ -1453,6 +1466,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "filamentStitchLength","filamentStitchGlow",
       "filamentChladniOrder","filamentChladniResonance","filamentChladniDensity",
       "filamentChladniPhase","filamentChladniDetune",
+      "filamentRetroLead","filamentRetroEcho","filamentRetroParadox",
+      "filamentRetroKnots","filamentRetroReversal","filamentRetroCoherence",
       "filamentSculptAmount","filamentSculptDepth",
       "filamentSculptLight","filamentSculptShadow","filamentSculptPuff",
       "underlayAmount","underlayScale","underlayDensity","underlayMotion",
@@ -1500,6 +1515,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
           !(state.filamentCrossbreed>0 && state.filamentSecondSpecies==="Quasicrystal Brocade"))))continue;
       if(key.startsWith("filamentFeral") && state.filamentSpecies!=="Feral Jacquard" &&
         state.filamentSecondSpecies!=="Feral Jacquard")continue;
+      if(key.startsWith("filamentRetro") && (state.filamentAmount<=0 ||
+        state.filamentStitchMode!=="Retrocausal Embroidery" ||
+        state.filamentStitchAmount<=0))continue;
       if(key.startsWith("filamentChladni") && (state.filamentStitchMode!=="Chladni Needle Orchestra" ||
         state.filamentStitchAmount<=0))continue;
       if(key==="atmoBAmount" && state.atmoBAmount<=0)continue; // Never wake a hidden second parent by mutating old art.
@@ -1759,6 +1777,12 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.filamentStitchSpeed=15+random()*84;
   s.filamentStitchLength=18+random()*80;
   s.filamentStitchGlow=25+random()*74;
+  s.filamentRetroLead=random()*100;
+  s.filamentRetroEcho=20+random()*80;
+  s.filamentRetroParadox=random()*100;
+  s.filamentRetroKnots=random()*100;
+  s.filamentRetroReversal=random()*100;
+  s.filamentRetroCoherence=20+random()*80;
   s.filamentSculptMode=different(filamentSculptModes,state.filamentSculptMode,random);
   s.filamentSculptAmount=s.filamentAmount>0 && random()<.59?40+random()*58:0;
   s.filamentSculptDepth=20+random()*78;

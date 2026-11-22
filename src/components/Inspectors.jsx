@@ -69,6 +69,7 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   feralJacquardPresets,applyFeralJacquardPreset,remixFeralJacquard,
   quasicrystalBrocadePresets,applyQuasicrystalBrocadePreset,remixQuasicrystalBrocade,
   chladniNeedlePresets,applyChladniNeedlePreset,remixChladniNeedles,
+  retrocausalEmbroideryPresets,applyRetrocausalEmbroideryPreset,remixRetrocausalEmbroidery,
   filamentSculptModes,filamentSculptFamilies,filamentSculptPresets,
   applyFilamentSculptPreset,remixFilamentSculpt,disableFilamentSculpt } from "../filament-forge.js";
 import {structuralOpticsModes,structuralOpticsDescriptions,structuralOpticsPresets,
@@ -310,6 +311,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [feralPreset,setFeralPreset]=React.useState(feralJacquardPresets[0].name);
   const [quasiPreset,setQuasiPreset]=React.useState(quasicrystalBrocadePresets[0].name);
   const [chladniPreset,setChladniPreset]=React.useState(chladniNeedlePresets[0].name);
+  const [retroPreset,setRetroPreset]=React.useState(retrocausalEmbroideryPresets[0].name);
   const [sculptPreset,setSculptPreset]=React.useState(filamentSculptPresets[0].name);
   const [underlayPreset,setUnderlayPreset]=React.useState(underlayPresets[0].name);
   const [atmoPreset,setAtmoPreset]=React.useState(atmospherePresets[0].name);
@@ -1765,7 +1767,7 @@ export function EffectsInspector({ history, onTool, tool }) {
       </details>
       <details className="filament-crossbreeder filament-stitch-lab">
         <summary>🪡 SELF-WEAVING LOOM — STITCH IN MOTION</summary>
-        <p className="control-note">Thirty-two animated stitch laws: classic chain, cross, satin, blanket, feather and cable stitches, plus ghost bobbins, quantum unraveling and mutant zipper nightmares. All follow the actual thread paths.</p>
+        <p className="control-note">Thirty-three animated stitch laws: classic chain, cross, satin, blanket, feather and cable stitches, plus ghost bobbins, quantum unraveling and mutant zipper nightmares. All follow the actual thread paths.</p>
         <Select label="Stitch motion" value={s.filamentStitchMode}
           onChange={mode=>history.change(x=>({...x,filamentStitchMode:mode,
             filamentStitchAmount:Math.max(68,x.filamentStitchAmount),
@@ -1802,6 +1804,34 @@ export function EffectsInspector({ history, onTool, tool }) {
             </button>
           </div>
           <p className="control-note">Compatible with all thread species, including Feral Jacquard, both hybrid parents and every fiber dressing. The selected law is compiled once into the shared preview/export shader.</p>
+        </details>
+        <details className="filament-crossbreeder filament-retrocausal-lab">
+          <summary>🕰️ RETROCAUSAL EMBROIDERY — STITCHES FROM TOMORROW</summary>
+          <p className="control-note">The needle samples its future analytic position before arriving. Pre-echo seams reveal the real underlying threads, phantom knots appear before they are tied, and reversed waves sew against time. No saved future frames, actual time travel, or disconnected background decals—one deterministic law on the SAME animation clock as your export.</p>
+          <Select label="Temporal embroidery score" value={retroPreset} onChange={setRetroPreset}>
+            {retrocausalEmbroideryPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+          </Select>
+          <Parameter label="Needle future lookahead" name="filamentRetroLead" history={history}/>
+          <Parameter label="Pre-echo ghost stitches" name="filamentRetroEcho" history={history}/>
+          <Parameter label="Paradox seam crossings" name="filamentRetroParadox" history={history}/>
+          <Parameter label="Knots tied before arrival" name="filamentRetroKnots" history={history}/>
+          <Parameter label="Reverse-time stitch wave" name="filamentRetroReversal" history={history}/>
+          <Parameter label="Seam coherence / softness" name="filamentRetroCoherence" history={history}/>
+          <div className="pane-actions">
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(x=>applyRetrocausalEmbroideryPreset(x,retroPreset))}>
+              Sew selected temporal score
+            </button>
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(x=>remixRetrocausalEmbroidery(x))}>
+              <Shuffle size={13}/> Shuffle future seams
+            </button>
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(x=>remixRetrocausalEmbroidery(x,Math.random,true))}>
+              <Dices size={13}/> Feral chronology shuffle
+            </button>
+          </div>
+          <p className="control-note">Scores preserve both hybrid thread parents, existing optical coats, fiber materials, palettes, text, shape and all other effects. This stitch law is selectable alongside every geometry; swapping modes leaves your old stitchwork unchanged. A future sample is calculated from time—not fetched from the actual future.</p>
         </details>
         <Select label="Self-weaving recipe" value={stitchPreset} onChange={setStitchPreset}>
           {filamentStitchPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}

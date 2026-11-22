@@ -15,6 +15,7 @@ import { backdropModes } from "./backdrops.js";
 export { backdropModes };
 import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, filamentMorphModes, filamentContagionModes, filamentNeuralModes, filamentPlasticModes, filamentScarModes, filamentRegenModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
+import {structuralOpticsModes} from "./structural-thread-optics.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
 import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
@@ -324,6 +325,21 @@ export const numericRanges = {
   filamentBeads: [0, 100],
   filamentBeadSize: [0, 100],
   filamentSecondHue: [0, 100],
+  // Independent thin-film/polarization-inspired fiber optical coats.
+  filamentOpticsAmount: [0, 100],
+  filamentOpticsThickness: [0, 100],
+  filamentOpticsDispersion: [0, 100],
+  filamentOpticsAnisotropy: [0, 100],
+  filamentOpticsCurvature: [0, 100],
+  filamentOpticsPearl: [0, 100],
+  filamentOpticsPhase: [0, 100],
+  filamentSecondOpticsAmount: [0, 100],
+  filamentSecondOpticsThickness: [0, 100],
+  filamentSecondOpticsDispersion: [0, 100],
+  filamentSecondOpticsAnisotropy: [0, 100],
+  filamentSecondOpticsCurvature: [0, 100],
+  filamentSecondOpticsPearl: [0, 100],
+  filamentSecondOpticsPhase: [0, 100],
   filamentMorphAmount: [0, 100],
   filamentMorphScale: [0, 100],
   filamentMorphSpeed: [0, 100],
@@ -666,6 +682,22 @@ export const initial = {
   filamentBeads: 0,
   filamentBeadSize: 45,
   filamentSecondHue: 0,
+  filamentOpticsMode: "Off",
+  filamentOpticsAmount: 0,
+  filamentOpticsThickness: 60,
+  filamentOpticsDispersion: 75,
+  filamentOpticsAnisotropy: 58,
+  filamentOpticsCurvature: 66,
+  filamentOpticsPearl: 60,
+  filamentOpticsPhase: 35,
+  filamentSecondOpticsMode: "Off",
+  filamentSecondOpticsAmount: 0,
+  filamentSecondOpticsThickness: 70,
+  filamentSecondOpticsDispersion: 77,
+  filamentSecondOpticsAnisotropy: 60,
+  filamentSecondOpticsCurvature: 64,
+  filamentSecondOpticsPearl: 67,
+  filamentSecondOpticsPhase: 75,
   filamentMorphMode: "Off",
   filamentMorphTarget: "Opaline glass",
   filamentSecondMorphTarget: "Bioluminescent mycelium",
@@ -970,6 +1002,8 @@ export function validateRecipe(input) {
     filamentSecondSpecies: filamentSpecies,
     filamentMaterial: filamentMaterials,
     filamentSecondMaterial: filamentMaterials,
+    filamentOpticsMode: structuralOpticsModes,
+    filamentSecondOpticsMode: structuralOpticsModes,
     filamentStitchMode: filamentStitchModes,
     filamentMorphMode: filamentMorphModes,
     filamentContagionMode: filamentContagionModes,
@@ -1396,6 +1430,11 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "filamentCrossbreed","filamentInterlace","filamentTwist","filamentPhase",
       "filamentNap","filamentLuster","filamentBeads","filamentBeadSize",
       "filamentSecondHue",
+      "filamentOpticsAmount","filamentOpticsThickness","filamentOpticsDispersion",
+      "filamentOpticsAnisotropy","filamentOpticsCurvature","filamentOpticsPearl","filamentOpticsPhase",
+      "filamentSecondOpticsAmount","filamentSecondOpticsThickness","filamentSecondOpticsDispersion",
+      "filamentSecondOpticsAnisotropy","filamentSecondOpticsCurvature",
+      "filamentSecondOpticsPearl","filamentSecondOpticsPhase",
       "filamentAdornmentAmount","filamentAdornmentSpacing","filamentAdornmentSize",
       "filamentAdornmentMotion","filamentAdornmentGlow",
       "filamentMorphAmount","filamentMorphScale","filamentMorphSpeed",
@@ -1450,6 +1489,12 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
       // New behavior settings do not mutate old artwork or wake hidden modes.
+      // Do not silently activate optical coats on previously saved artwork.
+      if(key.startsWith("filamentOptics") && (state.filamentAmount<=0 ||
+        state.filamentOpticsMode==="Off" || state.filamentOpticsAmount<=0))continue;
+      if(key.startsWith("filamentSecondOptics") && (state.filamentAmount<=0 ||
+        state.filamentCrossbreed<=0 || state.filamentSecondOpticsMode==="Off" ||
+        state.filamentSecondOpticsAmount<=0))continue;
       if(key.startsWith("filamentQuasi") && (state.filamentAmount<=0 ||
         (state.filamentSpecies!=="Quasicrystal Brocade" &&
           !(state.filamentCrossbreed>0 && state.filamentSecondSpecies==="Quasicrystal Brocade"))))continue;
@@ -1652,6 +1697,18 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.filamentBeads=random()<.6 ? 21+random()*78 : 0;
   s.filamentBeadSize=14+random()*83;
   s.filamentSecondHue=random()*100;
+  // Selectively awaken new optical fiber coats in full Surprise, only if
+  // the corresponding actual geometry is present. Keep both parents independent.
+  s.filamentOpticsMode=s.filamentAmount>0&&random()<.33
+    ?different(structuralOpticsModes.slice(1),state.filamentOpticsMode,random):"Off";
+  s.filamentOpticsAmount=s.filamentOpticsMode==="Off"?0:57+random()*42;
+  s.filamentSecondOpticsMode=s.filamentCrossbreed>0&&random()<.42
+    ?different(structuralOpticsModes.slice(1),state.filamentSecondOpticsMode,random):"Off";
+  s.filamentSecondOpticsAmount=s.filamentSecondOpticsMode==="Off"?0:55+random()*44;
+  for(const name of ["Thickness","Dispersion","Anisotropy","Curvature","Pearl","Phase"]){
+    s["filamentOptics"+name]=random()*100;
+    s["filamentSecondOptics"+name]=random()*100;
+  }
   s.filamentAdornmentMode=different(filamentAdornmentModes,state.filamentAdornmentMode,random);
   s.filamentSecondAdornmentMode=different(filamentAdornmentModes,state.filamentSecondAdornmentMode,random);
   s.filamentAdornmentAmount=s.filamentAmount>0 && random()<.58?39+random()*59:0;

@@ -331,6 +331,54 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
     gl.activeTexture(gl.TEXTURE0);
   }
 
+  // Paint actual author text from the EXPORT compositor into one reusable,
+  // bounded alpha texture. Preview and strict export share this exact path.
+  let semanticGlyphCanvas=null,semanticGlyphContext=null,semanticGlyphTexture=null;
+  function releaseSemanticGlyph(){
+    if(semanticGlyphTexture)gl.deleteTexture(semanticGlyphTexture);
+    semanticGlyphTexture=null;
+    if(semanticGlyphCanvas)semanticGlyphCanvas.width=semanticGlyphCanvas.height=1;
+    semanticGlyphCanvas=null;semanticGlyphContext=null;
+  }
+  function uploadSemanticGlyph(state,timeline,width,height){
+    if(gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)<7)
+      throw Error("Semantic Gravity requires seven fragment texture units.");
+    if(!semanticGlyphCanvas){
+      semanticGlyphCanvas=document.createElement("canvas");
+      semanticGlyphContext=semanticGlyphCanvas.getContext("2d",{alpha:true});
+      if(!semanticGlyphContext)throw Error("Cannot create semantic glyph canvas.");
+    }
+    // One fixed-cost mask for any preview/export resolution. Aspect preserved.
+    const ratio=512/Math.max(width,height);
+    const maskW=Math.max(32,Math.round(width*ratio));
+    const maskH=Math.max(32,Math.round(height*ratio));
+    if(semanticGlyphCanvas.width!==maskW || semanticGlyphCanvas.height!==maskH){
+      semanticGlyphCanvas.width=maskW;semanticGlyphCanvas.height=maskH;
+    }
+    // The same compositor transforms multi-layer text, rich font layouts,
+    // motion, letter warps and glyph styles at the same timeline.
+    paintLettering(semanticGlyphContext,state,timeline,maskW,maskH,true);
+    if(!semanticGlyphTexture){
+      semanticGlyphTexture=gl.createTexture();
+      if(!semanticGlyphTexture)throw Error("Cannot allocate semantic glyph texture.");
+      gl.activeTexture(gl.TEXTURE6);
+      gl.bindTexture(gl.TEXTURE_2D,semanticGlyphTexture);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    }
+    gl.activeTexture(gl.TEXTURE6);
+    gl.bindTexture(gl.TEXTURE_2D,semanticGlyphTexture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+    try{
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,
+        semanticGlyphCanvas);
+    }finally{
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+      gl.activeTexture(gl.TEXTURE0);
+    }
+  }
   // Text is composited AFTER the artwork and feedback passes. The main art
   // shader never depends on typography, so an unsupported font effect cannot
   // disable the canvas or silently swallow all words.

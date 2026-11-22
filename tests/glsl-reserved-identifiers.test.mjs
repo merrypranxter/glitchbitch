@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {readFileSync,readdirSync} from "node:fs";
+import {readFileSync} from "node:fs";
 import {selectionGLSL} from "../src/selection-chamber.js";
 import {successionGLSL} from "../src/ecological-succession.js";
 import {symbiosisGLSL} from "../src/symbiosis-lab.js";
@@ -30,10 +30,12 @@ function declarations(glsl){
   return names;
 }
 test("all static exported GLSL modules avoid reserved identifiers",()=>{
-  const dir=new URL("../src/",import.meta.url);
+  // Audit exactly the modules assembled by the shared preview/export renderer.
+  const renderer=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
+  const imports=[...new Set([...renderer.matchAll(/from ["']\\.\\/([^"']+\\.js)["']/g)]
+    .map(m=>m[1]))];
   let scanned=0;
-  for(const file of readdirSync(dir)){
-    if(!file.endsWith(".js")&&!file.endsWith(".jsx"))continue;
+  for(const file of imports){
     const source=readFileSync(new URL("../src/"+file,import.meta.url),"utf8");
     const glslDefs=/\b(?:export\s+)?(?:const|let)\s+(\w*GLSL)\s*=\s*\x60([\s\S]*?)\x60/g;
     for(const match of source.matchAll(glslDefs)){

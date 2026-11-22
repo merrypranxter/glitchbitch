@@ -2047,7 +2047,8 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   // The actual visible glyph silhouette bends *geometry* before species
   // evaluation. Both hybrid parents independently react to the same words.
   vec3 semanticTug=semanticGlyphForce(uv,phaseOffset);
-  q+=vec2(semanticTug.x*(res.x/res.y),semanticTug.y)*
+  // Inverse field sampling: subtract force so the drawn yarn moves TOWARD glyphs.
+  q-=vec2(semanticTug.x*(res.x/res.y),semanticTug.y)*
     (.45+.12*freq);
 #endif
   float density=filamentDensity;

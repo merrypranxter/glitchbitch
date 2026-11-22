@@ -7,7 +7,7 @@ import {
 const source=path=>readFileSync(new URL("../src/"+path,import.meta.url),"utf8");
 
 test("both new artistic closure choices retain the same exact bounded frame schedule",()=>{
-  assert.deepEqual(LOOP_MODES,["Off","Soft closure","Weft zipper","Iris portal"]);
+  assert.deepEqual(LOOP_MODES,["Off","Soft closure","Weft zipper","Iris portal","Quilt Reassembly","Clockwork Sweep","Crystal Bloom"]);
   for(const mode of LOOP_MODES.slice(1)){
     const count=150,frames=loopClosureFrames(mode,.75,30,count);
     assert.equal(frames,23);
@@ -120,11 +120,14 @@ test("actual export render function chooses a masked one-draw reveal, and full s
   }};
   const build=new Function("document","createRenderer","loopClosureFrames",
     "loopClosureMix","weftRevealRects","irisRevealRadius",
+    "quiltReassemblyTiles","clockworkSweep","crystalBloomDiamonds",
     "hasVisibleLettering","primeFrameHistory","clockAt","checkExport",
     "waitForGraphics","paintLettering","artworkParityError",
     exportCode.slice(from,to)+"return createFrameWorkspace;");
   const make=build(document,renderer,loopClosureFrames,loopClosureMix,
-    weftRevealRects,irisRevealRadius,()=>false,async()=>{},
+    weftRevealRects,irisRevealRadius,
+    ()=>[],()=>({cx:0,cy:0,start:0,end:0,radius:0}),()=>[],
+    ()=>false,async()=>{},
     (_,__,seconds)=>({time:seconds,colorTime:seconds,textTime:seconds}),
     ()=>{},async()=>{},()=>{},msg=>Error(msg));
   for(const [mode,expected] of [["Weft zipper","rect"],["Iris portal","arc"]]){

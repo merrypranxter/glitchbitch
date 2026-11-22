@@ -50,7 +50,7 @@ async function primeFrameHistory(renderer,state,timeline,size,signal){
   }
 }
 export async function renderImage(state, timeline, longEdge = 2160,
-  type = "image/png", {exactEffects=true} = {}) {
+  type = "image/png", {exactEffects=true,compositeLettering=true} = {}) {
   await waitForLetteringFonts(state);
   const canvas = document.createElement("canvas");
   let renderer;
@@ -64,9 +64,12 @@ export async function renderImage(state, timeline, longEdge = 2160,
     // Otherwise toBlob may race a newly compiled/large shader frame.
     await waitForGraphics(renderer);
     // Rasterize the same type overlay used by the live preview onto exports.
+    // In diagnostic-only compositeLettering:false mode, keep ALL glyph-driven
+    // geometry in the WebGL shader while omitting ONLY the final 2D text layer.
+    // Never mutate the recipe or disable Semantic Gravity to obtain a clean base.
     // The original WebGL pixels remain untouched when the recipe has no words.
     let output = canvas;
-    if (hasVisibleLettering(state)) {
+    if (compositeLettering && hasVisibleLettering(state)) {
       const composite = document.createElement("canvas");
       composite.width = width;
       composite.height = height;

@@ -3268,7 +3268,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
 #endif
   float amount=filamentAmount;
   vec3 result=mix(background,background*.48+thread*1.06,core*amount*.91);
-  if(species==23){ // Embossed quasicrystal thread itself; no separate post pass.
+  if(species==23 && filamentQuasiRelief>0.0){ // Embossed quasicrystal thread, no separate post pass.
     float lift=filamentQuasiRelief*filamentQuasiElevation;
     float crown=pow(clamp(1.0-threadD/max(width+aa,.002),0.0,1.0),.56);
     float sheen=.45+.55*highlight;

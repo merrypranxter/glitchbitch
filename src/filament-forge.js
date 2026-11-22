@@ -2356,7 +2356,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float sproutReach=width*(1.1+filamentRegenHealing*4.9)*
     pow(max(0.0,1.0-abs(localArc)*1.8),1.2)*tip;
   float curl=sin(localArc*15.0+growthClock*.67+siteNoise*6.28318);
-  float fibRadius=max(width*.13,aa*.55);
+  float fibRadius=max(width*(.11+.20*filamentRegenHealing),aa*.55);
   float newDist=1.0e3;
   float newAccent=0.0;
   if(filamentRegenMode==1){ // FORKED NERVE SHOOTS

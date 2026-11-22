@@ -303,6 +303,12 @@ export const numericRanges = {
   filamentRelief: [0, 100],
   filamentHue: [0, 100],
   filamentVariation: [0, 100],
+  // Feral Jacquard controls are dormant for all 22 original geometries.
+  filamentFeralCorruption: [0, 100],
+  filamentFeralMigration: [0, 100],
+  filamentFeralOrder: [0, 100],
+  filamentFeralKnots: [0, 100],
+  filamentFeralMutation: [0, 100],
   filamentCrossbreed: [0, 100],
   filamentInterlace: [0, 100],
   filamentTwist: [0, 100],
@@ -351,6 +357,12 @@ export const numericRanges = {
   filamentStitchSpeed: [0, 100],
   filamentStitchLength: [0, 100],
   filamentStitchGlow: [0, 100],
+  // Chladni Needle Orchestra parameters are dormant for all 31 old stitch laws.
+  filamentChladniOrder: [0, 100],
+  filamentChladniResonance: [0, 100],
+  filamentChladniDensity: [0, 100],
+  filamentChladniPhase: [0, 100],
+  filamentChladniDetune: [0, 100],
   filamentSculptAmount: [0, 100],
   filamentSculptDepth: [0, 100],
   filamentSculptLight: [0, 100],
@@ -625,6 +637,11 @@ export const initial = {
   filamentRelief: 77,
   filamentHue: 43,
   filamentVariation: 38,
+  filamentFeralCorruption: 49,
+  filamentFeralMigration: 48,
+  filamentFeralOrder: 59,
+  filamentFeralKnots: 52,
+  filamentFeralMutation: 46,
   filamentSecondSpecies: "Truchet knotwork",
   filamentCrossbreed: 0,
   filamentInterlace: 72,
@@ -687,6 +704,11 @@ export const initial = {
   filamentStitchSpeed: 52,
   filamentStitchLength: 46,
   filamentStitchGlow: 76,
+  filamentChladniOrder: 48,
+  filamentChladniResonance: 72,
+  filamentChladniDensity: 67,
+  filamentChladniPhase: 41,
+  filamentChladniDetune: 27,
   filamentSculptMode: "Raised satin",
   filamentSculptAmount: 0,
   filamentSculptDepth: 60,
@@ -1409,6 +1431,11 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "saturation","contrast","brightness","colorOffset",
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
+      // New behavior settings do not mutate old artwork or wake hidden modes.
+      if(key.startsWith("filamentFeral") && state.filamentSpecies!=="Feral Jacquard" &&
+        state.filamentSecondSpecies!=="Feral Jacquard")continue;
+      if(key.startsWith("filamentChladni") && (state.filamentStitchMode!=="Chladni Needle Orchestra" ||
+        state.filamentStitchAmount<=0))continue;
       if(key==="atmoBAmount" && state.atmoBAmount<=0)continue; // Never wake a hidden second parent by mutating old art.
       if(["colonyLifeAmount","colonyFrontGlow","colonyCompetition"].includes(key)
         && state.colonyLifeAmount<=0)continue; // Keep old artwork dormant.

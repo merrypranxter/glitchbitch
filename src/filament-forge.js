@@ -1126,13 +1126,21 @@ export const filamentRegenModes=[
   "Mycelial fan",
   "Pearly callus",
   "Gold repair vines",
-  "Synaptic grafts"
+  "Synaptic grafts",
+  "Darning ladders",
+  "Sashiko crosshatch",
+  "Coral anastomosis",
+  "Axolotl frills",
+  "Opal vesicle lattice",
+  "Impossible graft loops"
 ];
 export const filamentRegenFamilies=[
   {name:"Dormant",modes:filamentRegenModes.slice(0,1)},
   {name:"Mending and bifurcation",modes:filamentRegenModes.slice(1,3)},
   {name:"Biological regrowth",modes:filamentRegenModes.slice(3,5)},
-  {name:"Strange repair rituals",modes:filamentRegenModes.slice(5)}
+  {name:"Strange repair rituals",modes:filamentRegenModes.slice(5,7)},
+  {name:"Real-world mending",modes:filamentRegenModes.slice(7,9)},
+  {name:"Exotic regenerative anatomy",modes:filamentRegenModes.slice(9)}
 ];
 export const filamentRegenDescriptions={
   "Off": "Keep existing nerve scars and textile geometry untouched.",
@@ -1141,7 +1149,13 @@ export const filamentRegenDescriptions={
   "Mycelial fan": "Branching fungal-looking filaments fan out from existing nerve-bearing strands.",
   "Pearly callus": "Small pearl-like healing buds thicken the actual woven thread contours.",
   "Gold repair vines": "Metallic-looking tendrils grow like kintsugi repair veins from damaged fibers.",
-  "Synaptic grafts": "Graft strands respond to contact with the second interwoven parent."
+  "Synaptic grafts": "Graft strands respond to contact with the second interwoven parent.",
+  "Darning ladders": "Paired newly grown rails are stitched together by small perpendicular rescue-rungs.",
+  "Sashiko crosshatch": "Diagonal X stitches grow from the damaged fiber toward a freshly formed outer rail.",
+  "Coral anastomosis": "Two arched daughter filaments leave the original strand, separate, and reconnect.",
+  "Axolotl frills": "A comb of translucent regenerative frills sprouts from active nerve-bearing threads.",
+  "Opal vesicle lattice": "Hollow mineral vesicle loops nucleate along the living filament fringe.",
+  "Impossible graft loops": "Paired countercurving daughter loops twist through each other without changing the original fabric."
 };
 export const filamentRegenControls=[
   "filamentRegenAmount","filamentRegenBranches","filamentRegenSpeed",
@@ -1201,6 +1215,60 @@ export const filamentRegenPresets=[
     "filamentRegenSpeed": 65,
     "filamentRegenHealing": 85,
     "filamentRegenGlow": 90
+  },
+  {
+    "name": "Ladder of the seam witch",
+    "filamentRegenMode": "Darning ladders",
+    "filamentRegenAmount": 90,
+    "filamentRegenBranches": 55,
+    "filamentRegenSpeed": 54,
+    "filamentRegenHealing": 79,
+    "filamentRegenGlow": 75
+  },
+  {
+    "name": "Repair by starlight",
+    "filamentRegenMode": "Sashiko crosshatch",
+    "filamentRegenAmount": 94,
+    "filamentRegenBranches": 64,
+    "filamentRegenSpeed": 63,
+    "filamentRegenHealing": 64,
+    "filamentRegenGlow": 85
+  },
+  {
+    "name": "Electric coral arteries",
+    "filamentRegenMode": "Coral anastomosis",
+    "filamentRegenAmount": 96,
+    "filamentRegenBranches": 74,
+    "filamentRegenSpeed": 46,
+    "filamentRegenHealing": 89,
+    "filamentRegenGlow": 92
+  },
+  {
+    "name": "Axolotl funeral frills",
+    "filamentRegenMode": "Axolotl frills",
+    "filamentRegenAmount": 97,
+    "filamentRegenBranches": 88,
+    "filamentRegenSpeed": 35,
+    "filamentRegenHealing": 86,
+    "filamentRegenGlow": 95
+  },
+  {
+    "name": "Vesicles in velvet",
+    "filamentRegenMode": "Opal vesicle lattice",
+    "filamentRegenAmount": 93,
+    "filamentRegenBranches": 76,
+    "filamentRegenSpeed": 43,
+    "filamentRegenHealing": 81,
+    "filamentRegenGlow": 94
+  },
+  {
+    "name": "Graft from nowhere",
+    "filamentRegenMode": "Impossible graft loops",
+    "filamentRegenAmount": 97,
+    "filamentRegenBranches": 68,
+    "filamentRegenSpeed": 58,
+    "filamentRegenHealing": 91,
+    "filamentRegenGlow": 99
   }
 ];
 export function applyFilamentRegenPreset(state,name){
@@ -1217,7 +1285,9 @@ export function applyFilamentRegenPreset(state,name){
 export function remixFilamentRegeneration(state,rng=Math.random,strange=false){
   const unit=()=>{const n=Number(rng());return Number.isFinite(n)?
     Math.min(1-Number.EPSILON,Math.max(0,n)):0;};
-  const modes=strange?filamentRegenModes.slice(3):filamentRegenModes.slice(1);
+  const modes=strange
+    ? [...filamentRegenModes.slice(3,7),...filamentRegenModes.slice(9)]
+    : filamentRegenModes.slice(1);
   const pool=modes.filter(x=>x!==state.filamentRegenMode);
   const choices=pool.length?pool:modes;
   return {...state,
@@ -2348,11 +2418,14 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float localArc=fract(phase*growthFreq*.29+seedPhase*.14)-.5;
   float siteNoise=fract(sin(scarSite*74.17+seedPhase)*17319.37);
   float age=fract(growthClock*.21+siteNoise*.71);
-  // A growing daughter is revealed from its root to its moving tip.
-  float tip=smoothstep(.03,.85,age);
+  // Grow forward, dwell at full reach, then fade BEFORE the cycle wraps.
+  // At age 0 and age 1 the daughter opacity is zero, so no popped frames.
+  float tip=smoothstep(.025,.67,age);
+  float senescence=1.0-smoothstep(.79,.985,age);
   float rootToTip=clamp((localArc+.5)*1.3,0.0,1.0);
   float drawn=1.0-smoothstep(tip-.06,tip+.055,rootToTip);
-  float footprint=(1.0-smoothstep(.12,.47,abs(localArc)))*drawn;
+  float footprint=(1.0-smoothstep(.12,.47,abs(localArc)))*
+    drawn*senescence;
   float sproutReach=width*(.65+filamentRegenHealing*1.8)*
     pow(max(0.0,1.0-abs(localArc)*1.8),1.2)*tip;
   float curl=sin(localArc*15.0+growthClock*.67+siteNoise*6.28318);
@@ -2390,6 +2463,50 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     float contact=clamp(incomingCore*mask,0.0,1.0);
     newDist=abs(threadD-sproutReach*(.67+.7*contact));
     newAccent=.34+.66*contact;
+  }else if(filamentRegenMode==7){ // DARNING LADDERS
+    float railA=abs(threadD-sproutReach*.53);
+    float railB=abs(threadD-sproutReach*1.21);
+    // A cross-rung is bounded in BOTH thread-distance and arclength.
+    float rungRadial=abs(threadD-sproutReach*.87)-sproutReach*.34;
+    float rungArc=abs(localArc*width*11.0);
+    float rung=max(rungRadial,rungArc);
+    newDist=min(min(railA,railB),max(0.0,rung));
+    newAccent=.49+.51*(1.0-smoothstep(0.0,width*.8,rungArc));
+  }else if(filamentRegenMode==8){ // SASHIKO CROSSHATCH
+    float along=clamp(localArc+.5,0.0,1.0);
+    float diagonalA=abs(threadD-sproutReach*(.11+.94*along));
+    float diagonalB=abs(threadD-sproutReach*(1.05-.94*along));
+    newDist=min(diagonalA,diagonalB);
+    newAccent=.56+.44*abs(along-.5)*2.0;
+  }else if(filamentRegenMode==9){ // CORAL ANASTOMOSIS
+    float a=clamp(localArc+.5,0.0,1.0);
+    float arch=sin(a*3.1415926);
+    float armA=abs(threadD-sproutReach*(.15+.9*arch));
+    float armB=abs(threadD-sproutReach*(.15+.57*arch));
+    newDist=min(armA,armB);
+    newAccent=.55+.45*arch;
+  }else if(filamentRegenMode==10){ // AXOLOTL FRILLS
+    float fingers=5.0+floor(filamentRegenBranches*7.0);
+    float station=fract((localArc+.5)*fingers);
+    float hair=abs(station-.5)*width*(3.5+filamentRegenHealing*1.5);
+    float reach=sproutReach*(.39+.61*max(0.0,1.0-abs(station-.5)*2.0));
+    newDist=length(vec2(hair,threadD-reach))*.68;
+    newAccent=.47+.53*max(0.0,1.0-abs(station-.5)*2.0);
+  }else if(filamentRegenMode==11){ // OPAL VESICLE LATTICE
+    float beads=3.0+floor(filamentRegenBranches*6.0);
+    float station=fract((localArc+.5)*beads)-.5;
+    vec2 centered=vec2(station*width*(3.1+filamentRegenHealing*1.5),
+      threadD-sproutReach*.9);
+    float ring=length(centered);
+    newDist=abs(ring-width*(.39+.29*filamentRegenHealing));
+    newAccent=.46+.54*(1.0-smoothstep(0.0,width*1.6,abs(ring-width*.57)));
+  }else if(filamentRegenMode==12){ // IMPOSSIBLE GRAFT LOOPS
+    float arc=localArc+.5;
+    float twist=cos(arc*6.2831853+growthClock*.21);
+    float loopA=abs(threadD-sproutReach*(.65+.37*twist));
+    float loopB=abs(threadD-sproutReach*(.65-.37*twist));
+    newDist=min(loopA,loopB);
+    newAccent=.55+.45*abs(twist);
   }
   // Attach the new daughter geometry to the moving original line; its
   // visibility is built from a NEW distance field, not a painted overlay.

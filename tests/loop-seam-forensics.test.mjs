@@ -147,7 +147,8 @@ test("UI uses real exported Blob and never re-encodes or creates seven expensive
   assert.match(ui,/Math\.max\(ready\.frameSize\.width,ready\.frameSize\.height\)>720/);
   assert.match(ui,/Save loop-seam report/);
   assert.match(decoder,/\!\[3,7\]\.includes\(indices\.length\)/);
-  assert.match(scanner,/End → Start/);
+  assert.match(ui,/End → Start/);
+  assert.match(scanner,/seamToEdgeRatio/);
   const fn=ui.slice(ui.indexOf("async function inspectLoopSeam"),ui.indexOf("function saveSeamAudit"));
   assert.doesNotMatch(fn,/renderImage\(/);
   assert.doesNotMatch(fn,/recordClip\(/);

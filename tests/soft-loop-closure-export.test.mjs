@@ -75,7 +75,7 @@ test("export diagnostics explicitly disclose intentional soft-loop tail modifica
   const ui=source("components/ExportDialog.jsx");
   assert.match(ui,/Loop Surgery was enabled for this clip/);
   assert.match(ui,/Inconclusive: Loop Surgery intentionally changes ending frames/);
-  assert.match(ui,/Loop Surgery softened this exported loop/);
+  assert.match(ui,/Loop Surgery treated this exported loop/);
 });
 test("production render workspace under a simulated Canvas2D produces equal first and last raw frames",async()=>{
   const exporter=source("export.js");

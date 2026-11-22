@@ -13,7 +13,7 @@ export { injuryModes };
 export { alchemyModes };
 import { backdropModes } from "./backdrops.js";
 export { backdropModes };
-import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, filamentMorphModes, filamentContagionModes, filamentNeuralModes, filamentPlasticModes, filamentScarModes } from "./filament-forge.js";
+import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, filamentMorphModes, filamentContagionModes, filamentNeuralModes, filamentPlasticModes, filamentScarModes, filamentRegenModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
@@ -337,6 +337,11 @@ export const numericRanges = {
   filamentScarPersistence: [0, 100],
   filamentScarRoughness: [0, 100],
   filamentScarGlow: [0, 100],
+  filamentRegenAmount: [0, 100],
+  filamentRegenBranches: [0, 100],
+  filamentRegenSpeed: [0, 100],
+  filamentRegenHealing: [0, 100],
+  filamentRegenGlow: [0, 100],
   filamentAdornmentAmount: [0, 100],
   filamentAdornmentSpacing: [0, 100],
   filamentAdornmentSize: [0, 100],
@@ -664,6 +669,12 @@ export const initial = {
   filamentScarPersistence: 66,
   filamentScarRoughness: 49,
   filamentScarGlow: 78,
+  filamentRegenMode: "Off",
+  filamentRegenAmount: 0,
+  filamentRegenBranches: 59,
+  filamentRegenSpeed: 48,
+  filamentRegenHealing: 63,
+  filamentRegenGlow: 76,
   filamentAdornmentMode: "Bare threads",
   filamentSecondAdornmentMode: "Bare threads",
   filamentAdornmentAmount: 0,
@@ -931,6 +942,7 @@ export function validateRecipe(input) {
     filamentNeuralMode: filamentNeuralModes,
     filamentPlasticMode: filamentPlasticModes,
     filamentScarMode: filamentScarModes,
+    filamentRegenMode: filamentRegenModes,
     filamentMorphTarget: filamentMaterials,
     filamentSecondMorphTarget: filamentMaterials,
     filamentAdornmentMode: filamentAdornmentModes,
@@ -1358,6 +1370,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "filamentPlasticRetention","filamentPlasticGlow",
       "filamentScarAmount","filamentScarDensity","filamentScarPersistence",
       "filamentScarRoughness","filamentScarGlow",
+      "filamentRegenAmount","filamentRegenBranches","filamentRegenSpeed",
+      "filamentRegenHealing","filamentRegenGlow",
       "filamentStitchAmount","filamentStitchSpeed",
       "filamentStitchLength","filamentStitchGlow",
       "filamentSculptAmount","filamentSculptDepth",
@@ -1629,6 +1643,12 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.filamentScarPersistence=22+random()*77;
   s.filamentScarRoughness=18+random()*81;
   s.filamentScarGlow=31+random()*68;
+  s.filamentRegenMode=different(filamentRegenModes,state.filamentRegenMode,random);
+  s.filamentRegenAmount=s.filamentScarAmount>0 && random()<.55?48+random()*51:0;
+  s.filamentRegenBranches=24+random()*75;
+  s.filamentRegenSpeed=17+random()*82;
+  s.filamentRegenHealing=24+random()*75;
+  s.filamentRegenGlow=26+random()*73;
   s.filamentStitchMode=different(filamentStitchModes,state.filamentStitchMode,random);
   s.filamentStitchAmount=s.filamentAmount>0 && random()<.58 ? 45+random()*54 : 0;
   s.filamentStitchSpeed=15+random()*84;

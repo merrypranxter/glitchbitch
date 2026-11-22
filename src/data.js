@@ -1677,6 +1677,10 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.letteringFont=different(retroFontIds,state.letteringFont,random);
   s.lettering="";
   s.letteringFormats=[];
+  // Full Surprise never creates user words, therefore semantic letter gravity
+  // cannot be active. Targeted semantic shuffle preserves existing words.
+  s.semanticGravityMode="Off";
+  s.semanticGravityAmount=0;
   s.letteringAmount=0;
   s.letteringScale=20+random()*54;
   s.letteringWarp=0;

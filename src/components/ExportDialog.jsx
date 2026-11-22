@@ -4,6 +4,7 @@ import Modal from "./Modal";
 import { Select } from "./Controls";
 import { ratios, recipeDocument } from "../data";
 import { dimensions, videoDimensions, renderImage, download, recordClip, videoFormat, clockAt } from "../export";
+import {LOOP_MODES,LOOP_BLEND_SECONDS} from "../loop-closure.js";
 import {analyzeEncodedFrame,differenceHeatmap,decodeStaticExport,
   decodeMp4Export,frameBlob,frameAuditReport} from "../encoded-frame-truth-serum.js";
 import {selectMotionSamples,analyzeClipMotion,decodeGifMotionSamples,
@@ -24,6 +25,8 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     [duration,setDuration]=useState(6),
     [frameRate,setFrameRate]=useState(30),
     [bitrate,setBitrate]=useState(16000000),
+    [loopMode,setLoopMode]=useState("Off"),
+    [loopBlendSeconds,setLoopBlendSeconds]=useState(.75),
     [ratio,setRatio]=useState(state.ratio),
     [busy,setBusy]=useState(false),
     [progress,setProgress]=useState(0),
@@ -178,16 +181,16 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       } else if(tab==="Video"){
         const result=await recordClip(snapshot,timeline,{
           format:clipFormat,longEdge:clipFormat==="gif"?gifSize:videoSize,
-          duration:clipDuration,fps,bitrate,
+          duration:clipDuration,fps,bitrate,loopMode,loopBlendSeconds,
           onProgress:p=>{if(mounted.current)setProgress(p);},
           signal:controller.current.signal,
         });
-        const filename=`glitch-${state.seed}-${size.width}x${size.height}-${Math.round(clipDuration)}s.${result.extension}`;
+        const filename=`glitch-${state.seed}-${size.width}x${size.height}-${Math.round(clipDuration)}s${loopMode!=="Off"?"-softloop":""}.${result.extension}`;
         download(result.blob,filename);
         if(mounted.current)setReady({blob:result.blob,filename,type:result.mime,
           snapshot,timeline,frameSize:{...size},method:result.method,
           duration:clipDuration,fps:result.fps,frames:result.frames,
-          format:clipFormat});
+          loopMode,loopBlendSeconds,format:clipFormat});
         onNotice(`${result.extension.toUpperCase()} exported. No WebM conversion necessary.`);
       } else {
         download(new Blob([JSON.stringify(recipeDocument(snapshot,title,timeline),null,2)],{type:"application/json"}),
@@ -446,6 +449,25 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
               {(clipFormat==="gif"?[2,3,5,10]:[2,3,5,6,10,15,30])
                 .map(v=><option key={v} value={v}>{v} seconds</option>)}
             </Select>
+            <Select label="Loop surgery" value={loopMode}
+              onChange={v=>{setLoopMode(v);setReady(null);clearFrameAudit();clearMotionAudit();clearSeamAudit();}}>
+              {LOOP_MODES.map(mode=><option key={mode} value={mode}>
+                {mode==="Off"?"Off · untouched original":"Soft closure · fade ending into the opening"}
+              </option>)}
+            </Select>
+            {loopMode!=="Off"&&<>
+              <Select label="Tail-to-opening blend" value={loopBlendSeconds}
+                onChange={v=>{setLoopBlendSeconds(+v);setReady(null);}}>
+                {LOOP_BLEND_SECONDS.filter(n=>n<=clipDuration*.75)
+                  .map(n=><option key={n} value={n}>{n} seconds</option>)}
+              </Select>
+              <p className="export-note">Loop Surgery stores the first FULL artwork frame
+                (all thread effects and text), then gradually blends the final
+                {loopBlendSeconds}s back to it. The last raw frame meets the first.
+                This softens visible loop jumps, but moving patterns may briefly
+                ghost or slow near the seam. It is NOT reversible physics or
+                guaranteed perfect velocity. Works for real MP4 and GIF.</p>
+            </>}
             {clipFormat==="mp4"&&<>
               <Select label="Frame rate" value={frameRate} onChange={v=>setFrameRate(+v)}>
                 {[24,30].map(v=><option key={v} value={v}>{v} fps</option>)}

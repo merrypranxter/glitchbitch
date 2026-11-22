@@ -378,6 +378,9 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
       gl.activeTexture(gl.TEXTURE0);
     }
+    const uploadError=gl.getError();
+    if(uploadError!==gl.NO_ERROR)
+      throw Error("Semantic glyph texture upload failed (WebGL "+uploadError+").");
   }
   // Text is composited AFTER the artwork and feedback passes. The main art
   // shader never depends on typography, so an unsupported font effect cannot
@@ -1434,8 +1437,8 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       }
       if(lastCompileError)throw lastCompileError;
       const hasBiology = updateBiology(s, timeline);
-      // Typography now lives entirely in the DOM preview / 2D export pipeline.
-      // Avoid redundant GL texture uploads (especially expensive on iPhone Safari).
+      // Visible words composite outside WebGL. Only Semantic Gravity
+      // opt-in uploads their glyph mask to the geometric thread shader.
       const hasLettering = false;
       const hasMemoryEffects = (s.afterimage > 0 || s.datamosh > 0) && !memoryDisabled;
       let drawWithMemory = false;

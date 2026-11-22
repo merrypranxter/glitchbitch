@@ -7,7 +7,7 @@ import { dimensions, videoDimensions, renderImage, download, recordClip, videoFo
 import {analyzeEncodedFrame,differenceHeatmap,decodeStaticExport,
   decodeMp4Export,frameBlob,frameAuditReport} from "../encoded-frame-truth-serum.js";
 import {selectMotionSamples,analyzeClipMotion,decodeGifMotionSamples,
-  decodeMp4MotionSamples,motionForensicsReport} from "../clip-motion-forensics.js";
+  decodeMp4MotionSamples,verifyMotionDecodeTimes,motionForensicsReport} from "../clip-motion-forensics.js";
 import { hasVisibleLettering } from "../text-compositor.js";
 import { normalTextBlendState } from "../text-blend-proof.js";
 import { canvasImageFiltersWork } from "../lettering-filter-fallback.js";
@@ -290,7 +290,8 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
           sourceHeight:picture.sourceHeight
         });
       }
-      const motion=analyzeClipMotion(references,decoded);
+      const motion=verifyMotionDecodeTimes(
+        analyzeClipMotion(references,decoded),decoded,samples,ready.format);
       const report=motionForensicsReport({
         samples:rows,motion,format:ready.format,method:ready.method,
         seed:ready.snapshot.seed,size:ready.frameSize
@@ -545,6 +546,12 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
               alt="Amplified encoded-versus-PNG pixel discrepancy heatmap"/>
               <figcaption>Difference heatmap (4×)</figcaption></figure>
           </div>
+          <p className="export-note">Reference shader time:
+            {" "+motionAudit.rows[selectedMotionIndex].referenceTime.toFixed(3)}s.
+            Decoded presentation time:
+            {" "+motionAudit.rows[selectedMotionIndex].decodedTime.toFixed(3)}s.
+            GIF display delays are rounded to 10ms; the shader renders
+            at exact frame-index/FPS time.</p>
           <p className="export-note">Selected frame: mean RGB difference
             {" "+motionAudit.rows[selectedMotionIndex].difference.meanRGBDifference}/255;
             {" "+motionAudit.rows[selectedMotionIndex].difference.pixelsOverThresholdPercent}%
@@ -558,6 +565,8 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
             demonstrate meaningful motion while the encoded frames barely change.
             Static artwork, H.264 compression, GIF palette reduction, native-recorder
             frame timing and GPU feedback history can distort these results.
+            If the MP4 decoder returns repeated timestamps, the audit marks
+            motion inconclusive rather than falsely accusing the encoder.
             This checks three sampled frames—not every frame, seamless loops or
             DOM/CSS live-preview typography.</p>
           <button type="button" className="button secondary" disabled={busy}

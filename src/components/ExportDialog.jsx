@@ -8,6 +8,8 @@ import {analyzeEncodedFrame,differenceHeatmap,decodeStaticExport,
   decodeMp4Export,frameBlob,frameAuditReport} from "../encoded-frame-truth-serum.js";
 import {selectMotionSamples,analyzeClipMotion,decodeGifMotionSamples,
   decodeMp4MotionSamples,verifyMotionDecodeTimes,motionForensicsReport} from "../clip-motion-forensics.js";
+import {selectSeamSamples,assessSeamDecoderTiming,analyzeSeamContinuity,
+  seamForensicsReport} from "../loop-seam-forensics.js";
 import { hasVisibleLettering } from "../text-compositor.js";
 import { normalTextBlendState } from "../text-blend-proof.js";
 import { canvasImageFiltersWork } from "../lettering-filter-fallback.js";
@@ -33,10 +35,12 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     [frameAudit,setFrameAudit]=useState(null),
     [motionAudit,setMotionAudit]=useState(null),
     [selectedMotionIndex,setSelectedMotionIndex]=useState(0),
+    [seamAudit,setSeamAudit]=useState(null),
+    [selectedSeamView,setSelectedSeamView]=useState("wrap"),
     [motionAuditStage,setMotionAuditStage]=useState(""),
     [auditing,setAuditing]=useState(false);
   const controller=useRef(null), mounted=useRef(true), proofUrl=useRef(null), blendUrls=useRef([]),
-    frameAuditUrls=useRef([]),motionAuditUrls=useRef([]);
+    frameAuditUrls=useRef([]),motionAuditUrls=useRef([]),seamAuditUrls=useRef([]);
   function clearFrameAudit(){
     frameAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
     frameAuditUrls.current=[];
@@ -49,6 +53,12 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     setSelectedMotionIndex(0);
     setMotionAuditStage("");
   }
+  function clearSeamAudit(){
+    seamAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
+    seamAuditUrls.current=[];
+    setSeamAudit(null);
+    setSelectedSeamView("wrap");
+  }
   const capability=videoFormat();
   useEffect(()=>()=>{mounted.current=false;controller.current?.abort();
     onExportBusy?.(false);
@@ -56,6 +66,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     blendUrls.current.forEach(url=>URL.revokeObjectURL(url));
     frameAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
     motionAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
+    seamAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
   },[]);
   const size=tab==="Video" ? clipFormat==="mp4"
     ? videoDimensions(ratio,videoSize) : dimensions(ratio,gifSize)
@@ -151,6 +162,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
   async function run() {
     clearFrameAudit();
     clearMotionAudit();
+    clearSeamAudit();
     setError("");setProgress(0);setBusy(true);setReady(null);
     if(tab==="Video")controller.current=new AbortController();
     const snapshot={...state,ratio},timeline={...timelineRef.current};
@@ -316,6 +328,71 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       {type:"application/json"}),
       "glitchbitch-motion-forensics-"+motionAudit.report.seed+".json");
   }
+  async function inspectLoopSeam(){
+    if(!ready||busy)return;
+    if(Math.max(ready.frameSize.width,ready.frameSize.height)>720){
+      setError("Loop Seam Scanner supports 480px and 720px diagnostic clips to protect iPhone memory.");
+      return;
+    }
+    if(ready.frames<7){
+      setError("Loop Seam Scanner needs at least seven video frames.");
+      return;
+    }
+    setBusy(true);setAuditing(true);clearSeamAudit();setError("");
+    const created=[];
+    try{
+      onExportBusy?.(true);
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      const samples=selectSeamSamples(ready.frames,ready.fps);
+      setMotionAuditStage("Decoding seven real encoded frames (no second render)…");
+      const decoded=ready.format==="gif"?
+        await decodeGifMotionSamples(ready.blob,samples):
+        await decodeMp4MotionSamples(ready.blob,samples,ready.fps);
+      const timing=assessSeamDecoderTiming(decoded,samples,ready.format,ready.fps);
+      const results=analyzeSeamContinuity(decoded,{format:ready.format,timing});
+      const report=seamForensicsReport({
+        samples,frames:decoded,results,format:ready.format,
+        encoderMethod:ready.method,seed:ready.snapshot.seed,
+        size:ready.frameSize,fps:ready.fps
+      });
+      // View A and B are ACTUAL decoded media frames, never generated PNGs.
+      // The heatmap highlights the discontinuity between these two frames.
+      const pairs=[
+        {key:"wrap",label:"End → Start · loop seam",left:6,right:0},
+        {key:"midIn",label:"Mid - 1 → Middle",left:2,right:3},
+        {key:"midOut",label:"Middle → Mid + 1",left:3,right:4}
+      ];
+      const views={};
+      for(let i=0;i<pairs.length;i++){
+        const pair=pairs[i];
+        setMotionAuditStage("Preparing seam and midpoint heatmaps "+(i+1)+" / 3…");
+        const left=decoded[pair.left],right=decoded[pair.right];
+        const diff=differenceHeatmap(left,right);
+        const images=await Promise.all([frameBlob(left),frameBlob(right),frameBlob(diff)]);
+        const urls=images.map(blob=>URL.createObjectURL(blob));
+        created.push(...urls);
+        views[pair.key]={label:pair.label,urls,
+          leftIndex:samples[pair.left].index,rightIndex:samples[pair.right].index};
+      }
+      if(!mounted.current)return;
+      seamAuditUrls.current=created.slice();
+      setSeamAudit({filename:ready.filename,results,report,views});
+      setSelectedSeamView("wrap");
+    }catch(e){
+      created.forEach(url=>URL.revokeObjectURL(url));
+      if(mounted.current)setError("Loop-seam inspection failed: "+e.message);
+    }finally{
+      if(!mounted.current)created.forEach(url=>URL.revokeObjectURL(url));
+      onExportBusy?.(false);
+      if(mounted.current){setBusy(false);setAuditing(false);setMotionAuditStage("");}
+    }
+  }
+  function saveSeamAudit(){
+    if(!seamAudit)return;
+    download(new Blob([JSON.stringify(seamAudit.report,null,2)],
+      {type:"application/json"}),
+      "glitchbitch-loop-seam-"+seamAudit.report.seed+".json");
+  }
   function canShare() {
     if(!ready || typeof File==="undefined" || typeof navigator==="undefined" || !navigator.canShare)return false;
     try {
@@ -337,7 +414,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       <div className="export-tabs">
         {[[Image,"Image"],[Film,"Video"],[Braces,"Recipe"]].map(([Icon,name])=>(
           <button disabled={busy} className={tab===name?"selected":""}
-            onClick={()=>{setTab(name);setError("");setReady(null);clearFrameAudit();clearMotionAudit();}} key={name}>
+            onClick={()=>{setTab(name);setError("");setReady(null);clearFrameAudit();clearMotionAudit();clearSeamAudit();}} key={name}>
             <Icon size={17}/>{name}
           </button>
         ))}
@@ -345,7 +422,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       <fieldset disabled={busy} className="export-options">
         {tab!=="Recipe"?<>
           {tab==="Video"&&<Select label="Output format" value={clipFormat}
-            onChange={v=>{setClipFormat(v);setReady(null);clearFrameAudit();clearMotionAudit();}}>
+            onChange={v=>{setClipFormat(v);setReady(null);clearFrameAudit();clearMotionAudit();clearSeamAudit();}}>
             <option value="mp4">MP4 · H.264 (real video)</option>
             <option value="gif">GIF · animated image</option>
           </Select>}
@@ -571,6 +648,69 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
             DOM/CSS live-preview typography.</p>
           <button type="button" className="button secondary" disabled={busy}
             onClick={saveMotionAudit}>Save motion-forensics report (JSON; no artwork pixels)</button>
+        </div>}
+      </div>}
+      {ready&&ready.format&&tab==="Video"&&<div className="export-proof-panel">
+        <button type="button" className="button secondary" disabled={busy}
+          onClick={inspectLoopSeam}>
+          <Film size={15}/> Loop Seam Scanner · seven decoded checkpoints
+        </button>
+        <p className="export-note">Does the last frame snap back to the first?
+          This samples seven ACTUAL encoded GIF/MP4 frames and compares the
+          loop jump with normal frame-to-frame motion. Also checks transitions
+          around the midpoint. No new video encoding or shader rendering;
+          480/720px clips only to protect mobile memory.</p>
+        {seamAudit&&seamAudit.filename===ready.filename&&<div className="export-truth-panel">
+          <strong>🪡 {seamAudit.results.status}</strong>
+          <div className="export-truth-metrics">
+            <div><strong>{seamAudit.results.seamMeanRGB}</strong>
+              <span>Last → first · mean RGB jump / 255</span></div>
+            <div><strong>{seamAudit.results.edgeBaselineRGB}</strong>
+              <span>Ordinary one-frame edge motion / 255</span></div>
+            <div><strong>{seamAudit.results.seamToEdgeRatio}×</strong>
+              <span>Seam jump vs adjacent edge motion</span></div>
+            <div><strong>{seamAudit.results.largestMidpointRGB}</strong>
+              <span>Largest midpoint one-frame change / 255</span></div>
+          </div>
+          <div className="pane-actions" aria-label="Choose loop seam or midpoint frame comparison">
+            {["wrap","midIn","midOut"].map(key=><button type="button" key={key}
+              disabled={busy}
+              className={selectedSeamView===key?"button primary":"button secondary"}
+              onClick={()=>setSelectedSeamView(key)}>
+              {seamAudit.views[key].label}
+            </button>)}
+          </div>
+          <div className="blend-proof-grid" aria-label="Actual encoded frame-to-frame discontinuity">
+            <figure><img src={seamAudit.views[selectedSeamView].urls[0]}
+              alt="Earlier actual encoded MP4 or GIF frame of selected pair"/>
+              <figcaption>Real frame {seamAudit.views[selectedSeamView].leftIndex}</figcaption></figure>
+            <figure><img src={seamAudit.views[selectedSeamView].urls[1]}
+              alt="Later actual encoded MP4 or GIF frame of selected pair"/>
+              <figcaption>Real frame {seamAudit.views[selectedSeamView].rightIndex}</figcaption></figure>
+            <figure><img src={seamAudit.views[selectedSeamView].urls[2]}
+              alt="Amplified heatmap of differences between those two real encoded frames"/>
+              <figcaption>Discontinuity heatmap (4×)</figcaption></figure>
+          </div>
+          {seamAudit.results.decodedTimingWarning&&
+            <p className="field-error">Decoder uncertainty: {seamAudit.results.decodedTimingWarning}.
+              This is NOT proof that the exported animation is broken.</p>}
+          <p className="export-note">Actual opening step:
+            {" "+seamAudit.results.openingStep.meanRGBChange}/255.
+            Actual ending step:
+            {" "+seamAudit.results.endingStep.meanRGBChange}/255.
+            Midpoint before/after:
+            {" "+seamAudit.results.midpointBefore.meanRGBChange} /
+            {" "+seamAudit.results.midpointAfter.meanRGBChange}/255.
+            A strong loop snap means the end-to-start transition is unusually
+            different from the normal changes near both ends.</p>
+          <p className="export-note">An intentional glitch, camera cut, rhythmic
+            pulse or abrupt transformation may trigger a warning on purpose.
+            This is a visual clue, not automatic proof of an encoder bug or
+            a mathematically perfect seamless loop. MP4 seeking is approximate;
+            GIF playback delays are quantized to 10ms. Seven checkpoints
+            cannot reveal every possible jump elsewhere in the clip.</p>
+          <button type="button" className="button secondary" disabled={busy}
+            onClick={saveSeamAudit}>Save loop-seam report (JSON; no image pixels)</button>
         </div>}
       </div>}
       {ready&&!busy&&canShare()&&<button className="button secondary export-submit" onClick={share}>

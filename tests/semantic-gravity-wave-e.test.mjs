@@ -154,7 +154,8 @@ test("the same export text compositor supplies the GL force mask at matched time
   assert.ok(findControls("typographic vortex").some(x=>x.id==="filament"));
   assert.ok(compositor.includes("export function paintLettering("));
   assert.ok(renderer.includes('import {paintLettering} from "./text-compositor.js"'));
-  assert.ok(renderer.includes("paintLettering(semanticGlyphContext,state,timeline,maskW,maskH,true)"));
+  assert.ok(renderer.includes("normalTextBlendState(state)"));
+  assert.ok(renderer.includes("paintLettering(semanticGlyphContext,glyphLayoutState,timeline,maskW,maskH,true)"));
   assert.ok(exportPath.includes("paintLettering(ctx, state, frameClock, size.width, size.height)"));
   assert.ok(renderer.includes("gl.TEXTURE6"));
   assert.ok(renderer.includes('gl.uniform1i(loc("semanticGlyphTex"),6)'));

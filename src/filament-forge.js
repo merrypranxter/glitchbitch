@@ -1921,6 +1921,11 @@ export const filamentGLSL = `
 uniform int filamentSpecies;
 uniform int filamentSecondSpecies;
 uniform int filamentMaterial,filamentSecondMaterial;
+uniform int filamentOpticsMode,filamentSecondOpticsMode;
+uniform float filamentOpticsAmount,filamentOpticsThickness,filamentOpticsDispersion;
+uniform float filamentOpticsAnisotropy,filamentOpticsCurvature,filamentOpticsPearl,filamentOpticsPhase;
+uniform float filamentSecondOpticsAmount,filamentSecondOpticsThickness,filamentSecondOpticsDispersion;
+uniform float filamentSecondOpticsAnisotropy,filamentSecondOpticsCurvature,filamentSecondOpticsPearl,filamentSecondOpticsPhase;
 uniform int filamentStitchMode;
 uniform int filamentSculptMode;
 uniform int filamentAdornmentMode,filamentSecondAdornmentMode;
@@ -1962,6 +1967,8 @@ uniform float filamentWidth,filamentRelief,filamentHue,filamentVariation;
 
 vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     int species,int fiberMaterial,int adornmentMode,int morphMaterial,float phaseOffset,float twist,float hueOffset,
+    int opticalLaw,float opticalAmount,float opticalThickness,float opticalDispersion,
+    float opticalAnisotropy,float opticalCurvature,float opticalPearl,float opticalPhase,
     float incomingCore,float incomingCarrier,
     float incomingNeural,float incomingLuma,
     out float maskCore,out float outgoingCarrier,
@@ -3266,6 +3273,85 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
 #ifdef FILAMENT_REGENERATION
   thread+=mix(ink,glimmer,.68)*regenFlash*.7;
 #endif
+
+#ifdef FILAMENT_STRUCTURAL_OPTICS
+  // Optical coats shade the actual moving fiber AFTER its selected material,
+  // morphs, neural light and scars; no screen-space pass and no frame history.
+  // opticalLaw and parameters are separately supplied for BOTH hybrid parents.
+  if(opticalLaw>0 && opticalAmount>.0001){
+    // Local yarn width (a faux cross-sectional normal) and signed strand
+    // orientation approximate grazing view. A flat artboard cannot supply
+    // physically measured view-dependent reflectance or true wavelengths.
+    float yarnAcross=clamp(threadD/max(width+aa,.003),0.0,2.5);
+    float crown=1.0-smoothstep(.04,1.28,yarnAcross);
+    float grazing=smoothstep(.29,1.55,yarnAcross)*
+      (1.0-smoothstep(1.55,2.35,yarnAcross));
+    float fiberTangent=phase*(.79+opticalAnisotropy*1.61)+
+      q.x*.13-q.y*.09+seedPhase*.14;
+    float orientation=sin(fiberTangent)*.6+cos(fiberTangent*.83)*.4;
+    float bend=sin(phase*(1.1+opticalCurvature*2.1)+
+      q.x*.3+q.y*.21+t*.28);
+    float pseudoView=clamp(.48+.26*orientation*opticalAnisotropy+
+      .19*bend*opticalCurvature+.25*(1.0-crown),.03,.98);
+    float opticalTravel=time*(.045+.16*filamentMotion)+
+      colorTime*.027+phaseOffset*.31+opticalPhase*6.2831853;
+    // Three different pseudo-optical path lengths represent spectral hues.
+    float film=(1.4+opticalThickness*11.0)*
+      (1.0+.49*pseudoView+.17*opticalCurvature*bend);
+    vec3 waveLength=vec3(.66,.53,.42);
+    vec3 interference=.5+.5*cos(vec3(6.2831853)*film/
+      waveLength+opticalTravel*(.06+.2*opticalDispersion)+
+      vec3(0.0,1.12,2.18));
+    float groove=fiberTangent*(7.0+opticalDispersion*23.0)+
+      opticalTravel*.46;
+    float comb=pow(.5+.5*cos(groove),mix(19.0,6.0,opticalDispersion));
+    float brushed=pow(.5+.5*cos(fiberTangent*2.1+pseudoView*3.2-
+      opticalTravel*.21),mix(23.0,7.0,opticalAnisotropy));
+    vec3 paletteTint=palette(fract(pigmentPhase+.08+.4*opticalPhase+
+      pseudoView*.17+interference.g*.06));
+    vec3 pearlBase=mix(ink,vec3(.94,.96,1.0),.21+.6*opticalPearl);
+    vec3 spectral=mix(interference,interference.brg,
+      .16+.46*opticalDispersion);
+    vec3 dressed=thread;
+    float shining=.27+.73*crown;
+    if(opticalLaw==1){ // SOAP-FILM OPAL: thin-film prismatic grazing fringes.
+      dressed=thread*.42+spectral*(.42+.65*grazing)+
+        paletteTint*.22+pearlBase*.2*shining;
+    }else if(opticalLaw==2){ // PEARLESCENT FLOSS: pearl plus soft iridescence.
+      dressed=thread*.48+pearlBase*(.35+.56*crown)+
+        spectral*(.15+.39*grazing)+paletteTint*.17;
+    }else if(opticalLaw==3){ // DIFFRACTION GRATING: embossed microgroove combs.
+      float grating=comb*(.24+.76*pseudoView);
+      dressed=thread*.31+spectral*(.32+.8*grating)+
+        vec3(.97,.97,1.0)*grating*.62+paletteTint*.16;
+    }else if(opticalLaw==4){ // ANISOTROPIC CHROME: directional polished metal.
+      float metal=clamp(brushed*(.32+.68*grazing),0.0,1.0);
+      dressed=thread*.32+mix(paletteTint,vec3(1.0),.77)*metal*.91+
+        spectral*(.24+.46*metal)+pearlBase*.13;
+    }else if(opticalLaw==5){ // HOLOGRAPHIC ORGANZA: two crossed optical lattices.
+      float crossGrating=.5+.5*cos(groove*.57+pseudoView*7.4);
+      vec3 second=interference.gbr;
+      dressed=thread*.29+mix(spectral,second,crossGrating)*
+        (.43+.67*comb)+paletteTint*.27;
+    }else if(opticalLaw==6){ // BIOLUMINESCENT NACRE: light in the fiber body.
+      float living=.5+.5*sin(phase*4.7-opticalTravel*.61+bend*.8);
+      dressed=thread*.41+pearlBase*.31+
+        mix(spectral,paletteTint,.48)*(.37+.53*living)*shining;
+    }else if(opticalLaw==7){ // QUANTUM MOTHER-OF-PEARL: competing interference.
+      vec3 echo=.5+.5*cos(vec3(5.7,7.4,9.1)*film+
+        opticalTravel*.2+fiberTangent*.39);
+      dressed=thread*.23+mix(spectral,echo,.42+.29*comb)*
+        (.54+.67*shining)+paletteTint*.23+
+        vec3(1.0)*brushed*.12;
+    }
+    // A soft additive edge flash stays subordinate to the selected material.
+    // Core/halo/edge masks are applied later by the existing filament renderer.
+    float opticalMix=clamp(opticalAmount*(.45+.55*shining)*
+      (.79+.21*opticalPearl),0.0,1.0);
+    thread=mix(thread,dressed,opticalMix);
+    thread+=spectral*grazing*opticalAmount*opticalDispersion*.13;
+  }
+#endif
   float amount=filamentAmount;
   vec3 result=mix(background,background*.48+thread*1.06,core*amount*.91);
   if(species==23 && filamentQuasiRelief>0.0){ // Embossed quasicrystal thread, no separate post pass.
@@ -3562,14 +3648,22 @@ vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
   float firstCore=0.0,firstCarrier=0.0,firstNeural=0.0,firstLuma=0.0;
   vec3 first=filamentField(background,uv,fieldP,fieldV,
     filamentSpecies,filamentMaterial,filamentAdornmentMode,filamentMorphTarget,
-    0.0,0.0,0.0,0.0,0.0,0.0,0.0,firstCore,firstCarrier,firstNeural,firstLuma);
+    0.0,0.0,0.0,
+    filamentOpticsMode,filamentOpticsAmount,filamentOpticsThickness,filamentOpticsDispersion,
+    filamentOpticsAnisotropy,filamentOpticsCurvature,filamentOpticsPearl,filamentOpticsPhase,
+    0.0,0.0,0.0,0.0,firstCore,firstCarrier,firstNeural,firstLuma);
 #ifdef FILAMENT_HYBRID
   if(filamentCrossbreed<.001)return first;
   float secondCore=0.0,secondCarrier=0.0,secondNeural=0.0,secondLuma=0.0;
   vec3 second=filamentField(first,uv,fieldP,fieldV,
     filamentSecondSpecies,filamentSecondMaterial,filamentSecondAdornmentMode,
     filamentSecondMorphTarget,filamentPhase*6.2831853,filamentTwist*6.2831853,
-    filamentSecondHue*.9,firstCore,firstCarrier,firstNeural,firstLuma,
+    filamentSecondHue*.9,
+    filamentSecondOpticsMode,filamentSecondOpticsAmount,
+    filamentSecondOpticsThickness,filamentSecondOpticsDispersion,
+    filamentSecondOpticsAnisotropy,filamentSecondOpticsCurvature,
+    filamentSecondOpticsPearl,filamentSecondOpticsPhase,
+    firstCore,firstCarrier,firstNeural,firstLuma,
     secondCore,secondCarrier,secondNeural,secondLuma);
   // True under/over crossings: only where two threads overlap. Different
   // paths remain distinct rather than dissolving into a flat opacity mix.

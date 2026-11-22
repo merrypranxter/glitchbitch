@@ -17,6 +17,16 @@ test("parity errors are non-retryable and safe to show the artist",()=>{
   assert.match(err.message,/Your art and settings are unchanged/);
 });
 
+test("GLSL reserved-word failures explain why lowering resolution cannot help",()=>{
+  const err=artworkParityError("Full-effect shader failed to compile",
+    new Error("ERROR: 0:1650: 'resource' : Illegal use of reserved word"));
+  assert.equal(err.name,"ArtworkParityError");
+  assert.match(err.message,/Resolution and bitrate cannot fix a shader syntax error/);
+  assert.match(err.message,/update the app code and retry/);
+  assert.match(err.message,/resource/);
+  assert.doesNotMatch(err.message,/Try a smaller export resolution/);
+});
+
 test("the live editor may recover but exact export refuses shader downgrades",()=>{
   assert.match(renderer,/export function createRenderer\(canvas, \{exactEffects=false\} = \{\}\)/);
   assert.match(renderer,/if\(exactEffects\)throw artworkParityError\("Full-effect shader failed to compile",e\)/);

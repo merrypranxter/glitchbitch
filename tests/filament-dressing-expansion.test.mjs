@@ -43,10 +43,10 @@ test("existing saved IDs never change; every new textile is a real option",()=>{
   assert.deepEqual(filamentStitchModes.slice(21,31),extraStitch);
   assert.equal(filamentSpecies.length,24);
   assert.equal(filamentMaterials.length,14);
-  assert.equal(filamentStitchModes.length,32);
+  assert.equal(filamentStitchModes.length,33);
   assert.equal(filamentPresets.length,22);
   assert.equal(filamentMaterialPresets.length,14);
-  assert.equal(filamentStitchPresets.length,36);
+  assert.equal(filamentStitchPresets.length,42);
   for(const [modes,groups] of [[filamentSpecies,filamentSpeciesFamilies],
     [filamentStitchModes,filamentStitchFamilies]]){
     const members=groups.flatMap(group=>group.species||group.modes);

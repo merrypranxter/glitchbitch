@@ -14,7 +14,9 @@ import {
 import { palettes, parsePalette, paletteName } from "../data";
 import { pickDifferentPalette, generateRandomPalette, shuffleColorStops, reverseColorStops } from "../palette-actions";
 import { parsePaletteLibrary, paletteLibraryDocument } from "../palette-io";
-import { Parameter, Section, Segmented, Switch } from "./Controls";
+import { Parameter, Section, Segmented, Switch, Select } from "./Controls";
+import {colorMathFamilies,colorMathDescriptions,colorMathPresets,
+  applyColorMathPreset,remixColorMath,disableColorMath} from "../color-math-lab.js";
 export function Swatches({ colors }) {
   return (
     <span className="swatches">
@@ -37,6 +39,7 @@ export default function ColorLab({
     [error, setError] = useState(""),
     [name, setName] = useState(""),
     [filter, setFilter] = useState("");
+  const [colorMathPreset,setColorMathPreset]=useState(colorMathPresets[0].name);
   const pick = (colors) =>
     history.change((s) => ({ ...s, palette: -1, colors }));
   const index = Math.min(selected, state.colors.length - 1);
@@ -318,6 +321,45 @@ export default function ColorLab({
         <Parameter label="Saturation" name="saturation" history={history} />
         <Parameter label="Contrast" name="contrast" history={history} />
         <Parameter label="Brightness" name="brightness" history={history} />
+      </Section>
+      <Section id="colorMath" history={history}>
+        <p className="control-note">Eleven transformations of COLOR SPACE, not geometry. Instantly reinterpret the finished artwork like Invert. Only the chosen law compiles for iPhone Safari; Off adds nothing.</p>
+        <Select label="Color mathematics law" value={state.colorMathMode}
+          onChange={mode=>history.change(s=>({...s,colorMathMode:mode,
+            colorMathAmount:mode==="Off"?0:Math.max(82,s.colorMathAmount)}))}>
+          {colorMathFamilies.map(family=><optgroup key={family.name} label={family.name}>
+            {family.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+          </optgroup>)}
+        </Select>
+        <p className="control-note">{colorMathDescriptions[state.colorMathMode]}</p>
+        <Parameter label="Transformation amount" name="colorMathAmount" history={history}/>
+        <Parameter label="Mathematical depth / distortion" name="colorMathDepth" history={history}/>
+        <Parameter label="Color-space evolution" name="colorMathMotion" history={history}/>
+        <Parameter label="Variation / phase" name="colorMathVariation" history={history}/>
+        <Switch label="Preserve perceptual lightness (OKLab)" name="colorMathPreserveLuma" history={history}/>
+        <Select label="Chromatic spell recipe" value={colorMathPreset} onChange={setColorMathPreset}>
+          {colorMathPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <div className="palette-action-grid" role="group" aria-label="Color mathematics actions">
+          <button className="button secondary" type="button"
+            onClick={()=>history.change(s=>applyColorMathPreset(s,colorMathPreset))}>
+            Apply chromatic spell
+          </button>
+          <button className="button secondary" type="button"
+            onClick={()=>history.change(s=>remixColorMath(s))}>
+            <Shuffle size={14}/> Shuffle color mathematics
+          </button>
+          <button className="button secondary" type="button"
+            onClick={()=>history.change(s=>remixColorMath(s,Math.random,true))}>
+            <Dices size={14}/> Shuffle impossible colors
+          </button>
+          <button className="button secondary" type="button"
+            disabled={state.colorMathMode==="Off"||state.colorMathAmount===0}
+            onClick={()=>history.change(disableColorMath)}>
+            Restore original colors
+          </button>
+        </div>
+        <p className="control-note">Palettes, palette shuffles, and color motion still feed the color laws. Saved recipes, undo and strict-effects PNG/GIF/MP4 use the shared renderer. Typography is composited separately.</p>
       </Section>
     </>
   );

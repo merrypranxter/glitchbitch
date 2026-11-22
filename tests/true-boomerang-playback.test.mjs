@@ -113,7 +113,7 @@ test("actual bundled GIF encoder stores genuinely reversed finished frames, with
     gif.writeFrame(indexed,4,4,{palette,delay:100,repeat:0});
   }
   gif.finish();
-  const samples=decodeOwnGifSamples(gif.bytes(),[1,5,9]);
+  const samples=decodeOwnGifSamples(gif.bytes(),[1,3,9]);
   assert.deepEqual([...samples[0].data],[...samples[2].data],
     "actual encoded GIF source frame 9 must repeat frame 1");
   assert.notDeepEqual([...samples[1].data],[...samples[2].data]);

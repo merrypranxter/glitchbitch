@@ -7,7 +7,7 @@ import { dimensions, videoDimensions, renderImage, download, recordClip, videoFo
 import { hasVisibleLettering } from "../text-compositor.js";
 import { normalTextBlendState } from "../text-blend-proof.js";
 import { canvasImageFiltersWork } from "../lettering-filter-fallback.js";
-import { withoutTextForExport, exportBlobPixels, analyzeTextExportFrames,
+import { exportBlobPixels, analyzeTextExportFrames,
   exportDiagnosticReport } from "../text-export-diagnostics.js";
 export default function ExportDialog({ state, title, timelineRef, onClose, onNotice, onExportBusy }) {
   const [tab,setTab]=useState("Image"),
@@ -72,9 +72,12 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       // use the identical timeline and Canvas compositor used by actual MP4.
       const normal=await renderImage(normalTextBlendState(snapshot),timeline,480);
       const selected=await renderImage(snapshot,timeline,480);
-      // Third reference frame: same math artwork and clock, with text
-      // hidden. It allows us to measure ONLY what composited lettering did.
-      const background=await renderImage(withoutTextForExport(snapshot),timeline,480);
+      // Third reference frame: exact SAME math, textile effects, and authored
+      // glyph gravity, but skip only the final 2D text compositing pass.
+      // Turning the words off in state would also remove Semantic Gravity
+      // and contaminate what was supposed to be a text-blend-only comparison.
+      const background=await renderImage(snapshot,timeline,480,
+        "image/png",{compositeLettering:false});
       if(!mounted.current)return;
       let metrics=null,analysisError="";
       try{
@@ -260,7 +263,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
             blendProof.stateAt===state&&diagnostics&&
             <details className="export-truth-panel">
               <summary>🧪 Export Truth Serum — measurements & device</summary>
-              <p className="export-note">Three matching 480px frames: background only, Normal text,
+              <p className="export-note">Three matching 480px frames: same full artwork (including any text-driven fiber gravity) without the final visible lettering, Normal text,
                 and selected blends. This measures the PNG compositor's pixels—not the
                 browser's live CSS preview or MP4 compression.</p>
               <div className="export-truth-metrics">
@@ -283,8 +286,8 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
               <p className="export-note">Some blends legitimately resemble Normal over certain colors.
                 A small difference is evidence to investigate—not automatic proof of a bug.</p>
               <figure className="export-truth-background">
-                <img src={blendProof.background} alt="Reference frame with every text layer disabled"/>
-                <figcaption>Background-only reference</figcaption>
+                <img src={blendProof.background} alt="Reference frame with text-driven thread geometry intact, but no final lettering overlay"/>
+                <figcaption>Text overlay hidden · thread physics preserved</figcaption>
               </figure>
               <button type="button" className="button secondary" disabled={busy}
                 onClick={saveDiagnostics}>Save diagnostic report (JSON)</button>

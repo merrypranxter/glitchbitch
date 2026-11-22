@@ -25,6 +25,10 @@ export function playbackFrameSeconds(index,count,fps,mode="Forward"){
 }
 export function playbackTimeForMediaTime(mediaSeconds,count,fps,mode="Forward"){
   if(!Number.isFinite(mediaSeconds))throw Error("Video timestamp must be finite.");
+  // Preserve the original sub-frame precision of ALL Forward-only
+  // export diagnostics. Only the cached/reversed mode needs frame indexing.
+  if(mode==="Forward")return Math.max(0,mediaSeconds);
+  if(mode!=="Boomerang")throw Error("Unknown animation playback mode.");
   const frame=Math.max(0,Math.min(count-1,Math.round(mediaSeconds*fps)));
   return playbackFrameSeconds(frame,count,fps,mode);
 }

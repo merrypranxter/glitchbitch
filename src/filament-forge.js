@@ -2043,6 +2043,14 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   vec2 localUV=.5+rotated/aspect;
   vec2 q=rotated*freq;
   q+=.14*filamentMotion*vec2(sin(q.y*.81+t*.53),cos(q.x*.93-t*.44));
+#ifdef FILAMENT_SEMANTIC_GRAVITY
+  // The actual visible glyph silhouette bends *geometry* before species
+  // evaluation. Both hybrid parents independently react to the same words.
+  vec3 semanticTug=semanticGlyphForce(uv,phaseOffset);
+  // Inverse field sampling: subtract force so the drawn yarn moves TOWARD glyphs.
+  q-=vec2(semanticTug.x*(res.x/res.y),semanticTug.y)*
+    (.45+.12*freq);
+#endif
   float density=filamentDensity;
   float seedPhase=filamentVariation*6.28318+seed*.000013+phaseOffset*.61;
 #ifdef FILAMENT_NEURAL
@@ -2429,6 +2437,14 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     threadD=1.0;
     mask=0.0;
   }
+#ifdef FILAMENT_SEMANTIC_GRAVITY
+  // In the letter-cutout law, the very same glyph silhouette subtracts
+  // fiber coverage before stitching, material, relief or hybrid contacts.
+  if(semanticGravityMode==5){
+    mask*=1.0-semanticGravityAmount*
+      smoothstep(.18,.76,semanticTug.z);
+  }
+#endif
   // Signed-distance-like threads: sharp high-resolution core, wider translucent
   // halo and directional raised relief. The majority of pixels stay untouched.
   float aa=max(.005,1.2*freq/min(res.x,res.y));

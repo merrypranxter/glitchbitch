@@ -12,6 +12,8 @@ import { materialGLSL } from "./materials.js";
 import {alchemyModes,alchemyGLSL,specializeAlchemyGLSL} from "./chromatic-alchemy.js";
 import {injuryModes,injuryGLSL,specializeInjuryGLSL} from "./print-spectrum-injury.js";
 import { kineticGLSL, glyphCanvas } from "./kinetic-type.js";
+import {paintLettering} from "./text-compositor.js";
+import {semanticGravityGLSL,semanticGravityModes,hasSemanticLettering} from "./semantic-gravity.js";
 import { ensureRetroFontLoaded, retroFontReady, retroFontRevision } from "./retro-fonts.js";
 import { compositionGLSL } from "./composition.js";
 import { backdropGLSL, backdropModes, specializeBackdropGLSL } from "./backdrops.js";
@@ -94,6 +96,7 @@ phase+=source;if(posterize)phase=floor(phase*7.)/7.;return phase;}
 /* SUBSTANCE_MODULE */
 /* PHOTON_MODULE */
 /* UNDERLAY_MODULE */
+/* SEMANTIC_GRAVITY_MODULE */
 /* FILAMENT_MODULE */
 /* MATERIAL_MODULE */
 /* ATMOSPHERE_MODULE */
@@ -186,7 +189,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
     filamentAdornmentUnavailable = false, filamentMorphUnavailable = false,
     filamentContagionUnavailable = false, filamentNeuralUnavailable = false,
     filamentPlasticUnavailable = false, filamentScarUnavailable = false,
-    filamentRegenUnavailable = false,
+    filamentRegenUnavailable = false, semanticGravityUnavailable = false,
     underlayUnavailable = false, alchemyUnavailable = false,
     injuryUnavailable = false, fossilUnavailable = false,
     successionUnavailable = false, foodWebUnavailable = false;
@@ -200,7 +203,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
        !filamentMaterialUnavailable && !filamentStitchUnavailable &&
        !filamentSculptUnavailable && !filamentAdornmentUnavailable && !filamentMorphUnavailable &&
        !filamentContagionUnavailable && !filamentNeuralUnavailable && !filamentPlasticUnavailable && !filamentScarUnavailable &&
-       !filamentRegenUnavailable && !underlayUnavailable &&
+       !filamentRegenUnavailable && !semanticGravityUnavailable && !underlayUnavailable &&
        !strangeUnavailable && !fossilUnavailable && !successionUnavailable && !foodWebUnavailable && !atmosphereUnavailable &&
        !atmosphereBUnavailable && !habitatUnavailable)return source;
     return {
@@ -216,6 +219,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       ...(substanceUnavailable ? {substanceAmount:0}:{}),
       ...(photonUnavailable ? {photonAmount:0}:{}),
       ...(filamentUnavailable ? {filamentAmount:0}:{}),
+      ...(semanticGravityUnavailable ? {semanticGravityMode:"Off",semanticGravityAmount:0}:{}),
       ...(filamentHybridUnavailable ? {filamentCrossbreed:0}:{}),
       ...(filamentStitchUnavailable ? {filamentStitchAmount:0}:{}),
       ...(filamentAdornmentUnavailable ? {filamentAdornmentAmount:0}:{}),
@@ -327,6 +331,57 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
     gl.activeTexture(gl.TEXTURE0);
   }
 
+  // Paint actual author text from the EXPORT compositor into one reusable,
+  // bounded alpha texture. Preview and strict export share this exact path.
+  let semanticGlyphCanvas=null,semanticGlyphContext=null,semanticGlyphTexture=null;
+  function releaseSemanticGlyph(){
+    if(semanticGlyphTexture)gl.deleteTexture(semanticGlyphTexture);
+    semanticGlyphTexture=null;
+    if(semanticGlyphCanvas)semanticGlyphCanvas.width=semanticGlyphCanvas.height=1;
+    semanticGlyphCanvas=null;semanticGlyphContext=null;
+  }
+  function uploadSemanticGlyph(state,timeline,width,height){
+    if(gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)<7)
+      throw Error("Semantic Gravity requires seven fragment texture units.");
+    if(!semanticGlyphCanvas){
+      semanticGlyphCanvas=document.createElement("canvas");
+      semanticGlyphContext=semanticGlyphCanvas.getContext("2d",{alpha:true});
+      if(!semanticGlyphContext)throw Error("Cannot create semantic glyph canvas.");
+    }
+    // One fixed-cost mask for any preview/export resolution. Aspect preserved.
+    const ratio=512/Math.max(width,height);
+    const maskW=Math.max(32,Math.round(width*ratio));
+    const maskH=Math.max(32,Math.round(height*ratio));
+    if(semanticGlyphCanvas.width!==maskW || semanticGlyphCanvas.height!==maskH){
+      semanticGlyphCanvas.width=maskW;semanticGlyphCanvas.height=maskH;
+    }
+    // The same compositor transforms multi-layer text, rich font layouts,
+    // motion, letter warps and glyph styles at the same timeline.
+    paintLettering(semanticGlyphContext,state,timeline,maskW,maskH,true);
+    if(!semanticGlyphTexture){
+      semanticGlyphTexture=gl.createTexture();
+      if(!semanticGlyphTexture)throw Error("Cannot allocate semantic glyph texture.");
+      gl.activeTexture(gl.TEXTURE6);
+      gl.bindTexture(gl.TEXTURE_2D,semanticGlyphTexture);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
+    }
+    gl.activeTexture(gl.TEXTURE6);
+    gl.bindTexture(gl.TEXTURE_2D,semanticGlyphTexture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+    try{
+      gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,
+        semanticGlyphCanvas);
+    }finally{
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,false);
+      gl.activeTexture(gl.TEXTURE0);
+    }
+    const uploadError=gl.getError();
+    if(uploadError!==gl.NO_ERROR)
+      throw Error("Semantic glyph texture upload failed (WebGL "+uploadError+").");
+  }
   // Text is composited AFTER the artwork and feedback passes. The main art
   // shader never depends on typography, so an unsupported font effect cannot
   // disable the canvas or silently swallow all words.
@@ -695,6 +750,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       withUnderlay = s.underlayAmount>0,
       withFilament = s.filamentAmount>0,
       withHybrid = withFilament && s.filamentCrossbreed>0,
+      withSemantic = withFilament && hasSemanticLettering(s),
       withOpticsA = withFilament && s.filamentOpticsAmount>0 && s.filamentOpticsMode!=="Off",
       withOpticsB = withHybrid && s.filamentSecondOpticsAmount>0 && s.filamentSecondOpticsMode!=="Off",
       withOptics = withOpticsA || withOpticsB,
@@ -747,7 +803,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       ),
       withStrange = (s.engine>=17 && s.engine<=19) ||
         (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAdornment ? "trinket"+filamentAdornmentModes.indexOf(s.filamentAdornmentMode)+(withHybrid?"x"+filamentAdornmentModes.indexOf(s.filamentSecondAdornmentMode):"") : "bare-trinkets"}/${withMorph?"morph"+filamentMaterials.indexOf(s.filamentMorphTarget)+(withHybrid?"x"+filamentMaterials.indexOf(s.filamentSecondMorphTarget):""):"no-morph"}/${withContagion?"contagion"+filamentContagionModes.indexOf(s.filamentContagionMode):"no-contagion"}/${withNeural?"neural"+filamentNeuralModes.indexOf(s.filamentNeuralMode):"no-neural"}/${withPlastic?"plastic"+filamentPlasticModes.indexOf(s.filamentPlasticMode):"no-plastic"}/${withScars?"scars"+filamentScarModes.indexOf(s.filamentScarMode):"no-scars"}/${withRegen?"regen"+filamentRegenModes.indexOf(s.filamentRegenMode):"no-regen"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}/${withAlchemy ? "alchemy"+alchemyModes.indexOf(s.alchemyMode) : "no-alchemy"}/${withInjury ? "injury"+injuryModes.indexOf(s.injuryMode) : "no-injury"}/${withOptics ? "struct-opt"+(withOpticsA?structuralOpticsModes.indexOf(s.filamentOpticsMode):0)+"x"+(withOpticsB?structuralOpticsModes.indexOf(s.filamentSecondOpticsMode):0):"bare-optics"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAdornment ? "trinket"+filamentAdornmentModes.indexOf(s.filamentAdornmentMode)+(withHybrid?"x"+filamentAdornmentModes.indexOf(s.filamentSecondAdornmentMode):"") : "bare-trinkets"}/${withMorph?"morph"+filamentMaterials.indexOf(s.filamentMorphTarget)+(withHybrid?"x"+filamentMaterials.indexOf(s.filamentSecondMorphTarget):""):"no-morph"}/${withContagion?"contagion"+filamentContagionModes.indexOf(s.filamentContagionMode):"no-contagion"}/${withNeural?"neural"+filamentNeuralModes.indexOf(s.filamentNeuralMode):"no-neural"}/${withPlastic?"plastic"+filamentPlasticModes.indexOf(s.filamentPlasticMode):"no-plastic"}/${withScars?"scars"+filamentScarModes.indexOf(s.filamentScarMode):"no-scars"}/${withRegen?"regen"+filamentRegenModes.indexOf(s.filamentRegenMode):"no-regen"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}/${withAlchemy ? "alchemy"+alchemyModes.indexOf(s.alchemyMode) : "no-alchemy"}/${withInjury ? "injury"+injuryModes.indexOf(s.injuryMode) : "no-injury"}/${withOptics ? "struct-opt"+(withOpticsA?structuralOpticsModes.indexOf(s.filamentOpticsMode):0)+"x"+(withOpticsB?structuralOpticsModes.indexOf(s.filamentSecondOpticsMode):0):"bare-optics"}/${withSemantic?"semantic-glyph":"no-semantic-glyph"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -810,6 +866,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       ? (withHybrid ? "#define FILAMENT_HYBRID 1\n" : "") +
         (withFiberDetail ? "#define FILAMENT_FIBER_DETAIL 1\n" : "") +
         (withOptics ? "#define FILAMENT_STRUCTURAL_OPTICS 1\n" : "") +
+        (withSemantic ? "#define FILAMENT_SEMANTIC_GRAVITY 1\n" : "") +
         (withStitch ? "#define FILAMENT_STITCHING 1\n" : "") +
         (withSculpt ? "#define FILAMENT_SCULPT 1\n" : "") +
         (withAdornment ? "#define FILAMENT_ADORNMENT 1\n" : "") +
@@ -879,6 +936,8 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
           withScars?filamentScarModes.indexOf(s.filamentScarMode):null),
           withRegen?filamentRegenModes.indexOf(s.filamentRegenMode):null)
       : "";
+    source=source.replace("/* SEMANTIC_GRAVITY_MODULE */",
+      withSemantic?semanticGravityGLSL:"");
     source=source.replace("/* FILAMENT_MODULE */",selectedFilament);
     source=source.replace("/* FILAMENT_POST */",
       withFilament?"col=livingFilamentForge(col,uv,p,v);":"");
@@ -1321,6 +1380,9 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
           }else if(candidate.filamentAmount>0 && candidate.filamentSculptAmount>0){
             filamentSculptUnavailable=true;
             console.warn("Sculpted thread shading unsupported; preserving woven geometry, materials and stitching.",e);
+          }else if(hasSemanticLettering(candidate) && !semanticGravityUnavailable){
+            semanticGravityUnavailable=true;
+            console.warn("Semantic Gravity exceeded this preview GPU; preserving other fibers.",e);
           }else if(candidate.filamentAmount>0 && candidate.filamentStitchAmount>0){
             filamentStitchUnavailable=true;
             console.warn("Animated stitches unsupported by this GPU; keeping the lace and materials.",e);
@@ -1375,8 +1437,8 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       }
       if(lastCompileError)throw lastCompileError;
       const hasBiology = updateBiology(s, timeline);
-      // Typography now lives entirely in the DOM preview / 2D export pipeline.
-      // Avoid redundant GL texture uploads (especially expensive on iPhone Safari).
+      // Visible words composite outside WebGL. Only Semantic Gravity
+      // opt-in uploads their glyph mask to the geometric thread shader.
       const hasLettering = false;
       const hasMemoryEffects = (s.afterimage > 0 || s.datamosh > 0) && !memoryDisabled;
       let drawWithMemory = false;
@@ -1403,6 +1465,20 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       gl.viewport(0, 0, width, height);
       gl.useProgram(active.program);
       gl.uniform2f(loc("res"), width, height);
+      if(hasSemanticLettering(compiledState)){
+        try{
+          uploadSemanticGlyph(compiledState,timeline,width,height);
+          gl.uniform1i(loc("semanticGlyphTex"),6);
+        }catch(error){
+          if(exactEffects)throw artworkParityError(
+            "Text-to-thread glyph mask could not be uploaded",error);
+          semanticGravityUnavailable=true;
+          console.warn("Semantic lettering mask failed; preview will retry without it.",error);
+          return false;
+        }
+      }
+      gl.uniform1i(loc("semanticGravityMode"),
+        Math.max(0,semanticGravityModes.indexOf(compiledState.semanticGravityMode)));
       gl.uniform1f(loc("time"), timeline.time);
       gl.uniform1f(loc("colorTime"), timeline.colorTime);
       gl.uniform1f(loc("seed"), s.seed % 1000000);
@@ -1468,6 +1544,8 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "filamentFeralKnots","filamentFeralMutation",
         "filamentQuasiSpacing","filamentQuasiPhason","filamentQuasiDrift",
         "filamentQuasiRelief","filamentQuasiElevation","filamentQuasiOrnament",
+        "semanticGravityAmount","semanticGravityRadius","semanticGravityFalloff",
+        "semanticGravitySwirl","semanticGravityPulse","semanticGravityVariation",
         "filamentCrossbreed","filamentInterlace","filamentTwist","filamentPhase",
         "filamentNap","filamentLuster","filamentBeads","filamentBeadSize","filamentSecondHue",
         "filamentOpticsAmount","filamentOpticsThickness","filamentOpticsDispersion",
@@ -1774,6 +1852,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       releaseMemory();
       releaseBiology();
       releaseLettering();
+      releaseSemanticGlyph();
       if(textOverlayProgram)gl.deleteProgram(textOverlayProgram);
       gl.deleteTexture(emptyBioTexture);
       if (memoryShader){

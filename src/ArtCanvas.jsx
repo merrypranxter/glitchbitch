@@ -63,7 +63,12 @@ export default function ArtCanvas({
       lastH = 0,
       lastTime = -1,
       lastColorTime = -1,
-      lastFontRevision = -1;
+      lastFontRevision = -1,
+      // Keep the preview alive through an optional-effect shader failure.
+      renderRetryAt = 0,
+      failedState = null,
+      failedSize = "",
+      failedFontRevision = -1;
     let intervals = [],
       previewScale = 1,
       lastAdjust = 0;
@@ -101,32 +106,53 @@ export default function ArtCanvas({
       const cssW = canvas.clientWidth,
         cssH = canvas.clientHeight;
       const dims = previewDimensions(cssW, cssH, rt.quality, previewScale);
+      const fontRevision=retroFontRevision();
+      const sizeKey=dims.width+"x"+dims.height;
+      // Retry at once when state/font/resolution changes, otherwise throttle
+      // a failed GPU compile to one attempt per 1.8s (not 60 attempts/sec).
+      const retryAllowed=now>=renderRetryAt ||
+        failedState!==state || failedSize!==sizeKey ||
+        failedFontRevision!==fontRevision;
       const seeked =
         !animated &&
         (lastTime !== timelineRef.current.time ||
           lastColorTime !== timelineRef.current.colorTime);
       if (
         !hidden &&
+        retryAllowed &&
         renderer.ready() &&
         ((animated && now - lastDraw >= 1000 / 30 - 1) ||
           lastState !== state ||
-          lastFontRevision !== retroFontRevision() ||
+          lastFontRevision !== fontRevision ||
           lastW !== dims.width ||
           lastH !== dims.height ||
           seeked)
       ) {
         const drawInterval = now - lastDraw;
         try {
-          renderer.draw(state, timelineRef.current, dims.width, dims.height);
+          if(!renderer.draw(state, timelineRef.current, dims.width, dims.height))
+            throw Error("Artwork frame did not complete; retrying the renderer.");
+          if(failedState!==null){
+            failedState=null;renderRetryAt=0;
+            setError("");
+          }
           lastState = state;
-          lastFontRevision = retroFontRevision();
+          lastFontRevision = fontRevision;
           lastW = dims.width;
           lastH = dims.height;
           lastDraw = now;
           lastTime = timelineRef.current.time;
           lastColorTime = timelineRef.current.colorTime;
         } catch (e) {
-          setError(e.message);
+          failedState=state;
+          failedSize=sizeKey;
+          failedFontRevision=fontRevision;
+          renderRetryAt=now+1800;
+          setError(e?.message||"Artwork frame could not render.");
+          onStatus({error:true});
+          // Do not permanently kill the RAF after one WebGL failure.
+          // The existing Retry button can still recreate the GPU context.
+          frame=requestAnimationFrame(tick);
           return;
         }
         if (

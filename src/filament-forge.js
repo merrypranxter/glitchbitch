@@ -2693,11 +2693,11 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     float prePulse=.5+.5*cos(phi-future);
     float secondPre=.5+.5*cos(phi-future*(1.0+.22*filamentRetroParadox));
     float reversePulse=.5+.5*cos(phi+backwards+phaseOffset*.27);
-    float precision=mix(.24,.74,filamentRetroCoherence);
-    float nowSewn=smoothstep(.19,precision,nowPulse);
-    float approaching=smoothstep(.19,precision,prePulse);
-    float phantom=smoothstep(.22,precision+.08,secondPre);
-    float reversed=smoothstep(.2,precision,reversePulse);
+    float seamSharpness=mix(.24,.74,filamentRetroCoherence);
+    float nowSewn=smoothstep(.19,seamSharpness,nowPulse);
+    float approaching=smoothstep(.19,seamSharpness,prePulse);
+    float phantom=smoothstep(.22,seamSharpness+.08,secondPre);
+    float reversed=smoothstep(.2,seamSharpness,reversePulse);
     // A future knot flashes at a seed-anchored seam station BEFORE the
     // traveling present-time stitch pulse reaches it.
     float knotIndex=floor(localProgress*(5.0+filamentStitchLength*9.0)+seedPhase*.071);

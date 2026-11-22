@@ -32,7 +32,7 @@ function declarations(glsl){
 test("all static exported GLSL modules avoid reserved identifiers",()=>{
   // Audit exactly the modules assembled by the shared preview/export renderer.
   const renderer=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
-  const imports=[...new Set([...renderer.matchAll(/from ["']\\.\\/([^"']+\\.js)["']/g)]
+  const imports=[...new Set([...renderer.matchAll(/from ["']\.\/([^"']+\.js)["']/g)]
     .map(m=>m[1]))];
   let scanned=0;
   for(const file of imports){

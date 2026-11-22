@@ -94,7 +94,7 @@ export function disableSemanticGravity(state){
  * a signed distance field or semantic understanding of the quote.
  * At most 9 mask samples per fragment for enabled filament layers.
  */
-export const semanticGravityGLSL=String.raw\`
+export const semanticGravityGLSL=String.raw`
 uniform sampler2D semanticGlyphTex;
 uniform int semanticGravityMode;
 uniform float semanticGravityAmount,semanticGravityRadius,semanticGravityFalloff;
@@ -153,4 +153,4 @@ vec3 semanticGlyphForce(vec2 uv,float phaseOffset){
     (.23+.77*influence)*tremor;
   return vec3(flow*energy,center);
 }
-\`;
+`;

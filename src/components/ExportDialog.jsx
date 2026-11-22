@@ -305,8 +305,17 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
           sourceHeight:picture.sourceHeight
         });
       }
-      const motion=verifyMotionDecodeTimes(
+      const measured=verifyMotionDecodeTimes(
         analyzeClipMotion(references,decoded),decoded,samples,ready.format);
+      // The existing full-clip audit compares plain strict PNGs. Once the
+      // user explicitly crossfades the tail those reference pixels no longer
+      // describe what the last encoded frame SHOULD look like. Do not claim
+      // that intentional Loop Surgery is lost motion or encoder corruption.
+      const motion=ready.loopMode!=="Off"&&measured.possibleMotionLoss?
+        {...measured,possibleMotionLoss:false,
+          status:"Inconclusive: Loop Surgery intentionally changes ending frames",
+          closureAdjusted:true}:
+        {...measured,closureAdjusted:ready.loopMode!=="Off"};
       const report=motionForensicsReport({
         samples:rows,motion,format:ready.format,method:ready.method,
         seed:ready.snapshot.seed,size:ready.frameSize
@@ -660,6 +669,12 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
               <span key={step.between}> {step.between}: PNG {step.reference.meanRGBChange}
                 {" / "} encoded {step.encoded.meanRGBChange};</span>)}
           </p>
+          {ready.loopMode!=="Off"&&<p className="export-note">
+            Loop Surgery was enabled for this clip. The strict PNG references
+            do not include the optional closing blend, so the final-frame
+            difference is intentional; use Loop Seam Scanner to check the
+            actual encoded wrap instead of treating tail differences as export loss.
+          </p>}
           <p className="export-note">A possible freeze warning requires the reference to
             demonstrate meaningful motion while the encoded frames barely change.
             Static artwork, H.264 compression, GIF palette reduction, native-recorder
@@ -725,6 +740,12 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
             {" "+seamAudit.results.midpointAfter.meanRGBChange}/255.
             A strong loop snap means the end-to-start transition is unusually
             different from the normal changes near both ends.</p>
+          {ready.loopMode!=="Off"&&<p className="export-note">
+            Loop Surgery softened this exported loop using a
+            {" "+ready.loopBlendSeconds}s tail crossfade to the actual opening
+            frame. End→Start should be much gentler. MP4 codec differences,
+            moving textures and temporary ghosting can still be visible.
+          </p>}
           <p className="export-note">An intentional glitch, camera cut, rhythmic
             pulse or abrupt transformation may trigger a warning on purpose.
             This is a visual clue, not automatic proof of an encoder bug or

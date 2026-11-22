@@ -2,7 +2,8 @@ import { createRenderer } from "./renderer.js";
 import { isArtworkParityError, artworkParityError } from "./export-parity.js";
 import { ratios } from "./data.js";
 import { hasVisibleLettering, paintLettering, waitForLetteringFonts } from "./text-compositor.js";
-import {loopClosureFrames,loopClosureMix,weftRevealRects,irisRevealRadius} from "./loop-closure.js";
+import {loopClosureFrames,loopClosureMix,weftRevealRects,irisRevealRadius,
+  quiltReassemblyTiles,clockworkSweep,crystalBloomDiamonds} from "./loop-closure.js";
 import {createPlaybackFrames,validateBoomerangCache} from "./boomerang-playback.js";
 
 export function dimensions(ratio, longEdge) {
@@ -210,6 +211,37 @@ function createFrameWorkspace(state, timeline, size, signal,
         ctx.arc(size.width/2,size.height/2,radius,0,Math.PI*2);
         ctx.clip();
         ctx.drawImage(loopAnchor,0,0);
+      }else if(loopMode==="Quilt Reassembly"){
+        const tiles=quiltReassemblyTiles(size.width,size.height,closureMix);
+        if(tiles.length){
+          ctx.beginPath();
+          for(const tile of tiles)
+            ctx.rect(tile.x,tile.y,tile.width,tile.height);
+          ctx.clip();
+          ctx.drawImage(loopAnchor,0,0);
+        }
+      }else if(loopMode==="Clockwork Sweep"){
+        const sweep=clockworkSweep(size.width,size.height,closureMix);
+        ctx.beginPath();
+        ctx.moveTo(sweep.cx,sweep.cy);
+        ctx.arc(sweep.cx,sweep.cy,sweep.radius,sweep.start,sweep.end);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(loopAnchor,0,0);
+      }else if(loopMode==="Crystal Bloom"){
+        const crystals=crystalBloomDiamonds(size.width,size.height,closureMix);
+        if(crystals.length){
+          ctx.beginPath();
+          for(const {cx,cy,rx,ry} of crystals){
+            ctx.moveTo(cx,cy-ry);
+            ctx.lineTo(cx+rx,cy);
+            ctx.lineTo(cx,cy+ry);
+            ctx.lineTo(cx-rx,cy);
+            ctx.closePath();
+          }
+          ctx.clip();
+          ctx.drawImage(loopAnchor,0,0);
+        }
       }
       ctx.restore();
     }

@@ -237,18 +237,20 @@ export async function decodeGifMotionSamples(blob,samples){
     ...frame,mediaTime:frame.encodedDisplayTime
   }));
 }
-function waitForVideo(video,event,check,timeout=12000){
+function waitForVideo(video,events,check,timeout=12000){
+  const signals=Array.isArray(events)?events:[events];
   if(check())return Promise.resolve();
   return new Promise((resolve,reject)=>{
     let timer;
     const cleanup=()=>{
       clearTimeout(timer);
-      video.removeEventListener(event,done);
+      for(const event of signals)video.removeEventListener(event,done);
       video.removeEventListener("error",fail);
     };
     const done=()=>{if(check()){cleanup();resolve();}};
     const fail=()=>{cleanup();reject(Error("MP4 decoding failed during multi-frame audit."));};
-    video.addEventListener(event,done);video.addEventListener("error",fail);
+    for(const event of signals)video.addEventListener(event,done);
+    video.addEventListener("error",fail);
     timer=setTimeout(()=>{cleanup();reject(Error("Timed out reading a recorded video frame."));},timeout);
   });
 }
@@ -284,7 +286,7 @@ export async function decodeMp4MotionSamples(blob,samples,fps=30){
       const seek=Math.max(0,Math.min(sample.seconds,maximum));
       if(Math.abs(video.currentTime-seek)>.0001||
          video.readyState<video.HAVE_CURRENT_DATA){
-        const pending=waitForVideo(video,"seeked",()=>
+        const pending=waitForVideo(video,["seeked","loadeddata","canplay"],()=>
           !video.seeking&&video.readyState>=video.HAVE_CURRENT_DATA&&
           Math.abs(video.currentTime-seek)<.12);
         // Safari sometimes doesn't trigger seeked for a zero-time reset.

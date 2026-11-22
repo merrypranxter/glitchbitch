@@ -131,7 +131,7 @@ test("actual glyph alpha gradients act on fiber geometry before species + stitch
   assert.match(semanticGravityGLSL,/if\(semanticGravityMode==7\)/);
   assert.match(filamentGLSL,/#ifdef FILAMENT_SEMANTIC_GRAVITY/);
   assert.match(filamentGLSL,/semanticGlyphForce\(uv,phaseOffset\)/);
-  assert.match(filamentGLSL,/q\+=vec2\(semanticTug\.x/);
+  assert.match(filamentGLSL,/q-=vec2\(semanticTug\.x/);
   assert.match(filamentGLSL,/mask\*=1\.0-semanticGravityAmount/);
   const hybrid=specializeFilamentStitchMotion(specializeFilamentGeometry(
     filamentGLSL,22,23),32);

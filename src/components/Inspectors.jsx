@@ -71,6 +71,9 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   chladniNeedlePresets,applyChladniNeedlePreset,remixChladniNeedles,
   filamentSculptModes,filamentSculptFamilies,filamentSculptPresets,
   applyFilamentSculptPreset,remixFilamentSculpt,disableFilamentSculpt } from "../filament-forge.js";
+import {structuralOpticsModes,structuralOpticsDescriptions,structuralOpticsPresets,
+  applyStructuralOpticsPreset,remixStructuralOptics,disableStructuralOptics,
+  swapStructuralOptics} from "../structural-thread-optics.js";
 import { underlayModes,underlayFamilies,underlayDescriptions,remixUnderlay,
   underlayPresets,applyUnderlayPreset,changeUnderlayMode,
   nextUnderlayMode,disableUnderlay } from "../living-underlay.js";
@@ -295,6 +298,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [filamentPreset,setFilamentPreset]=React.useState(filamentPresets[0].name);
   const [hybridPreset,setHybridPreset]=React.useState(filamentHybridPresets[0].name);
   const [materialPreset,setMaterialPreset]=React.useState(filamentMaterialPresets[0].name);
+  const [opticsPreset,setOpticsPreset]=React.useState(structuralOpticsPresets[0].name);
   const [adornmentPreset,setAdornmentPreset]=React.useState(filamentAdornmentPresets[0].name);
   const [morphPreset,setMorphPreset]=React.useState(filamentMorphPresets[0].name);
   const [contagionPreset,setContagionPreset]=React.useState(filamentContagionPresets[0].name);
@@ -1873,6 +1877,97 @@ export function EffectsInspector({ history, onTool, tool }) {
           </button>
         </div>
         <p className="control-note">The color offset applies to the second parent when crossbreeding is on. Material details compile only when used, and the old shader remains the fallback.</p>
+
+        <details className="filament-crossbreeder filament-structural-optics">
+          <summary>🌈 STRUCTURAL-COLOR OPTICS — DRESS THE THREADS</summary>
+          <p className="control-note">Light caught INSIDE the selected fabric. Seven pseudo-optical laws alter the already-dressed individual yarn, with angle/curvature/film-thickness-responsive interference, directional reflection and palette-dependent pearlescence. Both parents have completely independent coats. The original 14 materials remain underneath, unmodified.</p>
+          <Select label="Structural-color twin-fiber recipe" value={opticsPreset} onChange={setOpticsPreset}>
+            {structuralOpticsPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+          </Select>
+          <div className="pane-actions">
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(x=>applyStructuralOpticsPreset(x,opticsPreset))}>
+              Dress BOTH fibers in spectral weirdness
+            </button>
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(x=>remixStructuralOptics(x))}>
+              <Shuffle size={13}/> Shuffle both optical coats
+            </button>
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(x=>remixStructuralOptics(x,Math.random,"both",true))}>
+              <Dices size={13}/> Wild spectral wardrobe
+            </button>
+          </div>
+          <details className="filament-crossbreeder" open>
+            <summary>🧵 PARENT A — FIRST FIBER OPTICS</summary>
+            <Select label="First parent optical law" value={s.filamentOpticsMode}
+              onChange={mode=>history.change(x=>({...x,filamentOpticsMode:mode,
+                filamentAmount:mode==="Off"?x.filamentAmount:Math.max(65,x.filamentAmount),
+                filamentOpticsAmount:mode==="Off"?0:Math.max(75,x.filamentOpticsAmount)}))}>
+              {structuralOpticsModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+            </Select>
+            <p className="control-note">{structuralOpticsDescriptions[s.filamentOpticsMode]}</p>
+            <Parameter label="First fiber structural-color strength" name="filamentOpticsAmount" history={history}/>
+            <Parameter label="First fiber film thickness" name="filamentOpticsThickness" history={history}/>
+            <Parameter label="First fiber dispersion" name="filamentOpticsDispersion" history={history}/>
+            <Parameter label="First fiber optical anisotropy" name="filamentOpticsAnisotropy" history={history}/>
+            <Parameter label="First fiber curvature response" name="filamentOpticsCurvature" history={history}/>
+            <Parameter label="First fiber pearlescent layer" name="filamentOpticsPearl" history={history}/>
+            <Parameter label="First fiber spectral phase" name="filamentOpticsPhase" history={history}/>
+            <div className="pane-actions">
+              <button type="button" className="button secondary"
+                onClick={()=>history.change(x=>remixStructuralOptics(x,Math.random,"first"))}>
+                <Shuffle size={13}/> Shuffle first optics
+              </button>
+              <button type="button" className="button secondary"
+                disabled={s.filamentOpticsAmount<=0}
+                onClick={()=>history.change(x=>disableStructuralOptics(x,"first"))}>
+                Remove first coat
+              </button>
+            </div>
+          </details>
+          <details className="filament-crossbreeder">
+            <summary>🧵 PARENT B — SECOND FIBER OPTICS</summary>
+            <p className="control-note">This parent's coat becomes visible only when Hybrid Breeder has a second thread parent turned on. It does NOT mirror Parent A's coating unless you choose the same optical law.</p>
+            <Select label="Second parent optical law" value={s.filamentSecondOpticsMode}
+              onChange={mode=>history.change(x=>({...x,filamentSecondOpticsMode:mode,
+                filamentSecondOpticsAmount:mode==="Off"?0:Math.max(75,x.filamentSecondOpticsAmount)}))}>
+              {structuralOpticsModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+            </Select>
+            <p className="control-note">{structuralOpticsDescriptions[s.filamentSecondOpticsMode]}</p>
+            <Parameter label="Second fiber structural-color strength" name="filamentSecondOpticsAmount" history={history}/>
+            <Parameter label="Second fiber film thickness" name="filamentSecondOpticsThickness" history={history}/>
+            <Parameter label="Second fiber dispersion" name="filamentSecondOpticsDispersion" history={history}/>
+            <Parameter label="Second fiber optical anisotropy" name="filamentSecondOpticsAnisotropy" history={history}/>
+            <Parameter label="Second fiber curvature response" name="filamentSecondOpticsCurvature" history={history}/>
+            <Parameter label="Second fiber pearlescent layer" name="filamentSecondOpticsPearl" history={history}/>
+            <Parameter label="Second fiber spectral phase" name="filamentSecondOpticsPhase" history={history}/>
+            <div className="pane-actions">
+              <button type="button" className="button secondary"
+                onClick={()=>history.change(x=>remixStructuralOptics(x,Math.random,"second"))}>
+                <Dices size={13}/> Shuffle second optics
+              </button>
+              <button type="button" className="button secondary"
+                disabled={s.filamentSecondOpticsAmount<=0}
+                onClick={()=>history.change(x=>disableStructuralOptics(x,"second"))}>
+                Remove second coat
+              </button>
+            </div>
+          </details>
+          <div className="pane-actions">
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(swapStructuralOptics)}>
+              Swap optical coats A ↔ B
+            </button>
+            <button type="button" className="button secondary"
+              disabled={s.filamentOpticsAmount<=0 && s.filamentSecondOpticsAmount<=0}
+              onClick={()=>history.change(x=>disableStructuralOptics(x))}>
+              Restore original thread colors
+            </button>
+          </div>
+          <p className="control-note">Light is pseudo-view and yarn-curvature sensitive within the existing 2D artboard—not physically measured spectral reflectance. Your 14 original dressable fibers, palettes, over-under stitches, hybrid materials, jewelry and exact-effects export pipeline remain intact. Off compiles no optical color pass.</p>
+        </details>
+
       </details>
       <details className="filament-crossbreeder filament-metamorphosis">
         <summary>🦋 THREAD METAMORPHOSIS — FABRIC THAT CHANGES MATERIAL</summary>

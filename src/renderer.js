@@ -1,4 +1,5 @@
 import { appearanceGLSL } from "./appearance.js";
+import {structuralOpticsModes} from "./structural-thread-optics.js";
 import { artworkParityError } from "./export-parity.js";
 import { geometryGLSL } from "./geometry.js";
 import { motionGLSL } from "./motion.js";
@@ -694,6 +695,9 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       withUnderlay = s.underlayAmount>0,
       withFilament = s.filamentAmount>0,
       withHybrid = withFilament && s.filamentCrossbreed>0,
+      withOpticsA = withFilament && s.filamentOpticsAmount>0 && s.filamentOpticsMode!=="Off",
+      withOpticsB = withHybrid && s.filamentSecondOpticsAmount>0 && s.filamentSecondOpticsMode!=="Off",
+      withOptics = withOpticsA || withOpticsB,
       withStitch = withFilament && s.filamentStitchAmount>0,
       withSculpt = withFilament && s.filamentSculptAmount>0,
       withAdornment = withFilament && s.filamentAdornmentAmount>0 && (
@@ -743,7 +747,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       ),
       withStrange = (s.engine>=17 && s.engine<=19) ||
         (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAdornment ? "trinket"+filamentAdornmentModes.indexOf(s.filamentAdornmentMode)+(withHybrid?"x"+filamentAdornmentModes.indexOf(s.filamentSecondAdornmentMode):"") : "bare-trinkets"}/${withMorph?"morph"+filamentMaterials.indexOf(s.filamentMorphTarget)+(withHybrid?"x"+filamentMaterials.indexOf(s.filamentSecondMorphTarget):""):"no-morph"}/${withContagion?"contagion"+filamentContagionModes.indexOf(s.filamentContagionMode):"no-contagion"}/${withNeural?"neural"+filamentNeuralModes.indexOf(s.filamentNeuralMode):"no-neural"}/${withPlastic?"plastic"+filamentPlasticModes.indexOf(s.filamentPlasticMode):"no-plastic"}/${withScars?"scars"+filamentScarModes.indexOf(s.filamentScarMode):"no-scars"}/${withRegen?"regen"+filamentRegenModes.indexOf(s.filamentRegenMode):"no-regen"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}/${withAlchemy ? "alchemy"+alchemyModes.indexOf(s.alchemyMode) : "no-alchemy"}/${withInjury ? "injury"+injuryModes.indexOf(s.injuryMode) : "no-injury"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAdornment ? "trinket"+filamentAdornmentModes.indexOf(s.filamentAdornmentMode)+(withHybrid?"x"+filamentAdornmentModes.indexOf(s.filamentSecondAdornmentMode):"") : "bare-trinkets"}/${withMorph?"morph"+filamentMaterials.indexOf(s.filamentMorphTarget)+(withHybrid?"x"+filamentMaterials.indexOf(s.filamentSecondMorphTarget):""):"no-morph"}/${withContagion?"contagion"+filamentContagionModes.indexOf(s.filamentContagionMode):"no-contagion"}/${withNeural?"neural"+filamentNeuralModes.indexOf(s.filamentNeuralMode):"no-neural"}/${withPlastic?"plastic"+filamentPlasticModes.indexOf(s.filamentPlasticMode):"no-plastic"}/${withScars?"scars"+filamentScarModes.indexOf(s.filamentScarMode):"no-scars"}/${withRegen?"regen"+filamentRegenModes.indexOf(s.filamentRegenMode):"no-regen"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}/${withAlchemy ? "alchemy"+alchemyModes.indexOf(s.alchemyMode) : "no-alchemy"}/${withInjury ? "injury"+injuryModes.indexOf(s.injuryMode) : "no-injury"}/${withOptics ? "struct-opt"+(withOpticsA?structuralOpticsModes.indexOf(s.filamentOpticsMode):0)+"x"+(withOpticsB?structuralOpticsModes.indexOf(s.filamentSecondOpticsMode):0):"bare-optics"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -805,6 +809,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
     const rawFilament=withFilament
       ? (withHybrid ? "#define FILAMENT_HYBRID 1\n" : "") +
         (withFiberDetail ? "#define FILAMENT_FIBER_DETAIL 1\n" : "") +
+        (withOptics ? "#define FILAMENT_STRUCTURAL_OPTICS 1\n" : "") +
         (withStitch ? "#define FILAMENT_STITCHING 1\n" : "") +
         (withSculpt ? "#define FILAMENT_SCULPT 1\n" : "") +
         (withAdornment ? "#define FILAMENT_ADORNMENT 1\n" : "") +
@@ -824,6 +829,9 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
             "#define filamentStitchMode "+Math.max(0,filamentStitchModes.indexOf(s.filamentStitchMode)))
           .replace("uniform int filamentSculptMode;",
             "#define filamentSculptMode "+Math.max(0,filamentSculptModes.indexOf(s.filamentSculptMode)))
+          .replace("uniform int filamentOpticsMode,filamentSecondOpticsMode;",
+            "#define filamentOpticsMode "+Math.max(0,structuralOpticsModes.indexOf(s.filamentOpticsMode))+"\n"+
+            "#define filamentSecondOpticsMode "+Math.max(0,structuralOpticsModes.indexOf(s.filamentSecondOpticsMode)))
           .replace("uniform int filamentSecondMaterial;",
             "#define filamentSecondMaterial "+Math.max(0,filamentMaterials.indexOf(s.filamentSecondMaterial)))
           .replace("uniform int filamentAdornmentMode,filamentSecondAdornmentMode;",
@@ -1462,6 +1470,11 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "filamentQuasiRelief","filamentQuasiElevation","filamentQuasiOrnament",
         "filamentCrossbreed","filamentInterlace","filamentTwist","filamentPhase",
         "filamentNap","filamentLuster","filamentBeads","filamentBeadSize","filamentSecondHue",
+        "filamentOpticsAmount","filamentOpticsThickness","filamentOpticsDispersion",
+        "filamentOpticsAnisotropy","filamentOpticsCurvature","filamentOpticsPearl","filamentOpticsPhase",
+        "filamentSecondOpticsAmount","filamentSecondOpticsThickness","filamentSecondOpticsDispersion",
+        "filamentSecondOpticsAnisotropy","filamentSecondOpticsCurvature",
+        "filamentSecondOpticsPearl","filamentSecondOpticsPhase",
         "filamentStitchAmount","filamentStitchSpeed",
         "filamentStitchLength","filamentStitchGlow",
         "filamentChladniOrder","filamentChladniResonance","filamentChladniDensity",

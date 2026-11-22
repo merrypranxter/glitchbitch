@@ -110,7 +110,7 @@ test("diagnostic output uses video EXACT dimensions; normal PNG, GIF and MP4 rem
   assert.match(exporter,/outputSize \|\| dimensions\(state\.ratio, longEdge\)/);
   assert.match(exporter,/renderer\.draw\(state, timeline, width, height\)/);
   assert.match(UI,/const decoded=gif\?await decodeStaticExport\(ready\.blob\):\s*await decodeMp4Export\(ready\.blob\)/);
-  assert.match(UI,/const matchedClock=clockAt\(ready\.snapshot,ready\.timeline,seconds\)/);
+  assert.match(UI,/const matchedClock=clockAt\(ready\.snapshot,ready\.timeline,\s*playbackTimeForMediaTime\(/);
   assert.match(UI,/exactEffects:true,outputSize:ready\.frameSize/);
   assert.match(UI,/analyzeEncodedFrame\(reference,decoded,/);
   assert.match(UI,/differenceHeatmap\(reference,decoded\)/);
@@ -118,7 +118,7 @@ test("diagnostic output uses video EXACT dimensions; normal PNG, GIF and MP4 rem
   assert.match(UI,/frameAuditUrls\.current\.forEach\(url=>URL\.revokeObjectURL\(url\)\)/);
   assert.match(UI,/Math\.max\(ready\.frameSize\.width,ready\.frameSize\.height\)>1080/);
   assert.match(UI,/Inspect REAL \{ready\.format\.toUpperCase\(\)\} frame vs PNG/);
-  assert.match(exporter,/await work\.render\(i \/ fps\)/);
-  assert.match(exporter,/const rgba=await work\.render\(i\/fps, true\)/);
+  assert.match(exporter,/await player\.render\(i\)/);
+  assert.match(exporter,/const rgba=await player\.render\(i,true\)/);
   assert.match(exporter,/source = new CanvasSource\(work\.capture/);
 });

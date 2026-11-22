@@ -1113,6 +1113,145 @@ export function specializeFilamentScars(source,index){
     body+"  }\n"+source.slice(ending);
 }
 
+
+/**
+ * REGENERATION LOOM: deterministic daughter-fiber geometry generated from
+ * the original strand distance field. Growth occurs BEFORE palette, neuro,
+ * material, ornament, and surface shading. No extra history framebuffer.
+ */
+export const filamentRegenModes=[
+  "Off",
+  "Forked nerve shoots",
+  "Wound bridges",
+  "Mycelial fan",
+  "Pearly callus",
+  "Gold repair vines",
+  "Synaptic grafts"
+];
+export const filamentRegenFamilies=[
+  {name:"Dormant",modes:filamentRegenModes.slice(0,1)},
+  {name:"Mending and bifurcation",modes:filamentRegenModes.slice(1,3)},
+  {name:"Biological regrowth",modes:filamentRegenModes.slice(3,5)},
+  {name:"Strange repair rituals",modes:filamentRegenModes.slice(5)}
+];
+export const filamentRegenDescriptions={
+  "Off": "Keep existing nerve scars and textile geometry untouched.",
+  "Forked nerve shoots": "Bifurcating fine daughter strands sprout from the original scarred thread paths.",
+  "Wound bridges": "New thin repair threads stitch across periodic breaks around stressed fibers.",
+  "Mycelial fan": "Branching fungal-looking filaments fan out from existing nerve-bearing strands.",
+  "Pearly callus": "Small pearl-like healing buds thicken the actual woven thread contours.",
+  "Gold repair vines": "Metallic-looking tendrils grow like kintsugi repair veins from damaged fibers.",
+  "Synaptic grafts": "Graft strands respond to contact with the second interwoven parent."
+};
+export const filamentRegenControls=[
+  "filamentRegenAmount","filamentRegenBranches","filamentRegenSpeed",
+  "filamentRegenHealing","filamentRegenGlow"
+];
+export const filamentRegenPresets=[
+  {
+    "name": "Electric bifurcation",
+    "filamentRegenMode": "Forked nerve shoots",
+    "filamentRegenAmount": 91,
+    "filamentRegenBranches": 73,
+    "filamentRegenSpeed": 58,
+    "filamentRegenHealing": 46,
+    "filamentRegenGlow": 78
+  },
+  {
+    "name": "Stitch the rupture",
+    "filamentRegenMode": "Wound bridges",
+    "filamentRegenAmount": 93,
+    "filamentRegenBranches": 54,
+    "filamentRegenSpeed": 52,
+    "filamentRegenHealing": 91,
+    "filamentRegenGlow": 71
+  },
+  {
+    "name": "Nerve fungus bloom",
+    "filamentRegenMode": "Mycelial fan",
+    "filamentRegenAmount": 96,
+    "filamentRegenBranches": 84,
+    "filamentRegenSpeed": 37,
+    "filamentRegenHealing": 54,
+    "filamentRegenGlow": 92
+  },
+  {
+    "name": "Opal callus garden",
+    "filamentRegenMode": "Pearly callus",
+    "filamentRegenAmount": 88,
+    "filamentRegenBranches": 64,
+    "filamentRegenSpeed": 43,
+    "filamentRegenHealing": 76,
+    "filamentRegenGlow": 82
+  },
+  {
+    "name": "Repair witch gold",
+    "filamentRegenMode": "Gold repair vines",
+    "filamentRegenAmount": 94,
+    "filamentRegenBranches": 78,
+    "filamentRegenSpeed": 62,
+    "filamentRegenHealing": 75,
+    "filamentRegenGlow": 96
+  },
+  {
+    "name": "Hybrid nerve graft",
+    "filamentRegenMode": "Synaptic grafts",
+    "filamentRegenAmount": 91,
+    "filamentRegenBranches": 72,
+    "filamentRegenSpeed": 65,
+    "filamentRegenHealing": 85,
+    "filamentRegenGlow": 90
+  }
+];
+export function applyFilamentRegenPreset(state,name){
+  const preset=filamentRegenPresets.find(x=>x.name===name);
+  if(!preset)return state;
+  const {name:unused,...args}=preset;
+  return {...state,...args,
+    filamentAmount:Math.max(72,state.filamentAmount||0),
+    filamentNeuralMode:state.filamentNeuralMode==="Off"?"Axon train":state.filamentNeuralMode,
+    filamentNeuralAmount:Math.max(82,state.filamentNeuralAmount||0),
+    filamentScarMode:state.filamentScarMode==="Off"?"Phosphor aftertrace":state.filamentScarMode,
+    filamentScarAmount:Math.max(65,state.filamentScarAmount||0)};
+}
+export function remixFilamentRegeneration(state,rng=Math.random,strange=false){
+  const unit=()=>{const n=Number(rng());return Number.isFinite(n)?
+    Math.min(1-Number.EPSILON,Math.max(0,n)):0;};
+  const modes=strange?filamentRegenModes.slice(3):filamentRegenModes.slice(1);
+  const pool=modes.filter(x=>x!==state.filamentRegenMode);
+  const choices=pool.length?pool:modes;
+  return {...state,
+    filamentRegenMode:choices[Math.floor(unit()*choices.length)],
+    filamentRegenAmount:74+unit()*25,
+    filamentRegenBranches:27+unit()*72,
+    filamentRegenSpeed:18+unit()*81,
+    filamentRegenHealing:26+unit()*73,
+    filamentRegenGlow:35+unit()*64,
+    filamentAmount:Math.max(72,state.filamentAmount||0),
+    filamentNeuralMode:state.filamentNeuralMode==="Off"?"Axon train":state.filamentNeuralMode,
+    filamentNeuralAmount:Math.max(82,state.filamentNeuralAmount||0),
+    filamentScarMode:state.filamentScarMode==="Off"?"Phosphor aftertrace":state.filamentScarMode,
+    filamentScarAmount:Math.max(65,state.filamentScarAmount||0)};
+}
+/** Compile only the selected geometry-creation case for Safari. */
+export function specializeFilamentRegeneration(source,index){
+  if(index==null||!Number.isInteger(index)||index<1||
+    index>=filamentRegenModes.length)return source;
+  const opener=i=>i===1?"  if(filamentRegenMode==1){":
+    "  }else if(filamentRegenMode=="+i+"){";
+  const starts=filamentRegenModes.slice(1).map((_,i)=>source.indexOf(opener(i+1)));
+  if(starts.some((p,i)=>p<0||(i&&p<=starts[i-1])))return source;
+  const ending=source.indexOf("  // Attach the new daughter geometry",starts.at(-1));
+  if(ending<0)return source;
+  const close=source.lastIndexOf("  }\n",ending);
+  if(close<starts.at(-1))return source;
+  const stop=index===filamentRegenModes.length-1?close:starts[index];
+  const body=source.slice(starts[index-1]+opener(index).length,stop);
+  return source.slice(0,starts[0])+
+    "  if(filamentRegenMode=="+index+"){"+body+"  }\n"+
+    source.slice(ending);
+}
+
 export const filamentAdornmentModes=[
   "Bare threads",
   "Pearl stations",
@@ -1601,6 +1740,9 @@ uniform int filamentContagionMode;
 uniform int filamentNeuralMode;
 uniform int filamentPlasticMode;
 uniform int filamentScarMode;
+uniform int filamentRegenMode;
+uniform float filamentRegenAmount,filamentRegenBranches;
+uniform float filamentRegenSpeed,filamentRegenHealing,filamentRegenGlow;
 uniform float filamentScarAmount,filamentScarDensity;
 uniform float filamentScarPersistence,filamentScarRoughness,filamentScarGlow;
 uniform float filamentPlasticAmount,filamentPlasticRate;
@@ -2195,6 +2337,79 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   sculptReveal=reveal;
 #endif
 #endif
+
+#ifdef FILAMENT_REGENERATION
+  // Daughter threads are new signed-distance fiber masks. Construct
+  // BEFORE the palette, neural response, fiber material and ornament passes.
+  // Site phases are anchored to each existing animated thread's own path.
+  float growthClock=time*(.14+filamentRegenSpeed*1.22)+phaseOffset*.17;
+  float growthFreq=1.4+filamentRegenBranches*5.9;
+  float scarSite=floor(phase*growthFreq*.29+seedPhase*.14);
+  float localArc=fract(phase*growthFreq*.29+seedPhase*.14)-.5;
+  float siteNoise=fract(sin(scarSite*74.17+seedPhase)*17319.37);
+  float age=fract(growthClock*.21+siteNoise*.71);
+  // A growing daughter is revealed from its root to its moving tip.
+  float tip=smoothstep(.03,.85,age);
+  float rootToTip=clamp((localArc+.5)*1.3,0.0,1.0);
+  float drawn=1.0-smoothstep(tip-.06,tip+.055,rootToTip);
+  float footprint=(1.0-smoothstep(.12,.47,abs(localArc)))*drawn;
+  float sproutReach=width*(1.1+filamentRegenHealing*4.9)*
+    pow(max(0.0,1.0-abs(localArc)*1.8),1.2)*tip;
+  float curl=sin(localArc*15.0+growthClock*.67+siteNoise*6.28318);
+  float fibRadius=max(width*.13,aa*.55);
+  float newDist=1.0e3;
+  float newAccent=0.0;
+  if(filamentRegenMode==1){ // FORKED NERVE SHOOTS
+    float forkA=abs(threadD-sproutReach*(.84+.22*curl));
+    float forkB=abs(threadD-sproutReach*(1.18-.21*curl));
+    newDist=min(forkA,forkB);
+    newAccent=.54+.46*abs(curl);
+  }else if(filamentRegenMode==2){ // WOUND BRIDGES
+    float gap=1.0-smoothstep(.09,.37,abs(localArc));
+    float bridge=width*(.9+filamentRegenHealing*3.3)*gap*tip;
+    newDist=abs(threadD-bridge);
+    footprint*=gap;
+    newAccent=.6;
+  }else if(filamentRegenMode==3){ // MYCELIAL FAN
+    float filamentA=abs(threadD-sproutReach*(.54+.19*sin(localArc*23.0+growthClock*.29)));
+    float filamentB=abs(threadD-sproutReach*(1.0+.17*cos(localArc*32.0-growthClock*.41)));
+    float filamentC=abs(threadD-sproutReach*(1.38+.16*sin(localArc*39.0+siteNoise*6.28)));
+    newDist=min(filamentA,min(filamentB,filamentC));
+    newAccent=.58+.42*siteNoise;
+  }else if(filamentRegenMode==4){ // PEARLY CALLUS
+    float node=pow(.5+.5*cos(localArc*20.0+siteNoise*6.28),5.0);
+    newDist=abs(threadD-width*(1.18+filamentRegenHealing*3.6*node*tip));
+    newAccent=.41+.59*node;
+  }else if(filamentRegenMode==5){ // GOLD REPAIR VINES
+    float vein=sin(localArc*29.0+sin(localArc*13.0+growthClock*.24)*2.1);
+    newDist=abs(threadD-sproutReach*(.91+.23*vein));
+    newAccent=.55+.45*abs(vein);
+  }else if(filamentRegenMode==6){ // SYNAPTIC GRAFTS
+    // Only enhance the graft near a REAL crossing of parent cores;
+    // solo threads can still form a thin unconnected sprout.
+    float contact=clamp(incomingCore*mask,0.0,1.0);
+    newDist=abs(threadD-sproutReach*(.67+.7*contact));
+    newAccent=.34+.66*contact;
+  }
+  // Attach the new daughter geometry to the moving original line; its
+  // visibility is built from a NEW distance field, not a painted overlay.
+  float childCore=(1.0-smoothstep(fibRadius,fibRadius+aa,newDist))*
+    footprint*filamentRegenAmount*mask;
+#ifdef FILAMENT_STITCHING
+  childCore*=reveal;
+#endif
+  float childHalo=(1.0-smoothstep(fibRadius*2.0,fibRadius*5.0+aa,newDist))*
+    footprint*filamentRegenAmount*mask;
+#ifdef FILAMENT_STITCHING
+  childHalo*=reveal;
+#endif
+  // Preserve the original fiber and its crossings while letting daughter
+  // branches and their halos occupy genuinely NEW regions of the canvas.
+  core=max(core,childCore);
+  halo=max(halo,childHalo*.73);
+  edge=max(edge,childCore*(.5+.5*newAccent));
+  maskCore=core;
+#endif
   float pigmentPhase=fract(phase*.17+filamentHue*.88+hueOffset+
     seedPhase*.047+ct*(.023+.017*filamentMotion)+fieldV*.06);
   vec3 ink=palette(pigmentPhase);
@@ -2304,6 +2519,12 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float nerveStrength=filamentNeuralAmount*neuralSignal;
   outgoingNeural=clamp(nerveStrength*core,0.0,1.0);
   outgoingLuma=colorLuma;
+#endif
+#ifdef FILAMENT_REGENERATION
+  // Newly formed fibers inherit the same palette, but reveal the birth
+  // frontier with a little nerve-driven phosphor.
+  float regenFlash=clamp(childCore*(.3+.7*newAccent)*
+    filamentRegenGlow*(.5+.5*neuralSignal),0.0,1.0);
 #endif
   float sheen=(.38+.62*highlight)*(.3+.7*filamentRelief);
   vec3 thread=ink*(.75+.55*sheen)+glimmer*.21*filamentRelief;
@@ -2700,6 +2921,9 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   thread+=scarColor*scarInk*filamentScarGlow*
     (.23+.75*(.45+.55*delayedPulse));
 #endif
+#endif
+#ifdef FILAMENT_REGENERATION
+  thread+=mix(ink,glimmer,.68)*regenFlash*.7;
 #endif
   float amount=filamentAmount;
   vec3 result=mix(background,background*.48+thread*1.06,core*amount*.91);

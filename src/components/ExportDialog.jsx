@@ -454,7 +454,14 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
             </Select>
           </div>
           {tab==="Video"?<>
-            <Select label="Clip duration" value={clipDuration} onChange={v=>setDuration(+v)}>
+            <Select label="Clip duration" value={clipDuration} onChange={v=>{
+                const next=+v;
+                setDuration(next);
+                const allowed=LOOP_BLEND_SECONDS.filter(n=>
+                  n<=Math.min(next,clipFormat==="gif"?10:30)*.75);
+                setLoopBlendSeconds(old=>allowed.includes(old)?old:
+                  (allowed[allowed.length-1]||.25));
+              }}>
               {(clipFormat==="gif"?[2,3,5,10]:[2,3,5,6,10,15,30])
                 .map(v=><option key={v} value={v}>{v} seconds</option>)}
             </Select>

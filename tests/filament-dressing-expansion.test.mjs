@@ -41,7 +41,7 @@ test("existing saved IDs never change; every new textile is a real option",()=>{
   assert.deepEqual(filamentMaterials.slice(0,6),originalDress);
   assert.deepEqual(filamentMaterials.slice(6),extraDress);
   assert.deepEqual(filamentStitchModes.slice(21,31),extraStitch);
-  assert.equal(filamentSpecies.length,23);
+  assert.equal(filamentSpecies.length,24);
   assert.equal(filamentMaterials.length,14);
   assert.equal(filamentStitchModes.length,32);
   assert.equal(filamentPresets.length,22);

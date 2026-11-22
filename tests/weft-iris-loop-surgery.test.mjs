@@ -71,17 +71,34 @@ test("actual export render function chooses a masked one-draw reveal, and full s
           createImageData(w,h){return {data:new Uint8ClampedArray(w*h*4)};},
           putImageData(img){canvas._pixels=new Uint8ClampedArray(img.data);},
           getImageData(){return {data:new Uint8ClampedArray(canvas._pixels)};},
-          save(){this._save.push([this.globalAlpha,this.globalCompositeOperation]);},
-          restore(){const [alpha,operation]=this._save.pop();
-            this.globalAlpha=alpha;this.globalCompositeOperation=operation;},
-          beginPath(){calls.push("beginPath");},
-          rect(){calls.push("rect");},
-          arc(){calls.push("arc");},
-          clip(){calls.push("clip");},
+          save(){this._save.push([
+            this.globalAlpha,this.globalCompositeOperation,this._clip
+          ]);},
+          restore(){const [alpha,operation,clip]=this._save.pop();
+            this.globalAlpha=alpha;this.globalCompositeOperation=operation;
+            this._clip=clip;},
+          beginPath(){calls.push("beginPath");this._path=[];},
+          rect(x,y,width,height){
+            calls.push("rect");
+            this._path.push({type:"rect",x,y,width,height});
+          },
+          arc(cx,cy,radius){
+            calls.push("arc");
+            this._path.push({type:"circle",cx,cy,radius});
+          },
+          clip(){calls.push("clip");this._clip=[...this._path];},
           drawImage(other){
             calls.push("drawImage");
             if(!canvas._pixels)canvas._pixels=new Uint8ClampedArray(other._pixels.length);
             for(let k=0;k<canvas._pixels.length;k+=4){
+              const pixel=k/4,x=pixel%canvas.width+.5;
+              const y=Math.floor(pixel/canvas.width)+.5;
+              const inside=!this._clip||this._clip.some(shape=>
+                shape.type==="rect"?
+                  x>=shape.x&&x<shape.x+shape.width&&
+                  y>=shape.y&&y<shape.y+shape.height:
+                  Math.hypot(x-shape.cx,y-shape.cy)<=shape.radius);
+              if(!inside)continue;
               for(let c=0;c<3;c++)canvas._pixels[k+c]=Math.round(
                 (other._pixels[k+c]*this.globalAlpha)+
                 canvas._pixels[k+c]*(1-this.globalAlpha));

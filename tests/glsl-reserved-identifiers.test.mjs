@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync,readdirSync} from "node:fs";
 import {selectionGLSL} from "../src/selection-chamber.js";
 import {successionGLSL} from "../src/ecological-succession.js";
+import {symbiosisGLSL} from "../src/symbiosis-lab.js";
 
 // These words are illegal GLSL ES identifiers, even though they work in JS.
 // The export renderer concatenates many GLSL modules into one large shader;
@@ -12,7 +13,9 @@ const reserved=new Set([
   "class","union","enum","typedef","template","this","packed",
   "goto","inline","noinline","volatile","public","static","extern",
   "external","interface","long","short","double","half","fixed",
-  "unsigned","superp","sizeof","cast","namespace","using"
+  "unsigned","superp","sizeof","cast","namespace","using",
+  "buffer","shared","coherent","restrict","readonly","writeonly",
+  "subroutine","patch","sample"
 ]);
 function cleanGLSL(text){
   return text.replace(/\/\*[\s\S]*?\*\//g," ").replace(/\/\/[^\n]*/g," ");
@@ -55,9 +58,14 @@ test("Ecological Succession keeps the same nutrient evolution math with legal na
   assert.match(successionGLSL,/return nutrientLevel;/);
   assert.deepEqual(declarations(successionGLSL),[]);
 });
+test("Symbiosis' contact shading keeps its identical formula with legal names",()=>{
+  assert.match(symbiosisGLSL,/float contactRim=4\.\*a\*\(1\.-a\)\+4\.\*b\*\(1\.-b\);/);
+  assert.match(symbiosisGLSL,/tissue=lesions\*\(\.35\+\.65\*contactRim\*\.40\)/);
+  assert.deepEqual(declarations(symbiosisGLSL),[]);
+});
 test("reserved-word regression catches resource and active before export",()=>{
-  assert.deepEqual(declarations("float resource=0.; float active=1.;").map(x=>x.name),
-    ["resource","active"]);
+  assert.deepEqual(declarations("float resource=0.; float active=1.; float interface=2.;").map(x=>x.name),
+    ["resource","active","interface"]);
   assert.deepEqual(declarations("float safeNutrient=0.; // float resource=1.\n"),[]);
   assert.deepEqual(declarations("/* float active=1.; */ float validSignal=0.;"),[]);
 });

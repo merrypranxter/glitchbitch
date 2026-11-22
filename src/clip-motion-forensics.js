@@ -142,9 +142,10 @@ export function decodeOwnGifSamples(bytes,indices){
   if(!(bytes instanceof Uint8Array)||bytes.length<20||
      String.fromCharCode(...bytes.subarray(0,3))!=="GIF")
     throw Error("Not a supported GIF89a animation.");
-  if(!Array.isArray(indices)||indices.length!==3||
-     indices.some(n=>!Number.isInteger(n)||n<0)||new Set(indices).size!==3)
-    throw Error("Select three unique GIF frame indices.");
+  if(!Array.isArray(indices)||![3,7].includes(indices.length)||
+     indices.some(n=>!Number.isInteger(n)||n<0)||
+     new Set(indices).size!==indices.length)
+    throw Error("Select three or seven unique GIF frame indices.");
   const width=read16(bytes,6),height=read16(bytes,8);
   if(!width||!height||width>1080||height>1080)
     throw Error("GIF motion audit supports frames up to 1080px.");
@@ -207,7 +208,7 @@ export function decodeOwnGifSamples(bytes,indices){
     displayTime+=delay;
     frameIndex++;delay=0;transparency=false;disposal=0;
   }
-  if(selected.size!==3)throw Error("GIF file is missing one or more requested animation frames.");
+  if(selected.size!==indices.length)throw Error("GIF file is missing one or more requested animation frames.");
   return indices.map(index=>selected.get(index));
 }
 export function downsampleFrame(frame,longEdge=auditMaxEdge){

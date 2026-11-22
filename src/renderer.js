@@ -1479,6 +1479,8 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "filamentStitchLength","filamentStitchGlow",
         "filamentChladniOrder","filamentChladniResonance","filamentChladniDensity",
         "filamentChladniPhase","filamentChladniDetune",
+        "filamentRetroLead","filamentRetroEcho","filamentRetroParadox",
+        "filamentRetroKnots","filamentRetroReversal","filamentRetroCoherence",
         "filamentAdornmentAmount","filamentAdornmentSpacing","filamentAdornmentSize",
         "filamentAdornmentMotion","filamentAdornmentGlow",
         "filamentMorphAmount","filamentMorphScale","filamentMorphSpeed",

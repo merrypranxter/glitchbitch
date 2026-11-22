@@ -241,6 +241,80 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       {type:"application/json"}),
       "glitchbitch-frame-integrity-"+frameAudit.report.seed+".json");
   }
+  async function inspectClipMotion(){
+    if(!ready||busy)return;
+    // Three exact-resolution PNG renders plus three decoded frame comparisons.
+    // Cap at 720px so iPhone Safari has space to open the reference GPU.
+    if(Math.max(ready.frameSize.width,ready.frameSize.height)>720){
+      setError("Full-Clip Motion Forensics supports 480px and 720px clips. Export a smaller diagnostic clip; your original high-resolution file is unchanged.");
+      return;
+    }
+    setBusy(true);setAuditing(true);clearMotionAudit();setError("");
+    const created=[];
+    try{
+      onExportBusy?.(true);
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      const samples=selectMotionSamples(ready.frames,ready.fps);
+      setMotionAuditStage("Decoding three frames from the actual exported file…");
+      const decoded=ready.format==="gif"?
+        await decodeGifMotionSamples(ready.blob,samples):
+        await decodeMp4MotionSamples(ready.blob,samples,ready.fps);
+      // Decode ALL samples and close the video before allocating a new WebGL
+      // renderer. This reduces simultaneous iOS graphics/video pressure.
+      const references=[],rows=[];
+      for(let i=0;i<samples.length;i++){
+        const sample=samples[i],picture=decoded[i];
+        // GIF delays are quantized to 10ms (67ms => 70ms). The encoder
+        // rendered the logical frame at index/fps, not its GIF display time.
+        const seconds=ready.format==="gif"?sample.seconds:picture.mediaTime;
+        setMotionAuditStage("Rendering strict PNG reference "+(i+1)+" / 3…");
+        const clock=clockAt(ready.snapshot,ready.timeline,seconds);
+        const png=await renderImage(ready.snapshot,clock,
+          Math.max(ready.frameSize.width,ready.frameSize.height),"image/png",
+          {exactEffects:true,outputSize:ready.frameSize});
+        const ref=await decodeStaticExport(png);
+        // All per-frame measurements use identical downscaled dimensions.
+        const delta=differenceHeatmap(ref,picture);
+        const difference=analyzeEncodedFrame(ref,picture,{format:ready.format});
+        const three=await Promise.all([frameBlob(ref),frameBlob(picture),
+          frameBlob(delta)]);
+        const urls=three.map(blob=>URL.createObjectURL(blob));
+        created.push(...urls);
+        references.push(ref);
+        rows.push({
+          label:sample.label,index:sample.index,
+          referenceTime:seconds,decodedTime:picture.mediaTime,
+          discrepancy:difference.discrepancy,
+          difference,urls,
+          sourceWidth:picture.sourceWidth,
+          sourceHeight:picture.sourceHeight
+        });
+      }
+      const motion=analyzeClipMotion(references,decoded);
+      const report=motionForensicsReport({
+        samples:rows,motion,format:ready.format,method:ready.method,
+        seed:ready.snapshot.seed,size:ready.frameSize
+      });
+      if(!mounted.current)return;
+      motionAuditUrls.current=created.slice();
+      setMotionAudit({rows,motion,report,filename:ready.filename});
+      setSelectedMotionIndex(0);
+      setMotionAuditStage("");
+    }catch(e){
+      created.forEach(url=>URL.revokeObjectURL(url));
+      if(mounted.current)setError("Full-clip motion inspection failed: "+e.message);
+    }finally{
+      if(!mounted.current)created.forEach(url=>URL.revokeObjectURL(url));
+      onExportBusy?.(false);
+      if(mounted.current){setBusy(false);setAuditing(false);setMotionAuditStage("");}
+    }
+  }
+  function saveMotionAudit(){
+    if(!motionAudit)return;
+    download(new Blob([JSON.stringify(motionAudit.report,null,2)],
+      {type:"application/json"}),
+      "glitchbitch-motion-forensics-"+motionAudit.report.seed+".json");
+  }
   function canShare() {
     if(!ready || typeof File==="undefined" || typeof navigator==="undefined" || !navigator.canShare)return false;
     try {

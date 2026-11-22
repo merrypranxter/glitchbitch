@@ -6,6 +6,8 @@ import { ratios, recipeDocument } from "../data";
 import { dimensions, videoDimensions, renderImage, download, recordClip, videoFormat, clockAt } from "../export";
 import {analyzeEncodedFrame,differenceHeatmap,decodeStaticExport,
   decodeMp4Export,frameBlob,frameAuditReport} from "../encoded-frame-truth-serum.js";
+import {selectMotionSamples,analyzeClipMotion,decodeGifMotionSamples,
+  decodeMp4MotionSamples,motionForensicsReport} from "../clip-motion-forensics.js";
 import { hasVisibleLettering } from "../text-compositor.js";
 import { normalTextBlendState } from "../text-blend-proof.js";
 import { canvasImageFiltersWork } from "../lettering-filter-fallback.js";
@@ -29,13 +31,23 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     [diagnostics,setDiagnostics]=useState(null),
     [ready,setReady]=useState(null),
     [frameAudit,setFrameAudit]=useState(null),
+    [motionAudit,setMotionAudit]=useState(null),
+    [selectedMotionIndex,setSelectedMotionIndex]=useState(0),
+    [motionAuditStage,setMotionAuditStage]=useState(""),
     [auditing,setAuditing]=useState(false);
   const controller=useRef(null), mounted=useRef(true), proofUrl=useRef(null), blendUrls=useRef([]),
-    frameAuditUrls=useRef([]);
+    frameAuditUrls=useRef([]),motionAuditUrls=useRef([]);
   function clearFrameAudit(){
     frameAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
     frameAuditUrls.current=[];
     setFrameAudit(null);
+  }
+  function clearMotionAudit(){
+    motionAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
+    motionAuditUrls.current=[];
+    setMotionAudit(null);
+    setSelectedMotionIndex(0);
+    setMotionAuditStage("");
   }
   const capability=videoFormat();
   useEffect(()=>()=>{mounted.current=false;controller.current?.abort();
@@ -43,6 +55,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     if(proofUrl.current) URL.revokeObjectURL(proofUrl.current);
     blendUrls.current.forEach(url=>URL.revokeObjectURL(url));
     frameAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
+    motionAuditUrls.current.forEach(url=>URL.revokeObjectURL(url));
   },[]);
   const size=tab==="Video" ? clipFormat==="mp4"
     ? videoDimensions(ratio,videoSize) : dimensions(ratio,gifSize)
@@ -137,6 +150,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
   }
   async function run() {
     clearFrameAudit();
+    clearMotionAudit();
     setError("");setProgress(0);setBusy(true);setReady(null);
     if(tab==="Video")controller.current=new AbortController();
     const snapshot={...state,ratio},timeline={...timelineRef.current};
@@ -160,7 +174,8 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
         download(result.blob,filename);
         if(mounted.current)setReady({blob:result.blob,filename,type:result.mime,
           snapshot,timeline,frameSize:{...size},method:result.method,
-          duration:clipDuration,fps:result.fps,format:clipFormat});
+          duration:clipDuration,fps:result.fps,frames:result.frames,
+          format:clipFormat});
         onNotice(`${result.extension.toUpperCase()} exported. No WebM conversion necessary.`);
       } else {
         download(new Blob([JSON.stringify(recipeDocument(snapshot,title,timeline),null,2)],{type:"application/json"}),
@@ -247,7 +262,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       <div className="export-tabs">
         {[[Image,"Image"],[Film,"Video"],[Braces,"Recipe"]].map(([Icon,name])=>(
           <button disabled={busy} className={tab===name?"selected":""}
-            onClick={()=>{setTab(name);setError("");setReady(null);clearFrameAudit();}} key={name}>
+            onClick={()=>{setTab(name);setError("");setReady(null);clearFrameAudit();clearMotionAudit();}} key={name}>
             <Icon size={17}/>{name}
           </button>
         ))}
@@ -255,7 +270,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       <fieldset disabled={busy} className="export-options">
         {tab!=="Recipe"?<>
           {tab==="Video"&&<Select label="Output format" value={clipFormat}
-            onChange={v=>{setClipFormat(v);setReady(null);clearFrameAudit();}}>
+            onChange={v=>{setClipFormat(v);setReady(null);clearFrameAudit();clearMotionAudit();}}>
             <option value="mp4">MP4 · H.264 (real video)</option>
             <option value="gif">GIF · animated image</option>
           </Select>}

@@ -59,6 +59,8 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentNeuralPresets,applyFilamentNeuralPreset,remixFilamentNeural,
   filamentPlasticModes,filamentPlasticFamilies,filamentPlasticDescriptions,
   filamentPlasticPresets,applyFilamentPlasticPreset,remixFilamentPlastic,
+  filamentScarModes,filamentScarFamilies,filamentScarDescriptions,
+  filamentScarPresets,applyFilamentScarPreset,remixFilamentScars,
   remixFilamentMaterials,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
@@ -293,6 +295,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [contagionPreset,setContagionPreset]=React.useState(filamentContagionPresets[0].name);
   const [neuralPreset,setNeuralPreset]=React.useState(filamentNeuralPresets[0].name);
   const [plasticPreset,setPlasticPreset]=React.useState(filamentPlasticPresets[0].name);
+  const [scarPreset,setScarPreset]=React.useState(filamentScarPresets[0].name);
   const [stitchPreset,setStitchPreset]=React.useState(filamentStitchPresets[0].name);
   const [sculptPreset,setSculptPreset]=React.useState(filamentSculptPresets[0].name);
   const [underlayPreset,setUnderlayPreset]=React.useState(underlayPresets[0].name);
@@ -1976,6 +1979,52 @@ export function EffectsInspector({ history, onTool, tool }) {
           </button>
         </div>
         <p className="control-note">Choose a Neural Loom behavior first or use one of these presets to turn it on. Your materials, lettering, geometry, color palettes, and ornaments remain untouched. Plasticity defaults off in existing recipes, and strict MP4/GIF uses this same animated shader.</p>
+      </details>
+      <details className="filament-crossbreeder filament-ghost-scar-lab">
+        <summary>👻 GHOST SCARS — LET THE ELECTRIC THREADS LEAVE MARKS</summary>
+        <p className="control-note">Six nerve-activated scars live ON the woven filaments: phosphor aftertraces, branching burns, repaired gilded sutures, spectral bruises, tiny knot fossils, and ghostly mycelial marks. They follow the same neural signal and color palette as your fabric. These are deterministic old-pulse illusions, not extra GPU frame-memory textures.</p>
+        <Select label="Scar morphology" value={s.filamentScarMode}
+          onChange={mode=>history.change(x=>({...x,filamentScarMode:mode,
+            filamentAmount:mode==="Off"?x.filamentAmount:Math.max(72,x.filamentAmount),
+            filamentNeuralMode:mode==="Off"?x.filamentNeuralMode:
+              x.filamentNeuralMode==="Off"?"Axon train":x.filamentNeuralMode,
+            filamentNeuralAmount:mode==="Off"?x.filamentNeuralAmount:
+              Math.max(82,x.filamentNeuralAmount),
+            filamentScarAmount:mode==="Off"?x.filamentScarAmount:
+              Math.max(82,x.filamentScarAmount)}))}>
+          {filamentScarFamilies.map(family=><optgroup key={family.name} label={family.name}>
+            {family.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+          </optgroup>)}
+        </Select>
+        <p className="control-note">{filamentScarDescriptions[s.filamentScarMode]}</p>
+        <Parameter label="Ghost scar intensity" name="filamentScarAmount" history={history}/>
+        <Parameter label="Scar spacing and pattern density" name="filamentScarDensity" history={history}/>
+        <Parameter label="Apparent aftertrace lifetime" name="filamentScarPersistence" history={history}/>
+        <Parameter label="Fracture roughness" name="filamentScarRoughness" history={history}/>
+        <Parameter label="Scar phosphor glow" name="filamentScarGlow" history={history}/>
+        <Select label="Scar recipe" value={scarPreset} onChange={setScarPreset}>
+          {filamentScarPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>applyFilamentScarPreset(x,scarPreset))}>
+            Scar the threads
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentScars(x))}>
+            <Dices size={13}/> Shuffle scar tissue
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(x=>remixFilamentScars(x,Math.random,true))}>
+            <Shuffle size={13}/> Shuffle haunted scars
+          </button>
+          <button type="button" className="button secondary"
+            disabled={s.filamentScarAmount<=0}
+            onClick={()=>history.change(x=>({...x,filamentScarAmount:0}))}>
+            Heal all scars — keep nerves
+          </button>
+        </div>
+        <p className="control-note">Old recipes stay scar-free until you opt in. Keep dressing, stitches, geometry, crossbreeding, lettering and palette exactly as they are. Scars render with the same strict-effects shader as GIF/MP4. For hardware-heavy recipes, test a short MP4 first.</p>
       </details>
       <details className="filament-crossbreeder filament-adornment-lab">
         <summary>💎 THREAD JEWELRY — CHARMS, FRINGE & WEIRD SHIT</summary>

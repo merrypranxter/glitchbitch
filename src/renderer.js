@@ -17,7 +17,7 @@ import { backdropGLSL, backdropModes, specializeBackdropGLSL } from "./backdrops
 import { microGLSL, microModes, specializeMicroGLSL } from "./microstructure.js";
 import { substanceGLSL, substanceModes, specializeSubstanceGLSL } from "./substance.js";
 import { photonGLSL, photonSpecies, specializePhotonGeometry } from "./photon-zoo.js";
-import { filamentGLSL, filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, filamentMorphModes, filamentContagionModes, filamentNeuralModes, filamentPlasticModes, specializeFilamentGeometry, specializeFilamentStitchMotion, specializeFilamentSculptMotion, specializeFilamentMaterials, specializeFilamentAdornments, specializeFilamentMorphMaterials, specializeFilamentContagion, specializeFilamentNeural, specializeFilamentPlasticity } from "./filament-forge.js";
+import { filamentGLSL, filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, filamentMorphModes, filamentContagionModes, filamentNeuralModes, filamentPlasticModes, filamentScarModes, specializeFilamentGeometry, specializeFilamentStitchMotion, specializeFilamentSculptMotion, specializeFilamentMaterials, specializeFilamentAdornments, specializeFilamentMorphMaterials, specializeFilamentContagion, specializeFilamentNeural, specializeFilamentPlasticity, specializeFilamentScars } from "./filament-forge.js";
 import { underlayGLSL, underlayModes, specializeUnderlayGLSL } from "./living-underlay.js";
 import { tunnelGLSL } from "./tunnels.js";
 import { strangeFieldsGLSL } from "./strange-fields.js";
@@ -184,7 +184,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
     filamentStitchUnavailable = false, filamentSculptUnavailable = false,
     filamentAdornmentUnavailable = false, filamentMorphUnavailable = false,
     filamentContagionUnavailable = false, filamentNeuralUnavailable = false,
-    filamentPlasticUnavailable = false,
+    filamentPlasticUnavailable = false, filamentScarUnavailable = false,
     underlayUnavailable = false, alchemyUnavailable = false,
     injuryUnavailable = false, fossilUnavailable = false,
     successionUnavailable = false, foodWebUnavailable = false;
@@ -197,7 +197,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
        !photonUnavailable && !filamentUnavailable && !filamentHybridUnavailable &&
        !filamentMaterialUnavailable && !filamentStitchUnavailable &&
        !filamentSculptUnavailable && !filamentAdornmentUnavailable && !filamentMorphUnavailable &&
-       !filamentContagionUnavailable && !filamentNeuralUnavailable && !filamentPlasticUnavailable && !underlayUnavailable &&
+       !filamentContagionUnavailable && !filamentNeuralUnavailable && !filamentPlasticUnavailable && !filamentScarUnavailable && !underlayUnavailable &&
        !strangeUnavailable && !fossilUnavailable && !successionUnavailable && !foodWebUnavailable && !atmosphereUnavailable &&
        !atmosphereBUnavailable && !habitatUnavailable)return source;
     return {
@@ -220,6 +220,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       ...(filamentContagionUnavailable ? {filamentContagionAmount:0}:{}),
       ...(filamentNeuralUnavailable ? {filamentNeuralAmount:0}:{}),
       ...(filamentPlasticUnavailable ? {filamentPlasticAmount:0}:{}),
+      ...(filamentScarUnavailable ? {filamentScarAmount:0}:{}),
       ...(filamentSculptUnavailable ? {filamentSculptAmount:0}:{}),
       ...(underlayUnavailable ? {underlayAmount:0}:{}),
       ...(fossilUnavailable ? {fossilAmount:0}:{}),
@@ -707,6 +708,8 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         s.filamentNeuralMode!=="Off",
       withPlastic = withNeural && s.filamentPlasticAmount>0 &&
         s.filamentPlasticMode!=="Off",
+      withScars = withNeural && s.filamentScarAmount>0 &&
+        s.filamentScarMode!=="Off",
       withFiberDetail = withFilament && (
         withMorph || s.filamentMaterial!=="Original thread" ||
         withHybrid && s.filamentSecondMaterial!=="Original thread" ||
@@ -735,7 +738,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       ),
       withStrange = (s.engine>=17 && s.engine<=19) ||
         (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAdornment ? "trinket"+filamentAdornmentModes.indexOf(s.filamentAdornmentMode)+(withHybrid?"x"+filamentAdornmentModes.indexOf(s.filamentSecondAdornmentMode):"") : "bare-trinkets"}/${withMorph?"morph"+filamentMaterials.indexOf(s.filamentMorphTarget)+(withHybrid?"x"+filamentMaterials.indexOf(s.filamentSecondMorphTarget):""):"no-morph"}/${withContagion?"contagion"+filamentContagionModes.indexOf(s.filamentContagionMode):"no-contagion"}/${withNeural?"neural"+filamentNeuralModes.indexOf(s.filamentNeuralMode):"no-neural"}/${withPlastic?"plastic"+filamentPlasticModes.indexOf(s.filamentPlasticMode):"no-plastic"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}/${withAlchemy ? "alchemy"+alchemyModes.indexOf(s.alchemyMode) : "no-alchemy"}/${withInjury ? "injury"+injuryModes.indexOf(s.injuryMode) : "no-injury"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAdornment ? "trinket"+filamentAdornmentModes.indexOf(s.filamentAdornmentMode)+(withHybrid?"x"+filamentAdornmentModes.indexOf(s.filamentSecondAdornmentMode):"") : "bare-trinkets"}/${withMorph?"morph"+filamentMaterials.indexOf(s.filamentMorphTarget)+(withHybrid?"x"+filamentMaterials.indexOf(s.filamentSecondMorphTarget):""):"no-morph"}/${withContagion?"contagion"+filamentContagionModes.indexOf(s.filamentContagionMode):"no-contagion"}/${withNeural?"neural"+filamentNeuralModes.indexOf(s.filamentNeuralMode):"no-neural"}/${withPlastic?"plastic"+filamentPlasticModes.indexOf(s.filamentPlasticMode):"no-plastic"}/${withScars?"scars"+filamentScarModes.indexOf(s.filamentScarMode):"no-scars"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}/${withAlchemy ? "alchemy"+alchemyModes.indexOf(s.alchemyMode) : "no-alchemy"}/${withInjury ? "injury"+injuryModes.indexOf(s.injuryMode) : "no-injury"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -804,6 +807,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         (withContagion ? "#define FILAMENT_CONTAGION 1\n" : "") +
         (withNeural ? "#define FILAMENT_NEURAL 1\n" : "") +
         (withPlastic ? "#define FILAMENT_PLASTICITY 1\n" : "") +
+        (withScars ? "#define FILAMENT_GHOST_SCARS 1\n" : "") +
         filamentGLSL.replace("uniform int filamentSpecies;",
           "#define filamentSpecies "+Math.max(0,filamentSpecies.indexOf(s.filamentSpecies)))
           .replace("uniform int filamentSecondSpecies;",
@@ -825,12 +829,15 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
             "#define filamentNeuralMode "+Math.max(0,filamentNeuralModes.indexOf(s.filamentNeuralMode)))
           .replace("uniform int filamentPlasticMode;",
             "#define filamentPlasticMode "+Math.max(0,filamentPlasticModes.indexOf(s.filamentPlasticMode)))
+          .replace("uniform int filamentScarMode;",
+            "#define filamentScarMode "+Math.max(0,filamentScarModes.indexOf(s.filamentScarMode)))
           .replace("uniform int filamentMorphTarget,filamentSecondMorphTarget;",
             "#define filamentMorphTarget "+Math.max(0,filamentMaterials.indexOf(s.filamentMorphTarget))+"\n"+
             "#define filamentSecondMorphTarget "+Math.max(0,filamentMaterials.indexOf(s.filamentSecondMorphTarget)))
       : "";
     const selectedFilament=withFilament
-      ? specializeFilamentPlasticity(
+      ? specializeFilamentScars(
+          specializeFilamentPlasticity(
           specializeFilamentNeural(
           specializeFilamentContagion(
           specializeFilamentMorphMaterials(
@@ -851,7 +858,8 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
           withMorph&&withHybrid?filamentMaterials.indexOf(s.filamentSecondMorphTarget):null),
           withContagion?filamentContagionModes.indexOf(s.filamentContagionMode):null),
           withNeural?filamentNeuralModes.indexOf(s.filamentNeuralMode):null),
-          withPlastic?filamentPlasticModes.indexOf(s.filamentPlasticMode):null)
+          withPlastic?filamentPlasticModes.indexOf(s.filamentPlasticMode):null),
+          withScars?filamentScarModes.indexOf(s.filamentScarMode):null)
       : "";
     source=source.replace("/* FILAMENT_MODULE */",selectedFilament);
     source=source.replace("/* FILAMENT_POST */",
@@ -1262,6 +1270,11 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
             underlayUnavailable=true;
             console.warn("Living textile underlay unsupported by this GPU; preserving the original artwork and filaments.",e);
           }else if(candidate.filamentAmount>0 && candidate.filamentNeuralAmount>0 &&
+            candidate.filamentScarAmount>0 && candidate.filamentScarMode!=="Off" &&
+            !filamentScarUnavailable){
+            filamentScarUnavailable=true;
+            console.warn("Optional Ghost Scars exceeded this preview GPU; keeping the original Neural Loom and fabric intact.",e);
+          }else if(candidate.filamentAmount>0 && candidate.filamentNeuralAmount>0 &&
             candidate.filamentPlasticAmount>0 && candidate.filamentPlasticMode!=="Off" &&
             !filamentPlasticUnavailable){
             filamentPlasticUnavailable=true;
@@ -1442,6 +1455,8 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "filamentNeuralThreshold","filamentNeuralGlow",
         "filamentPlasticAmount","filamentPlasticRate","filamentPlasticInhibition",
         "filamentPlasticRetention","filamentPlasticGlow",
+        "filamentScarAmount","filamentScarDensity","filamentScarPersistence",
+        "filamentScarRoughness","filamentScarGlow",
         "filamentSculptAmount","filamentSculptDepth","filamentSculptLight",
         "filamentSculptShadow","filamentSculptPuff",
         "underlayAmount","underlayScale","underlayDensity","underlayMotion",
@@ -1598,6 +1613,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       gl.uniform1i(loc("filamentContagionMode"), filamentContagionModes.indexOf(s.filamentContagionMode));
       gl.uniform1i(loc("filamentNeuralMode"), filamentNeuralModes.indexOf(s.filamentNeuralMode));
       gl.uniform1i(loc("filamentPlasticMode"), filamentPlasticModes.indexOf(s.filamentPlasticMode));
+      gl.uniform1i(loc("filamentScarMode"), filamentScarModes.indexOf(s.filamentScarMode));
       gl.uniform1i(loc("filamentMorphTarget"), filamentMaterials.indexOf(s.filamentMorphTarget));
       gl.uniform1i(loc("filamentSecondMorphTarget"), filamentMaterials.indexOf(s.filamentSecondMorphTarget));
       gl.uniform1i(loc("filamentSculptMode"), filamentSculptModes.indexOf(s.filamentSculptMode));

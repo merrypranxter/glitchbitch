@@ -37,6 +37,8 @@ import {polesModes,polesPresets,applyPolesPreset,shufflePoles,hidePoles} from ".
 import {qdModes,qdOrders,qdPresets,applyQdPreset,shuffleQd,hideQd} from "../quasicrystal-dissolution.js";
 import {velvetModes,crochetModes,textilePresets,applyTextilePreset,
   shuffleVelvet,shuffleCrochet,hideVelvet,hideCrochet} from "../living-textiles-wave5.js";
+import {breedModes,breedPresets,breedRequiredParents,breedActive,
+  activateBreed,applyBreedPreset,shuffleBreed,hideBreed} from "../crossbreed-lab.js";
 import { Parameter, Range, Toggle, Switch, Select, Section, Segmented, Pill, useReveal } from "./Controls";
 import {microFamilies,microPresets,applyMicroPreset,remixMicro} from "../microstructure.js";
 import {substanceFamilies,substancePresets,applySubstancePreset,remixSubstance} from "../substance.js";
@@ -170,6 +172,7 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
   const [polesPreset,setPolesPreset]=React.useState(polesPresets[0].name);
   const [qdPreset,setQdPreset]=React.useState(qdPresets[0].name);
   const [textilePreset,setTextilePreset]=React.useState(textilePresets[0].name);
+  const [breedPreset,setBreedPreset]=React.useState(breedPresets[0].name);
   const selected = (id) => state.engine === id ||
     (state.blend > 0 && state.secondaryEngine === id);
   return (
@@ -251,6 +254,73 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
           {selected(16) && <p className="control-note">Shape, parallax and material live in Effects → Stereo 3D.</p>}
         </Section>
       )}
+      <Section id="crossbreed-lab" history={history}>
+        <p className="control-note">
+          Breed the previous Shader Vault structures together. This engine
+          reads the ACTUAL oracle, singularity, quasicrystal, velvet and
+          crochet fields, then bends the living geometry according to the
+          interaction. Not just two color overlays stacked like pancakes.
+        </p>
+        <Select label="Offspring species" value={state.breedMode}
+          onChange={mode=>history.change(s=>activateBreed(s,mode))}>
+          {breedModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </Select>
+        <p className="control-note">
+          Required active parents:
+          {" "}{breedRequiredParents(state.breedMode).map(k=>
+            ({
+              hexagramAmount:"Hexagram Terraces",
+              polesAmount:"Complex Poles & Zeros",
+              qdAmount:"Quasicrystal Dissolution",
+              vldAmount:"Living Velvet",
+              hcrAmount:"Hyperbolic Crochet"
+            }[k]||k)
+          ).join(" + ")}
+          {breedActive(state)?" — offspring alive.":" — enable parents to breed."}
+        </p>
+        <Select label="Crossbreed recipe" value={breedPreset}
+          onChange={setBreedPreset}>
+          {breedPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>applyBreedPreset(s,breedPreset))}>
+            Activate crossbreed recipe
+          </button>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>activateBreed(s))}>
+            Activate missing parents
+          </button>
+        </div>
+        <Parameter label="Offspring visibility" name="breedAmount" history={history}/>
+        {state.breedAmount>0&&<>
+          <Parameter label="Parent coupling intensity" name="breedCoupling" history={history}/>
+          <Parameter label="Crossbred geometry bending" name="breedWarp" history={history}/>
+          <Parameter label="Chromatic filament density" name="breedFiligree" history={history}/>
+          <Parameter label="Luminous inheritance" name="breedGlow" history={history}/>
+          <Parameter label="Interbreeding motion" name="breedMotion" history={history}/>
+          <Parameter label="Palette phase" name="breedHue" history={history}/>
+          <Parameter label="Geometry restraint / tension" name="breedTension" history={history}/>
+          <Parameter label="Spatial offspring variation" name="breedVariation" history={history}/>
+          <Parameter label="Parent resonance" name="breedResonance" history={history}/>
+        </>}
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>shuffleBreed(s))}>
+            <Shuffle size={13}/> Shuffle crossbreed only
+          </button>
+          <button type="button" className="button secondary"
+            disabled={state.breedAmount<=0}
+            onClick={()=>history.change(hideBreed)}>
+            <EyeOff size={13}/> Hide offspring only
+          </button>
+        </div>
+        <p className="control-note">
+          Existing parent modes remain independently editable. All-parent
+          Chimera is especially GPU-heavy: crochet quality starts conservatively
+          when it is first activated. Offspring is off for all legacy art.
+        </p>
+      </Section>
       <Section id="living-velvet" history={history}>
         <p className="control-note">
           P4m-mirrored seven-orbit Lenia-inspired tissue blooms into raised

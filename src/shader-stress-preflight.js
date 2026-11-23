@@ -102,6 +102,10 @@ export async function runShaderStressPreflight(state,timeline,size,{
       size:{...size},fps,duration,playbackMode,backend,
       frameBufferMiB:rgbaFrameMiB(size),
       ...summarizeStressSamples(measured,fps),
+      // WebGL1 cannot signal real GPU completion. CPU submission can look
+      // fast while the GPU is badly overloaded: never assign a safe tier.
+      pressure:backend==="webgl2-fence"
+        ?summarizeStressSamples(measured,fps).pressure:"GPU unmeasured",
       // No promise that timings imply export fidelity or codec availability.
       measurementScope:backend==="webgl2-fence"
         ?"Exact-effect shader draw through WebGL2 GPU fence, no video encoding"

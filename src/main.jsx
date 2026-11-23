@@ -432,6 +432,7 @@ function App() {
     setModal(null);
     if (hit.kind === "action") {
       if (hit.id === "export") setModal("export");
+      else if (hit.id === "new-canvas") setModal("new-canvas");
       else if (hit.id === "lookbook") setModal("lookbook");
       else if (hit.id === "help") setModal("help");
       else if (hit.id === "save") saveWork();

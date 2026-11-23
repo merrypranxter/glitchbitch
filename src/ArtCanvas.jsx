@@ -25,6 +25,7 @@ export default function ArtCanvas({
     runtime = useRef({ playing, quality, tool }),
     [size, setSize] = useState({ width: 1, height: 1 });
   const [error, setError] = useState(""),
+    [fallbackNotice, setFallbackNotice] = useState(""),
     [recovering, setRecovering] = useState(false),
     [retry, setRetry] = useState(0);
   runtime.current = { playing, quality, tool };
@@ -73,10 +74,13 @@ export default function ArtCanvas({
       failedFontRevision = -1;
     let intervals = [],
       previewScale = 1,
-      lastAdjust = 0;
+      lastAdjust = 0,
+      lastFallbackNotice = "";
     function setup() {
       try {
         renderer = createRenderer(canvas);
+        lastFallbackNotice="";
+        setFallbackNotice("");
         setError("");
         setRecovering(false);
         lost = false;
@@ -141,6 +145,13 @@ export default function ArtCanvas({
         try {
           if(!renderer.draw(state, timelineRef.current, dims.width, dims.height))
             throw Error("Artwork frame did not complete; retrying the renderer.");
+          // Warning, not a destructive redraw: source art and all controls
+          // remain untouched while the GPU reports unsupported optional FX.
+          const notice=renderer.fallbackNotice(state);
+          if(notice!==lastFallbackNotice){
+            lastFallbackNotice=notice;
+            setFallbackNotice(notice);
+          }
           if(failedState!==null){
             failedState=null;renderRetryAt=0;
             setError("");
@@ -449,6 +460,13 @@ export default function ArtCanvas({
           <i />
           {playing ? "LIVE GENERATIVE ART" : "A MOMENT, HELD STILL"}
         </div>
+        {fallbackNotice && !error && !recovering && (
+          <div className="render-parity-warning" role="status">
+            <strong>Preview simplified by this GPU:</strong> {fallbackNotice}.
+            Exact MP4/GIF export will not silently omit these effects.
+            Try reducing heavy layers or use a stronger device.
+          </div>
+        )}
         {(error || recovering) && (
           <div className="render-error" role="alert">
             <strong>

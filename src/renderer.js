@@ -1362,6 +1362,32 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
   );
   return {
     maxSize,
+    // A failed optional shader is never silently presented as the complete
+    // artwork. This describes what the preview actually omitted, so export
+    // parity failures are visible before the user spends minutes encoding.
+    fallbackNotice(state) {
+      if(!state)return "";
+      const missing=[];
+      if(breedUnavailable && breedActive(state))
+        missing.push("Crossbreed Lab");
+      if(crochetUnavailable && state.hcrAmount>0)
+        missing.push("Hyperbolic Crochet");
+      if(velvetUnavailable && state.vldAmount>0)
+        missing.push("Living Velvet");
+      if(qdUnavailable && state.qdAmount>0)
+        missing.push("Quasicrystal Dissolution");
+      if(polesUnavailable && state.polesAmount>0)
+        missing.push("Complex Poles");
+      if(hexagramUnavailable && state.hexagramAmount>0)
+        missing.push("Hexagram Terraces");
+      if(schlierenUnavailable && state.schlierenAmount>0)
+        missing.push("Schlieren Glass");
+      if(injuryUnavailable && state.injuryAmount>0)
+        missing.push("Print & Spectrum Injury");
+      if(alchemyUnavailable && state.alchemyAmount>0)
+        missing.push("Color Sorcery");
+      return missing.join(", ");
+    },
     readFrame(target) {
       if(exactEffects && gl.isContextLost())
         throw artworkParityError("GPU context lost during readback");

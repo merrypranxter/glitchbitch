@@ -83,6 +83,7 @@ test("Wave 8: Boomerang sampling uses source-frame time and never changes user r
   const out=await fixture(fake,{fps:15,duration:2,playbackMode:"Boomerang"});
   assert.equal(out.playbackMode,"Boomerang");
   assert.equal(out.backend,"webgl1-no-fence");
+  assert.equal(out.pressure,"GPU unmeasured");
   assert.match(out.measurementScope,/CPU submission\/readiness timing only/);
   const frameCount=30;
   const samples=STRESS_FRAME_FRACTIONS.map(f=>Math.round((frameCount-1)*f));

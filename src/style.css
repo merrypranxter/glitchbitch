@@ -3507,3 +3507,19 @@ main { grid-template-columns: 264px minmax(320px, 1fr) 300px; }
   .new-canvas-confirm-actions { flex-direction: column; }
   .new-canvas-confirm-actions > .button { width: 100%; }
 }
+
+@media (max-width: 420px) {
+  /* Do not let the new action push the old mobile Chaos dock off-screen. */
+  .studio-page .workspace-bottom { gap: 4px; }
+  .studio-page .workspace-bottom > .mobile-chaos {
+    min-width: 0;
+    flex: 1 1 0;
+    justify-content: flex-end;
+    gap: 3px;
+  }
+  .studio-page .workspace-bottom > .mobile-chaos button {
+    min-width: 0;
+    padding: 7px 4px;
+    font-size: 9px;
+  }
+}

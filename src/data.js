@@ -24,6 +24,7 @@ import {velvetModes,crochetModes,velvetControls,crochetControls} from "./living-
 import {breedModes,breedControls,breedRequiredParents} from "./crossbreed-lab.js";
 import {g2Modes,g2Controls} from "./g2-torsion-membranes.js";
 import {spxModes,spxControls} from "./subpixel-moire-wave11.js";
+import {psModes,psControls} from "./prismatic-scale-matrix-wave12.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
 import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
@@ -399,6 +400,19 @@ export const numericRanges = {
   spxHue: [0, 100],
   spxBleed: [0, 100],
   spxVariation: [0, 100],
+  psAmount: [0, 100],
+  psScale: [0, 100],
+  psOverlap: [0, 100],
+  psLift: [0, 100],
+  psMotion: [0, 100],
+  psFilm: [0, 100],
+  psDiffraction: [0, 100],
+  psHue: [0, 100],
+  psWarp: [0, 100],
+  psVariation: [0, 100],
+  psSheen: [0, 100],
+  psEdge: [0, 100],
+  psDomain: [0, 100],
   filamentAmount: [0, 100],
   filamentScale: [0, 100],
   filamentDensity: [0, 100],
@@ -871,6 +885,20 @@ export const initial = {
   spxHue: 49,
   spxBleed: 67,
   spxVariation: 48,
+  psMode: "Diamondback Prisms",
+  psAmount: 0,
+  psScale: 62,
+  psOverlap: 70,
+  psLift: 77,
+  psMotion: 52,
+  psFilm: 84,
+  psDiffraction: 72,
+  psHue: 44,
+  psWarp: 50,
+  psVariation: 55,
+  psSheen: 82,
+  psEdge: 68,
+  psDomain: 48,
   filamentSpecies: "Fivefold brocade",
   filamentAmount: 0,
   filamentScale: 54,
@@ -1237,6 +1265,7 @@ export function validateRecipe(input) {
     backdropMode: backdropModes,
     microMode: microModes,
     spxMode: spxModes,
+    psMode: psModes,
     substanceMode: substanceModes,
     photonSpecies: photonSpecies,
     alchemyMode: alchemyModes,
@@ -1662,6 +1691,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       ...breedControls,
       ...g2Controls,
       ...spxControls,
+      ...psControls,
       "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
       "tunnelAperture","tunnelVariation",
       "motionAmount","motionRate","lightMotion","bioAmount","bioFeed","bioKill",
@@ -1761,6 +1791,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key.startsWith("breed") && state.breedAmount<=0)continue;
       if(key.startsWith("g2") && state.g2Amount<=0)continue;
       if(key.startsWith("spx") && state.spxAmount<=0)continue;
+      if(key.startsWith("ps") && state.psAmount<=0)continue;
       if(key.startsWith("semanticGravity") && !hasSemanticLettering(state))continue;
       // Do not silently activate optical coats on previously saved artwork.
       if(key.startsWith("filamentOptics") && (state.filamentAmount<=0 ||
@@ -1991,6 +2022,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.spxMode=sample(spxModes,random);
   s.spxAmount=random()<.43?35+random()*65:0;
   for(const key of spxControls)if(key!=="spxAmount")s[key]=random()*100;
+  s.psMode=sample(psModes,random);
+  s.psAmount=random()<.41?38+random()*62:0;
+  for(const key of psControls)if(key!=="psAmount")s[key]=random()*100;
   s.filamentSpecies=different(filamentSpecies,state.filamentSpecies,random);
   s.filamentAmount=random()<.64?39+random()*58:0;
   s.filamentScale=20+random()*78;

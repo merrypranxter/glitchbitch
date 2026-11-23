@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, compositionModes, backdropModes, microModes, substanceModes, wiggleModes, randomize } from "../data";
 import {hexagramPresets,applyHexagramPreset,remixHexagram,disableHexagram} from "../hexagram-terraces.js";
+import {polesModes,polesPresets,applyPolesPreset,shufflePoles,hidePoles} from "../complex-poles.js";
 import { Parameter, Range, Toggle, Switch, Select, Section, Segmented, Pill, useReveal } from "./Controls";
 import {microFamilies,microPresets,applyMicroPreset,remixMicro} from "../microstructure.js";
 import {substanceFamilies,substancePresets,applySubstancePreset,remixSubstance} from "../substance.js";
@@ -163,6 +164,7 @@ function Reseed({ label, onClick }) {
 export function MathInspector({ history, locked, onLock, onLookbook }) {
   const state = history.state;
   const [hexagramPreset,setHexagramPreset]=React.useState(hexagramPresets[0].name);
+  const [polesPreset,setPolesPreset]=React.useState(polesPresets[0].name);
   const selected = (id) => state.engine === id ||
     (state.blend > 0 && state.secondaryEngine === id);
   return (
@@ -244,6 +246,52 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
           {selected(16) && <p className="control-note">Shape, parallax and material live in Effects → Stereo 3D.</p>}
         </Section>
       )}
+      <Section id="complex-poles" history={history}>
+        <p className="control-note">
+          Actual complex-plane distortion from (z⁵ − 1)/(z² + moving pole).
+          Five zeros pull filament and engine coordinates into impossible
+          lace; poles whirl geometry around moving singularities.
+          Bounded mapping keeps the canvas stable.
+        </p>
+        <Select label="Complex behavior" value={state.polesMode}
+          onChange={mode=>history.change(s=>({...s,polesMode:mode,
+            polesAmount:Math.max(s.polesAmount,58)}))}>
+          {polesModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </Select>
+        <div className="preset-row">
+          <Select label="Complex-plane recipe" value={polesPreset}
+            onChange={setPolesPreset}>
+            {polesPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+          </Select>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>applyPolesPreset(s,polesPreset))}>
+            Apply pole / zero recipe
+          </button>
+        </div>
+        <Parameter label="Math distortion strength" name="polesAmount" history={history}/>
+        {state.polesAmount>0&&<>
+          <Parameter label="Complex-plane zoom" name="polesScale" history={history}/>
+          <Parameter label="Geometry displacement" name="polesWarp" history={history}/>
+          <Parameter label="Pole orbit radius" name="polesOrbit" history={history}/>
+          <Parameter label="Singularity movement" name="polesMotion" history={history}/>
+          <Parameter label="Singularity softening" name="polesSoftness" history={history}/>
+          <Parameter label="Attract toward five zeros" name="polesZeroPull" history={history}/>
+          <Parameter label="Phase filament density" name="polesFiligree" history={history}/>
+          <Parameter label="Luminous phase accents" name="polesGlow" history={history}/>
+          <Parameter label="Palette phase" name="polesHue" history={history}/>
+          <Parameter label="Spatial variation" name="polesVariation" history={history}/>
+          <div className="pane-actions">
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(s=>shufflePoles(s))}>
+              <Shuffle size={13}/> Shuffle poles & zeros only
+            </button>
+            <button type="button" className="button secondary"
+              onClick={()=>history.change(hidePoles)}>
+              <EyeOff size={13}/> Hide complex field
+            </button>
+          </div>
+        </>}
+      </Section>
       <Section id="hexagram" history={history}>
         <p className="control-note">
           Six coupled binary noise fields make 64 shifting terrace identities.

@@ -43,6 +43,14 @@ export default function useHistory(initial) {
     },
     [push, update],
   );
+  const reset = useCallback((next) => {
+    // A NEW CANVAS is a fresh document, not a reversible edit.
+    // Kill pending slider/gesture transactions and both undo stacks.
+    transaction.current = null;
+    stacks.current = { past: [], future: [] };
+    update(typeof next === "function" ? next(current.current) : next);
+    setRevision((x) => x + 1);
+  }, [update]);
   const undo = useCallback(() => {
     if (transaction.current) {
       cancel();
@@ -67,6 +75,7 @@ export default function useHistory(initial) {
     current,
     revision,
     change,
+    reset,
     begin,
     preview,
     end,

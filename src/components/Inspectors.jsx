@@ -57,6 +57,8 @@ import {injuryModes,injuryFamilies,injuryDescriptions,injuryPresets,
   applyInjuryPreset,shuffleInjury,hideInjury} from "../print-spectrum-injury.js";
 import {spxModes,spxPresets,applySpxPreset,shuffleSpx,hideSpx}
   from "../subpixel-moire-wave11.js";
+import {psModes,psPresets,applyPsPreset,shufflePs,hidePs}
+  from "../prismatic-scale-matrix-wave12.js";
 import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   xenoVascularSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies, remixFreshFilaments,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
@@ -686,6 +688,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [genePreset,setGenePreset]=React.useState(genePresets[0].name);
   const [selectionPreset,setSelectionPreset]=React.useState(selectionPresets[0].name);
   const [microPreset,setMicroPreset]=React.useState(microPresets[0].name);
+  const [psPreset,setPsPreset]=React.useState(psPresets[0].name);
   const [substancePreset,setSubstancePreset]=React.useState(substancePresets[0].name);
   const [bioRotPreset,setBioRotPreset]=React.useState(bioRotPresets[0].name);
   const [apocalypsePreset,setApocalypsePreset]=React.useState(apocalypsePresets[0].name);
@@ -3001,6 +3004,64 @@ export function EffectsInspector({ history, onTool, tool }) {
     oldweb: <>
       <Parameter label="Error windows" name="windowCascade" history={history} />
       <Parameter label="Glitter explosions" name="glitter" history={history} />
+    </>,
+    "prismatic-scales": <>
+      <p className="control-note">
+        Sculpted reptilian / alien plates from your original Prismatic
+        Scale Matrix shader: staggered shingle packing, directional
+        dome lighting, curved spectral films and holographic grooves.
+        This coats the actual underlying artwork; it is not a flat texture.
+      </p>
+      <Select label="Scale anatomy" value={s.psMode}
+        onChange={mode=>history.change(x=>({...x,psMode:mode,
+          psAmount:Math.max(x.psAmount,65)}))}>
+        {psModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <div className="preset-row">
+        <Select label="Scale recipe" value={psPreset} onChange={setPsPreset}>
+          {psPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applyPsPreset(x,psPreset))}>
+          Grow crystalline scales
+        </button>
+      </div>
+      <Parameter label="Scales presence" name="psAmount" history={history}/>
+      {s.psAmount>0&&<>
+        <Parameter label="Plate density / scale" name="psScale" history={history}/>
+        <Parameter label="Shingle overlap" name="psOverlap" history={history}/>
+        <Parameter label="Sculpted dome height" name="psLift" history={history}/>
+        <Parameter label="Thin-film iridescence" name="psFilm" history={history}/>
+        <details className="effect-explanation">
+          <summary>Optical alchemy · advanced</summary>
+          <Parameter label="Diffraction grooves" name="psDiffraction" history={history}/>
+          <Parameter label="Palette phase / tint" name="psHue" history={history}/>
+          <Parameter label="Wet-light specular luster" name="psSheen" history={history}/>
+          <Parameter label="Scale edges / seams" name="psEdge" history={history}/>
+          <Parameter label="Complex-domain color shifts" name="psDomain" history={history}/>
+        </details>
+        <details className="effect-explanation">
+          <summary>Living surface · advanced</summary>
+          <Parameter label="Downward growth flow" name="psMotion" history={history}/>
+          <Parameter label="Dorsal bend / scene distortion" name="psWarp" history={history}/>
+          <Parameter label="Cell identity variation" name="psVariation" history={history}/>
+        </details>
+      </>}
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shufflePs(x))}>
+          <Shuffle size={13}/> Shuffle all scales
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.psAmount<=0} onClick={()=>history.change(hidePs)}>
+          <EyeOff size={13}/> Hide scale skin
+        </button>
+      </div>
+      <p className="control-note">
+        Original art, geometry, other effects and typography are preserved.
+        Full Surprise Me may activate this species; Mutate leaves it asleep
+        when off. Preview/PNG/GIF/MP4 use the same shared material shader.
+      </p>
     </>,
     micro: <>
       <p className="control-note">Sixteen animated microscopic constructions, from opal dust and bubble silk to creeping mold sequins and alien dandruff. New shapes use distinct real-time shader geometry.</p>

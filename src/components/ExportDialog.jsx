@@ -18,6 +18,7 @@ import { normalTextBlendState } from "../text-blend-proof.js";
 import { canvasImageFiltersWork } from "../lettering-filter-fallback.js";
 import { exportBlobPixels, analyzeTextExportFrames,
   exportDiagnosticReport } from "../text-export-diagnostics.js";
+import {runShaderStressPreflight} from "../shader-stress-preflight.js";
 export default function ExportDialog({ state, title, timelineRef, onClose, onNotice, onExportBusy }) {
   const [tab,setTab]=useState("Image"),
     [longEdge,setLongEdge]=useState(2160),
@@ -44,6 +45,8 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     [seamAudit,setSeamAudit]=useState(null),
     [selectedSeamView,setSelectedSeamView]=useState("wrap"),
     [motionAuditStage,setMotionAuditStage]=useState(""),
+    [stressReport,setStressReport]=useState(null),
+    [stressStage,setStressStage]=useState(""),
     [auditing,setAuditing]=useState(false);
   const controller=useRef(null), mounted=useRef(true), proofUrl=useRef(null), blendUrls=useRef([]),
     frameAuditUrls=useRef([]),motionAuditUrls=useRef([]),seamAuditUrls=useRef([]);
@@ -82,6 +85,42 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
   const boomerangCacheMiB=Math.ceil(
     boomerangMemoryBytes(size,Math.round(clipDuration*fps),"Boomerang")/1048576);
   const boomerangTooLarge=boomerangCacheMiB>BOOMERANG_CACHE_LIMIT/1048576;
+  async function stressTest(){
+    if(busy||tab!=="Video")return;
+    const abort=new AbortController();
+    controller.current=abort;
+    const snapshot={...state,ratio},timeline={...timelineRef.current};
+    const selectedSize={...size},selectedFps=fps,selectedFormat=clipFormat;
+    setError("");setStressReport(null);setStressStage("Preparing strict GPU renderer…");
+    setAuditing(true);setBusy(true);
+    try{
+      // Unmount preview before creating the test GPU context on Safari.
+      onExportBusy?.(true);
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      const report=await runShaderStressPreflight(snapshot,timeline,selectedSize,{
+        fps:selectedFps,signal:abort.signal,
+        onSample:(index,count)=>{
+          if(mounted.current)setStressStage("Measuring full-effects frames "+(index+1)+" / "+count+"…");
+        }
+      });
+      if(mounted.current)
+        setStressReport({...report,recipeAt:state,ratioAt:ratio,formatAt:selectedFormat});
+    }catch(e){
+      if(mounted.current)setError(e?.name==="AbortError"
+        ?"GPU stress test cancelled; artwork unchanged."
+        :"GPU stress test failed: "+(e?.message||String(e)));
+    }finally{
+      onExportBusy?.(false);
+      if(controller.current===abort)controller.current=null;
+      if(mounted.current){setBusy(false);setAuditing(false);setStressStage("");}
+    }
+  }
+  function saveStressReport(){
+    if(!stressReport)return;
+    const {recipeAt,ratioAt,formatAt,...report}=stressReport;
+    download(new Blob([JSON.stringify(report,null,2)],{type:"application/json"}),
+      "glitchbitch-gpu-stress-"+state.seed+".json");
+  }
   async function makeProof(){
     if(busy)return;
     setBusy(true);setError("");setProof(null);
@@ -577,6 +616,58 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
           <span>BACKWARD COMPATIBLE WITH OLDER RECIPES</span>
         </div>}
       </fieldset>
+      {tab==="Video"&&<div className="export-proof-panel">
+        <strong>🧪 Chimera Torture Chamber · GPU stress preflight</strong>
+        <p className="export-note">
+          Measure five exact-effects shader frames at the chosen {size.width} × {size.height}
+          {" "}resolution. The first frame warms up the shader; four are timed.
+          This does not encode video or verify color fidelity. Your recipe is untouched.
+        </p>
+        <button type="button" className="button secondary" disabled={busy}
+          onClick={stressTest}>
+          <Film size={15}/> Stress-test exact shader at this size
+        </button>
+        {busy&&auditing&&stressStage&&
+          <button type="button" className="button secondary"
+            onClick={()=>controller.current?.abort()}>
+            <Square size={12}/> Cancel stress test
+          </button>}
+        {stressReport&&stressReport.recipeAt===state&&
+          stressReport.ratioAt===ratio&&stressReport.formatAt===clipFormat&&
+          stressReport.fps===fps&&stressReport.size.width===size.width&&
+          stressReport.size.height===size.height&&
+          <div className="export-truth-panel" aria-live="polite">
+            <strong>Observed shader load: {stressReport.pressure}</strong>
+            <div className="export-truth-metrics">
+              <div><strong>{stressReport.medianFrameMs} ms</strong>
+                <span>Median exact-effects frame</span></div>
+              <div><strong>{stressReport.maximumFrameMs} ms</strong>
+                <span>Slowest of four frames</span></div>
+              <div><strong>{stressReport.referenceFrameBudgetMs} ms</strong>
+                <span>{fps} fps frame-time reference</span></div>
+              <div><strong>{stressReport.frameBufferMiB} MiB</strong>
+                <span>One RGBA frame only (not total RAM)</span></div>
+            </div>
+            <p className="export-note">
+              {stressReport.backend==="webgl2-fence"
+                ?"WebGL2: timings include waiting for a GPU frame fence."
+                :"WebGL1/unknown backend: timings measure CPU submission only. Actual GPU load may be much higher."}
+              {" "}{stressReport.pressure==="very heavy"
+                ?"This shader is particularly expensive at this size. Try smaller video dimensions or a simpler two-parent crossbreed."
+                :stressReport.pressure==="heavy"
+                  ?"This shader is relatively expensive at the selected size. An offline export can still complete slowly."
+                  :"This short sample showed manageable frame times; sustained rendering and encoding may differ."}
+              {" "}The test cannot certify H.264/GIF encoding, playback speed or matching pixels.
+            </p>
+            <button type="button" className="button secondary" disabled={busy}
+              onClick={saveStressReport}>Save shader stress report (JSON)</button>
+          </div>}
+        <p className="export-note">
+          After exporting, use <strong>Full-Clip Motion Forensics</strong> below
+          to compare opening, middle and final frames decoded from the REAL MP4/GIF
+          against same-clock PNG references. That is the actual fidelity check.
+        </p>
+      </div>}
       {tab!=="Recipe"&&<div className="export-proof-panel">
         <button type="button" className="button secondary" disabled={busy}
           onClick={makeProof}>See flattened export proof (480px)</button>
@@ -637,7 +728,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
           can appear subtle; try Difference or Multiply to verify the effect.</p>
       </div>}
       {error&&<p className="field-error" role="alert">{error}</p>}
-      {busy&&auditing&&<p className="export-note">{motionAuditStage||"Inspecting decoded video frames and comparing real pixels…"}</p>}
+      {busy&&auditing&&<p className="export-note">{stressStage||motionAuditStage||"Inspecting decoded video frames and comparing real pixels…"}</p>}
       {busy&&!auditing&&tab==="Video"&&<div className="record-progress">
         <div><span style={{width:`${progress*100}%`}}/></div>
         <p><i/>{Math.round(progress*clipDuration*fps)} / {Math.round(clipDuration*fps)} frames{" "}

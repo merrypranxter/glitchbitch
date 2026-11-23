@@ -44,6 +44,7 @@ import { backdropFamilies,backdropDescriptions,backdropPresets,
   applyBackdropPreset,remixBackdrop } from "../backdrops.js";
 import {alchemyModes,alchemyFamilies,alchemyDescriptions,alchemyPresets,
   applyAlchemyPreset,shuffleAlchemy,hideAlchemy} from "../chromatic-alchemy.js";
+import {schlierenModes,schlierenPresets,applySchlierenPreset,shuffleSchlieren,hideSchlieren} from "../schlieren-glass.js";
 import {injuryModes,injuryFamilies,injuryDescriptions,injuryPresets,
   applyInjuryPreset,shuffleInjury,hideInjury} from "../print-spectrum-injury.js";
 import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
@@ -331,6 +332,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [photonPreset,setPhotonPreset]=React.useState(photonPresets[0].name);
   const [alchemyPreset,setAlchemyPreset]=React.useState(alchemyPresets[0].name);
   const [injuryPreset,setInjuryPreset]=React.useState(injuryPresets[0].name);
+  const [schlierenPreset,setSchlierenPreset]=React.useState(schlierenPresets[0].name);
   const [backdropPreset,setBackdropPreset]=React.useState(backdropPresets[0].name);
   const [filamentPreset,setFilamentPreset]=React.useState(filamentPresets[0].name);
   const [hybridPreset,setHybridPreset]=React.useState(filamentHybridPresets[0].name);
@@ -2533,6 +2535,54 @@ export function EffectsInspector({ history, onTool, tool }) {
       <Parameter label="Bayer dither" name="dither" history={history} />
       <Parameter label="CMY risograph" name="riso" history={history} />
       <Parameter label="Ink misregistration" name="misregister" history={history} />
+    </>,
+    "schlieren": <>
+      <p className="control-note">
+        Real refractive pixel displacement: glass bends your completed
+        artwork, including the existing filament dresses, palettes, and
+        special effects. No fake RGB-only substitution.
+      </p>
+      <Select label="Glass structure" value={s.schlierenMode}
+        onChange={mode=>history.change(x=>({...x,schlierenMode:mode,
+          schlierenAmount:Math.max(x.schlierenAmount,65)}))}>
+        {schlierenModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <Parameter label="Glass presence" name="schlierenAmount" history={history}/>
+      <Parameter label="Lens scale" name="schlierenScale" history={history}/>
+      <Parameter label="Actual pixel refraction" name="schlierenBend" history={history}/>
+      <Parameter label="Lens movement" name="schlierenMotion" history={history}/>
+      <Parameter label="Spectral dispersion" name="schlierenDispersion" history={history}/>
+      <Parameter label="Glass edge lighting" name="schlierenRim" history={history}/>
+      <Parameter label="Heat-ripple" name="schlierenRipple" history={history}/>
+      <Parameter label="Pattern variation" name="schlierenVariation" history={history}/>
+      <Parameter label="Glass coverage" name="schlierenMask" history={history}/>
+      <Parameter label="Lens focus" name="schlierenFocus" history={history}/>
+      <div className="preset-row">
+        <Select label="Glass recipe" value={schlierenPreset}
+          onChange={setSchlierenPreset}>
+          {schlierenPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applySchlierenPreset(x,schlierenPreset))}>
+          Apply refractive glass
+        </button>
+      </div>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleSchlieren(x))}>
+          <Shuffle size={13}/> Shuffle refractive glass
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.schlierenAmount<=0}
+          onClick={()=>history.change(hideSchlieren)}>
+          <EyeOff size={13}/> Hide glass
+        </button>
+      </div>
+      <p className="control-note">
+        Refracts full-effects pixels before visible text overlay.
+        Uses the final feedback image when afterimage is on; otherwise
+        one reusable GPU target. Strength 0 preserves your old art.
+      </p>
     </>,
     "print-injury": <>
       <p className="control-note">Print and spectrum mutations: animated XOR pixel decisions, living caustic print plates, reactive hypercolor injury and spectral frequency combs. Your actual art stays underneath.</p>

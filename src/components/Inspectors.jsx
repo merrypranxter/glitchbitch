@@ -35,6 +35,8 @@ import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, co
 import {hexagramPresets,applyHexagramPreset,remixHexagram,disableHexagram} from "../hexagram-terraces.js";
 import {polesModes,polesPresets,applyPolesPreset,shufflePoles,hidePoles} from "../complex-poles.js";
 import {qdModes,qdOrders,qdPresets,applyQdPreset,shuffleQd,hideQd} from "../quasicrystal-dissolution.js";
+import {velvetModes,crochetModes,textilePresets,applyTextilePreset,
+  shuffleVelvet,shuffleCrochet,hideVelvet,hideCrochet} from "../living-textiles-wave5.js";
 import { Parameter, Range, Toggle, Switch, Select, Section, Segmented, Pill, useReveal } from "./Controls";
 import {microFamilies,microPresets,applyMicroPreset,remixMicro} from "../microstructure.js";
 import {substanceFamilies,substancePresets,applySubstancePreset,remixSubstance} from "../substance.js";
@@ -167,6 +169,7 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
   const [hexagramPreset,setHexagramPreset]=React.useState(hexagramPresets[0].name);
   const [polesPreset,setPolesPreset]=React.useState(polesPresets[0].name);
   const [qdPreset,setQdPreset]=React.useState(qdPresets[0].name);
+  const [textilePreset,setTextilePreset]=React.useState(textilePresets[0].name);
   const selected = (id) => state.engine === id ||
     (state.blend > 0 && state.secondaryEngine === id);
   return (
@@ -248,6 +251,94 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
           {selected(16) && <p className="control-note">Shape, parallax and material live in Effects → Stereo 3D.</p>}
         </Section>
       )}
+      <Section id="living-velvet" history={history}>
+        <p className="control-note">
+          P4m-mirrored seven-orbit Lenia-inspired tissue blooms into raised
+          living damask. Simulated soft pile has directional nap, velvet sheen,
+          wet organelles and your editable art palette. Existing threads
+          stay visible underneath.
+        </p>
+        <Select label="Velvet species" value={state.velvetMode}
+          onChange={mode=>history.change(s=>({...s,velvetMode:mode,
+            vldAmount:Math.max(s.vldAmount,60)}))}>
+          {velvetModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </Select>
+        <Parameter label="Living velvet presence" name="vldAmount" history={history}/>
+        {state.vldAmount>0&&<>
+          <Parameter label="Damask wallpaper scale" name="vldScale" history={history}/>
+          <Parameter label="Morphological growth pace" name="vldGrowth" history={history}/>
+          <Parameter label="Raised tissue / geometry relief" name="vldRelief" history={history}/>
+          <Parameter label="Fuzzy velvet pile direction" name="vldNap" history={history}/>
+          <Parameter label="Wet motif gloss" name="vldGloss" history={history}/>
+          <Parameter label="Palette phase" name="vldHue" history={history}/>
+          <Parameter label="Living organism variation" name="vldVariation" history={history}/>
+          <Parameter label="Metaball tissue density" name="vldDensity" history={history}/>
+        </>}
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>shuffleVelvet(s))}>
+            <Shuffle size={13}/> Shuffle velvet only
+          </button>
+          <button type="button" className="button secondary"
+            disabled={state.vldAmount<=0}
+            onClick={()=>history.change(hideVelvet)}>
+            <EyeOff size={13}/> Hide velvet
+          </button>
+        </div>
+        <p className="control-note">
+          This is continuously animated Lenia-inspired morphology, not a
+          stored-state biological cellular simulation. It responds to existing
+          brush coordinate deformation and shares the normal render clock.
+        </p>
+      </Section>
+      <Section id="hyperbolic-crochet" history={history}>
+        <p className="control-note">
+          Ruffled negative-curvature-inspired geometry meets inversion-folded
+          3D fractal lace. A bounded 8–20-step SDF raymarch builds luminous
+          yarn surfaces without the 150-step shader that cooked the reference.
+        </p>
+        <Select label="Fractal crochet species" value={state.crochetMode}
+          onChange={mode=>history.change(s=>({...s,crochetMode:mode,
+            hcrAmount:Math.max(s.hcrAmount,55)}))}>
+          {crochetModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </Select>
+        <Parameter label="Crochet visibility" name="hcrAmount" history={history}/>
+        {state.hcrAmount>0&&<>
+          <Parameter label="Crochet geometry scale" name="hcrScale" history={history}/>
+          <Parameter label="Hyperbolic ruffles" name="hcrRuffles" history={history}/>
+          <Parameter label="Lace thickness / relief" name="hcrDepth" history={history}/>
+          <Parameter label="Inversion lattice density" name="hcrLace" history={history}/>
+          <Parameter label="Living crochet motion" name="hcrMotion" history={history}/>
+          <Parameter label="Bouclé yarn / fuzz" name="hcrYarn" history={history}/>
+          <Parameter label="Prismatic edge color" name="hcrIridescence" history={history}/>
+          <Parameter label="Raymarch detail (mobile cost)" name="hcrQuality" history={history}/>
+          <Parameter label="Crochet palette phase" name="hcrHue" history={history}/>
+        </>}
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>shuffleCrochet(s))}>
+            <Shuffle size={13}/> Shuffle crochet only
+          </button>
+          <button type="button" className="button secondary"
+            disabled={state.hcrAmount<=0}
+            onClick={()=>history.change(hideCrochet)}>
+            <EyeOff size={13}/> Hide crochet
+          </button>
+        </div>
+        <Select label="Velvet + crochet crossbreed recipe" value={textilePreset}
+          onChange={setTextilePreset}>
+          {textilePresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(s=>applyTextilePreset(s,textilePreset))}>
+          Apply textile crossbreed
+        </button>
+        <p className="control-note">
+          Quality adds raymarch steps, not resolution: reduce it for iPhone
+          preview or high-resolution exports. Crochet and velvet work
+          independently. Old artwork keeps both off until activated.
+        </p>
+      </Section>
       <Section id="quasi-dissolution" history={history}>
         <p className="control-note">
           Make an organized quasicrystal from five, seven, or nine coupled

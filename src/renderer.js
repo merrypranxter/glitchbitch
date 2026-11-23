@@ -6,6 +6,7 @@ import {createSchlierenPass} from "./schlieren-pass.js";
 import {hexagramGLSL} from "./hexagram-terraces.js";
 import {polesModes,polesGLSL} from "./complex-poles.js";
 import {qdModes,qdOrders,qdGLSL} from "./quasicrystal-dissolution.js";
+import {velvetModes,crochetModes,velvetGLSL,crochetGLSL} from "./living-textiles-wave5.js";
 import { motionGLSL } from "./motion.js";
 import { feedbackVertex, feedbackFragment, feedbackDisplayFragment } from "./feedback.js";
 import { createBiology, BIO_SIZE } from "./biology.js";
@@ -70,6 +71,8 @@ ${bioGLSL}
 /* HEXAGRAM_MODULE */
 /* POLES_MODULE */
 /* QUASI_DECAY_MODULE */
+/* VELVET_MODULE */
+/* CROCHET_MODULE */
 float field(vec2 p,int kind){float t=time*.3,f=0.;
 if(kind==0){for(int i=0;i<5;i++){float n=float(i)+1.;p+=warp*.32*vec2(sin(p.y*n+t/n),cos(p.x*n-t/n));f+=sin(p.x*n+cos(p.y*n+t))/n;}f=f*.25+length(p)*.12;}
 else if(kind==1){f=sin(length(p-vec2(sin(t),cos(t)))*12.)*sin(length(p+vec2(cos(t*.7),sin(t*.8)))*13.);f=f*.4+length(p)*.15;}
@@ -143,6 +146,8 @@ else if(marks[i].w<1.5)p+=vec2(-d.y,d.x)*force*8.;else if(marks[i].w<2.5)p+=d*fo
 /* HEXAGRAM_PRE */
 /* POLES_PRE */
 /* QUASI_DECAY_PRE */
+/* VELVET_PRE */
+/* CROCHET_PRE */
 float v=composed(p);/* HEXAGRAM_VALUE */vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*sin(v*(2.+complexity*5.)*TAU),18.);col*=.72+edge*.5;if(bloom)col+=edge*col*.24;
 /* BACKDROP_POST */
 /* HEXAGRAM_POST */
@@ -163,6 +168,8 @@ float v=composed(p);/* HEXAGRAM_VALUE */vec3 col=palette(phaseOf(v,uv,source));f
 /* FOOD_WEB_POST */
 /* POLES_POST */
 /* QUASI_DECAY_POST */
+/* VELVET_POST */
+/* CROCHET_POST */
 col=animateLight(col,uv,v);
 col=stainWithBiology(col,uv,p);
 /* LETTERING_POST */
@@ -206,11 +213,12 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
     filamentRegenUnavailable = false, semanticGravityUnavailable = false,
     underlayUnavailable = false, alchemyUnavailable = false,
     injuryUnavailable = false, hexagramUnavailable = false, polesUnavailable = false,
-    qdUnavailable = false, fossilUnavailable = false,
+    qdUnavailable = false, velvetUnavailable = false, crochetUnavailable = false,
+    fossilUnavailable = false,
     successionUnavailable = false, foodWebUnavailable = false;
   function compatibleShaderState(s){
     const source = stereoUnavailable ? safe2DSelection(s) : s;
-    if(!qdUnavailable && !polesUnavailable && !hexagramUnavailable && !injuryUnavailable && !alchemyUnavailable &&
+    if(!velvetUnavailable && !crochetUnavailable && !qdUnavailable && !polesUnavailable && !hexagramUnavailable && !injuryUnavailable && !alchemyUnavailable &&
        !materialUnavailable && !typeShaderUnavailable &&
        !compositionUnavailable && !backdropUnavailable &&
        !microUnavailable && !substanceUnavailable && !wiggleUnavailable &&
@@ -227,6 +235,8 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       ...(hexagramUnavailable ? {hexagramAmount:0}:{}),
       ...(polesUnavailable ? {polesAmount:0}:{}),
       ...(qdUnavailable ? {qdAmount:0}:{}),
+      ...(velvetUnavailable ? {vldAmount:0}:{}),
+      ...(crochetUnavailable ? {hcrAmount:0}:{}),
       ...(injuryUnavailable ? {injuryAmount:0}:{}),
       ...(alchemyUnavailable ? {alchemyAmount:0}:{}),
       ...(materialUnavailable ? {filmAmount:0,opalAmount:0,prismAmount:0,foilRelief:0}:{}),
@@ -788,6 +798,8 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       withHexagram = s.hexagramAmount>0,
       withPoles = s.polesAmount>0,
       withQd = s.qdAmount>0,
+      withVelvet = s.vldAmount>0,
+      withCrochet = s.hcrAmount>0,
       withLettering = false, // Lettering is a separate, fail-safe GPU compositing pass.
       withComposition = blended && s.compositionAmount>0,
       withBackdrop = s.backdropAmount>0,
@@ -850,7 +862,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       ),
       withStrange = (s.engine>=17 && s.engine<=19) ||
         (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAdornment ? "trinket"+filamentAdornmentModes.indexOf(s.filamentAdornmentMode)+(withHybrid?"x"+filamentAdornmentModes.indexOf(s.filamentSecondAdornmentMode):"") : "bare-trinkets"}/${withMorph?"morph"+filamentMaterials.indexOf(s.filamentMorphTarget)+(withHybrid?"x"+filamentMaterials.indexOf(s.filamentSecondMorphTarget):""):"no-morph"}/${withContagion?"contagion"+filamentContagionModes.indexOf(s.filamentContagionMode):"no-contagion"}/${withNeural?"neural"+filamentNeuralModes.indexOf(s.filamentNeuralMode):"no-neural"}/${withPlastic?"plastic"+filamentPlasticModes.indexOf(s.filamentPlasticMode):"no-plastic"}/${withScars?"scars"+filamentScarModes.indexOf(s.filamentScarMode):"no-scars"}/${withRegen?"regen"+filamentRegenModes.indexOf(s.filamentRegenMode):"no-regen"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}/${withAlchemy ? "alchemy"+alchemyModes.indexOf(s.alchemyMode) : "no-alchemy"}/${withInjury ? "injury"+injuryModes.indexOf(s.injuryMode) : "no-injury"}/${withOptics ? "struct-opt"+(withOpticsA?structuralOpticsModes.indexOf(s.filamentOpticsMode):0)+"x"+(withOpticsB?structuralOpticsModes.indexOf(s.filamentSecondOpticsMode):0):"bare-optics"}/${withSemantic?"semantic-glyph":"no-semantic-glyph"}/${withHexagram?"hexagram":"no-hexagram"}/${withPoles?"complex-poles":"no-complex-poles"}/${withQd?"quasi-dissolve":"no-quasi-dissolve"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAdornment ? "trinket"+filamentAdornmentModes.indexOf(s.filamentAdornmentMode)+(withHybrid?"x"+filamentAdornmentModes.indexOf(s.filamentSecondAdornmentMode):"") : "bare-trinkets"}/${withMorph?"morph"+filamentMaterials.indexOf(s.filamentMorphTarget)+(withHybrid?"x"+filamentMaterials.indexOf(s.filamentSecondMorphTarget):""):"no-morph"}/${withContagion?"contagion"+filamentContagionModes.indexOf(s.filamentContagionMode):"no-contagion"}/${withNeural?"neural"+filamentNeuralModes.indexOf(s.filamentNeuralMode):"no-neural"}/${withPlastic?"plastic"+filamentPlasticModes.indexOf(s.filamentPlasticMode):"no-plastic"}/${withScars?"scars"+filamentScarModes.indexOf(s.filamentScarMode):"no-scars"}/${withRegen?"regen"+filamentRegenModes.indexOf(s.filamentRegenMode):"no-regen"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}/${withAlchemy ? "alchemy"+alchemyModes.indexOf(s.alchemyMode) : "no-alchemy"}/${withInjury ? "injury"+injuryModes.indexOf(s.injuryMode) : "no-injury"}/${withOptics ? "struct-opt"+(withOpticsA?structuralOpticsModes.indexOf(s.filamentOpticsMode):0)+"x"+(withOpticsB?structuralOpticsModes.indexOf(s.filamentSecondOpticsMode):0):"bare-optics"}/${withSemantic?"semantic-glyph":"no-semantic-glyph"}/${withHexagram?"hexagram":"no-hexagram"}/${withPoles?"complex-poles":"no-complex-poles"}/${withQd?"quasi-dissolve":"no-quasi-dissolve"}/${withVelvet?"velvet":"no-velvet"}/${withCrochet?"crochet":"no-crochet"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -865,6 +877,16 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
     );
     if (!blended)
       source = source.replace("if(blend<.001)return a;", "return a;");
+    source=source.replace("/* VELVET_MODULE */",withVelvet ? velvetGLSL : "");
+    source=source.replace("/* VELVET_PRE */",withVelvet
+      ? "vec4 velvetData=vldPrepare(p);" : "");
+    source=source.replace("/* VELVET_POST */",withVelvet
+      ? "col=vldDress(col,p,uv,velvetData);" : "");
+    source=source.replace("/* CROCHET_MODULE */",withCrochet ? crochetGLSL : "");
+    source=source.replace("/* CROCHET_PRE */",withCrochet
+      ? "vec2 crochetDelta=hcrRuffle(p)-p;crochetDelta/=1.0+length(crochetDelta);p+=crochetDelta*hcrAmount*hcrRuffles*.12;" : "");
+    source=source.replace("/* CROCHET_POST */",withCrochet
+      ? "col=hcrDress(col,uv,p);" : "");
     source=source.replace("/* QUASI_DECAY_MODULE */",withQd ? qdGLSL : "");
     source=source.replace("/* QUASI_DECAY_PRE */",withQd
       ? "vec4 qdData=qdInterfere(p);" : "");
@@ -1381,7 +1403,13 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
           lastCompileError=e;
           // Preview may downgrade gracefully; exported art must NEVER be downgraded.
           if(exactEffects)throw artworkParityError("Full-effect shader failed to compile",e);
-          if(candidate.qdAmount>0 && !qdUnavailable){
+          if(candidate.hcrAmount>0 && !crochetUnavailable){
+            crochetUnavailable=true;
+            console.warn("Hyperbolic Crochet was too expensive for this graphics driver; keeping other art visible.",e);
+          }else if(candidate.vldAmount>0 && !velvetUnavailable){
+            velvetUnavailable=true;
+            console.warn("Living Velvet Damask could not compile on this GPU; keeping other art visible.",e);
+          }else if(candidate.qdAmount>0 && !qdUnavailable){
             qdUnavailable=true;
             console.warn("Order → Dissolution Quasicrystal exceeded this GPU; preserving the previous artwork and effects.",e);
           }else if(candidate.polesAmount>0 && !polesUnavailable){
@@ -1566,6 +1594,10 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
           return false;
         }
       }
+      gl.uniform1i(loc("velvetMode"),
+        Math.max(0,velvetModes.indexOf(compiledState.velvetMode)));
+      gl.uniform1i(loc("crochetMode"),
+        Math.max(0,crochetModes.indexOf(compiledState.crochetMode)));
       gl.uniform1i(loc("qdMode"),
         Math.max(0,qdModes.indexOf(compiledState.qdMode)));
       gl.uniform1i(loc("qdOrder"),
@@ -1615,6 +1647,10 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "polesHue","polesVariation",
         "qdAmount","qdDissolve","qdAuto","qdRate","qdDensity","qdTear",
         "qdPixel","qdWarp","qdFiligree","qdHue","qdVariation","qdEdge",
+        "vldAmount","vldScale","vldGrowth","vldRelief","vldNap",
+        "vldGloss","vldHue","vldVariation","vldDensity",
+        "hcrAmount","hcrScale","hcrRuffles","hcrDepth","hcrLace",
+        "hcrMotion","hcrYarn","hcrIridescence","hcrQuality","hcrHue",
         "motionAmount",
         "motionRate",
         "lightMotion",

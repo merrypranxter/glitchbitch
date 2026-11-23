@@ -20,6 +20,7 @@ import {structuralOpticsModes} from "./structural-thread-optics.js";
 import {schlierenModes} from "./schlieren-glass.js";
 import {polesModes} from "./complex-poles.js";
 import {qdModes,qdOrders,qdControls} from "./quasicrystal-dissolution.js";
+import {velvetModes,crochetModes,velvetControls,crochetControls} from "./living-textiles-wave5.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
 import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
@@ -275,6 +276,25 @@ export const numericRanges = {
   qdHue: [0, 100],
   qdVariation: [0, 100],
   qdEdge: [0, 100],
+  vldAmount: [0, 100],
+  vldScale: [0, 100],
+  vldGrowth: [0, 100],
+  vldRelief: [0, 100],
+  vldNap: [0, 100],
+  vldGloss: [0, 100],
+  vldHue: [0, 100],
+  vldVariation: [0, 100],
+  vldDensity: [0, 100],
+  hcrAmount: [0, 100],
+  hcrScale: [0, 100],
+  hcrRuffles: [0, 100],
+  hcrDepth: [0, 100],
+  hcrLace: [0, 100],
+  hcrMotion: [0, 100],
+  hcrYarn: [0, 100],
+  hcrIridescence: [0, 100],
+  hcrQuality: [0, 100],
+  hcrHue: [0, 100],
   tunnelTwist: [0, 100],
   tunnelDepth: [0, 100],
   tunnelRidges: [0, 100],
@@ -669,6 +689,27 @@ export const initial = {
   qdHue: 42,
   qdVariation: 36,
   qdEdge: 79,
+  velvetMode: "Royal Bio-Damask",
+  vldAmount: 0,
+  vldScale: 56,
+  vldGrowth: 48,
+  vldRelief: 60,
+  vldNap: 78,
+  vldGloss: 67,
+  vldHue: 46,
+  vldVariation: 33,
+  vldDensity: 65,
+  crochetMode: "Hyperbolic Coral",
+  hcrAmount: 0,
+  hcrScale: 60,
+  hcrRuffles: 76,
+  hcrDepth: 65,
+  hcrLace: 76,
+  hcrMotion: 57,
+  hcrYarn: 69,
+  hcrIridescence: 73,
+  hcrQuality: 35,
+  hcrHue: 45,
   tunnelMode: "Infinite spiral",
   tunnelTwist: 52,
   tunnelDepth: 61,
@@ -1106,6 +1147,8 @@ export function validateRecipe(input) {
     polesMode: polesModes,
     qdMode: qdModes,
     qdOrder: qdOrders,
+    velvetMode: velvetModes,
+    crochetMode: crochetModes,
     tunnelMode: tunnelModes,
     stereoShape: stereoShapes,
     wiggleMode: wiggleModes,
@@ -1539,6 +1582,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "polesSoftness","polesZeroPull","polesFiligree","polesGlow",
       "polesHue","polesVariation",
       ...qdControls,
+      ...velvetControls,
+      ...crochetControls,
       "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
       "tunnelAperture","tunnelVariation",
       "motionAmount","motionRate","lightMotion","bioAmount","bioFeed","bioKill",
@@ -1633,6 +1678,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key.startsWith("schlieren") && state.schlierenAmount<=0)continue;
       if(key.startsWith("poles") && state.polesAmount<=0)continue;
       if(key.startsWith("qd") && state.qdAmount<=0)continue;
+      if(key.startsWith("vld") && state.vldAmount<=0)continue;
+      if(key.startsWith("hcr") && state.hcrAmount<=0)continue;
       if(key.startsWith("semanticGravity") && !hasSemanticLettering(state))continue;
       // Do not silently activate optical coats on previously saved artwork.
       if(key.startsWith("filamentOptics") && (state.filamentAmount<=0 ||
@@ -1715,6 +1762,12 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   for(const key of qdControls)if(key!=="qdAmount"){
     s[key]=key==="qdAuto"?(random()<.5?0:30+random()*70):random()*100;
   }
+  s.velvetMode=sample(velvetModes,random);
+  s.vldAmount=random()<.38?40+random()*60:0;
+  for(const key of velvetControls)if(key!=="vldAmount")s[key]=random()*100;
+  s.crochetMode=sample(crochetModes,random);
+  s.hcrAmount=random()<.32?40+random()*60:0;
+  for(const key of crochetControls)if(key!=="hcrAmount")s[key]=random()*100;
   s.rotation=random()*360;
   s.symmetry=sample([1,1,2,3,4,5,6,8,10,12],random);
   s.mirror=random()<.43;s.bloom=random()<.8;s.posterize=random()<.27;s.invert=random()<.12;

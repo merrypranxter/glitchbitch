@@ -32,6 +32,7 @@ import {
   ArrowLeftRight,
 } from "lucide-react";
 import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, compositionModes, backdropModes, microModes, substanceModes, wiggleModes, randomize } from "../data";
+import {hexagramPresets,applyHexagramPreset,remixHexagram,disableHexagram} from "../hexagram-terraces.js";
 import { Parameter, Range, Toggle, Switch, Select, Section, Segmented, Pill, useReveal } from "./Controls";
 import {microFamilies,microPresets,applyMicroPreset,remixMicro} from "../microstructure.js";
 import {substanceFamilies,substancePresets,applySubstancePreset,remixSubstance} from "../substance.js";
@@ -160,6 +161,7 @@ function Reseed({ label, onClick }) {
 // ---- Math -------------------------------------------------------------------
 export function MathInspector({ history, locked, onLock, onLookbook }) {
   const state = history.state;
+  const [hexagramPreset,setHexagramPreset]=React.useState(hexagramPresets[0].name);
   const selected = (id) => state.engine === id ||
     (state.blend > 0 && state.secondaryEngine === id);
   return (
@@ -241,6 +243,38 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
           {selected(16) && <p className="control-note">Shape, parallax and material live in Effects → Stereo 3D.</p>}
         </Section>
       )}
+      <Section id="hexagram" history={history}>
+        <p className="control-note">
+          Six coupled binary noise fields make 64 shifting terrace identities.
+          Borders glow, regions borrow your palette, and the field can bend
+          the geometry underneath existing textile and optical effects.
+        </p>
+        <Select label="Terrace recipe" value={hexagramPreset}
+          onChange={(v)=>{
+            setHexagramPreset(v);
+            history.change(s=>applyHexagramPreset(s,v));
+          }}>
+          {hexagramPresets.map(p=><option key={p.name}>{p.name}</option>)}
+        </Select>
+        <Parameter label="Terrace strength" name="hexagramAmount" history={history}/>
+        {state.hexagramAmount>0&&<>
+          <Parameter label="Region scale" name="hexagramScale" history={history}/>
+          <Parameter label="Geometry bend" name="hexagramWarp" history={history}/>
+          <Parameter label="Territory motion" name="hexagramMotion" history={history}/>
+          <Parameter label="Raised enamel / relief" name="hexagramRelief" history={history}/>
+          <Parameter label="Changing-line width" name="hexagramBorder" history={history}/>
+          <Parameter label="Palette offset" name="hexagramHue" history={history}/>
+          <Parameter label="Bit-to-bit coupling" name="hexagramCoupling" history={history}/>
+          <Parameter label="Pattern variation" name="hexagramVariation" history={history}/>
+          <Parameter label="Region threshold" name="hexagramThreshold" history={history}/>
+          <Reseed label="Shuffle terraces only" onClick={()=>history.change(
+            s=>remixHexagram(s,Math.random))}/>
+          <button className="subtle-button full" type="button"
+            onClick={()=>history.change(disableHexagram)}>
+            Hide terraces (keep artwork)
+          </button>
+        </>}
+      </Section>
       <Section id="shape" history={history} defaultOpen>
         <Parameter label="Complexity" name="complexity" history={history} />
         <Parameter label="Scale" name="scale" history={history} />

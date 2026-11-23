@@ -695,6 +695,7 @@ export const sections = [
 
 // Things that aren't inspector sections but people still go looking for.
 export const actions = [
+  { id: "new-canvas", title: "New Canvas (restore starter)", where: "Canvas", keywords: ["new canvas", "new design", "new project", "fresh start", "reset artwork", "blank slate", "original starter", "clear canvas", "restart art"] },
   { id: "export", title: "Export PNG / MP4 / GIF", where: "Export", keywords: ["export", "download", "png", "mp4", "gif", "video", "recipe json"] },
   { id: "lookbook", title: "Lookbook presets", where: "Starting points", keywords: ["lookbook", "presets", "starting point", "recipes", "looks"] },
   { id: "save", title: "Save to vault", where: "Saved works", keywords: ["save", "bookmark", "vault", "keep"] },

@@ -4,6 +4,7 @@ import { artworkParityError } from "./export-parity.js";
 import { geometryGLSL } from "./geometry.js";
 import {createSchlierenPass} from "./schlieren-pass.js";
 import {hexagramGLSL} from "./hexagram-terraces.js";
+import {polesModes,polesGLSL} from "./complex-poles.js";
 import { motionGLSL } from "./motion.js";
 import { feedbackVertex, feedbackFragment, feedbackDisplayFragment } from "./feedback.js";
 import { createBiology, BIO_SIZE } from "./biology.js";
@@ -66,6 +67,7 @@ ${bioGLSL}
 /* TUNNEL_MODULE */
 /* STRANGE_FIELDS_MODULE */
 /* HEXAGRAM_MODULE */
+/* POLES_MODULE */
 float field(vec2 p,int kind){float t=time*.3,f=0.;
 if(kind==0){for(int i=0;i<5;i++){float n=float(i)+1.;p+=warp*.32*vec2(sin(p.y*n+t/n),cos(p.x*n-t/n));f+=sin(p.x*n+cos(p.y*n+t))/n;}f=f*.25+length(p)*.12;}
 else if(kind==1){f=sin(length(p-vec2(sin(t),cos(t)))*12.)*sin(length(p+vec2(cos(t*.7),sin(t*.8)))*13.);f=f*.4+length(p)*.15;}
@@ -137,6 +139,7 @@ if(marks[i].w<.5)p+=rotate(a)*vec2(sin(local.y*15.+time),cos(local.x*15.-time))*
 else if(marks[i].w<1.5)p+=vec2(-d.y,d.x)*force*8.;else if(marks[i].w<2.5)p+=d*force*8.;else source+=force*(.5+.5*sin(2.*atan(d.y,d.x)+colorTime*.5+a));}}
 /* WIGGLE_POST */
 /* HEXAGRAM_PRE */
+/* POLES_PRE */
 float v=composed(p);/* HEXAGRAM_VALUE */vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*sin(v*(2.+complexity*5.)*TAU),18.);col*=.72+edge*.5;if(bloom)col+=edge*col*.24;
 /* BACKDROP_POST */
 /* HEXAGRAM_POST */
@@ -155,6 +158,7 @@ float v=composed(p);/* HEXAGRAM_VALUE */vec3 col=palette(phaseOf(v,uv,source));f
 /* ATMOSPHERE_POST */
 /* ATMOSPHERE_B_POST */
 /* FOOD_WEB_POST */
+/* POLES_POST */
 col=animateLight(col,uv,v);
 col=stainWithBiology(col,uv,p);
 /* LETTERING_POST */
@@ -197,11 +201,11 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
     filamentPlasticUnavailable = false, filamentScarUnavailable = false,
     filamentRegenUnavailable = false, semanticGravityUnavailable = false,
     underlayUnavailable = false, alchemyUnavailable = false,
-    injuryUnavailable = false, hexagramUnavailable = false, fossilUnavailable = false,
+    injuryUnavailable = false, hexagramUnavailable = false, polesUnavailable = false, fossilUnavailable = false,
     successionUnavailable = false, foodWebUnavailable = false;
   function compatibleShaderState(s){
     const source = stereoUnavailable ? safe2DSelection(s) : s;
-    if(!hexagramUnavailable && !injuryUnavailable && !alchemyUnavailable &&
+    if(!polesUnavailable && !hexagramUnavailable && !injuryUnavailable && !alchemyUnavailable &&
        !materialUnavailable && !typeShaderUnavailable &&
        !compositionUnavailable && !backdropUnavailable &&
        !microUnavailable && !substanceUnavailable && !wiggleUnavailable &&
@@ -216,6 +220,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       ...source,
 
       ...(hexagramUnavailable ? {hexagramAmount:0}:{}),
+      ...(polesUnavailable ? {polesAmount:0}:{}),
       ...(injuryUnavailable ? {injuryAmount:0}:{}),
       ...(alchemyUnavailable ? {alchemyAmount:0}:{}),
       ...(materialUnavailable ? {filmAmount:0,opalAmount:0,prismAmount:0,foilRelief:0}:{}),
@@ -775,6 +780,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       withAlchemy = s.alchemyAmount>0,
       withInjury = s.injuryAmount>0,
       withHexagram = s.hexagramAmount>0,
+      withPoles = s.polesAmount>0,
       withLettering = false, // Lettering is a separate, fail-safe GPU compositing pass.
       withComposition = blended && s.compositionAmount>0,
       withBackdrop = s.backdropAmount>0,
@@ -837,7 +843,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       ),
       withStrange = (s.engine>=17 && s.engine<=19) ||
         (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAdornment ? "trinket"+filamentAdornmentModes.indexOf(s.filamentAdornmentMode)+(withHybrid?"x"+filamentAdornmentModes.indexOf(s.filamentSecondAdornmentMode):"") : "bare-trinkets"}/${withMorph?"morph"+filamentMaterials.indexOf(s.filamentMorphTarget)+(withHybrid?"x"+filamentMaterials.indexOf(s.filamentSecondMorphTarget):""):"no-morph"}/${withContagion?"contagion"+filamentContagionModes.indexOf(s.filamentContagionMode):"no-contagion"}/${withNeural?"neural"+filamentNeuralModes.indexOf(s.filamentNeuralMode):"no-neural"}/${withPlastic?"plastic"+filamentPlasticModes.indexOf(s.filamentPlasticMode):"no-plastic"}/${withScars?"scars"+filamentScarModes.indexOf(s.filamentScarMode):"no-scars"}/${withRegen?"regen"+filamentRegenModes.indexOf(s.filamentRegenMode):"no-regen"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}/${withAlchemy ? "alchemy"+alchemyModes.indexOf(s.alchemyMode) : "no-alchemy"}/${withInjury ? "injury"+injuryModes.indexOf(s.injuryMode) : "no-injury"}/${withOptics ? "struct-opt"+(withOpticsA?structuralOpticsModes.indexOf(s.filamentOpticsMode):0)+"x"+(withOpticsB?structuralOpticsModes.indexOf(s.filamentSecondOpticsMode):0):"bare-optics"}/${withSemantic?"semantic-glyph":"no-semantic-glyph"}/${withHexagram?"hexagram":"no-hexagram"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAdornment ? "trinket"+filamentAdornmentModes.indexOf(s.filamentAdornmentMode)+(withHybrid?"x"+filamentAdornmentModes.indexOf(s.filamentSecondAdornmentMode):"") : "bare-trinkets"}/${withMorph?"morph"+filamentMaterials.indexOf(s.filamentMorphTarget)+(withHybrid?"x"+filamentMaterials.indexOf(s.filamentSecondMorphTarget):""):"no-morph"}/${withContagion?"contagion"+filamentContagionModes.indexOf(s.filamentContagionMode):"no-contagion"}/${withNeural?"neural"+filamentNeuralModes.indexOf(s.filamentNeuralMode):"no-neural"}/${withPlastic?"plastic"+filamentPlasticModes.indexOf(s.filamentPlasticMode):"no-plastic"}/${withScars?"scars"+filamentScarModes.indexOf(s.filamentScarMode):"no-scars"}/${withRegen?"regen"+filamentRegenModes.indexOf(s.filamentRegenMode):"no-regen"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}/${withAlchemy ? "alchemy"+alchemyModes.indexOf(s.alchemyMode) : "no-alchemy"}/${withInjury ? "injury"+injuryModes.indexOf(s.injuryMode) : "no-injury"}/${withOptics ? "struct-opt"+(withOpticsA?structuralOpticsModes.indexOf(s.filamentOpticsMode):0)+"x"+(withOpticsB?structuralOpticsModes.indexOf(s.filamentSecondOpticsMode):0):"bare-optics"}/${withSemantic?"semantic-glyph":"no-semantic-glyph"}/${withHexagram?"hexagram":"no-hexagram"}/${withPoles?"complex-poles":"no-complex-poles"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -852,6 +858,11 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
     );
     if (!blended)
       source = source.replace("if(blend<.001)return a;", "return a;");
+    source=source.replace("/* POLES_MODULE */",withPoles ? polesGLSL : "");
+    source=source.replace("/* POLES_PRE */",withPoles
+      ? "vec4 polesData=vec4(0.);p=pzWarpPoint(p,polesData);" : "");
+    source=source.replace("/* POLES_POST */",withPoles
+      ? "col=pzDressColor(col,polesData);" : "");
     source=source.replace("/* HEXAGRAM_MODULE */",withHexagram ? hexagramGLSL : "");
     source=source.replace("/* HEXAGRAM_PRE */",withHexagram
       ? "vec4 hexagramData=hexagramTerraceField(p);p=hexagramTerraceWarp(p,hexagramData);" : "");
@@ -1358,7 +1369,10 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
           lastCompileError=e;
           // Preview may downgrade gracefully; exported art must NEVER be downgraded.
           if(exactEffects)throw artworkParityError("Full-effect shader failed to compile",e);
-          if(candidate.hexagramAmount>0 && !hexagramUnavailable){
+          if(candidate.polesAmount>0 && !polesUnavailable){
+            polesUnavailable=true;
+            console.warn("Complex Poles & Zeros exceeded this GPU; showing existing geometry without the optional warp.",e);
+          }else if(candidate.hexagramAmount>0 && !hexagramUnavailable){
             hexagramUnavailable=true;
             console.warn("Hexagram Terraces exceeded this GPU; keeping the previous artwork and effects.",e);
           }else if(candidate.injuryAmount>0 && !injuryUnavailable){
@@ -1537,6 +1551,8 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
           return false;
         }
       }
+      gl.uniform1i(loc("polesMode"),
+        Math.max(0,polesModes.indexOf(compiledState.polesMode)));
       gl.uniform1i(loc("semanticGravityMode"),
         Math.max(0,semanticGravityModes.indexOf(compiledState.semanticGravityMode)));
       gl.uniform1f(loc("time"), timeline.time);
@@ -1575,6 +1591,9 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "hexagramAmount","hexagramScale","hexagramWarp","hexagramMotion",
         "hexagramRelief","hexagramBorder","hexagramHue","hexagramCoupling",
         "hexagramVariation","hexagramThreshold",
+        "polesAmount","polesScale","polesWarp","polesOrbit","polesMotion",
+        "polesSoftness","polesZeroPull","polesFiligree","polesGlow",
+        "polesHue","polesVariation",
         "motionAmount",
         "motionRate",
         "lightMotion",

@@ -655,7 +655,9 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
               {stressReport.backend==="webgl2-fence"
                 ?"WebGL2: timings include waiting for a GPU frame fence."
                 :"WebGL1/unknown backend: timings measure CPU submission only. Actual GPU load may be much higher."}
-              {" "}{stressReport.pressure==="very heavy"
+              {" "}{stressReport.backend!=="webgl2-fence"
+                ?"No GPU pressure conclusion is possible on this backend; run a small real export to verify stability."
+                :stressReport.pressure==="very heavy"
                 ?"This shader is particularly expensive at this size. Try smaller video dimensions or a simpler two-parent crossbreed."
                 :stressReport.pressure==="heavy"
                   ?"This shader is relatively expensive at the selected size. An offline export can still complete slowly."

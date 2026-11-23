@@ -90,7 +90,8 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     const abort=new AbortController();
     controller.current=abort;
     const snapshot={...state,ratio},timeline={...timelineRef.current};
-    const selectedSize={...size},selectedFps=fps,selectedFormat=clipFormat;
+    const selectedSize={...size},selectedFps=fps,selectedFormat=clipFormat,
+      selectedDuration=clipDuration,selectedPlayback=playbackMode;
     setError("");setStressReport(null);setStressStage("Preparing strict GPU renderer…");
     setAuditing(true);setBusy(true);
     try{
@@ -98,7 +99,8 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
       onExportBusy?.(true);
       await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
       const report=await runShaderStressPreflight(snapshot,timeline,selectedSize,{
-        fps:selectedFps,signal:abort.signal,
+        fps:selectedFps,duration:selectedDuration,playbackMode:selectedPlayback,
+        signal:abort.signal,
         onSample:(index,count)=>{
           if(mounted.current)setStressStage("Measuring full-effects frames "+(index+1)+" / "+count+"…");
         }
@@ -634,7 +636,8 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
           </button>}
         {stressReport&&stressReport.recipeAt===state&&
           stressReport.ratioAt===ratio&&stressReport.formatAt===clipFormat&&
-          stressReport.fps===fps&&stressReport.size.width===size.width&&
+          stressReport.fps===fps&&stressReport.duration===clipDuration&&
+          stressReport.playbackMode===playbackMode&&stressReport.size.width===size.width&&
           stressReport.size.height===size.height&&
           <div className="export-truth-panel" aria-live="polite">
             <strong>Observed shader load: {stressReport.pressure}</strong>

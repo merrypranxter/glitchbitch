@@ -17,6 +17,7 @@ import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculpt
 import { underlayModes } from "./living-underlay.js";
 import {semanticGravityModes,hasSemanticLettering} from "./semantic-gravity.js";
 import {structuralOpticsModes} from "./structural-thread-optics.js";
+import {schlierenModes} from "./schlieren-glass.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
 import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
@@ -239,6 +240,16 @@ export const numericRanges = {
   hexagramCoupling: [0, 100],
   hexagramVariation: [0, 100],
   hexagramThreshold: [0, 100],
+  schlierenAmount: [0, 100],
+  schlierenScale: [0, 100],
+  schlierenBend: [0, 100],
+  schlierenMotion: [0, 100],
+  schlierenDispersion: [0, 100],
+  schlierenRim: [0, 100],
+  schlierenRipple: [0, 100],
+  schlierenVariation: [0, 100],
+  schlierenMask: [0, 100],
+  schlierenFocus: [0, 100],
   tunnelTwist: [0, 100],
   tunnelDepth: [0, 100],
   tunnelRidges: [0, 100],
@@ -596,6 +607,17 @@ export const initial = {
   hexagramCoupling: 73,
   hexagramVariation: 38,
   hexagramThreshold: 50,
+  schlierenMode: "Molten portholes",
+  schlierenAmount: 0,
+  schlierenScale: 45,
+  schlierenBend: 68,
+  schlierenMotion: 55,
+  schlierenDispersion: 61,
+  schlierenRim: 65,
+  schlierenRipple: 67,
+  schlierenVariation: 43,
+  schlierenMask: 72,
+  schlierenFocus: 67,
   tunnelMode: "Infinite spiral",
   tunnelTwist: 52,
   tunnelDepth: 61,
@@ -1029,6 +1051,7 @@ export function validateRecipe(input) {
     blendMode: ["Mix", "Multiply", "Difference"],
     colorMode: ["Traveling wave", "Color canon", "Phase vortex"],
     motionMode: motionModes,
+    schlierenMode: schlierenModes,
     tunnelMode: tunnelModes,
     stereoShape: stereoShapes,
     wiggleMode: wiggleModes,
@@ -1455,6 +1478,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "hexagramAmount","hexagramScale","hexagramWarp","hexagramMotion",
       "hexagramRelief","hexagramBorder","hexagramHue","hexagramCoupling",
       "hexagramVariation","hexagramThreshold",
+      "schlierenAmount","schlierenScale","schlierenBend","schlierenMotion",
+      "schlierenDispersion","schlierenRim","schlierenRipple",
+      "schlierenVariation","schlierenMask","schlierenFocus",
       "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
       "tunnelAperture","tunnelVariation",
       "motionAmount","motionRate","lightMotion","bioAmount","bioFeed","bioKill",
@@ -1546,6 +1572,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
     for(const key of nudges){
       // New behavior settings do not mutate old artwork or wake hidden modes.
       if(key.startsWith("hexagram") && state.hexagramAmount<=0)continue;
+      if(key.startsWith("schlieren") && state.schlierenAmount<=0)continue;
       if(key.startsWith("semanticGravity") && !hasSemanticLettering(state))continue;
       // Do not silently activate optical coats on previously saved artwork.
       if(key.startsWith("filamentOptics") && (state.filamentAmount<=0 ||
@@ -1618,6 +1645,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.blend=random()<.18?0:22+random()*70;
   s.complexity=20+random()*80; s.scale=8+random()*80; s.warp=12+random()*88;
   s.hexagramAmount=random()<.32?35+random()*65:0;
+  s.schlierenMode=sample(schlierenModes,random);
+  s.schlierenAmount=random()<.28?40+random()*60:0;
   s.rotation=random()*360;
   s.symmetry=sample([1,1,2,3,4,5,6,8,10,12],random);
   s.mirror=random()<.43;s.bloom=random()<.8;s.posterize=random()<.27;s.invert=random()<.12;

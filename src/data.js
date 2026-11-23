@@ -21,6 +21,7 @@ import {schlierenModes} from "./schlieren-glass.js";
 import {polesModes} from "./complex-poles.js";
 import {qdModes,qdOrders,qdControls} from "./quasicrystal-dissolution.js";
 import {velvetModes,crochetModes,velvetControls,crochetControls} from "./living-textiles-wave5.js";
+import {breedModes,breedControls,breedRequiredParents} from "./crossbreed-lab.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
 import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
@@ -295,6 +296,16 @@ export const numericRanges = {
   hcrIridescence: [0, 100],
   hcrQuality: [0, 100],
   hcrHue: [0, 100],
+  breedAmount: [0, 100],
+  breedCoupling: [0, 100],
+  breedWarp: [0, 100],
+  breedFiligree: [0, 100],
+  breedGlow: [0, 100],
+  breedMotion: [0, 100],
+  breedHue: [0, 100],
+  breedTension: [0, 100],
+  breedVariation: [0, 100],
+  breedResonance: [0, 100],
   tunnelTwist: [0, 100],
   tunnelDepth: [0, 100],
   tunnelRidges: [0, 100],
@@ -710,6 +721,17 @@ export const initial = {
   hcrIridescence: 73,
   hcrQuality: 35,
   hcrHue: 45,
+  breedMode: "Oracle Singularity Brocade",
+  breedAmount: 0,
+  breedCoupling: 68,
+  breedWarp: 63,
+  breedFiligree: 74,
+  breedGlow: 73,
+  breedMotion: 49,
+  breedHue: 36,
+  breedTension: 47,
+  breedVariation: 55,
+  breedResonance: 77,
   tunnelMode: "Infinite spiral",
   tunnelTwist: 52,
   tunnelDepth: 61,
@@ -1149,6 +1171,7 @@ export function validateRecipe(input) {
     qdOrder: qdOrders,
     velvetMode: velvetModes,
     crochetMode: crochetModes,
+    breedMode: breedModes,
     tunnelMode: tunnelModes,
     stereoShape: stereoShapes,
     wiggleMode: wiggleModes,
@@ -1584,6 +1607,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       ...qdControls,
       ...velvetControls,
       ...crochetControls,
+      ...breedControls,
       "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
       "tunnelAperture","tunnelVariation",
       "motionAmount","motionRate","lightMotion","bioAmount","bioFeed","bioKill",
@@ -1680,6 +1704,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key.startsWith("qd") && state.qdAmount<=0)continue;
       if(key.startsWith("vld") && state.vldAmount<=0)continue;
       if(key.startsWith("hcr") && state.hcrAmount<=0)continue;
+      if(key.startsWith("breed") && state.breedAmount<=0)continue;
       if(key.startsWith("semanticGravity") && !hasSemanticLettering(state))continue;
       // Do not silently activate optical coats on previously saved artwork.
       if(key.startsWith("filamentOptics") && (state.filamentAmount<=0 ||
@@ -1768,6 +1793,17 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.crochetMode=sample(crochetModes,random);
   s.hcrAmount=random()<.32?40+random()*60:0;
   for(const key of crochetControls)if(key!=="hcrAmount")s[key]=random()*100;
+  s.breedMode=sample(breedModes,random);
+  s.breedAmount=random()<.29?40+random()*60:0;
+  for(const key of breedControls)if(key!=="breedAmount")s[key]=random()*100;
+  if(s.breedAmount>0){
+    // Surprise may breed the actual shader fields, not pick a sterile
+    // preset with missing parents. Only a full Surprise can wake parents.
+    for(const key of breedRequiredParents(s.breedMode)){
+      if(!(s[key]>0))s[key]=40+random()*55;
+    }
+    if(s.breedMode==="Five-Way Chimera")s.hcrQuality=Math.min(s.hcrQuality,35);
+  }
   s.rotation=random()*360;
   s.symmetry=sample([1,1,2,3,4,5,6,8,10,12],random);
   s.mirror=random()<.43;s.bloom=random()<.8;s.posterize=random()<.27;s.invert=random()<.12;

@@ -74,10 +74,12 @@ export default function ArtCanvas({
       failedFontRevision = -1;
     let intervals = [],
       previewScale = 1,
-      lastAdjust = 0;
+      lastAdjust = 0,
+      lastFallbackNotice = "";
     function setup() {
       try {
         renderer = createRenderer(canvas);
+        lastFallbackNotice="";
         setFallbackNotice("");
         setError("");
         setRecovering(false);
@@ -146,7 +148,10 @@ export default function ArtCanvas({
           // Warning, not a destructive redraw: source art and all controls
           // remain untouched while the GPU reports unsupported optional FX.
           const notice=renderer.fallbackNotice(state);
-          setFallbackNotice(previous=>previous===notice?previous:notice);
+          if(notice!==lastFallbackNotice){
+            lastFallbackNotice=notice;
+            setFallbackNotice(notice);
+          }
           if(failedState!==null){
             failedState=null;renderRetryAt=0;
             setError("");

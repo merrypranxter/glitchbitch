@@ -59,6 +59,8 @@ import {spxModes,spxPresets,applySpxPreset,shuffleSpx,hideSpx}
   from "../subpixel-moire-wave11.js";
 import {psModes,psPresets,applyPsPreset,shufflePs,hidePs}
   from "../prismatic-scale-matrix-wave12.js";
+import {kdModes,kdPresets,applyKdPreset,shuffleKd,hideKd}
+  from "../kleinian-dither-wave13.js";
 import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   xenoVascularSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies, remixFreshFilaments,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
@@ -656,6 +658,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [alchemyPreset,setAlchemyPreset]=React.useState(alchemyPresets[0].name);
   const [injuryPreset,setInjuryPreset]=React.useState(injuryPresets[0].name);
   const [spxPreset,setSpxPreset]=React.useState(spxPresets[0].name);
+  const [kdPreset,setKdPreset]=React.useState(kdPresets[0].name);
   const [schlierenPreset,setSchlierenPreset]=React.useState(schlierenPresets[0].name);
   const [backdropPreset,setBackdropPreset]=React.useState(backdropPresets[0].name);
   const [filamentPreset,setFilamentPreset]=React.useState(filamentPresets[0].name);
@@ -2893,6 +2896,59 @@ export function EffectsInspector({ history, onTool, tool }) {
       <p className="control-note">
         Off on old artwork. PNG/GIF/MP4 and preview use the same material,
         and unsupported GPUs get a visible warning, not a silent export downgrade.
+      </p>
+    </>,
+    "kleinian-dither": <>
+      <p className="control-note">
+        Living printmaking from Klein geometry: Möbius distortions, circle
+        inversions and RGB-offset ordered dithering across up to three
+        moving depth planes. From delicate inversion lace to fractured
+        spectral cathedrals — with your actual artwork underneath.
+      </p>
+      <Select label="Inversion print species" value={s.kdMode}
+        onChange={mode=>history.change(x=>({...x,kdMode:mode,
+          kdAmount:Math.max(x.kdAmount,58)}))}>
+        {kdModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <div className="preset-row">
+        <Select label="Klein Dither recipe" value={kdPreset}
+          onChange={setKdPreset}>
+          {kdPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applyKdPreset(x,kdPreset))}>
+          Print this geometry
+        </button>
+      </div>
+      <Parameter label="Kleinian print presence" name="kdAmount" history={history}/>
+      {s.kdAmount>0&&<>
+        <Parameter label="Inversion field scale" name="kdScale" history={history}/>
+        <Parameter label="Print depth planes (GPU load)" name="kdLayers" history={history}/>
+        <Parameter label="Circle inversion radius" name="kdInversion" history={history}/>
+        <Parameter label="Orbit rotation and speed" name="kdSpin" history={history}/>
+        <Parameter label="Plane parallax separation" name="kdParallax" history={history}/>
+        <Parameter label="Ordered Bayer stipple" name="kdDither" history={history}/>
+        <Parameter label="Chromatic ink offset" name="kdChroma" history={history}/>
+        <Parameter label="Palette color phase" name="kdHue" history={history}/>
+        <Parameter label="Ink coverage" name="kdInk" history={history}/>
+        <Parameter label="Luminous inversion edges" name="kdGlow" history={history}/>
+        <Parameter label="Geometry response / warp" name="kdWarp" history={history}/>
+        <Parameter label="Seeded pattern variation" name="kdVariation" history={history}/>
+      </>}
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleKd(x))}>
+          <Shuffle size={13}/> Shuffle inversion printing
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.kdAmount<=0} onClick={()=>history.change(hideKd)}>
+          <EyeOff size={13}/> Hide Klein Dither
+        </button>
+      </div>
+      <p className="control-note">
+        Off by default for older art. Shared preview/export renderer;
+        unsupported GPU combinations show visible preview fallback and
+        strict exports refuse to omit required effects.
       </p>
     </>,
     print: <>

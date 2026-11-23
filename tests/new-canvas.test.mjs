@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {initial,recipeDocument,parseDocument} from "../src/data.js";
 import {STARTER_TITLE,createNewCanvas} from "../src/new-canvas.js";
+import {findControls} from "../src/ui-index.js";
 
 const read=path=>readFileSync(new URL("../src/"+path,import.meta.url),"utf8");
 
@@ -73,4 +74,13 @@ test("Reset is gated by a native confirmation dialog and never changes saved lib
   assert.doesNotMatch(app,/localStorage\.removeItem\("glitch-saved"\)/);
   assert.match(css,/\.workspace-bottom > \.new-canvas-button/);
   assert.match(css,/\.new-canvas-confirm-actions/);
+});
+
+test("Find routes New Canvas to confirmation rather than directly clearing artwork",()=>{
+  const matches=findControls("new canvas",20);
+  const action=matches.find(x=>x.id==="new-canvas"&&x.kind==="action");
+  assert.ok(action);
+  const app=read("main.jsx");
+  assert.match(app,/else if \(hit\.id === "new-canvas"\) setModal\("new-canvas"\)/);
+  assert.match(app,/onClick=\{confirmNewCanvas\}/);
 });

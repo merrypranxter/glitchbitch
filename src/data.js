@@ -22,6 +22,7 @@ import {polesModes} from "./complex-poles.js";
 import {qdModes,qdOrders,qdControls} from "./quasicrystal-dissolution.js";
 import {velvetModes,crochetModes,velvetControls,crochetControls} from "./living-textiles-wave5.js";
 import {breedModes,breedControls,breedRequiredParents} from "./crossbreed-lab.js";
+import {g2Modes,g2Controls} from "./g2-torsion-membranes.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
 import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
@@ -306,6 +307,17 @@ export const numericRanges = {
   breedTension: [0, 100],
   breedVariation: [0, 100],
   breedResonance: [0, 100],
+  g2Amount: [0, 100],
+  g2Scale: [0, 100],
+  g2Warp: [0, 100],
+  g2Motion: [0, 100],
+  g2Torsion: [0, 100],
+  g2Fracture: [0, 100],
+  g2Veins: [0, 100],
+  g2Sheen: [0, 100],
+  g2Hue: [0, 100],
+  g2Variation: [0, 100],
+  g2Dispersion: [0, 100],
   tunnelTwist: [0, 100],
   tunnelDepth: [0, 100],
   tunnelRidges: [0, 100],
@@ -732,6 +744,18 @@ export const initial = {
   breedTension: 47,
   breedVariation: 55,
   breedResonance: 77,
+  g2Mode: "Torsion Silk",
+  g2Amount: 0,
+  g2Scale: 59,
+  g2Warp: 55,
+  g2Motion: 45,
+  g2Torsion: 68,
+  g2Fracture: 72,
+  g2Veins: 75,
+  g2Sheen: 80,
+  g2Hue: 44,
+  g2Variation: 50,
+  g2Dispersion: 78,
   tunnelMode: "Infinite spiral",
   tunnelTwist: 52,
   tunnelDepth: 61,
@@ -1172,6 +1196,7 @@ export function validateRecipe(input) {
     velvetMode: velvetModes,
     crochetMode: crochetModes,
     breedMode: breedModes,
+    g2Mode: g2Modes,
     tunnelMode: tunnelModes,
     stereoShape: stereoShapes,
     wiggleMode: wiggleModes,
@@ -1608,6 +1633,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       ...velvetControls,
       ...crochetControls,
       ...breedControls,
+      ...g2Controls,
       "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
       "tunnelAperture","tunnelVariation",
       "motionAmount","motionRate","lightMotion","bioAmount","bioFeed","bioKill",
@@ -1705,6 +1731,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key.startsWith("vld") && state.vldAmount<=0)continue;
       if(key.startsWith("hcr") && state.hcrAmount<=0)continue;
       if(key.startsWith("breed") && state.breedAmount<=0)continue;
+      if(key.startsWith("g2") && state.g2Amount<=0)continue;
       if(key.startsWith("semanticGravity") && !hasSemanticLettering(state))continue;
       // Do not silently activate optical coats on previously saved artwork.
       if(key.startsWith("filamentOptics") && (state.filamentAmount<=0 ||
@@ -1796,6 +1823,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.breedMode=sample(breedModes,random);
   s.breedAmount=random()<.29?40+random()*60:0;
   for(const key of breedControls)if(key!=="breedAmount")s[key]=random()*100;
+  s.g2Mode=sample(g2Modes,random);
+  s.g2Amount=random()<.35?40+random()*60:0;
+  for(const key of g2Controls)if(key!=="g2Amount")s[key]=random()*100;
   if(s.breedAmount>0){
     // Surprise may breed the actual shader fields, not pick a sterile
     // preset with missing parents. Only a full Surprise can wake parents.

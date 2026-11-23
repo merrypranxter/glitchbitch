@@ -281,7 +281,7 @@ test("GPU uses same CPU fitness law, reuses masks, and omits dormant code",()=>{
     "Fitness scoreboard","Stop selection"])
     assert.ok(ui.includes(label),label);
   assert.ok(ui.includes("window.confirm"));
-  assert.equal(sectionMeta("selection-chamber").group,"Scene");
+  assert.equal(sectionMeta("selection-chamber").group,"Evolution");
   assert.equal(sectionActive(sectionMeta("selection-chamber"),initial),false);
   assert.equal(findControls("selective breeding")[0].id,"selection-chamber");
 });

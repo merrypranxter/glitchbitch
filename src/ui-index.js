@@ -1,3 +1,7 @@
+import { effectDetails } from "./effect-details.js";
+import { effectSearchTerms } from "./effect-search-terms.js";
+import { effectActivity } from "./effect-activity.js";
+
 // One map of every control group in the studio.
 // - `title`: the short header shown in the inspector
 // - `on`: keys that mean "this is currently changing the artwork" (lime dot)
@@ -6,7 +10,17 @@
 // - `pane`: for Text, which sub-tab holds it
 // Pure data: no React, so tests and Find can read it without rendering.
 
-export const effectGroups = ["Glitch", "Texture", "Light", "Depth", "Scene"];
+export const effectGroups = ["Signal", "Materials", "Light", "Space", "Organisms", "Evolution", "Worlds", "Time"];
+export const effectCategories = [
+  { id: "Signal", description: "Corruption, damaged print & obsolete machines", color: "#ffa2bd" },
+  { id: "Materials", description: "Surfaces, woven grounds & impossible threads", color: "#dfb0ff" },
+  { id: "Light", description: "Refraction, spectral color & photon sculptures", color: "#ffe596" },
+  { id: "Space", description: "Depth, parallax & dimensional overlays", color: "#a1d2ff" },
+  { id: "Organisms", description: "Growth, bodies & living relationships", color: "#b9ed92" },
+  { id: "Evolution", description: "Bloodlines, selection & competing species", color: "#a4f1db" },
+  { id: "Worlds", description: "Habitats, soil & ecosystem composition", color: "#f4bc8b" },
+  { id: "Time", description: "Feedback, fossils, succession & collapse", color: "#c0bcff" },
+];
 
 export const sections = [
   // ---- Math ---------------------------------------------------------------
@@ -112,21 +126,21 @@ export const sections = [
     keywords: ["saturation", "contrast", "brightness", "grade"] },
 
   // ---- Effects ------------------------------------------------------------
-  { id: "fx-toggles", tab: "Effects", group: "Glitch", title: "Bloom · Posterize · Invert",
+  { id: "fx-toggles", tab: "Effects", group: "Signal", title: "Bloom · Posterize · Invert",
     keywords: ["bloom", "phosphor bloom", "posterize", "invert", "negative"] },
-  { id: "signal", tab: "Effects", group: "Glitch", title: "Signal break",
+  { id: "signal", tab: "Effects", group: "Signal", title: "Signal break",
     on: ["split", "glitch", "block", "pixel"], reset: ["split", "glitch", "block", "pixel"],
     keywords: ["chromatic split", "rgb split", "chromatic aberration", "signal drift", "glitch", "block corruption", "pixelation", "pixelate"] },
-  { id: "analog", tab: "Effects", group: "Glitch", title: "Analog",
+  { id: "analog", tab: "Effects", group: "Signal", title: "Analog",
     on: ["scan", "grain", "vignette"], reset: ["scan", "grain", "vignette"],
     keywords: ["scanlines", "film grain", "noise", "vignette", "vhs"] },
-  { id: "screen", tab: "Effects", group: "Glitch", title: "CRT screen",
+  { id: "screen", tab: "Effects", group: "Signal", title: "CRT screen",
     on: ["phosphor", "broadcast"], reset: ["phosphor", "broadcast"],
     keywords: ["crt", "phosphor subpixels", "shadow mask", "broadcast bars", "color bars"] },
-  { id: "print", tab: "Effects", group: "Glitch", title: "Print damage",
+  { id: "print", tab: "Effects", group: "Signal", title: "Print damage",
     on: ["dither", "riso", "misregister"], reset: ["dither", "riso", "misregister"],
     keywords: ["dither", "bayer", "risograph", "riso", "cmy", "misregistration", "ink"] },
-  { id: "print-injury", tab: "Effects", group: "Glitch", title: "Print & Spectrum Injury",
+  { id: "print-injury", tab: "Effects", group: "Signal", title: "Print & Spectrum Injury",
     on: ["injuryAmount"],
     reset: ["injuryMode","injuryAmount","injuryScale","injuryMotion",
       "injurySeparation","injuryGrain","injuryGlow","injuryVariation","injuryPalette"],
@@ -137,14 +151,14 @@ export const sections = [
       "caustic dot gain","temporal color damage","spectral interference",
       "shuffle print injury","shuffle extreme damage","moving risograph",
       "hypercolor","neon print mutation"] },
-  { id: "memory", tab: "Effects", group: "Glitch", title: "Frame memory",
+  { id: "memory", tab: "Effects", group: "Time", title: "Frame memory",
     on: ["afterimage", "datamosh"], reset: ["afterimage", "datamosh", "memoryDrift", "memoryDecay"],
     hint: "Feedback from the previous frame. Watch it build while things move.",
     keywords: ["afterimage", "trails", "datamosh", "feedback", "memory drift", "memory decay"] },
-  { id: "oldweb", tab: "Effects", group: "Glitch", title: "Old web",
+  { id: "oldweb", tab: "Effects", group: "Signal", title: "Old web",
     on: ["windowCascade", "glitter"], reset: ["windowCascade", "glitter"],
     keywords: ["error windows", "windows 95", "cascade", "glitter", "starburst"] },
-  { id: "micro", tab: "Effects", group: "Texture", title: "Microtexture",
+  { id: "micro", tab: "Effects", group: "Materials", title: "Microtexture",
     on: ["microAmount"],
     reset: ["microMode", "microAmount", "microScale", "microMotion", "microRelief", "microDensity", "microHue", "microVariation"],
     hint: "Sixteen animated microscopic textures including opal pollen, frost lace, nerve cilia and funky contaminants.",
@@ -153,7 +167,7 @@ export const sections = [
       "cilia swarm","neon barnacles","hallucination pores","mold sequins",
       "alien dandruff","maggot beadwork","shuffle microtextures",
       "shuffle new contaminants","animated microtextures"] },
-  { id: "substance", tab: "Effects", group: "Texture", title: "Substance",
+  { id: "substance", tab: "Effects", group: "Materials", title: "Substance",
     on: ["substanceAmount"],
     reset: ["substanceMode", "substanceAmount", "substanceScale", "substanceMotion", "substanceRelief", "substanceEdge", "substanceHue", "substanceVariation"],
     hint: "Twelve real animated material systems from oil-slick membranes to living cartilage, silica foam and mutant candy tissue.",
@@ -161,7 +175,7 @@ export const sections = [
       "oil-slick membrane","pearlescent cartilage","vitreous mucus",
       "silica pulp","foam enamel","candy tumor","alien aspic",
       "radioactive sherbet","shuffle substances","shuffle mutant matter"] },
-  { id: "schlieren", tab: "Effects", group: "Texture", title: "Schlieren Refractive Glass",
+  { id: "schlieren", tab: "Effects", group: "Light", title: "Schlieren Refractive Glass",
     on: ["schlierenAmount"],
     reset: ["schlierenMode","schlierenAmount","schlierenScale","schlierenBend",
       "schlierenMotion","schlierenDispersion","schlierenRim","schlierenRipple",
@@ -171,18 +185,18 @@ export const sections = [
       "heat haze","glass lace","prism petals","organza","filament glass",
       "bend artwork","optical distortion","pixel sampling","lens",
       "shuffle glass","translucent material","dispersion"] },
-  { id: "foil", tab: "Effects", group: "Texture", title: "Prism foil",
+  { id: "foil", tab: "Effects", group: "Light", title: "Prism foil",
     on: ["filmAmount", "opalAmount", "prismAmount", "foilRelief"],
     reset: ["filmAmount", "filmThickness", "opalAmount", "prismAmount", "foilRelief", "foilMotion"],
     keywords: ["thin film", "iridescent", "film thickness", "opal", "dichroic", "prism", "foil", "relief", "holographic"] },
-  { id: "bio", tab: "Effects", group: "Texture", title: "Bio rot",
+  { id: "bio", tab: "Effects", group: "Organisms", title: "Bio rot",
     on: ["bioAmount"], reset: ["bioAmount", "bioFeed", "bioKill", "bioSpeed", "bioVeins"],
     hint: "Real Gray–Scott reaction-diffusion: eight playable mold, lichen, neural slime and petri-dish growth recipes.",
     keywords: ["biological", "organism", "reaction diffusion", "feed", "kill", "growth", "veins", "membrane",
       "candy mold","petri cathedral","rainbow lichen bruise","toxic bloom",
       "fungal lace","neural slime","spoilage halo","witch agar",
       "shuffle the petri dish","petri dish","rot presets"] },
-  { id: "underlay", tab: "Effects", group: "Texture", title: "Living underlay",
+  { id: "underlay", tab: "Effects", group: "Materials", title: "Living underlay",
     on: ["underlayAmount"],
     reset: ["underlayMode","underlayAmount","underlayScale","underlayDensity",
       "underlayMotion","underlayRelief","underlayHue","underlayContrast",
@@ -197,7 +211,7 @@ export const sections = [
       "elastic tartan","moiré satin haze","haunted upholstery",
       "radioactive afghan","parasite upholstery","wet relic cloth",
       "disco shroud","shuffle haunted fabrics","shuffle textile grounds"] },
-  { id: "filament", tab: "Effects", group: "Texture", title: "Filament forge",
+  { id: "filament", tab: "Effects", group: "Materials", title: "Filament forge",
     on: ["filamentAmount"],
     reset: ["filamentSpecies","filamentAmount","filamentScale","filamentDensity",
       "filamentMotion","filamentWidth","filamentRelief","filamentHue","filamentVariation",
@@ -388,16 +402,16 @@ export const sections = [
       "chromadepth risograph","chromostereopsis","risograph depth",
       "phosphene gem","soft white glow","puffy optics","white crown",
       "shuffle funky colors","shuffle color sorcery","spectral separation"] },
-  { id: "wiggle", tab: "Effects", group: "Depth", title: "Wiggle 3D",
+  { id: "wiggle", tab: "Effects", group: "Space", title: "Wiggle 3D",
     on: ["wiggleAmount"], reset: ["wiggleMode", "wiggleAmount", "wiggleDepth", "wiggleSpeed", "wiggleLayers"],
     hint: "Two-view wiggle-gram depth illusion. Wiggle 0 = off.",
     keywords: ["wiggle", "stereoscopy", "flipbook", "wigglegram", "parallax", "view separation"] },
-  { id: "stereo", tab: "Effects", group: "Depth", title: "Stereo 3D",
+  { id: "stereo", tab: "Effects", group: "Space", title: "Stereo 3D",
     on: ["stereoAmount"],
     reset: ["stereoShape", "stereoAmount", "stereoDepth", "stereoParallax", "stereoMorph", "stereoGlow", "stereoWiggle", "stereoQuality"],
     hint: "Raymarched 3D shapes. Higher detail costs more GPU.",
     keywords: ["3d", "raymarch", "gyroid", "metaball", "opal knot", "crystal lattice", "wormhole", "depth fog", "camera"] },
-  { id: "backdrop", tab: "Effects", group: "Scene", title: "Backdrop",
+  { id: "backdrop", tab: "Effects", group: "Worlds", title: "Backdrop",
     on: ["backdropAmount"],
     reset: ["backdropMode", "backdropAmount", "backdropDepth", "backdropDensity", "backdropMotion", "backdropGlow", "backdropHue", "backdropVariation"],
     hint: "Eighteen living atmospheric backdrops, from nebula veils and aurora static to haunted wallpaper and ghost mall aquariums.",
@@ -407,13 +421,13 @@ export const sections = [
       "hallucinogenic wallpaper","synthetic dusk ooze","afterimage swamp",
       "ghost mall aquarium","shuffle all backdrops","shuffle paranormal habitats"] },
 
-  { id: "chaos-lab", tab: "Effects", group: "Scene", title: "Chaos Lab",
+  { id: "chaos-lab", tab: "Effects", group: "Worlds", title: "Chaos Lab",
     hint: "Weighted remixing of old and new effects, with palette/text protection and mobile GPU limits.",
     keywords: ["chaos lab","full weird shuffle","freakshow","weird shuffle",
       "shuffle all","shuffle everything","smart randomizer","ecosystem randomizer",
       "weighted chaos","chaos intensity","preserve colors","preserve text",
       "shuffle ecosystem","allow two parents","heavyweight gpu","maximum freakshow"] },
-  { id: "living-food-web", tab: "Effects", group: "Scene", title: "Living Food Web",
+  { id: "living-food-web", tab: "Effects", group: "Organisms", title: "Living Food Web",
     on: ["foodWebAmount"],
     reset: ["foodWebMode","foodWebAmount","foodWebReach","foodWebPressure",
       "foodWebPulse","foodWebWidth","foodWebGlow","foodWebHue"],
@@ -425,7 +439,7 @@ export const sections = [
       "nutrient ledger","energy packets","glowing connections",
       "bioluminescent neural networks","stage nearest connection",
       "fungal network","ecological network","food chain"] },
-  { id: "ecological-succession", tab: "Effects", group: "Scene", title: "Ecological Succession",
+  { id: "ecological-succession", tab: "Effects", group: "Time", title: "Ecological Succession",
     on: ["successionAmount"],
     reset: ["successionMode","successionAmount","successionDepth",
       "successionSpread","successionMotion","successionGlow",
@@ -436,7 +450,7 @@ export const sections = [
       "allelopathic scars","niche inversion","symbiotic compost",
       "deposit one century","advance three centuries","century descendants",
       "chemical inheritance","strata","legacy glow","soil evolution"] },
-  { id: "fossil-record", tab: "Effects", group: "Scene", title: "Fossil Record",
+  { id: "fossil-record", tab: "Effects", group: "Time", title: "Fossil Record",
     on: ["fossilAmount"],
     reset: ["fossilMode","fossilAmount","fossilDepth","fossilMotion",
       "fossilGlow","fossilHue","fossilBurial","fossilRecords"],
@@ -461,13 +475,13 @@ export const sections = [
       "ancestral compost cathedral","toxic time capsule",
       "opal necropolis","ghost roots of atlantis",
       "stratigraphic time machine"] },
-  { id: "speciation-lab", tab: "Effects", group: "Scene", title: "Speciation Lab",
+  { id: "speciation-lab", tab: "Effects", group: "Evolution", title: "Speciation Lab",
     on: ["geneAmount"],
     hint: "Branch rival families, inherit clades, score lineages and run explicit territory contests.",
     keywords: ["speciation","clade","species","lineage census","branch rival families",
       "territory contest","niche partition","chromatic divergence",
       "adaptive radiation","territorial invasion","genetic evolution"] },
-  { id: "coevolution-lab", tab: "Effects", group: "Scene", title: "Coevolution Lab",
+  { id: "coevolution-lab", tab: "Effects", group: "Evolution", title: "Coevolution Lab",
     on: ["coevoRound"],
     hint: "Genetic give-and-take between nearby rival bloodlines, with explicit reversible evolutionary encounters.",
     keywords: ["coevolution","predator prey","predator-prey","mimicry",
@@ -475,7 +489,7 @@ export const sections = [
       "evolve encounter","genetic interaction","rival encounter",
       "stage closest rivals","species cooperation","evolutionary pressure",
       "encounter network","evolve three encounters"] },
-  { id: "apocalypse-clock", tab: "Effects", group: "Scene", title: "Apocalypse Clock",
+  { id: "apocalypse-clock", tab: "Effects", group: "Time", title: "Apocalypse Clock",
     on: ["apocalypseAmount"],
     reset: ["apocalypseMode","apocalypseAmount","apocalypseScale",
       "apocalypseMotion","apocalypsePressure","apocalypseGlow",
@@ -493,7 +507,7 @@ export const sections = [
       "cryogenic opal graveyard","acid monsoon cathedral",
       "solar flare carapace","tectonic mycelium rift",
       "radiation garden rebirth"] },
-  { id: "selection-chamber", tab: "Effects", group: "Scene", title: "Selection Chamber",
+  { id: "selection-chamber", tab: "Effects", group: "Evolution", title: "Selection Chamber",
     on: ["selectionPressure"],
     reset: ["selectionMode","selectionPressure","selectionSeverity","selectionBrood","selectionGlow"],
     hint: "DNA and local mineral nutrients govern real growth and a ranked fitness scoreboard. Explicitly cull weak colonies and breed fitter survivors.",
@@ -508,7 +522,7 @@ export const sections = [
       "fitness pressure","selection severity","selection brood",
       "quartz survival games","poison garden reversal",
       "darwinian neon reef","hybrid vigor cathedral"] },
-  { id: "mutation-bloodlines", tab: "Effects", group: "Scene", title: "Mutation Bloodlines",
+  { id: "mutation-bloodlines", tab: "Effects", group: "Evolution", title: "Mutation Bloodlines",
     on: ["geneAmount"],
     reset: ["geneAmount","geneMutation","geneCrossbreed","geneGlow"],
     hint: "Every colony carries heritable DNA; offspring mutate, can recombine at nearby A/B contact, and change their actual outlines and pigment.",
@@ -522,7 +536,7 @@ export const sections = [
       "shuffle all dna","mutate existing genes","hide dna","selected colony DNA",
       "ruffled dynasties","neon mendelian circus","quartz gene drift",
       "darwins disco spore"] },
-  { id: "symbiosis-lab", tab: "Effects", group: "Scene", title: "Symbiosis Lab",
+  { id: "symbiosis-lab", tab: "Effects", group: "Organisms", title: "Symbiosis Lab",
     on: ["symbiosisAmount"],
     reset: ["symbiosisMode","symbiosisAmount","symbiosisDetail",
       "symbiosisMotion","symbiosisGlow","symbiosisDominance"],
@@ -537,7 +551,7 @@ export const sections = [
       "spawn symbiosis","shuffle symbiosis","plant contact pair",
       "disable reaction","mycelial handshake","neon necrotic siege",
       "chromatic third kingdom","synaptic coral covenant"] },
-  { id: "substrate-alchemy", tab: "Effects", group: "Scene", title: "Substrate Alchemy",
+  { id: "substrate-alchemy", tab: "Effects", group: "Worlds", title: "Substrate Alchemy",
     on: ["substrateAmount"],
     reset: ["substrateMode","substrateAmount","substrateScale",
       "substrateMotion","substratePressure","substrateAffinityA",
@@ -554,7 +568,7 @@ export const sections = [
       "randomize substrate","summon terrain","hide substrate",
       "basalt blood vessels","electric nutrient delta",
       "opal fossil tiles","acid bath symbiosis","petrified spore network"] },
-  { id: "spore-dynasty", tab: "Effects", group: "Scene", title: "Spore Dynasties",
+  { id: "spore-dynasty", tab: "Effects", group: "Evolution", title: "Spore Dynasties",
     on: ["sporeAmount"],
     reset: ["sporeMode","sporeAmount","sporeSpeed","sporeReach",
       "sporeFertility","sporeGlow"],
@@ -570,7 +584,7 @@ export const sections = [
       "permanent offspring","spore clouds","shuffle spores",
       "awaken spores","pixie cup exodus","electric pollen storm",
       "slow century spores","helical gene escape"] },
-  { id: "colony-cortex", tab: "Effects", group: "Scene", title: "Living Cortex",
+  { id: "colony-cortex", tab: "Effects", group: "Organisms", title: "Living Cortex",
     on: ["colonyCortexAmount"],
     reset: ["colonyCortexA","colonyCortexB","colonyCortexAmount",
       "colonyCortexDetail","colonyCortexMotion","colonyCortexRelief"],
@@ -584,7 +598,7 @@ export const sections = [
       "randomize cortex","shuffle cortex","spawn cortex pair",
       "centuries in a petri dish","pixie cup broadcast",
       "luminous vascular cathedral","opal apothecia colony"] },
-  { id: "colony-anatomy", tab: "Effects", group: "Scene", title: "Mutant Anatomy",
+  { id: "colony-anatomy", tab: "Effects", group: "Organisms", title: "Mutant Anatomy",
     on: ["colonyAnatomyAmount","colonyAnatomyPores","colonyAnatomyRim"],
     reset: ["colonyShapeA","colonyShapeB","colonyAnatomyAmount",
       "colonyAnatomyDetail","colonyAnatomyMotion","colonyAnatomyPores",
@@ -599,7 +613,7 @@ export const sections = [
       "shuffle anatomy","spawn anatomy","anatomy pair","restore classic outlines",
       "anatomy specimen","fractal thallus cathedral","coral signal reef",
       "glass spore lace","mutant ribbon plague"] },
-  { id: "colony-life", tab: "Effects", group: "Scene", title: "Colony Wars",
+  { id: "colony-life", tab: "Effects", group: "Organisms", title: "Colony Wars",
     on: ["colonyLifeAmount","colonyFrontGlow","colonyCompetition"],
     reset: ["colonyLifeMode","colonyLifeAmount","colonyLifeSpeed",
       "colonyFrontGlow","colonyCompetition"],
@@ -612,7 +626,7 @@ export const sections = [
       "luminous edges","front glow","freeze growth","stop ecology",
       "petri conquest","biological animation","seamless colony pulse","shuffle colony wars","randomize life cycle",
       "randomize colony wars","random colony growth","mutant anatomy","shapeshifting colony"] },
-  { id: "atmosphere", tab: "Effects", group: "Scene", title: "Mutant atmospheres",
+  { id: "atmosphere", tab: "Effects", group: "Worlds", title: "Mutant atmospheres",
     on: ["atmoAmount","atmoBAmount"],
     reset: ["atmoMode","atmoAmount","atmoScale","atmoDensity",
       "atmoMotion","atmoGlow","atmoHue","atmoVariation",
@@ -691,7 +705,7 @@ export const actions = [
 const byId = Object.fromEntries(sections.map((s) => [s.id, s]));
 export const sectionMeta = (id) => byId[id];
 export const sectionActive = (meta, state) =>
-  Boolean(meta?.on?.some((k) => Boolean(state?.[k])));
+  effectActivity(meta?.id, state) ?? Boolean(meta?.on?.some((k) => Boolean(state?.[k])));
 
 /** Rank sections + actions for a query. Returns up to `limit` hits. */
 export function findControls(query, limit = 8) {
@@ -701,21 +715,24 @@ export function findControls(query, limit = 8) {
     const title = entry.title.toLowerCase();
     if (title === q) return 100;
     if (title.startsWith(q)) return 80;
-    const exact = entry.keywords.find((k) => k === q);
+    const keywords = entry.keywords.map((k) => k.toLowerCase());
+    const exact = keywords.find((k) => k === q);
     if (exact) return 70;
-    const prefix = entry.keywords.find((k) => k.startsWith(q) || k.split(" ").some((w) => w.startsWith(q)));
+    const prefix = keywords.find((k) => k.startsWith(q) || k.split(" ").some((w) => w.startsWith(q)));
     if (prefix) return 50;
     if (title.includes(q)) return 40;
-    if (entry.keywords.some((k) => k.includes(q))) return 25;
+    if (keywords.some((k) => k.includes(q))) return 25;
     if ((entry.tab || "").toLowerCase() === q) return 10;
     return 0;
   };
   const match = (entry) =>
-    entry.keywords.find((k) => k.includes(q) || k.split(" ").some((w) => w.startsWith(q)));
+    entry.keywords.find((k) => k.toLowerCase().includes(q) || k.toLowerCase().split(" ").some((w) => w.startsWith(q)));
   return [
     ...sections.map((s) => ({ kind: "section", ...s })),
+    ...effectDetails.map((d) => ({ kind: "section", tab: "Effects", ...d })),
     ...actions.map((a) => ({ kind: "action", ...a })),
   ]
+    .map(entry => ({...entry, keywords: [...entry.keywords, ...(effectSearchTerms[entry.id] || [])]}))
     .map((entry) => ({ entry, s: score(entry) }))
     .filter((x) => x.s > 0)
     .sort((a, b) => b.s - a.s)

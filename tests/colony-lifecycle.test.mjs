@@ -132,9 +132,13 @@ test("shared renderer grows masks before compositing both parents with palette e
   assert.match(ui,/COLONY WARS/);
   for(const key of colonyLifeControls)
     assert.ok(ui.includes('name="'+key+'"'),key);
-  assert.equal(sectionMeta("colony-life").group,"Scene");
+  assert.equal(sectionMeta("colony-life").group,"Organisms");
   assert.equal(sectionActive(sectionMeta("colony-life"),initial),false);
+  assert.equal(sectionActive(sectionMeta("colony-life"),
+    {...initial,colonyLifeAmount:90}),false,"stored strength without painted colonies stays dormant");
   assert.equal(sectionActive(sectionMeta("colony-life"),{
-    ...initial,colonyLifeAmount:90}),true);
+    ...initial,colonyLifeAmount:90,colonyLifeMode:"Breathe",
+      atmoAmount:80,atmoMaskMode:"Painted colonies",
+      habitatStamps:[{id:"active-colony",parent:0,x:.5,y:.5,radius:.2}]}),true);
   assert.equal(findControls("colony wars")[0].id,"colony-life");
 });

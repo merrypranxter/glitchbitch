@@ -193,7 +193,7 @@ test("shader inclusion and A/B spore glows follow the same export clock without 
   assert.ok(ui.includes("Shuffle spores"));
   for(const key of sporeControls)
     assert.ok(ui.includes('name="'+key+'"'),key);
-  assert.equal(sectionMeta("spore-dynasty").group,"Scene");
+  assert.equal(sectionMeta("spore-dynasty").group,"Evolution");
   assert.equal(sectionActive(sectionMeta("spore-dynasty"),initial),false);
   assert.equal(findControls("evolve generation")[0].id,"spore-dynasty");
 });

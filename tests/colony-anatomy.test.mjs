@@ -136,9 +136,13 @@ test("shader wiring uses only an optional ES1 analytic silhouette and shared exp
     assert.ok(ui.includes('name="'+key+'"'),key);
   assert.ok(ui.includes("Spawn anatomy pair"));
   assert.ok(ui.includes("Shuffle anatomy"));
-  assert.equal(sectionMeta("colony-anatomy").group,"Scene");
+  assert.equal(sectionMeta("colony-anatomy").group,"Organisms");
   assert.equal(sectionActive(sectionMeta("colony-anatomy"),initial),false);
   assert.equal(sectionActive(sectionMeta("colony-anatomy"),
-    {...initial,colonyAnatomyAmount:88}),true);
+    {...initial,colonyAnatomyAmount:88}),false,"stored strength without painted colonies stays dormant");
+  assert.equal(sectionActive(sectionMeta("colony-anatomy"),
+    {...initial,colonyAnatomyAmount:88,colonyShapeA:"Lichen lobes",
+      atmoAmount:80,atmoMaskMode:"Painted colonies",
+      habitatStamps:[{id:"active-colony",parent:0,x:.5,y:.5,radius:.2}]}),true);
   assert.equal(findControls("coral fringe")[0].id,"colony-anatomy");
 });

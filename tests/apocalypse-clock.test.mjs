@@ -244,7 +244,7 @@ test("renderer compiles disaster shaders only when substrate is visible and enab
     "Advance epoch","Epoch + selection cycle","Hide catastrophe"])
     assert.ok(ui.includes(name),name);
   assert.ok(ui.includes("window.confirm"));
-  assert.equal(sectionMeta("apocalypse-clock").group,"Scene");
+  assert.equal(sectionMeta("apocalypse-clock").group,"Time");
   assert.equal(sectionActive(sectionMeta("apocalypse-clock"),initial),false);
   assert.equal(findControls("radiation garden")[0].id,"apocalypse-clock");
 });

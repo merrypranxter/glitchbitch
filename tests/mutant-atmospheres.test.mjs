@@ -110,5 +110,5 @@ test("Scene inspector exposes actual wired controls, five presets and hide",()=>
   for(const field of atmosphereControls)assert.ok(ui.includes('name="'+field+'"'),field);
   assert.match(ui,/applyAtmospherePreset\(x,atmoPreset\)/);
   assert.match(ui,/history\.change\(hideAtmosphere\)/);
-  assert.equal(sectionMeta("atmosphere").group,"Scene");
+  assert.equal(sectionMeta("atmosphere").group,"Worlds");
 });

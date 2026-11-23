@@ -342,7 +342,7 @@ test("renderer geology hook is opt-in, before selection and compatible with expo
     "Hide fossils","Clear fossil archive"])
     assert.ok(ui.includes(name),name);
   assert.ok(ui.includes("window.confirm"));
-  assert.equal(sectionMeta("fossil-record").group,"Scene");
+  assert.equal(sectionMeta("fossil-record").group,"Time");
   assert.equal(sectionActive(sectionMeta("fossil-record"),initial),false);
   assert.equal(findControls("opal necropolis")[0].id,"fossil-record");
 });

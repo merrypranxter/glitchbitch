@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { ChevronDown, RotateCcw } from "lucide-react";
 import { numericRanges, initial } from "../data";
 import { sectionMeta, sectionActive } from "../ui-index";
+import { effectDetails } from "../effect-details.js";
 
 export function Range({
   label,
@@ -215,24 +216,46 @@ export function useReveal(handler) {
  * - Open/closed is remembered per section.
  * - A lime dot shows when the effect is currently affecting the artwork.
  */
-export function Section({ id, title, aside, children, defaultOpen = false, history }) {
+export function Section({ id, title, aside, children, defaultOpen = false, forceOpen = false, history }) {
   const meta = id ? sectionMeta(id) : null;
   const label = title || meta?.title || id;
   const key = id || label;
   const [expanded, setExpanded] = useState(() => {
     const saved = readOpen()[key];
-    return typeof saved === "boolean" ? saved : defaultOpen;
+    return forceOpen || (typeof saved === "boolean" ? saved : defaultOpen);
   });
   const [flash, setFlash] = useState(false);
   const ref = useRef(null);
   useReveal((detail) => {
-    if (!id || detail.id !== id) return;
+    const destination = effectDetails.find(d => d.id === detail.id);
+    if (!id || (detail.id !== id && destination?.sectionId !== id)) return;
     pendingReveal = null;
     setExpanded(true);
     writeOpen(key, true);
-    requestAnimationFrame(() =>
-      ref.current?.scrollIntoView({ block: "start", behavior: "smooth" }),
-    );
+    requestAnimationFrame(() => {
+      const section = ref.current;
+      if (!section) return;
+      const target = destination ? section.querySelector(`[data-effect-detail="${destination.id}"]`) : section;
+      // Open every ancestor laboratory, including nested optics and stitch systems.
+      let ancestor = target;
+      while (ancestor && ancestor !== section) {
+        if (ancestor.tagName === "DETAILS") ancestor.open = true;
+        ancestor = ancestor.parentElement;
+      }
+      // Only scroll the control panel; scrollIntoView can move the mobile canvas.
+      const panel = section.closest('.inspector-scroll');
+      if (panel && target) panel.scrollTo({
+        top: panel.scrollTop + target.getBoundingClientRect().top - panel.getBoundingClientRect().top -
+          (section.closest('.effects-workbench')?.querySelector('.effects-nav')?.getBoundingClientRect().height || 0) - 12,
+        behavior: 'instant',
+      });
+      if (destination && target) {
+        target.classList.remove('is-flashing');
+        requestAnimationFrame(() => target.classList.add('is-flashing'));
+        setTimeout(() => target.classList.remove('is-flashing'), 1400);
+        target.querySelector('summary')?.focus({preventScroll: true});
+      } else section.querySelector('.section-disclosure')?.focus({preventScroll: true});
+    });
     setFlash(true);
     setTimeout(() => setFlash(false), 1400);
   });

@@ -150,7 +150,7 @@ test("scene controls show nested breeder and mask panels, fully reversible",()=>
   assert.match(ui,/applyAtmosphereHybridPreset\(x,hybridAtmoPreset\)/);
   assert.match(ui,/history\.change\(breedAtmospheres\)/);
   assert.match(ui,/history\.change\(hideAtmospherePair\)/);
-  assert.equal(sectionMeta("atmosphere").group,"Scene");
+  assert.equal(sectionMeta("atmosphere").group,"Worlds");
   assert.ok(sectionMeta("atmosphere").on.includes("atmoBAmount"));
   assert.ok(sectionActive(sectionMeta("atmosphere"),{...initial,
     atmoAmount:0,atmoBAmount:50}));

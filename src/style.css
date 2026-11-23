@@ -3448,3 +3448,62 @@ main { grid-template-columns: 264px minmax(320px, 1fr) 300px; }
 @media (prefers-reduced-motion: reduce) {
   .control-section.is-flashing { animation: none; box-shadow: inset 3px 0 var(--lime); }
 }
+
+/* Confirmed document reset: visible beside Lookbook, including in phone studio. */
+.workspace-bottom > .new-canvas-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  gap: 6px;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid #6d596e;
+  border-radius: 5px;
+  background: #322332;
+  color: #f7d8f0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .25px;
+}
+.workspace-bottom > .new-canvas-button:hover,
+.workspace-bottom > .new-canvas-button:focus-visible {
+  border-color: #ffa7e0;
+  background: #492b45;
+}
+.workspace-bottom > .new-canvas-button > span { color: inherit; font-size: 10px; }
+.workspace-bottom > .new-canvas-button > span::after { content: none; }
+.new-canvas-confirm p { color: #d7d7df; font-size: 13px; line-height: 1.6; }
+.new-canvas-confirm p strong { color: #e2f9aa; }
+.new-canvas-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+.new-canvas-confirm-actions .button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+  gap: 7px;
+  padding: 11px 15px;
+  font-size: 12px;
+}
+@media (max-width: 550px) {
+  .studio-page .workspace-bottom > .new-canvas-button {
+    gap: 4px;
+    padding: 7px 7px;
+    min-height: 36px;
+  }
+  .studio-page .workspace-bottom > .new-canvas-button > span {
+    font-size: 0;
+  }
+  .studio-page .workspace-bottom > .new-canvas-button > span::after {
+    content: "New";
+    font-size: 10px;
+  }
+  .new-canvas-confirm-actions { flex-direction: column; }
+  .new-canvas-confirm-actions > .button { width: 100%; }
+}

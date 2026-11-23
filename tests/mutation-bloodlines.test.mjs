@@ -226,7 +226,7 @@ test("shader gates + one-touch DNA inspector preserve old source path",()=>{
   assert.ok(ui.includes("Seed this gene pool"));
   assert.ok(ui.includes("Shuffle all DNA"));
   assert.ok(ui.includes("Hide DNA (keep ancestry)"));
-  assert.equal(sectionMeta("mutation-bloodlines").group,"Scene");
+  assert.equal(sectionMeta("mutation-bloodlines").group,"Evolution");
   assert.equal(sectionActive(sectionMeta("mutation-bloodlines"),initial),false);
   assert.equal(findControls("gene expression")[0].id,"mutation-bloodlines");
 });

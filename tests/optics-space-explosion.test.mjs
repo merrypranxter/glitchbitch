@@ -175,7 +175,7 @@ test("renderer cache keys, optional GLSL fallback, mobile pickers and Find are c
    assert.ok(findControls(name).some(x=>x.id==="photon"),name);
  for(const name of weirdBackdrops)
    assert.ok(findControls(name).some(x=>x.id==="backdrop"),name);
- assert.equal(sectionMeta("backdrop").group,"Scene");
+ assert.equal(sectionMeta("backdrop").group,"Worlds");
  assert.equal(sectionActive(sectionMeta("backdrop"),initial),false);
  assert.equal(sectionActive(sectionMeta("photon"),initial),false);
  const surprise=randomize(state,{},false,()=>.55);

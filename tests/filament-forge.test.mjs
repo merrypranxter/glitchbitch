@@ -92,7 +92,7 @@ test("Claude's redesigned UI exposes all controls, presets and hide/reset",()=>{
  const inspector=readFileSync(new URL("../src/components/Inspectors.jsx",import.meta.url),"utf8");
  const meta=sectionMeta("filament");
  assert.equal(meta.tab,"Effects");
- assert.equal(meta.group,"Texture");
+ assert.equal(meta.group,"Materials");
  assert.ok(sections.includes(meta));
  assert.ok(findControls("embroidery").some(x=>x.id==="filament"));
  assert.equal(sectionActive(meta,initial),false);

@@ -181,7 +181,7 @@ test("shader uses existing masks and cached, optional single pass with both pare
   for(const name of ["Spawn symbiosis","Shuffle symbiosis","Plant contact pair",
     "Disable reaction"])
     assert.ok(ui.includes(name),name);
-  assert.equal(sectionMeta("symbiosis-lab").group,"Scene");
+  assert.equal(sectionMeta("symbiosis-lab").group,"Organisms");
   assert.equal(sectionActive(sectionMeta("symbiosis-lab"),initial),false);
   assert.equal(findControls("parasitic rot")[0].id,"symbiosis-lab");
 });

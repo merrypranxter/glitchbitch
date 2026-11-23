@@ -199,7 +199,7 @@ test("one-step UI buttons and global Freakshow are actually wired",()=>{
   assert.match(app,/function freakshow\(\)/);
   assert.match(app,/onClick=\{freakshow\}/);
   assert.equal(sectionMeta("chaos-lab").tab,"Effects");
-  assert.equal(sectionMeta("chaos-lab").group,"Scene");
+  assert.equal(sectionMeta("chaos-lab").group,"Worlds");
   assert.equal(findControls("full weird shuffle")[0].id,"chaos-lab");
   assert.equal(findControls("shuffle colonies")[0].id,"habitat-paint");
 });

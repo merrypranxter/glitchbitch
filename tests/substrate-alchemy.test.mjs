@@ -196,7 +196,7 @@ test("GPU substrate gates preserve old shaders and spore landing buffer matches 
     assert.ok(ui.includes('name="'+key+'"'),key);
   assert.ok(ui.includes("Shuffle geology"));
   assert.ok(ui.includes("Colonize rock"));
-  assert.equal(sectionMeta("substrate-alchemy").group,"Scene");
+  assert.equal(sectionMeta("substrate-alchemy").group,"Worlds");
   assert.equal(sectionActive(sectionMeta("substrate-alchemy"),initial),false);
   assert.equal(sectionActive(sectionMeta("substrate-alchemy"),
     {...initial,substrateAmount:91}),true);

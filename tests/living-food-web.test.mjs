@@ -123,7 +123,7 @@ test("new scene is indexed and renderer uses optional GPU path and fallback",()=
   const ui=readFileSync(new URL("../src/components/Inspectors.jsx",import.meta.url),"utf8");
   const renderer=readFileSync(new URL("../src/renderer.js",import.meta.url),"utf8");
   assert.equal(foodWebModes.length,4);
-  assert.equal(sectionMeta("living-food-web").group,"Scene");
+  assert.equal(sectionMeta("living-food-web").group,"Organisms");
   assert.equal(sectionActive(sectionMeta("living-food-web"),initial),false);
   assert.equal(findControls("parasitic siphon")[0].id,"living-food-web");
   for(const key of foodWebControls)assert.ok(ui.includes('name="'+key+'"'),key);

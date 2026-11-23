@@ -134,7 +134,7 @@ test("renderer shader compiles only when soil is active; CPU/GPU nesting order m
   assert.match(shader,/successionUnavailable=true/);
   assert.match(shader,/gl\.uniform4fv\(loc\("successionStamps\[0\]"\),successionBuffer\)/);
   for(const key of successionControls)assert.ok(ui.includes('name="'+key+'"'),key);
-  assert.equal(sectionMeta("ecological-succession").group,"Scene");
+  assert.equal(sectionMeta("ecological-succession").group,"Time");
   assert.equal(sectionActive(sectionMeta("ecological-succession"),initial),false);
   assert.equal(findControls("pioneer enrichment")[0].id,"ecological-succession");
   assert.ok(ui.includes("Century + descendants"));

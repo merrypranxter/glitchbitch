@@ -3362,3 +3362,89 @@ main { grid-template-columns: 264px minmax(320px, 1fr) 300px; }
   border-radius:6px;border:1px solid rgba(190,225,250,.25);}
 .export-truth-background figcaption{font-size:11px;color:#b8b8c7;}
 .export-truth-panel>.button{min-height:40px;width:100%;margin-top:5px;}
+
+/* Touch studio: keep the existing pinned canvas and divider, reserve safe areas,
+   and enlarge the controls themselves without adding another scrolling pane. */
+@media (max-width: 980px) {
+  .studio-page {
+    height: 100vh;
+    height: 100dvh;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+  .studio-page > .studio-main { min-width: 0; }
+  .studio-page > .studio-main > .studio-splitter {
+    flex-basis: 28px;
+    -webkit-user-select: none;
+  }
+  .studio-page .mobile-controls button { min-height: 44px; font-size: 11px; }
+  .studio-page .section-disclosure { min-height: 44px; }
+  .studio-page .section-title { overflow-wrap: anywhere; }
+  .studio-page .inspector-scroll { scroll-padding-block: 10px; }
+  .studio-page .inspector-scroll :is(.toggle-row, .pill, .segmented button,
+    .pane-actions .button, .reset-link, .subtle-button, summary) {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  .studio-page .reset-link { padding-inline: 4px; }
+  .studio-page .slider input {
+    height: 36px;
+    background-size: 100% 4px;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+  .studio-page .slider input::-webkit-slider-thumb { width: 22px; height: 22px; }
+  .studio-page .slider input::-moz-range-thumb { width: 22px; height: 22px; }
+  /* Safari zooms focused text/select controls below 16px, which can move the art. */
+  .studio-page .inspector-scroll :is(input:not([type="range"]), select, textarea),
+  .studio-page .art-title, .studio-page .seed input,
+  .studio-page .canvas-context select, .studio-page .quality-control select,
+  .find-input input { font-size: 16px; }
+  .studio-page .select-field select { min-height: 44px; }
+  .studio-page .seed input { width: 100px; }
+  .studio-page .transport { gap: 3px; padding: 3px; }
+  .studio-page .transport :is(.icon-button, .play) {
+    min-width: 44px;
+    min-height: 44px;
+    height: 44px;
+  }
+  .studio-page .undo-group { gap: 0; padding-right: 3px; }
+  .studio-page .quality-control { padding-left: 3px; gap: 0; }
+  .studio-page .quality-control select { width: 52px; min-height: 44px; padding: 3px; }
+  .studio-page .workspace-bottom button { min-height: 36px; }
+  .studio-page > header :is(.find-button, .export-button, nav button) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .studio-page > header .export-button { width: 44px; }
+  .find-backdrop {
+    padding-top: max(8dvh, env(safe-area-inset-top, 0px));
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  }
+  .find-results button { min-height: 48px; }
+  .find-suggest button { min-height: 40px; }
+}
+@media (max-width: 550px) {
+  .studio-page > header { gap: 6px; }
+  .studio-page > header nav button { padding-inline: 7px; }
+  .studio-page .transport .time { gap: 0; }
+  .studio-page .transport .time b { margin-left: 3px; }
+}
+@media (max-width: 420px) {
+  .studio-page .transport .time b { display: none; }
+  .studio-page .quality-control > span { display: none; }
+}
+@media (max-width: 390px) {
+  .studio-page > header .brand { font-size: 14px; }
+  .studio-page > header .brand-mark,
+  .studio-page > header .brand small { display: none; }
+}
+@media (max-width: 360px) {
+  .studio-page .transport { padding-inline: 2px; gap: 2px; }
+  .studio-page .transport .time { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .control-section.is-flashing { animation: none; box-shadow: inset 3px 0 var(--lime); }
+}

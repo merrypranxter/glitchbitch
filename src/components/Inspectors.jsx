@@ -41,7 +41,7 @@ import {breedModes,breedPresets,breedRequiredParents,breedActive,
   activateBreed,applyBreedPreset,shuffleBreed,hideBreed} from "../crossbreed-lab.js";
 import {g2Modes,g2Presets,applyG2Preset,shuffleG2,hideG2}
   from "../g2-torsion-membranes.js";
-import { Parameter, Range, Toggle, Switch, Select, Section, Segmented, Pill, useReveal } from "./Controls";
+import { Parameter, Range, Toggle, Switch, Select, Section, Segmented, Pill } from "./Controls";
 import {microFamilies,microPresets,applyMicroPreset,remixMicro} from "../microstructure.js";
 import {substanceFamilies,substancePresets,applySubstancePreset,remixSubstance} from "../substance.js";
 import {bioRotPresets,applyBioRotPreset,remixBioRot} from "../bio-rot-presets.js";
@@ -90,7 +90,7 @@ import {semanticGravityModes,semanticGravityDescriptions,semanticGravityPresets,
 import { underlayModes,underlayFamilies,underlayDescriptions,remixUnderlay,
   underlayPresets,applyUnderlayPreset,changeUnderlayMode,
   nextUnderlayMode,disableUnderlay } from "../living-underlay.js";
-import { sections, sectionActive, effectGroups } from "../ui-index";
+import EffectsWorkbench from "./EffectsWorkbench";
 import { atmosphereModes, atmospherePresets, applyAtmospherePreset,
   nextAtmosphereMode, hideAtmosphere, hybridAtmospherePresets,
   applyAtmosphereHybridPreset, nextAtmosphereBMode, breedAtmospheres,
@@ -200,7 +200,7 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
       >
         <div className="engine-grid">
           {engineInfo.map((e, i) => {
-            const Icon = icons[i];
+            const Icon = icons[i] || Orbit;
             return (
               <button
                 key={i}
@@ -646,17 +646,8 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
 }
 
 // ---- Effects ----------------------------------------------------------------
-const FILTER_KEY = "glitch-fx-filter-v1";
-const effectSections = sections.filter((s) => s.tab === "Effects" && s.id !== "fx-toggles");
 export function EffectsInspector({ history, onTool, tool }) {
   const s = history.state;
-  const [filter, setFilterState] = React.useState(() => {
-    try { return localStorage.getItem(FILTER_KEY) || "All"; } catch { return "All"; }
-  });
-  const setFilter = (f) => {
-    setFilterState(f);
-    try { localStorage.setItem(FILTER_KEY, f); } catch { /* session only */ }
-  };
   const [photonPreset,setPhotonPreset]=React.useState(photonPresets[0].name);
   const [alchemyPreset,setAlchemyPreset]=React.useState(alchemyPresets[0].name);
   const [injuryPreset,setInjuryPreset]=React.useState(injuryPresets[0].name);
@@ -717,17 +708,6 @@ export function EffectsInspector({ history, onTool, tool }) {
     allowDual,allowHeavy,
     baseRandomizer:(original,rng)=>randomize(original,{},false,rng)
   }));
-  // Find jumps to a section that might be filtered out: show everything.
-  useReveal((detail) => {
-    if (effectSections.some((x) => x.id === detail.id) && filter !== "All") setFilter("All");
-  });
-  const onCount = effectSections.filter((m) => sectionActive(m, s)).length;
-  const visible = (id) => {
-    const meta = effectSections.find((m) => m.id === id);
-    if (filter === "All") return true;
-    if (filter === "On") return sectionActive(meta, s);
-    return meta.group === filter;
-  };
   const body = {
     "chaos-lab": <>
       <p className="control-note">
@@ -758,12 +738,12 @@ export function EffectsInspector({ history, onTool, tool }) {
           <Dices size={13}/> Full weird shuffle
         </button>
       </div>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         Full weird shuffle remixes old and new effects with a mobile GPU budget.
         Uncheck Preserve colors to randomize the palette too. Your text stays
         intact unless you explicitly uncheck its protection. Manual controls
         and all planted seeds remain editable afterward.
-      </p>
+      </p></details>
     </>,
     "living-food-web": <>
       <p className="control-note">
@@ -844,14 +824,14 @@ export function EffectsInspector({ history, onTool, tool }) {
           </li>)}
         </ol>
       </details>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         Mutualists even out resources; parasites siphon them; mycelial
         relays distribute reserves rapidly; and trophic cascades reward
         stronger feeders. Total stored energy is conserved per feeding
         round, except for natural saturation at the 0–100 boundaries.
         The network animates in the existing GIF and MP4 renderer.
         Every feeding batch is one Undo; no extra canvas or render pass.
-      </p>
+      </p></details>
     </>,
     "ecological-succession": <>
       <p className="control-note">
@@ -939,21 +919,21 @@ export function EffectsInspector({ history, onTool, tool }) {
           </li>)}
         </ol>
       </details>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         Living organisms are never deleted by deposition. Oldest memories
         cycle out only on an explicit advance; fossils remain independent.
         Hiding chemistry doesn't erase it. Descendant spores and natural
         selection use the same nutrient changes visible on the substrate.
-      </p>
+      </p></details>
     </>,
     "fossil-record": <>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         FOSSIL RECORD — your past organisms leave actual mineral impressions.
         Their archived shapes, species, DNA and geological ages determine
         where future nutrients accumulate or disappear. They glow like
         ancient cross-sections, and spores can settle differently around
         their remains. Nothing gets deleted when you archive.
-      </p>
+      </p></details>
       <Select label="What the dead leave behind" value={s.fossilMode}
         onChange={mode=>history.change(x=>mode==="Dormant"
           ?hideFossils({...x,fossilMode:mode})
@@ -1017,7 +997,7 @@ export function EffectsInspector({ history, onTool, tool }) {
           <Trash2 size={13}/> Clear fossil archive (confirm)
         </button>
       </div>
-      <details className="filament-crossbreeder">
+      <details data-effect-detail="fossil-resurrection" className="filament-crossbreeder">
         <summary>Resurrection Chamber · raise ancient bloodlines</summary>
         <p className="control-note">
           Fossil DNA can become real editable colonies again, even after a
@@ -1041,15 +1021,15 @@ export function EffectsInspector({ history, onTool, tool }) {
             <Flower2 size={13}/> Raise the whole graveyard
           </button>
         </div>
-        <p className="control-note">
+        <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
           Faithful echo preserves ancestral DNA. Ancestral crossover grafts
           it with a living relative. Adaptive comeback seeks a viable new
           mineral niche. Kingdom inversion swaps A/B and flips the allele.
           All four honor the sixteen-colony limit, your colors and your
           artwork. One Undo restores the prior population.
-        </p>
+        </p></details>
       </details>
-      <details className="filament-crossbreeder">
+      <details data-effect-detail="fossil-echoes" className="filament-crossbreeder">
         <summary>Ancestral Echoes · evolve civilizations</summary>
         <p className="control-note">
           Fossil genes can influence new generations of real offspring.
@@ -1082,13 +1062,13 @@ export function EffectsInspector({ history, onTool, tool }) {
             <Orbit size={13}/> Evolve three generations
           </button>
         </div>
-        <p className="control-note">
+        <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
           Atavism recalls old genes; Mutation bloom makes them unstable;
           Adaptive memory blends ancestral and mineral affinities;
           Rebel descendants invert ancestral traits. The three-generation
           button is one Undo. Existing organisms and saved history stay put.
           The living-colony limit of sixteen still applies.
-        </p>
+        </p></details>
       </details>
       <details className="filament-crossbreeder">
         <summary>Geological archive · {s.fossilRecords.length}/{MAX_FOSSILS}</summary>
@@ -1112,14 +1092,14 @@ export function EffectsInspector({ history, onTool, tool }) {
             </li>)}
         </ol>
       </details>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         Fossils: {s.fossilRecords.length}/{MAX_FOSSILS}
         {" · "}Current geological epoch: {s.apocalypseEpoch}.
         Ancestral compost enriches, toxic relics deplete, opal relics
         express ancestral genes, ghost roots favor different populations,
         and mirrored strata reverse local conditions. Burial keeps all
         living seeds; only the explicit clear action erases history.
-      </p>
+      </p></details>
     </>,
     "speciation-lab": <>
       <p className="control-note">
@@ -1161,13 +1141,13 @@ export function EffectsInspector({ history, onTool, tool }) {
           </li>)}
         </ol>
       </details>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         Branching turns existing painted seeds into founding clades and
         adds up to two new species. Their DNA changes visible boundaries
         and pigmentation, and normal spore offspring inherit their clade.
         To fight, move rivals into contact with Touch first. Contest is a
         single undoable step, never automatic. Sixteen live seeds maximum.
-      </p>
+      </p></details>
     </>,
     "coevolution-lab": <>
       <p className="control-note">
@@ -1236,23 +1216,23 @@ export function EffectsInspector({ history, onTool, tool }) {
             </li>)}
           </ol>}
       </details>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         Each button commits an explicit genetic encounter: DNA changes real
         outline geometry and pigmentation, while territory size changes
         the visible colony. Mimics copy fitter models; prey adapt defensive
         alleles; arms races diverge; mutualists converge. No hidden deaths,
         no changes during playback, and no new shaders. Three rounds = one
         Undo. Fossils, palettes and text remain untouched.
-      </p>
+      </p></details>
     </>,
     "apocalypse-clock": <>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         APOCALYPSE CLOCK — geological epochs reshape the living nutrient
         map. Crystal freezes, acid rains, solar flares, tectonic fissures
         and glowing radiation gardens can change which DNA thrives.
         Time-based shimmer animates continuously; resource chemistry only
         changes when you advance the saved epoch.
-      </p>
+      </p></details>
       <Select label="Geological catastrophe" value={s.apocalypseMode}
         onChange={mode=>history.change(x=>mode==="Dormant"
           ?haltApocalypse({...x,apocalypseMode:mode})
@@ -1309,22 +1289,22 @@ export function EffectsInspector({ history, onTool, tool }) {
           Hide catastrophe (keep history)
         </button>
       </div>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         Saved geological epoch: {s.apocalypseEpoch||0} / 4095.
         Advancing an epoch changes the mineral resource field, future
         spore destinations, individual fitness and adaptive growth.
         It NEVER kills, moves or reproduces existing seeds automatically.
         Epoch + Selection Cycle is the only combined destructive action,
         and it always asks you first. All actions support Undo.
-      </p>
+      </p></details>
     </>,
     "selection-chamber": <>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         SELECTION CHAMBER — inherited DNA now determines which organisms
         flourish on a specific mineral landscape. Nutrient compatibility
         controls REAL growth margins and bioluminescence. Actions to cull
         or reproduce are explicit, saved and undoable — no surprise deaths.
-      </p>
+      </p></details>
       <Select label="Evolutionary fitness model" value={s.selectionMode}
         onChange={mode=>history.change(x=>mode==="Dormant"
           ?stopSelection({...x,selectionMode:mode})
@@ -1403,21 +1383,21 @@ export function EffectsInspector({ history, onTool, tool }) {
             </li>)}
         </ol>
       </details>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         Awaken starts the nutrient field and assigns genes only to
         unassigned seeds; existing custom DNA is never overwritten.
         The cull action preserves at least one living seed from each
         population present. Breed adds real editable descendants up to
         the existing 16-colony limit. No automatic extinction on playback.
-      </p>
+      </p></details>
     </>,
     "mutation-bloodlines": <>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         MUTATION BLOODLINES — every planted colony can carry a unique
         heritable DNA allele (0–100). Its gene changes its actual silhouette
         and palette reaction. Daughter colonies inherit their parent's
         gene, mutate, and can recombine with a nearby opposing population.
-      </p>
+      </p></details>
       <Parameter label="Gene expression strength" name="geneAmount" history={history}/>
       <Parameter label="Offspring mutation rate" name="geneMutation" history={history}/>
       <Parameter label="Nearby A/B gene recombination" name="geneCrossbreed" history={history}/>
@@ -1453,13 +1433,13 @@ export function EffectsInspector({ history, onTool, tool }) {
           Hide DNA (keep ancestry)
         </button>
       </div>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         Use Touch → Habitat Graffiti → Selected colony to edit one
         organism's allele and inspect its ancestry. Gene mutations are
         inherited only when you press Evolve Generation. The existing
         16-colony limit stays intact, and enabling DNA adds no new GPU
         uniform arrays or textures. All changes are undoable.
-      </p>
+      </p></details>
     </>,
     "symbiosis-lab": <>
       <p className="control-note">
@@ -1503,23 +1483,23 @@ export function EffectsInspector({ history, onTool, tool }) {
           Disable reaction (keep colonies)
         </button>
       </div>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         The relationship depends on both painted habitats being visible
         and physically touching. Plant contact pair adds only missing
         interaction seeds, never deletes hand-painted colonies.
         At the 16-colony limit, use Touch to move existing seeds together.
         All changes save and undo normally, and the reaction uses the same
         timeline as high-resolution exports.
-      </p>
+      </p></details>
     </>,
     "substrate-alchemy": <>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         SUBSTRATE ALCHEMY — give the organisms somewhere to live:
         mineral fissures, nutrient rivers, faceted quartz beds and
         slow chemical tides. The mineral network changes the actual
         growing territory, not just the background. A and B can favor
         opposite nutrient conditions.
-      </p>
+      </p></details>
       <Select label="Living geological substrate" value={s.substrateMode}
         onChange={mode=>history.change(x=>mode==="Bare canvas"
           ?clearSubstrate({...x,substrateMode:mode})
@@ -1562,13 +1542,13 @@ export function EffectsInspector({ history, onTool, tool }) {
           Hide substrate
         </button>
       </div>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         High affinity favors nutrient-rich veins; low affinity favors
         nutrient-poor areas. Pressure changes the actual living outlines.
         Spores evaluate prospective landing sites on the CPU, upload the
         chosen destination to the renderer, and save that exact location
         when you Evolve Generation. All changes are undoable.
-      </p>
+      </p></details>
     </>,
     "spore-dynasty": <>
       <p className="control-note">
@@ -1627,7 +1607,7 @@ export function EffectsInspector({ history, onTool, tool }) {
           Stop flight (keep offspring)
         </button>
       </div>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         Living seeds: {(s.habitatStamps||[]).length}/{MAX_HABITAT_STAMPS}
         {" · "}Saved generations: {s.sporeGeneration||0}
         {" · "}Potential parents: {sporeParticipatingCount(s)}.
@@ -1635,7 +1615,7 @@ export function EffectsInspector({ history, onTool, tool }) {
         permanently adds the current parents' offspring to the saved
         document in one undoable action. When the 16-seed budget is full,
         erase some colonies before evolving further.
-      </p>
+      </p></details>
     </>,
     "colony-cortex": <>
       <p className="control-note">
@@ -1684,20 +1664,20 @@ export function EffectsInspector({ history, onTool, tool }) {
           Hide cortex (keep seeds)
         </button>
       </div>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         Internal markings use each planted seed's local coordinates and its
         living silhouette, not a fixed image texture. These are biological
         motifs interpreted as generative art, not literal 3D lichen anatomy.
         Restoring visibility to zero leaves every older artwork unchanged.
-      </p>
+      </p></details>
     </>,
     "colony-anatomy": <>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         MUTANT ANATOMY — your hand-planted colonies can be foliose lichen
         plates, coral fringes, crystalline petals or fan-shaped hyphae.
         Both parents have independent geometry. You can keep the original
         circular disks; the zero-strength setting restores them exactly.
-      </p>
+      </p></details>
       <Select label="Parent A anatomy" value={s.colonyShapeA}
         onChange={mode=>history.change(x=>({...x,colonyShapeA:mode}))}>
         {colonyAnatomyModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
@@ -1740,13 +1720,13 @@ export function EffectsInspector({ history, onTool, tool }) {
           Restore classic outlines
         </button>
       </div>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         Anatomy is visible only for Painted colonies habitats. Spawn Anatomy
         Pair enables and plants both species; Shuffle Anatomy plants A
         without forcing a second GPU shader. All changes are reversible.
         Your palette supplies the fluorescent edge color, and exports use
         the same clock as the live preview.
-      </p>
+      </p></details>
     </>,
     "colony-life": <>
       <p className="control-note">
@@ -1782,16 +1762,16 @@ export function EffectsInspector({ history, onTool, tool }) {
           Stop ecology (keep seeds)
         </button>
       </div>
-      <p className="control-note">
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
         Needs painted colony seeds and a parent set to Painted colonies.
         Territory war only makes A/B fight when both use Painted colonies.
         Speed and intensity affect the same timeline used for PNG/GIF/MP4.
         Leave Life at Still and all these effects off to preserve the old art.
         For ready-made experiments try Lookbook → Colony Wars.
-      </p>
+      </p></details>
     </>,
     atmosphere: <>
-      <p className="control-note">Four living shader-vault worlds you can stack, crossbreed and mask over any engine: stained-glass mycelium, mandala-constrained gas, double-beat phosphors, and living CMY print rosettes. They respond to your existing palette and keep moving in GIF/MP4 exports.</p>
+      <details className="effect-explanation"><summary>How it works</summary><p className="control-note">Four living shader-vault worlds you can stack, crossbreed and mask over any engine: stained-glass mycelium, mandala-constrained gas, double-beat phosphors, and living CMY print rosettes. They respond to your existing palette and keep moving in GIF/MP4 exports.</p></details>
       <Select label="Atmosphere" value={s.atmoMode}
         onChange={mode=>history.change(x=>({...x,atmoMode:mode,
           atmoAmount:Math.max(62,x.atmoAmount)}))}>
@@ -1827,7 +1807,7 @@ export function EffectsInspector({ history, onTool, tool }) {
           Hide first parent
         </button>
       </div>
-      <details className="filament-crossbreeder">
+      <details data-effect-detail="atmosphere-breeder" className="filament-crossbreeder">
         <summary>🧬 TWO-PARENT ATMOSPHERE BREEDER</summary>
         <p className="control-note">Breed two of the four living atmospheres. Parent B has its own geometry size, pulse/growth rate, palette phase, glow, and variation. Parent A keeps all its settings. Presence 0 costs no second shader.</p>
         <Select label="Second parent" value={s.atmoBMode}
@@ -1878,7 +1858,7 @@ export function EffectsInspector({ history, onTool, tool }) {
           </button>
         </div>
       </details>
-      <details className="filament-crossbreeder">
+      <details data-effect-detail="atmosphere-habitats" className="filament-crossbreeder">
         <summary>🪩 LIVING HABITATS — MASKS & TERRITORIES</summary>
         <p className="control-note">Let different species colonize different parts of the same image. The edges flow smoothly, and each mask has an independent placement mode. 'Inverse first' makes parent B fill the spaces parent A leaves.</p>
         <Select label="First parent habitat" value={s.atmoMaskMode}
@@ -1907,12 +1887,12 @@ export function EffectsInspector({ history, onTool, tool }) {
           {habitatTools.includes(tool) && <button type="button" className="button secondary"
             onClick={()=>onTool("Paint")}>Return to force brush</button>}
         </div>
-        <p className="control-note">
+        <details className="effect-explanation"><summary>How it works</summary><p className="control-note">
           Finger-paint habitats directly on the fixed canvas. Planting automatically
           chooses Painted colonies and activates that parent; A seeds are pink,
           B seeds cyan. Edit, move or erase them in Touch → Habitat Graffiti.
           Up to {MAX_HABITAT_STAMPS} movable seeds per design; undo works.
-        </p>
+        </p></details>
         {s.atmoBMaskMode==="Inverse first"&&s.atmoMaskMode==="Everywhere"&&
           <p className="control-note">Inverse first is empty while the first habitat is Everywhere. Choose a shape for parent A to reveal parent B.</p>}
         <div className="pane-actions">
@@ -2007,9 +1987,9 @@ export function EffectsInspector({ history, onTool, tool }) {
       <Parameter label="Raised relief / sheen" name="filamentRelief" history={history}/>
       <Parameter label="Palette shift" name="filamentHue" history={history}/>
       <Parameter label="Variation" name="filamentVariation" history={history}/>
-      <details className="filament-crossbreeder filament-semantic-gravity">
+      <details data-effect-detail="filament-semantic" className="filament-crossbreeder filament-semantic-gravity">
         <summary>🪄 SEMANTIC GRAVITY — LET WORDS BEND THE WEAVE</summary>
-        <p className="control-note">This is actual type-to-thread physics-inspired geometry: your own visible letters become moving gravitational fields that attract, repel, orbit, shear and even cut holes through the yarn. It borrows the SAME glyph shapes and animation from the real text-export compositor. No default slogans are ever generated.</p>
+        <details className="effect-explanation"><summary>How it works</summary><p className="control-note">This is actual type-to-thread physics-inspired geometry: your own visible letters become moving gravitational fields that attract, repel, orbit, shear and even cut holes through the yarn. It borrows the SAME glyph shapes and animation from the real text-export compositor. No default slogans are ever generated.</p></details>
         <p className="control-note"><strong>First, enter words in the Text tab and turn their visibility/opacity up.</strong> If no words are visible, gravity stays dormant. Existing text layers, rich styling and font choices are kept, not overwritten.</p>
         <Select label="Semantic force law" value={s.semanticGravityMode}
           onChange={mode=>history.change(x=>({...x,semanticGravityMode:mode,
@@ -2046,11 +2026,11 @@ export function EffectsInspector({ history, onTool, tool }) {
             Release the words (keep text and fibers)
           </button>
         </div>
-        <p className="control-note">The field moves the actual filaments before their geometry, stitching, material and crossbreeding are drawn. The letter-shaped void law also subtracts from fiber coverage. Your words remain visible on top as usual. This is a glyph-shaped force field, not an AI interpretation of their meaning.</p>
+        <details className="effect-explanation"><summary>How it works</summary><p className="control-note">The field moves the actual filaments before their geometry, stitching, material and crossbreeding are drawn. The letter-shaped void law also subtracts from fiber coverage. Your words remain visible on top as usual. This is a glyph-shaped force field, not an AI interpretation of their meaning.</p></details>
       </details>
-      <details className="filament-crossbreeder filament-quasi-lab">
+      <details data-effect-detail="filament-quasi" className="filament-crossbreeder filament-quasi-lab">
         <summary>💠 QUASICRYSTAL BROCADE — IMPOSSIBLE RAISED EMBROIDERY</summary>
-        <p className="control-note">Genuinely new five-direction quasiperiodic multigrid threads—not the old fivefold sine-pattern. Each of the five thread families has its own phason offset. Where yarns meet, raised star collars and local highlights catch the light. It works with both hybrid parents, material dressing, the needle orchestra, and your existing palettes.</p>
+        <details className="effect-explanation"><summary>How it works</summary><p className="control-note">Genuinely new five-direction quasiperiodic multigrid threads—not the old fivefold sine-pattern. Each of the five thread families has its own phason offset. Where yarns meet, raised star collars and local highlights catch the light. It works with both hybrid parents, material dressing, the needle orchestra, and your existing palettes.</p></details>
         <Select label="Quasicrystal embroidery specimen" value={quasiPreset} onChange={setQuasiPreset}>
           {quasicrystalBrocadePresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
         </Select>
@@ -2076,7 +2056,7 @@ export function EffectsInspector({ history, onTool, tool }) {
         </div>
         <p className="control-note">The six controls modify the actual selected thread geometry and highlight, not a screen-wide effect. Presets preserve your current palette, fiber dresses, second parent, original text and stitch motion. Selecting another geometry leaves old art unchanged.</p>
       </details>
-      <details className="filament-crossbreeder filament-feral-lab">
+      <details data-effect-detail="filament-feral" className="filament-crossbreeder filament-feral-lab">
         <summary>🧶 FERAL JACQUARD — STRUCTURAL CORRUPTION</summary>
         <p className="control-note">A genuine warp/weft geometry: moving strands shear, exchange over-under precedence, and form knot collars within actual thread outlines. No glitch overlay. Use as either parent in hybrid fabrics.</p>
         <Select label="Jacquard structure recipe" value={feralPreset} onChange={setFeralPreset}>
@@ -2132,7 +2112,7 @@ export function EffectsInspector({ history, onTool, tool }) {
           Hide threads
         </button>
       </div>
-      <details className="filament-crossbreeder filament-sculpt-lab">
+      <details data-effect-detail="filament-sculpt" className="filament-crossbreeder filament-sculpt-lab">
         <summary>💎 SCULPTED THREADS — RAISED RELIEF & LIGHT</summary>
         <p className="control-note">Fifteen geometry-constrained 2.5D relief styles, including new gilded metalwork, bone inlays, molten jewels and scarred alien sutures. No heavyweight 3D mesh; the tactile lighting stays on your actual yarn.</p>
         <Select label="Sculpted thread style" value={s.filamentSculptMode}
@@ -2173,7 +2153,7 @@ export function EffectsInspector({ history, onTool, tool }) {
         </div>
         <p className="control-note">Flat relief means the exact previous thread appearance. This stays compatible with crossbreeding, thread materials, self-weaving, and the existing animation/export clock.</p>
       </details>
-      <details className="filament-crossbreeder filament-stitch-lab">
+      <details data-effect-detail="filament-stitch" className="filament-crossbreeder filament-stitch-lab">
         <summary>🪡 SELF-WEAVING LOOM — STITCH IN MOTION</summary>
         <p className="control-note">Thirty-three animated stitch laws: classic chain, cross, satin, blanket, feather and cable stitches, plus ghost bobbins, quantum unraveling and mutant zipper nightmares. All follow the actual thread paths.</p>
         <Select label="Stitch motion" value={s.filamentStitchMode}
@@ -2190,7 +2170,7 @@ export function EffectsInspector({ history, onTool, tool }) {
         <Parameter label="Stitch travel speed" name="filamentStitchSpeed" history={history}/>
         <Parameter label="Stitch tail length / spacing" name="filamentStitchLength" history={history}/>
         <Parameter label="Traveling needle glow" name="filamentStitchGlow" history={history}/>
-        <details className="filament-crossbreeder filament-chladni-lab">
+        <details data-effect-detail="filament-chladni" className="filament-crossbreeder filament-chladni-lab">
           <summary>🎻 CHLADNI NEEDLE ORCHESTRA — CYMATIC STITCHES</summary>
           <p className="control-note">Real sewing reveals fibers along dynamic standing-wave nodes and eigenmode crossings. Resonance, detuning and mode order change the actual stitched geometry, not a decorative screen pattern.</p>
           <Select label="Needle orchestra score" value={chladniPreset} onChange={setChladniPreset}>
@@ -2213,9 +2193,9 @@ export function EffectsInspector({ history, onTool, tool }) {
           </div>
           <p className="control-note">Compatible with all thread species, including Feral Jacquard, both hybrid parents and every fiber dressing. The selected law is compiled once into the shared preview/export shader.</p>
         </details>
-        <details className="filament-crossbreeder filament-retrocausal-lab">
+        <details data-effect-detail="filament-retrocausal" className="filament-crossbreeder filament-retrocausal-lab">
           <summary>🕰️ RETROCAUSAL EMBROIDERY — STITCHES FROM TOMORROW</summary>
-          <p className="control-note">The needle samples its future analytic position before arriving. Pre-echo seams reveal the real underlying threads, phantom knots appear before they are tied, and reversed waves sew against time. No saved future frames, actual time travel, or disconnected background decals—one deterministic law on the SAME animation clock as your export.</p>
+          <details className="effect-explanation"><summary>How it works</summary><p className="control-note">The needle samples its future analytic position before arriving. Pre-echo seams reveal the real underlying threads, phantom knots appear before they are tied, and reversed waves sew against time. No saved future frames, actual time travel, or disconnected background decals—one deterministic law on the SAME animation clock as your export.</p></details>
           <Select label="Temporal embroidery score" value={retroPreset} onChange={setRetroPreset}>
             {retrocausalEmbroideryPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
           </Select>
@@ -2239,7 +2219,7 @@ export function EffectsInspector({ history, onTool, tool }) {
               <Dices size={13}/> Feral chronology shuffle
             </button>
           </div>
-          <p className="control-note">Scores preserve both hybrid thread parents, existing optical coats, fiber materials, palettes, text, shape and all other effects. This stitch law is selectable alongside every geometry; swapping modes leaves your old stitchwork unchanged. A future sample is calculated from time—not fetched from the actual future.</p>
+          <details className="effect-explanation"><summary>How it works</summary><p className="control-note">Scores preserve both hybrid thread parents, existing optical coats, fiber materials, palettes, text, shape and all other effects. This stitch law is selectable alongside every geometry; swapping modes leaves your old stitchwork unchanged. A future sample is calculated from time—not fetched from the actual future.</p></details>
         </details>
         <Select label="Self-weaving recipe" value={stitchPreset} onChange={setStitchPreset}>
           {filamentStitchPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
@@ -2269,9 +2249,9 @@ export function EffectsInspector({ history, onTool, tool }) {
         </div>
         <p className="control-note">When disabled, your original geometry, colors, materials, beads and two-parent weave return unchanged. Runs on the same timeline as PNG, GIF and MP4 exports.</p>
       </details>
-      <details className="filament-crossbreeder filament-material-lab">
+      <details data-effect-detail="filament-materials" className="filament-crossbreeder filament-material-lab">
         <summary>✨ THREAD ALCHEMY — MATERIALS & BEADS</summary>
-        <p className="control-note">Fourteen dressable fiber materials: from cotton, pearl floss, chenille and metallic tinsel to rainbow fiber optics, oil-slick latex, gelatin nerves and living bioluminescent mycelium. Both parents can wear DIFFERENT materials. Original Thread retains the old look.</p>
+        <details className="effect-explanation"><summary>How it works</summary><p className="control-note">Fourteen dressable fiber materials: from cotton, pearl floss, chenille and metallic tinsel to rainbow fiber optics, oil-slick latex, gelatin nerves and living bioluminescent mycelium. Both parents can wear DIFFERENT materials. Original Thread retains the old look.</p></details>
         <Select label="First parent fiber material" value={s.filamentMaterial}
           onChange={value=>history.change(x=>({...x,filamentMaterial:value,
             filamentAmount:Math.max(50,x.filamentAmount)}))}>
@@ -2316,9 +2296,9 @@ export function EffectsInspector({ history, onTool, tool }) {
         </div>
         <p className="control-note">The color offset applies to the second parent when crossbreeding is on. Material details compile only when used, and the old shader remains the fallback.</p>
 
-        <details className="filament-crossbreeder filament-structural-optics">
+        <details data-effect-detail="filament-optics" className="filament-crossbreeder filament-structural-optics">
           <summary>🌈 STRUCTURAL-COLOR OPTICS — DRESS THE THREADS</summary>
-          <p className="control-note">Light caught INSIDE the selected fabric. Seven pseudo-optical laws alter the already-dressed individual yarn, with angle/curvature/film-thickness-responsive interference, directional reflection and palette-dependent pearlescence. Both parents have completely independent coats. The original 14 materials remain underneath, unmodified.</p>
+          <details className="effect-explanation"><summary>How it works</summary><p className="control-note">Light caught INSIDE the selected fabric. Seven pseudo-optical laws alter the already-dressed individual yarn, with angle/curvature/film-thickness-responsive interference, directional reflection and palette-dependent pearlescence. Both parents have completely independent coats. The original 14 materials remain underneath, unmodified.</p></details>
           <Select label="Structural-color twin-fiber recipe" value={opticsPreset} onChange={setOpticsPreset}>
             {structuralOpticsPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
           </Select>
@@ -2336,7 +2316,7 @@ export function EffectsInspector({ history, onTool, tool }) {
               <Dices size={13}/> Wild spectral wardrobe
             </button>
           </div>
-          <details className="filament-crossbreeder" open>
+          <details data-effect-detail="filament-optics-a" className="filament-crossbreeder" open>
             <summary>🧵 PARENT A — FIRST FIBER OPTICS</summary>
             <Select label="First parent optical law" value={s.filamentOpticsMode}
               onChange={mode=>history.change(x=>({...x,filamentOpticsMode:mode,
@@ -2364,7 +2344,7 @@ export function EffectsInspector({ history, onTool, tool }) {
               </button>
             </div>
           </details>
-          <details className="filament-crossbreeder">
+          <details data-effect-detail="filament-optics-b" className="filament-crossbreeder">
             <summary>🧵 PARENT B — SECOND FIBER OPTICS</summary>
             <p className="control-note">This parent's coat becomes visible only when Hybrid Breeder has a second thread parent turned on. It does NOT mirror Parent A's coating unless you choose the same optical law.</p>
             <Select label="Second parent optical law" value={s.filamentSecondOpticsMode}
@@ -2403,13 +2383,13 @@ export function EffectsInspector({ history, onTool, tool }) {
               Restore original thread colors
             </button>
           </div>
-          <p className="control-note">Light is pseudo-view and yarn-curvature sensitive within the existing 2D artboard—not physically measured spectral reflectance. Your 14 original dressable fibers, palettes, over-under stitches, hybrid materials, jewelry and exact-effects export pipeline remain intact. Off compiles no optical color pass.</p>
+          <details className="effect-explanation"><summary>How it works</summary><p className="control-note">Light is pseudo-view and yarn-curvature sensitive within the existing 2D artboard—not physically measured spectral reflectance. Your 14 original dressable fibers, palettes, over-under stitches, hybrid materials, jewelry and exact-effects export pipeline remain intact. Off compiles no optical color pass.</p></details>
         </details>
 
       </details>
-      <details className="filament-crossbreeder filament-metamorphosis">
+      <details data-effect-detail="filament-morph" className="filament-crossbreeder filament-metamorphosis">
         <summary>🦋 THREAD METAMORPHOSIS — FABRIC THAT CHANGES MATERIAL</summary>
-        <p className="control-note">Your original Dress the Threads selection stays intact. Pick what each parent's material MUTATES INTO, then choose how the transformation travels through the actual moving threads. Silk can turn opaline, gelatin can sprout luminous mycelium, and every combination still uses the real fiber shading. Off by default.</p>
+        <details className="effect-explanation"><summary>How it works</summary><p className="control-note">Your original Dress the Threads selection stays intact. Pick what each parent's material MUTATES INTO, then choose how the transformation travels through the actual moving threads. Silk can turn opaline, gelatin can sprout luminous mycelium, and every combination still uses the real fiber shading. Off by default.</p></details>
         <Select label="Transformation law" value={s.filamentMorphMode}
           onChange={mode=>history.change(x=>({...x,filamentMorphMode:mode,
             filamentAmount:mode==="Off"?x.filamentAmount:Math.max(72,x.filamentAmount),
@@ -2458,9 +2438,9 @@ export function EffectsInspector({ history, onTool, tool }) {
         </div>
         <p className="control-note">Separate from stitch motion, geometric weaving, jewelry, color and lettering. Crossbred parents can transform toward completely different materials. The same deterministic shader is used for the artwork preview and MP4/GIF/PNG exports.</p>
       </details>
-      <details className="filament-crossbreeder filament-contagion-lab">
+      <details data-effect-detail="filament-contagion" className="filament-crossbreeder filament-contagion-lab">
         <summary>🦠 CONTAGION LOOM — MAKE YOUR THREADS INFECT EACH OTHER</summary>
-        <p className="control-note">Stitch-local waves carry material changes down the active threads. In a two-parent crossbreed, actual overlapping stitched cores provide a real first-to-second contact signal. The moving waves are deterministic, not an accumulating GPU simulation, so your exports use the exact same math.</p>
+        <details className="effect-explanation"><summary>How it works</summary><p className="control-note">Stitch-local waves carry material changes down the active threads. In a two-parent crossbreed, actual overlapping stitched cores provide a real first-to-second contact signal. The moving waves are deterministic, not an accumulating GPU simulation, so your exports use the exact same math.</p></details>
         <Select label="Transmission behavior" value={s.filamentContagionMode}
           onChange={mode=>history.change(x=>({...x,filamentContagionMode:mode,
             filamentAmount:mode==="Off"?x.filamentAmount:Math.max(70,x.filamentAmount),
@@ -2507,11 +2487,11 @@ export function EffectsInspector({ history, onTool, tool }) {
             Quarantine — keep transformed threads
           </button>
         </div>
-        <p className="control-note">Uses the two morph targets from Thread Metamorphosis, so no original fiber dressing or colors get overwritten. Crossbreed two thread species to see transfer at real stitched intersections. Effect defaults off; strict PNG/GIF/MP4 exporting never removes it silently.</p>
+        <details className="effect-explanation"><summary>How it works</summary><p className="control-note">Uses the two morph targets from Thread Metamorphosis, so no original fiber dressing or colors get overwritten. Crossbreed two thread species to see transfer at real stitched intersections. Effect defaults off; strict PNG/GIF/MP4 exporting never removes it silently.</p></details>
       </details>
-      <details className="filament-crossbreeder filament-neural-lab">
+      <details data-effect-detail="filament-neural" className="filament-crossbreeder filament-neural-lab">
         <summary>🧠 NEURAL LOOM — A NERVOUS SYSTEM FOR YOUR FABRIC</summary>
-        <p className="control-note">Thread-local electrical pulses now travel down genuine moving stitches, react to nearby colors, slightly twitch the thread geometry and pass synaptic signals between the two hybrid parents only at real stitched intersections. Independent from Metamorphosis, Contagion and thread dressing. Choose a neural behavior or try a one-tap preset.</p>
+        <details className="effect-explanation"><summary>How it works</summary><p className="control-note">Thread-local electrical pulses now travel down genuine moving stitches, react to nearby colors, slightly twitch the thread geometry and pass synaptic signals between the two hybrid parents only at real stitched intersections. Independent from Metamorphosis, Contagion and thread dressing. Choose a neural behavior or try a one-tap preset.</p></details>
         <Select label="Nervous-system behavior" value={s.filamentNeuralMode}
           onChange={mode=>history.change(x=>({...x,filamentNeuralMode:mode,
             filamentNeuralAmount:mode==="Off"?x.filamentNeuralAmount:Math.max(78,x.filamentNeuralAmount),
@@ -2548,11 +2528,11 @@ export function EffectsInspector({ history, onTool, tool }) {
             Sedate the weave — keep everything else
           </button>
         </div>
-        <p className="control-note">Crossbreed two thread species to see synaptic handshakes at their overlaps. Other laws also work on a single thread family. Pulse behavior is mathematical, not a self-learning biological brain; no new simulation buffers or separate video clock. Preview, GIF and MP4 use the same shader and strict-effects checks.</p>
+        <details className="effect-explanation"><summary>How it works</summary><p className="control-note">Crossbreed two thread species to see synaptic handshakes at their overlaps. Other laws also work on a single thread family. Pulse behavior is mathematical, not a self-learning biological brain; no new simulation buffers or separate video clock. Preview, GIF and MP4 use the same shader and strict-effects checks.</p></details>
       </details>
-      <details className="filament-crossbreeder filament-plasticity-lab">
+      <details data-effect-detail="filament-plasticity" className="filament-crossbreeder filament-plasticity-lab">
         <summary>🧠 SYNAPTIC PLASTICITY — TEACH THE THREADS NEW TRICKS</summary>
-        <p className="control-note">Build on Neural Loom: amplify coincident pulses, create inhibitory dark bands, echo a nerve signal, entrain clusters, prune weak connections, or let the whole weave dream. This is mathematical, time-based adaptation—not a permanent AI brain or stored learning. Real crossed thread masks affect synaptic coupling.</p>
+        <details className="effect-explanation"><summary>How it works</summary><p className="control-note">Build on Neural Loom: amplify coincident pulses, create inhibitory dark bands, echo a nerve signal, entrain clusters, prune weak connections, or let the whole weave dream. This is mathematical, time-based adaptation—not a permanent AI brain or stored learning. Real crossed thread masks affect synaptic coupling.</p></details>
         <Select label="Synaptic behavior" value={s.filamentPlasticMode}
           onChange={mode=>history.change(x=>({...x,filamentPlasticMode:mode,
             filamentAmount:mode==="Off"?x.filamentAmount:Math.max(70,x.filamentAmount),
@@ -2596,9 +2576,9 @@ export function EffectsInspector({ history, onTool, tool }) {
         </div>
         <p className="control-note">Choose a Neural Loom behavior first or use one of these presets to turn it on. Your materials, lettering, geometry, color palettes, and ornaments remain untouched. Plasticity defaults off in existing recipes, and strict MP4/GIF uses this same animated shader.</p>
       </details>
-      <details className="filament-crossbreeder filament-ghost-scar-lab">
+      <details data-effect-detail="filament-scars" className="filament-crossbreeder filament-ghost-scar-lab">
         <summary>👻 GHOST SCARS — LET THE ELECTRIC THREADS LEAVE MARKS</summary>
-        <p className="control-note">Six nerve-activated scars live ON the woven filaments: phosphor aftertraces, branching burns, repaired gilded sutures, spectral bruises, tiny knot fossils, and ghostly mycelial marks. They follow the same neural signal and color palette as your fabric. These are deterministic old-pulse illusions, not extra GPU frame-memory textures.</p>
+        <details className="effect-explanation"><summary>How it works</summary><p className="control-note">Six nerve-activated scars live ON the woven filaments: phosphor aftertraces, branching burns, repaired gilded sutures, spectral bruises, tiny knot fossils, and ghostly mycelial marks. They follow the same neural signal and color palette as your fabric. These are deterministic old-pulse illusions, not extra GPU frame-memory textures.</p></details>
         <Select label="Scar morphology" value={s.filamentScarMode}
           onChange={mode=>history.change(x=>({...x,filamentScarMode:mode,
             filamentAmount:mode==="Off"?x.filamentAmount:Math.max(72,x.filamentAmount),
@@ -2642,9 +2622,9 @@ export function EffectsInspector({ history, onTool, tool }) {
         </div>
         <p className="control-note">Old recipes stay scar-free until you opt in. Keep dressing, stitches, geometry, crossbreeding, lettering and palette exactly as they are. Scars render with the same strict-effects shader as GIF/MP4. For hardware-heavy recipes, test a short MP4 first.</p>
       </details>
-      <details className="filament-crossbreeder filament-regeneration-lab">
+      <details data-effect-detail="filament-regeneration" className="filament-crossbreeder filament-regeneration-lab">
         <summary>🌱 REGENERATION LOOM — GROW NEW THREADS FROM THE SCARS</summary>
-        <p className="control-note">Twelve actual daughter-thread geometries: classic darning ladders and Sashiko repairs, coral branches that reconnect, axolotl frills, vesicle loops, and impossible grafts alongside the original six. New fibers are constructed before palette, material, and nerve shading. Growth now advances forward and softly fades before repeating: no abrupt vanishing frames and no extra GPU history.</p>
+        <details className="effect-explanation"><summary>How it works</summary><p className="control-note">Twelve actual daughter-thread geometries: classic darning ladders and Sashiko repairs, coral branches that reconnect, axolotl frills, vesicle loops, and impossible grafts alongside the original six. New fibers are constructed before palette, material, and nerve shading. Growth now advances forward and softly fades before repeating: no abrupt vanishing frames and no extra GPU history.</p></details>
         <Select label="Regrowth anatomy" value={s.filamentRegenMode}
           onChange={mode=>history.change(x=>({...x,filamentRegenMode:mode,
             filamentAmount:mode==="Off"?x.filamentAmount:Math.max(72,x.filamentAmount),
@@ -2692,7 +2672,7 @@ export function EffectsInspector({ history, onTool, tool }) {
         </div>
         <p className="control-note">An advancing growth-and-fade cycle, not reversed or permanently accumulated yarn. Existing threads, text, jewelry, materials, sewing and original artwork stay intact. GPU-heavy combinations should be proof-exported at 480px before a long MP4.</p>
       </details>
-      <details className="filament-crossbreeder filament-adornment-lab">
+      <details data-effect-detail="filament-jewelry" className="filament-crossbreeder filament-adornment-lab">
         <summary>💎 THREAD JEWELRY — CHARMS, FRINGE & WEIRD SHIT</summary>
         <p className="control-note">Twelve stitch-attached ornaments, from pearls and French knots to opal barnacles, tiny eyes and haunted teeth. Each hybrid parent can wear DIFFERENT jewelry over its own material. No random screen-wide stickers.</p>
         <Select label="First parent jewelry" value={s.filamentAdornmentMode}
@@ -2746,7 +2726,7 @@ export function EffectsInspector({ history, onTool, tool }) {
         </div>
         <p className="control-note">Each ornament follows the current thread’s own geometry, stitch reveal and clock. Choosing bare or presence 0 adds nothing. Jewelry preserves your words, colors, shape, fiber dressing and crossbred parents; PNG, GIF and MP4 use the same shader.</p>
       </details>
-      <details className="filament-crossbreeder">
+      <details data-effect-detail="filament-crossbreed" className="filament-crossbreeder">
         <summary>🧬 CROSSBREED TWO THREAD SPECIES</summary>
         <p className="control-note">A second mathematical lace structure shares the canvas with your first. At crossings the threads can pass over and under each other. This does not change your artwork engine or your words.</p>
         <Select label="Second thread parent" value={s.filamentSecondSpecies}
@@ -3223,30 +3203,12 @@ export function EffectsInspector({ history, onTool, tool }) {
         (x.backdropVariation+19+Math.random()*62)%100}))}/>
     </>,
   };
-  const shown = effectSections.filter((m) => visible(m.id));
-  return (
-    <>
-      <div className="fx-pills" role="group" aria-label="Quick effect toggles">
-        {[["bloom","Bloom"],["posterize","Posterize"],["invert","Invert"]].map(([k,label])=>
-          <Pill key={k} label={label} checked={s[k]}
-            onChange={()=>history.change(x=>({...x,[k]:!x[k]}))}/>)}
-      </div>
-      <div className="fx-filter" role="tablist" aria-label="Show effects">
-        {["All", "On", ...effectGroups].map((f) => (
-          <button key={f} type="button" role="tab" aria-selected={filter === f}
-            className={filter === f ? "active" : ""} onClick={() => setFilter(f)}>
-            {f === "On" ? <>On <b>{onCount}</b></> : f}
-          </button>
-        ))}
-      </div>
-      {shown.length === 0 && (
-        <p className="control-note">Nothing switched on yet. Pick a group above and push a slider.</p>
-      )}
-      {shown.map((m) => (
-        <Section key={m.id} id={m.id} history={history}>{body[m.id]}</Section>
-      ))}
-    </>
-  );
+  body["fx-toggles"] = <div className="fx-pills" role="group" aria-label="Quick effect toggles">
+    {[["bloom","Bloom"],["posterize","Posterize"],["invert","Invert"]].map(([k,label])=>
+      <Pill key={k} label={label} checked={s[k]}
+        onChange={()=>history.change(x=>({...x,[k]:!x[k]}))}/>)}
+  </div>;
+  return <EffectsWorkbench history={history} body={body} quickToggles={body["fx-toggles"]}/>;
 }
 
 // ---- Layers -----------------------------------------------------------------

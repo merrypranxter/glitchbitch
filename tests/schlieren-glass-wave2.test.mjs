@@ -29,7 +29,7 @@ test("old recipes keep glass off, five modes and ten bounded controls",()=>{
     assert.throws(()=>validateRecipe({...previous,[k]:101}),new RegExp("Invalid "+k));
   }
   assert.throws(()=>validateRecipe({...previous,schlierenMode:"Fake blur"}),/Unknown schlierenMode/);
-  assert.equal(sectionMeta("schlieren").group,"Texture");
+  assert.equal(sectionMeta("schlieren").group,"Light");
   assert.ok(findControls("schlieren").some(x=>x.id==="schlieren"));
   assert.ok(findControls("refraction").some(x=>x.id==="schlieren"));
 });

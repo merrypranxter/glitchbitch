@@ -176,10 +176,10 @@ test("UI, search, engine randomizer and GPU cache use the expanded IDs",()=>{
     'withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode)']){
     assert.ok(renderer.includes(part),part);
   }
-  for(const [term,section] of [["alien dandruff","micro"],
-    ["radioactive sherbet","substance"],["witch agar","bio"]]){
+  for(const [term,section,group] of [["alien dandruff","micro","Materials"],
+    ["radioactive sherbet","substance","Materials"],["witch agar","bio","Organisms"]]){
     assert.ok(findControls(term).some(x=>x.id===section),term);
-    assert.equal(sectionMeta(section).group,"Texture");
+    assert.equal(sectionMeta(section).group,group);
   }
   assert.equal(sectionActive(sectionMeta("micro"),initial),false);
   assert.equal(sectionActive(sectionMeta("substance"),initial),false);

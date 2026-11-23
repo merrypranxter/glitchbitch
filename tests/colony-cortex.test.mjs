@@ -135,9 +135,13 @@ test("Cortex shaders reuse seed search and do not require new textures or GPU me
     assert.ok(ui.includes('name="'+key+'"'),key);
   assert.ok(ui.includes("Spawn cortex pair"));
   assert.ok(ui.includes("Shuffle cortex"));
-  assert.equal(sectionMeta("colony-cortex").group,"Scene");
+  assert.equal(sectionMeta("colony-cortex").group,"Organisms");
   assert.equal(sectionActive(sectionMeta("colony-cortex"),initial),false);
   assert.equal(sectionActive(sectionMeta("colony-cortex"),
-    {...initial,colonyCortexAmount:85}),true);
+    {...initial,colonyCortexAmount:85}),false,"stored strength without painted colonies stays dormant");
+  assert.equal(sectionActive(sectionMeta("colony-cortex"),
+    {...initial,colonyCortexAmount:85,
+      atmoAmount:80,atmoMaskMode:"Painted colonies",
+      habitatStamps:[{id:"active-colony",parent:0,x:.5,y:.5,radius:.2}]}),true);
   assert.equal(findControls("growth rings")[0].id,"colony-cortex");
 });

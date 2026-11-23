@@ -133,7 +133,7 @@ test("Claude Effects UI indexes and resets this independent fabric family",()=>{
  const ui=readFileSync(new URL("../src/components/Inspectors.jsx",import.meta.url),"utf8");
  const meta=sectionMeta("underlay");
  assert.equal(meta.tab,"Effects");
- assert.equal(meta.group,"Texture");
+ assert.equal(meta.group,"Materials");
  assert.equal(sectionActive(meta,initial),false);
  assert.equal(sectionActive(meta,{...initial,underlayAmount:80}),true);
  for(const k of ["underlayMode",...underlayControls])

@@ -148,7 +148,7 @@ test("the actual Inspector source parses with Vite and exposes searchable contro
  const transformed=await transformWithEsbuild(ui,
    "src/components/Inspectors.jsx",{loader:"jsx"});
  assert.ok(transformed.code.length>1000);
- assert.equal(sectionMeta("print-injury").group,"Glitch");
+ assert.equal(sectionMeta("print-injury").group,"Signal");
  assert.equal(sectionActive(sectionMeta("print-injury"),initial),false);
  for(const name of injuryModes)
    assert.ok(findControls(name).some(x=>x.id==="print-injury"),name);

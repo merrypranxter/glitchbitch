@@ -34,6 +34,7 @@ import {
 import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, compositionModes, backdropModes, microModes, substanceModes, wiggleModes, randomize } from "../data";
 import {hexagramPresets,applyHexagramPreset,remixHexagram,disableHexagram} from "../hexagram-terraces.js";
 import {polesModes,polesPresets,applyPolesPreset,shufflePoles,hidePoles} from "../complex-poles.js";
+import {qdModes,qdOrders,qdPresets,applyQdPreset,shuffleQd,hideQd} from "../quasicrystal-dissolution.js";
 import { Parameter, Range, Toggle, Switch, Select, Section, Segmented, Pill, useReveal } from "./Controls";
 import {microFamilies,microPresets,applyMicroPreset,remixMicro} from "../microstructure.js";
 import {substanceFamilies,substancePresets,applySubstancePreset,remixSubstance} from "../substance.js";
@@ -165,6 +166,7 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
   const state = history.state;
   const [hexagramPreset,setHexagramPreset]=React.useState(hexagramPresets[0].name);
   const [polesPreset,setPolesPreset]=React.useState(polesPresets[0].name);
+  const [qdPreset,setQdPreset]=React.useState(qdPresets[0].name);
   const selected = (id) => state.engine === id ||
     (state.blend > 0 && state.secondaryEngine === id);
   return (
@@ -246,6 +248,66 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
           {selected(16) && <p className="control-note">Shape, parallax and material live in Effects → Stereo 3D.</p>}
         </Section>
       )}
+      <Section id="quasi-dissolution" history={history}>
+        <p className="control-note">
+          Make an organized quasicrystal from five, seven, or nine coupled
+          interference waves, then fracture that SAME lattice into torn strips,
+          phase splits, and digital tesserae. The source oscillator uses sevenfold.
+          Dissolve = 0 is mathematical order; 100 breaks it to glorious hell.
+        </p>
+        <div className="preset-row">
+          <Select label="Quasicrystal mutation" value={state.qdMode}
+            onChange={mode=>history.change(s=>({...s,qdMode:mode,
+              qdAmount:Math.max(s.qdAmount,60)}))}>
+            {qdModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+          </Select>
+          <Select label="Quasiperiodic order" value={state.qdOrder}
+            onChange={order=>history.change(s=>({...s,qdOrder:order,
+              qdAmount:Math.max(s.qdAmount,60)}))}>
+            {qdOrders.map(order=><option key={order} value={order}>{order}</option>)}
+          </Select>
+        </div>
+        <div className="preset-row">
+          <Select label="Start with a recipe" value={qdPreset} onChange={setQdPreset}>
+            {qdPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+          </Select>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>applyQdPreset(s,qdPreset))}>
+            Apply quasicrystal recipe
+          </button>
+        </div>
+        <Parameter label="Quasicrystal presence" name="qdAmount" history={history}/>
+        {state.qdAmount>0&&<>
+          <Parameter label="Dissolution (0 order → 100 ruin)" name="qdDissolve" history={history}/>
+          <Parameter label="Automatic order / ruin cycle" name="qdAuto" history={history}/>
+          <Parameter label="Oscillation and mutation speed" name="qdRate" history={history}/>
+          <Parameter label="Quasiperiodic lattice density" name="qdDensity" history={history}/>
+          <Parameter label="Faultline / row tears" name="qdTear" history={history}/>
+          <Parameter label="Quantized pixel rupture" name="qdPixel" history={history}/>
+          <Parameter label="Displace real geometry" name="qdWarp" history={history}/>
+          <Parameter label="Filigree stripe complexity" name="qdFiligree" history={history}/>
+          <Parameter label="Palette phase" name="qdHue" history={history}/>
+          <Parameter label="Spatial variation" name="qdVariation" history={history}/>
+          <Parameter label="Luminous lattice seams" name="qdEdge" history={history}/>
+        </>}
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>shuffleQd(s))}>
+            <Shuffle size={13}/> Shuffle quasicrystal only
+          </button>
+          <button type="button" className="button secondary"
+            disabled={state.qdAmount<=0}
+            onClick={()=>history.change(hideQd)}>
+            <EyeOff size={13}/> Hide crystal decay
+          </button>
+        </div>
+        <p className="control-note">
+          Auto at 0 holds your Dissolution slider; Auto at 100 oscillates
+          between order and ruin. This shares the regular preview and
+          PNG/GIF/MP4 renderer (no separate simulation or capture).
+          Disabled presets leave older artwork unchanged.
+        </p>
+      </Section>
       <Section id="complex-poles" history={history}>
         <p className="control-note">
           Actual complex-plane distortion from (z⁵ − 1)/(z² + moving pole).

@@ -39,6 +39,8 @@ import {velvetModes,crochetModes,textilePresets,applyTextilePreset,
   shuffleVelvet,shuffleCrochet,hideVelvet,hideCrochet} from "../living-textiles-wave5.js";
 import {breedModes,breedPresets,breedRequiredParents,breedActive,
   activateBreed,applyBreedPreset,shuffleBreed,hideBreed} from "../crossbreed-lab.js";
+import {g2Modes,g2Presets,applyG2Preset,shuffleG2,hideG2}
+  from "../g2-torsion-membranes.js";
 import { Parameter, Range, Toggle, Switch, Select, Section, Segmented, Pill, useReveal } from "./Controls";
 import {microFamilies,microPresets,applyMicroPreset,remixMicro} from "../microstructure.js";
 import {substanceFamilies,substancePresets,applySubstancePreset,remixSubstance} from "../substance.js";
@@ -173,6 +175,7 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
   const [qdPreset,setQdPreset]=React.useState(qdPresets[0].name);
   const [textilePreset,setTextilePreset]=React.useState(textilePresets[0].name);
   const [breedPreset,setBreedPreset]=React.useState(breedPresets[0].name);
+  const [g2Preset,setG2Preset]=React.useState(g2Presets[0].name);
   const selected = (id) => state.engine === id ||
     (state.blend > 0 && state.secondaryEngine === id);
   return (
@@ -254,6 +257,60 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
           {selected(16) && <p className="control-note">Shape, parallax and material live in Effects → Stereo 3D.</p>}
         </Section>
       )}
+      <Section id="g2-membrane" history={history}>
+        <p className="control-note">
+          From your original g2-holonomy and g2-membrane shader sketches:
+          two competing orientation fields generate strain, photonic
+          veins, broken apertures and living folds. Real domain deformation
+          comes BEFORE geometry; palette-fed structural color comes AFTER.
+          Inspired by the source shader's symbolic G₂ grammar, not a
+          literal seven-dimensional holonomy simulation.
+        </p>
+        <Select label="Torsion membrane organism" value={state.g2Mode}
+          onChange={mode=>history.change(s=>({...s,g2Mode:mode,
+            g2Amount:Math.max(s.g2Amount,65)}))}>
+          {g2Modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </Select>
+        <div className="preset-row">
+          <Select label="G₂ membrane mutation" value={g2Preset}
+            onChange={setG2Preset}>
+            {g2Presets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+          </Select>
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>applyG2Preset(s,g2Preset))}>
+            Activate membrane recipe
+          </button>
+        </div>
+        <Parameter label="Membrane presence" name="g2Amount" history={history}/>
+        {state.g2Amount>0&&<>
+          <Parameter label="Chamber / field scale" name="g2Scale" history={history}/>
+          <Parameter label="Bend underlying geometry" name="g2Warp" history={history}/>
+          <Parameter label="Torsion motion" name="g2Motion" history={history}/>
+          <Parameter label="Dual-field strain" name="g2Torsion" history={history}/>
+          <Parameter label="Rupture / aperture intensity" name="g2Fracture" history={history}/>
+          <Parameter label="Embossed photonic veins" name="g2Veins" history={history}/>
+          <Parameter label="Wet structural shine" name="g2Sheen" history={history}/>
+          <Parameter label="Palette phase" name="g2Hue" history={history}/>
+          <Parameter label="Topological variation" name="g2Variation" history={history}/>
+          <Parameter label="Prismatic spectral divergence" name="g2Dispersion" history={history}/>
+        </>}
+        <div className="pane-actions">
+          <button type="button" className="button secondary"
+            onClick={()=>history.change(s=>shuffleG2(s))}>
+            <Shuffle size={13}/> Shuffle G₂ membrane
+          </button>
+          <button type="button" className="button secondary"
+            disabled={state.g2Amount<=0}
+            onClick={()=>history.change(hideG2)}>
+            <EyeOff size={13}/> Hide membrane
+          </button>
+        </div>
+        <p className="control-note">
+          Opt-in only. All six recipes stay editable, and Surprise Me can
+          breed the material into other active shader layers.
+          Preview, PNG, GIF and MP4 use the same shader implementation.
+        </p>
+      </Section>
       <Section id="crossbreed-lab" history={history}>
         <p className="control-note">
           Breed the previous Shader Vault structures together. This engine

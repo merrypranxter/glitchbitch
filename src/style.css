@@ -968,6 +968,25 @@ kbd {
   border-radius: 0;
   background: #101012;
 }
+.render-parity-warning {
+  position: absolute;
+  z-index: 6;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  max-width: 450px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 194, 85, 0.65);
+  background: rgba(20, 14, 23, 0.9);
+  color: #ffe7be;
+  border-radius: 6px;
+  font-size: 11px;
+  line-height: 1.45;
+  pointer-events: none; /* do not steal mobile drawing gestures */
+}
+.render-parity-warning strong {
+  color: #fff2d9;
+}
 .render-error {
   position: absolute;
   inset: 0;

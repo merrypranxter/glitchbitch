@@ -5,6 +5,7 @@ import { hasVisibleLettering, paintLettering, waitForLetteringFonts } from "./te
 import {loopClosureFrames,loopClosureMix,weftRevealRects,irisRevealRadius,
   quiltReassemblyTiles,clockworkSweep,crystalBloomDiamonds} from "./loop-closure.js";
 import {createPlaybackFrames,validateBoomerangCache} from "./boomerang-playback.js";
+import {webglReadbackView,flipRgbaRowsInPlace} from "./frame-buffer-memory.js";
 
 export function dimensions(ratio, longEdge) {
   const r = ratios.find((x) => x.id === ratio)?.value || 1;
@@ -153,8 +154,10 @@ function createFrameWorkspace(state, timeline, size, signal,
   try { renderer = createRenderer(canvas,{exactEffects:true}); }
   catch (e) { capture.width = capture.height = 1; throw e; }
   const frame = ctx.createImageData(size.width, size.height);
-  const bytes = new Uint8Array(size.width * size.height * 4);
-  const stride = size.width * 4;
+  // readPixels writes directly into ImageData's existing allocation.
+  // Keep only a single scanline scratch instead of another full 4K buffer.
+  const bytes=webglReadbackView(frame);
+  const rowBuffer=new Uint8Array(size.width*4);
   const lettered = hasVisibleLettering(state);
   const closureFrames=loopClosureFrames(loopMode,loopBlendSeconds,fps,frameCount);
   // A single additional opaque canvas holds the exact FIRST composited
@@ -175,8 +178,7 @@ function createFrameWorkspace(state, timeline, size, signal,
       throw artworkParityError("GPU context lost during video capture");
     await waitForGraphics(renderer,signal);
     renderer.readFrame(bytes);
-    for(let y=0;y<size.height;y++)
-      frame.data.set(bytes.subarray((size.height-1-y)*stride,(size.height-y)*stride), y*stride);
+    flipRgbaRowsInPlace(bytes,size.width,size.height,rowBuffer);
     ctx.putImageData(frame,0,0);
     if (lettered) paintLettering(ctx, state, frameClock, size.width, size.height);
     const index=Math.min(frameCount-1,Math.max(0,Math.round(seconds*fps)));

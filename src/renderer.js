@@ -2,6 +2,7 @@ import { appearanceGLSL } from "./appearance.js";
 import {structuralOpticsModes} from "./structural-thread-optics.js";
 import { artworkParityError } from "./export-parity.js";
 import { geometryGLSL } from "./geometry.js";
+import {createSchlierenPass} from "./schlieren-pass.js";
 import {hexagramGLSL} from "./hexagram-terraces.js";
 import { motionGLSL } from "./motion.js";
 import { feedbackVertex, feedbackFragment, feedbackDisplayFragment } from "./feedback.js";
@@ -587,6 +588,14 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     return tex;
   }
+  // Lazy: old recipes don't allocate a lens shader or an extra texture.
+  let schlieren=null,schlierenUnavailable=false;
+  function glassPass(){
+    if(!schlieren)schlieren=createSchlierenPass({
+      gl,gl2,vertex,compile,createTexture:createMemoryTexture,assertGl:assertMemoryGl
+    });
+    return schlieren;
+  }
   function memoryProgram() {
     if (memoryShader) return memoryShader;
     const vs = gl2 ? "#version 300 es\n" +
@@ -674,7 +683,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       gl.bindTexture(gl.TEXTURE_2D,null);
     }
   }
-  function compositeFeedback(s,timeline,w,h) {
+  function compositeFeedback(s,timeline,w,h,withSchlieren=false) {
     const shader=memoryShader;
     const uniform=(name)=>{
       if(!shader.uniforms.has(name))
@@ -712,18 +721,31 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       gl.uniform1f(uniform("hasMemory"),memory.valid?1:0);
       gl.drawArrays(gl.TRIANGLES,0,6);
       assertMemoryGl("GPU history composite draw failed");
-      // Present the EXACT composited texture. No copy from the default
-      // framebuffer, no GPU→CPU readback and no lossy proxy render.
-      gl.bindFramebuffer(gl.FRAMEBUFFER,null);
-      gl.viewport(0,0,w,h);
-      gl.useProgram(shader.displayProgram);
-      gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D,null);
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D,memory.history[writeIndex]);
-      gl.uniform1i(displayUniform("outputTex"),0);
-      gl.drawArrays(gl.TRIANGLES,0,6);
-      assertMemoryGl("GPU history presentation draw failed");
+      // Sample the ACTUAL finished frame-memory texture. Do not add another
+      // full-resolution FBO, and never sample the texture being written.
+      if(withSchlieren){
+        try{
+          glassPass().present(memory.history[writeIndex],s,timeline,w,h);
+        }catch(error){
+          if(exactEffects)throw artworkParityError(
+            "Schlieren glass could not present the complete artwork",error);
+          schlierenUnavailable=true;
+          console.warn("Schlieren unavailable; keeping complete frame-memory art.",error);
+        }
+      }
+      if(!withSchlieren || schlierenUnavailable){
+        // Existing legacy memory presentation remains unchanged.
+        gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+        gl.viewport(0,0,w,h);
+        gl.useProgram(shader.displayProgram);
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D,null);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D,memory.history[writeIndex]);
+        gl.uniform1i(displayUniform("outputTex"),0);
+        gl.drawArrays(gl.TRIANGLES,0,6);
+        assertMemoryGl("GPU history presentation draw failed");
+      }
       memory.readIndex=writeIndex;
       memory.valid=true;
     } finally {
@@ -1464,6 +1486,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       const hasLettering = false;
       const hasMemoryEffects = (s.afterimage > 0 || s.datamosh > 0) && !memoryDisabled;
       let drawWithMemory = false;
+      let drawWithSchlieren = s.schlierenAmount>0 && !schlierenUnavailable;
       if (hasMemoryEffects) {
         try {
           prepareMemory(width, height);
@@ -1483,7 +1506,22 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       } else if (memory) {
         memory.valid = false;
       }
-      gl.bindFramebuffer(gl.FRAMEBUFFER, drawWithMemory ? memory.fbo : null);
+      // If feedback exists, it already owns a full-effects texture.
+      // Otherwise a single extra RGBA8 texture captures the main scene.
+      if(drawWithSchlieren && !drawWithMemory){
+        try{glassPass().prepareBuffer(width,height);}
+        catch(error){
+          if(exactEffects)throw artworkParityError(
+            "Schlieren source texture failed to initialize",error);
+          schlierenUnavailable=true;
+          drawWithSchlieren=false;
+          console.warn("Schlieren unavailable; keeping original artwork.",error);
+        }
+      }
+      if((!drawWithSchlieren || drawWithMemory) && schlieren)
+        schlieren.releaseBuffer();
+      gl.bindFramebuffer(gl.FRAMEBUFFER,drawWithMemory ? memory.fbo :
+        drawWithSchlieren ? glassPass().prepareBuffer(width,height).framebuffer : null);
       gl.viewport(0, 0, width, height);
       gl.useProgram(active.program);
       gl.uniform2f(loc("res"), width, height);
@@ -1834,7 +1872,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
           // Diagnose an offscreen *scene* render error separately from the
           // feedback and presentation draws; never blame the history copy.
           assertMemoryGl("GPU source scene draw failed");
-          compositeFeedback(s, timeline, width, height);
+          compositeFeedback(s, timeline, width, height, drawWithSchlieren);
           lastMemoryTime = timeline.time;
           lastMemoryColorTime = timeline.colorTime;
         } catch (e) {
@@ -1848,6 +1886,23 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
           memoryDisabled = true;
           releaseMemory();
           console.warn("GPU frame-memory pass failed; using original renderer.", e);
+        }
+      }
+      if(!drawWithMemory && drawWithSchlieren){
+        try{
+          assertMemoryGl("Schlieren scene draw failed");
+          glassPass().present(
+            glassPass().prepareBuffer(width,height).texture,s,timeline,width,height);
+        }catch(error){
+          if(exactEffects)throw artworkParityError(
+            "Schlieren glass failed to refract the full artwork",error);
+          schlierenUnavailable=true;
+          schlieren?.releaseBuffer();
+          console.warn("Schlieren failed; presenting original intact pixels.",error);
+          gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+          gl.viewport(0,0,width,height);
+          gl.useProgram(active.program);
+          gl.drawArrays(gl.TRIANGLES,0,6);
         }
       }
       // Text is painted in the independent Canvas2D compositing layer, not WebGL.
@@ -1875,6 +1930,8 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
     destroy(release = false) {
       if (fence) gl.deleteSync(fence);
       releaseMemory();
+      schlieren?.destroy();
+      schlieren=null;
       releaseBiology();
       releaseLettering();
       releaseSemanticGlyph();

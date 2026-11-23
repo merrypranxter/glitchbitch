@@ -3,9 +3,10 @@
 // Deliberately does not encode, decode or certify MP4/GIF frame accuracy.
 import {createRenderer} from "./renderer.js";
 import {clockAt,waitForGraphics} from "./export.js";
+import {playbackTimeForMediaTime} from "./boomerang-playback.js";
 import {artworkParityError} from "./export-parity.js";
 
-export const STRESS_OFFSETS_SECONDS=[0,.4,1.1,2.15,3.3];
+export const STRESS_FRAME_FRACTIONS=[0,.17,.43,.71,.95];
 const round=v=>Math.round(v*10)/10;
 
 function validateSize(size){
@@ -55,18 +56,26 @@ export function summarizeStressSamples(samples,fps=30){
  * caller must not infer actual GPU performance from it.
  */
 export async function runShaderStressPreflight(state,timeline,size,{
-  fps=30,signal,onSample=()=>{},
+  fps=30,duration=6,playbackMode="Forward",signal,onSample=()=>{},
   createCanvas=()=>document.createElement("canvas"),
   createGpuRenderer=createRenderer,awaitGpu=waitForGraphics,
   now=()=>performance.now()
 }={}){
   validateSize(size);
+  if(!Number.isFinite(duration)||duration<1||duration>30)
+    throw Error("Shader stress test duration must be 1–30 seconds.");
+  if(!Number.isInteger(fps)||fps<10||fps>60)
+    throw Error("Shader stress test fps must be 10–60.");
   assertPresent(signal);
   if(!state||!timeline)throw Error("A recipe and timeline are required.");
   const canvas=createCanvas();
   let renderer=null;
   const measured=[];
-  const offsets=STRESS_OFFSETS_SECONDS;
+  const frameCount=Math.round(duration*fps);
+  const sampledFrames=STRESS_FRAME_FRACTIONS.map(f=>
+    Math.min(frameCount-1,Math.round((frameCount-1)*f)));
+  const offsets=sampledFrames.map(index=>
+    playbackTimeForMediaTime(index/fps,frameCount,fps,playbackMode));
   try{
     renderer=createGpuRenderer(canvas,{exactEffects:true});
     if(!renderer||typeof renderer.draw!=="function"||
@@ -90,7 +99,7 @@ export async function runShaderStressPreflight(state,timeline,size,{
     return {
       type:"glitchbitch-shader-stress-preflight",
       version:1,
-      size:{...size},fps,backend,
+      size:{...size},fps,duration,playbackMode,backend,
       frameBufferMiB:rgbaFrameMiB(size),
       ...summarizeStressSamples(measured,fps),
       // No promise that timings imply export fidelity or codec availability.
@@ -98,7 +107,7 @@ export async function runShaderStressPreflight(state,timeline,size,{
         ?"Exact-effect shader draw through WebGL2 GPU fence, no video encoding"
         :"CPU submission/readiness timing only; GPU completion cannot be measured here",
       encodedOutputChecked:false,
-      explanation:"Four distinct exact-effect frames after warm-up; not a sustained benchmark, encoder test, decoded-file comparison or guarantee of FPS."
+      explanation:"Four sampled exact-effect source frames after warm-up, matched to selected clip duration and direction; not a sustained benchmark, encoder test, decoded-file comparison or guarantee of FPS."
     };
   }finally{
     try{renderer?.destroy(true);}finally{

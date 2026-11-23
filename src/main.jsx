@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Asterisk,
+  FilePlus2,
   Download,
   Shuffle,
   Dices,
@@ -49,6 +50,7 @@ import { requestReveal } from "./components/Controls";
 import { engines, engineInfo, ratios, parseDocument, randomize } from "./data";
 import { fullWeirdShuffle } from "./ecosystem-randomizer.js";
 import useHistory from "./useHistory";
+import {createNewCanvas} from "./new-canvas.js";
 import {
   loadDraft,
   saveDraft,
@@ -254,6 +256,33 @@ function App() {
     window.addEventListener("keydown", key);
     return () => window.removeEventListener("keydown", key);
   }, []);
+  function confirmNewCanvas() {
+    // The native modal explicitly required a second, conscious tap.
+    // Reset the document and every editing clock; never touch saved works.
+    const fresh=createNewCanvas();
+    history.reset(fresh.state);
+    setTitle(fresh.title);
+    timelineRef.current={...fresh.timeline};
+    setTimeline({...fresh.timeline});
+    setStatus({});
+    setSelected(null);
+    setTool("Paint");
+    setHandles(false);
+    setLocks({engine:false,color:false});
+    setFocus(false);
+    setPage("Studio");
+    setPlaying(!matchMedia("(prefers-reduced-motion: reduce)").matches);
+    setModal(null);
+    // Persist immediately, not just on the next autosave timer, so a
+    // subsequent reload cannot revive the discarded old in-progress draft.
+    try {
+      saveDraft(fresh.state,fresh.title,fresh.timeline);
+    } catch {
+      toast("New canvas loaded. Storage is unavailable; export a recipe to keep it.");
+      return;
+    }
+    toast("Fresh starter canvas. Original seed, palette, effects and clocks restored.");
+  }
   function surprise(mutate = false) {
     history.change((s) => randomize(s, locks, mutate));
     toast(
@@ -706,6 +735,16 @@ function App() {
                   Lookbook <ArrowUpRight size={12} />
                 </span>
               </button>
+              <button
+                type="button"
+                className="new-canvas-button"
+                title="New Canvas — restore the original starter after confirmation"
+                aria-label="New Canvas (confirmation required)"
+                onClick={() => setModal("new-canvas")}
+              >
+                <FilePlus2 size={14} />
+                <span>New Canvas</span>
+              </button>
               <span>
                 {status.width && `${status.width} × ${status.height}`}
               </span>
@@ -859,6 +898,35 @@ function App() {
         ref={fileRef}
         onChange={importRecipe}
       />
+      {modal === "new-canvas" && (
+        <Modal
+          title="Start a NEW CANVAS?"
+          subtitle="Return to Glitchbitch's original starter artwork."
+          onClose={() => setModal(null)}
+        >
+          <div className="new-canvas-confirm">
+            <p>
+              This replaces the current unsaved canvas, including its strokes,
+              effects, palette, text and animation position, with the exact
+              original starter. The canvas undo/redo history starts fresh.
+            </p>
+            <p>
+              <strong>Your Saved works vault and custom palettes will not be deleted.</strong>
+              {" "}Save or export your current artwork first if you want to keep it.
+            </p>
+            <div className="new-canvas-confirm-actions">
+              <button className="button secondary" type="button"
+                onClick={() => setModal(null)}>
+                Cancel — keep my art
+              </button>
+              <button className="button primary" type="button"
+                onClick={confirmNewCanvas}>
+                <FilePlus2 size={15}/> Yes, new canvas
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
       {modal === "export" && (
         <ExportDialog
           state={state}

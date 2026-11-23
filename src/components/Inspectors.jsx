@@ -55,6 +55,8 @@ import {alchemyModes,alchemyFamilies,alchemyDescriptions,alchemyPresets,
 import {schlierenModes,schlierenPresets,applySchlierenPreset,shuffleSchlieren,hideSchlieren} from "../schlieren-glass.js";
 import {injuryModes,injuryFamilies,injuryDescriptions,injuryPresets,
   applyInjuryPreset,shuffleInjury,hideInjury} from "../print-spectrum-injury.js";
+import {spxModes,spxPresets,applySpxPreset,shuffleSpx,hideSpx}
+  from "../subpixel-moire-wave11.js";
 import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   xenoVascularSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies, remixFreshFilaments,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
@@ -651,6 +653,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [photonPreset,setPhotonPreset]=React.useState(photonPresets[0].name);
   const [alchemyPreset,setAlchemyPreset]=React.useState(alchemyPresets[0].name);
   const [injuryPreset,setInjuryPreset]=React.useState(injuryPresets[0].name);
+  const [spxPreset,setSpxPreset]=React.useState(spxPresets[0].name);
   const [schlierenPreset,setSchlierenPreset]=React.useState(schlierenPresets[0].name);
   const [backdropPreset,setBackdropPreset]=React.useState(backdropPresets[0].name);
   const [filamentPreset,setFilamentPreset]=React.useState(filamentPresets[0].name);
@@ -2838,6 +2841,56 @@ export function EffectsInspector({ history, onTool, tool }) {
     screen: <>
       <Parameter label="Phosphor subpixels" name="phosphor" history={history} />
       <Parameter label="Broadcast bars" name="broadcast" history={history} />
+    </>,
+    "subpixel-moire": <>
+      <p className="control-note">
+        Original Shader Vault: two rotating RGB shadowmasks interfere.
+        Cross-channel collisions form secondary-color beats rather than
+        another screen-grain overlay. From silky CRT to retinal warfare.
+      </p>
+      <Select label="Subpixel interference species" value={s.spxMode}
+        onChange={mode=>history.change(x=>({...x,spxMode:mode,
+          spxAmount:Math.max(x.spxAmount,60)}))}>
+        {spxModes.map(mode=><option value={mode} key={mode}>{mode}</option>)}
+      </Select>
+      <div className="preset-row">
+        <Select label="Subpixel recipe" value={spxPreset}
+          onChange={setSpxPreset}>
+          {spxPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applySpxPreset(x,spxPreset))}>
+          Apply interference recipe
+        </button>
+      </div>
+      <Parameter label="Subpixel interference presence" name="spxAmount" history={history}/>
+      {s.spxAmount>0&&<>
+        <Parameter label="Triad grid density" name="spxDensity" history={history}/>
+        <Parameter label="Grid frequency mismatch" name="spxMismatch" history={history}/>
+        <Parameter label="Cross-grid tilt" name="spxAngle" history={history}/>
+        <Parameter label="Slow subpixel drift" name="spxDrift" history={history}/>
+        <Parameter label="Geometric screen curvature" name="spxCurvature" history={history}/>
+        <Parameter label="Retinal flicker strength" name="spxFlicker" history={history}/>
+        <Parameter label="Chromatic cross-product strength" name="spxCross" history={history}/>
+        <Parameter label="Screen material relief" name="spxRelief" history={history}/>
+        <Parameter label="Palette interference hue" name="spxHue" history={history}/>
+        <Parameter label="Color bleed / opacity" name="spxBleed" history={history}/>
+        <Parameter label="Pattern variation" name="spxVariation" history={history}/>
+      </>}
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleSpx(x))}>
+          <Shuffle size={13}/> Shuffle subpixels
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.spxAmount<=0} onClick={()=>history.change(hideSpx)}>
+          <EyeOff size={13}/> Hide interference
+        </button>
+      </div>
+      <p className="control-note">
+        Off on old artwork. PNG/GIF/MP4 and preview use the same material,
+        and unsupported GPUs get a visible warning, not a silent export downgrade.
+      </p>
     </>,
     print: <>
       <Parameter label="Bayer dither" name="dither" history={history} />

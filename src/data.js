@@ -23,6 +23,7 @@ import {qdModes,qdOrders,qdControls} from "./quasicrystal-dissolution.js";
 import {velvetModes,crochetModes,velvetControls,crochetControls} from "./living-textiles-wave5.js";
 import {breedModes,breedControls,breedRequiredParents} from "./crossbreed-lab.js";
 import {g2Modes,g2Controls} from "./g2-torsion-membranes.js";
+import {spxModes,spxControls} from "./subpixel-moire-wave11.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
 import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
@@ -386,6 +387,18 @@ export const numericRanges = {
   microDensity: [0, 100],
   microHue: [0, 100],
   microVariation: [0, 100],
+  spxAmount: [0, 100],
+  spxDensity: [0, 100],
+  spxMismatch: [0, 100],
+  spxAngle: [0, 100],
+  spxDrift: [0, 100],
+  spxCurvature: [0, 100],
+  spxFlicker: [0, 100],
+  spxCross: [0, 100],
+  spxRelief: [0, 100],
+  spxHue: [0, 100],
+  spxBleed: [0, 100],
+  spxVariation: [0, 100],
   filamentAmount: [0, 100],
   filamentScale: [0, 100],
   filamentDensity: [0, 100],
@@ -845,6 +858,19 @@ export const initial = {
   microDensity: 57,
   microHue: 48,
   microVariation: 50,
+  spxMode: "Shadowmask Silk",
+  spxAmount: 0,
+  spxDensity: 58,
+  spxMismatch: 55,
+  spxAngle: 41,
+  spxDrift: 40,
+  spxCurvature: 48,
+  spxFlicker: 25,
+  spxCross: 68,
+  spxRelief: 71,
+  spxHue: 49,
+  spxBleed: 67,
+  spxVariation: 48,
   filamentSpecies: "Fivefold brocade",
   filamentAmount: 0,
   filamentScale: 54,
@@ -1210,6 +1236,7 @@ export function validateRecipe(input) {
     compositionMode: compositionModes,
     backdropMode: backdropModes,
     microMode: microModes,
+    spxMode: spxModes,
     substanceMode: substanceModes,
     photonSpecies: photonSpecies,
     alchemyMode: alchemyModes,
@@ -1634,6 +1661,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       ...crochetControls,
       ...breedControls,
       ...g2Controls,
+      ...spxControls,
       "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
       "tunnelAperture","tunnelVariation",
       "motionAmount","motionRate","lightMotion","bioAmount","bioFeed","bioKill",
@@ -1732,6 +1760,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key.startsWith("hcr") && state.hcrAmount<=0)continue;
       if(key.startsWith("breed") && state.breedAmount<=0)continue;
       if(key.startsWith("g2") && state.g2Amount<=0)continue;
+      if(key.startsWith("spx") && state.spxAmount<=0)continue;
       if(key.startsWith("semanticGravity") && !hasSemanticLettering(state))continue;
       // Do not silently activate optical coats on previously saved artwork.
       if(key.startsWith("filamentOptics") && (state.filamentAmount<=0 ||
@@ -1959,6 +1988,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.microDensity=20+random()*74;
   s.microHue=11+random()*87;
   s.microVariation=random()*100;
+  s.spxMode=sample(spxModes,random);
+  s.spxAmount=random()<.43?35+random()*65:0;
+  for(const key of spxControls)if(key!=="spxAmount")s[key]=random()*100;
   s.filamentSpecies=different(filamentSpecies,state.filamentSpecies,random);
   s.filamentAmount=random()<.64?39+random()*58:0;
   s.filamentScale=20+random()*78;

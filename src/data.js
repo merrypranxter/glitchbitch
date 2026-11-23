@@ -19,6 +19,7 @@ import {semanticGravityModes,hasSemanticLettering} from "./semantic-gravity.js";
 import {structuralOpticsModes} from "./structural-thread-optics.js";
 import {schlierenModes} from "./schlieren-glass.js";
 import {polesModes} from "./complex-poles.js";
+import {qdModes,qdOrders,qdControls} from "./quasicrystal-dissolution.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
 import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
@@ -262,6 +263,18 @@ export const numericRanges = {
   polesGlow: [0, 100],
   polesHue: [0, 100],
   polesVariation: [0, 100],
+  qdAmount: [0, 100],
+  qdDissolve: [0, 100],
+  qdAuto: [0, 100],
+  qdRate: [0, 100],
+  qdDensity: [0, 100],
+  qdTear: [0, 100],
+  qdPixel: [0, 100],
+  qdWarp: [0, 100],
+  qdFiligree: [0, 100],
+  qdHue: [0, 100],
+  qdVariation: [0, 100],
+  qdEdge: [0, 100],
   tunnelTwist: [0, 100],
   tunnelDepth: [0, 100],
   tunnelRidges: [0, 100],
@@ -642,6 +655,20 @@ export const initial = {
   polesGlow: 73,
   polesHue: 43,
   polesVariation: 34,
+  qdMode: "Crystal Clockwork",
+  qdOrder: "Sevenfold",
+  qdAmount: 0,
+  qdDissolve: 35,
+  qdAuto: 0,
+  qdRate: 55,
+  qdDensity: 53,
+  qdTear: 65,
+  qdPixel: 52,
+  qdWarp: 62,
+  qdFiligree: 82,
+  qdHue: 42,
+  qdVariation: 36,
+  qdEdge: 79,
   tunnelMode: "Infinite spiral",
   tunnelTwist: 52,
   tunnelDepth: 61,
@@ -1077,6 +1104,8 @@ export function validateRecipe(input) {
     motionMode: motionModes,
     schlierenMode: schlierenModes,
     polesMode: polesModes,
+    qdMode: qdModes,
+    qdOrder: qdOrders,
     tunnelMode: tunnelModes,
     stereoShape: stereoShapes,
     wiggleMode: wiggleModes,
@@ -1509,6 +1538,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "polesAmount","polesScale","polesWarp","polesOrbit","polesMotion",
       "polesSoftness","polesZeroPull","polesFiligree","polesGlow",
       "polesHue","polesVariation",
+      ...qdControls,
       "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
       "tunnelAperture","tunnelVariation",
       "motionAmount","motionRate","lightMotion","bioAmount","bioFeed","bioKill",
@@ -1602,6 +1632,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key.startsWith("hexagram") && state.hexagramAmount<=0)continue;
       if(key.startsWith("schlieren") && state.schlierenAmount<=0)continue;
       if(key.startsWith("poles") && state.polesAmount<=0)continue;
+      if(key.startsWith("qd") && state.qdAmount<=0)continue;
       if(key.startsWith("semanticGravity") && !hasSemanticLettering(state))continue;
       // Do not silently activate optical coats on previously saved artwork.
       if(key.startsWith("filamentOptics") && (state.filamentAmount<=0 ||
@@ -1678,6 +1709,12 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.schlierenAmount=random()<.28?40+random()*60:0;
   s.polesMode=sample(polesModes,random);
   s.polesAmount=random()<.34?40+random()*60:0;
+  s.qdMode=sample(qdModes,random);
+  s.qdOrder=sample(qdOrders,random);
+  s.qdAmount=random()<.34?40+random()*60:0;
+  for(const key of qdControls)if(key!=="qdAmount"){
+    s[key]=key==="qdAuto"?(random()<.5?0:30+random()*70):random()*100;
+  }
   s.rotation=random()*360;
   s.symmetry=sample([1,1,2,3,4,5,6,8,10,12],random);
   s.mirror=random()<.43;s.bloom=random()<.8;s.posterize=random()<.27;s.invert=random()<.12;

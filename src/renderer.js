@@ -1362,6 +1362,9 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
   );
   return {
     maxSize,
+    // WebGL1 has no fenceSync, so readiness cannot certify GPU completion.
+    // Never advertise submission timing as a GPU benchmark on WebGL1.
+    backend:gl2?"webgl2-fence":"webgl1-no-fence",
     // A failed optional shader is never silently presented as the complete
     // artwork. This describes what the preview actually omitted, so export
     // parity failures are visible before the user spends minutes encoding.

@@ -25,6 +25,7 @@ import {breedModes,breedControls,breedRequiredParents} from "./crossbreed-lab.js
 import {g2Modes,g2Controls} from "./g2-torsion-membranes.js";
 import {spxModes,spxControls} from "./subpixel-moire-wave11.js";
 import {psModes,psControls} from "./prismatic-scale-matrix-wave12.js";
+import {kdModes,kdControls} from "./kleinian-dither-wave13.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
 import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
@@ -413,6 +414,19 @@ export const numericRanges = {
   psSheen: [0, 100],
   psEdge: [0, 100],
   psDomain: [0, 100],
+  kdAmount: [0, 100],
+  kdScale: [0, 100],
+  kdLayers: [0, 100],
+  kdInversion: [0, 100],
+  kdSpin: [0, 100],
+  kdParallax: [0, 100],
+  kdDither: [0, 100],
+  kdChroma: [0, 100],
+  kdHue: [0, 100],
+  kdInk: [0, 100],
+  kdGlow: [0, 100],
+  kdWarp: [0, 100],
+  kdVariation: [0, 100],
   filamentAmount: [0, 100],
   filamentScale: [0, 100],
   filamentDensity: [0, 100],
@@ -899,6 +913,20 @@ export const initial = {
   psSheen: 82,
   psEdge: 68,
   psDomain: 48,
+  kdMode: "Schottky Lace Press",
+  kdAmount: 0,
+  kdScale: 57,
+  kdLayers: 61,
+  kdInversion: 64,
+  kdSpin: 45,
+  kdParallax: 55,
+  kdDither: 74,
+  kdChroma: 66,
+  kdHue: 49,
+  kdInk: 68,
+  kdGlow: 70,
+  kdWarp: 52,
+  kdVariation: 42,
   filamentSpecies: "Fivefold brocade",
   filamentAmount: 0,
   filamentScale: 54,
@@ -1266,6 +1294,7 @@ export function validateRecipe(input) {
     microMode: microModes,
     spxMode: spxModes,
     psMode: psModes,
+    kdMode: kdModes,
     substanceMode: substanceModes,
     photonSpecies: photonSpecies,
     alchemyMode: alchemyModes,
@@ -1692,6 +1721,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       ...g2Controls,
       ...spxControls,
       ...psControls,
+      ...kdControls,
       "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
       "tunnelAperture","tunnelVariation",
       "motionAmount","motionRate","lightMotion","bioAmount","bioFeed","bioKill",
@@ -1792,6 +1822,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key.startsWith("g2") && state.g2Amount<=0)continue;
       if(key.startsWith("spx") && state.spxAmount<=0)continue;
       if(key.startsWith("ps") && state.psAmount<=0)continue;
+      if(key.startsWith("kd") && state.kdAmount<=0)continue;
       if(key.startsWith("semanticGravity") && !hasSemanticLettering(state))continue;
       // Do not silently activate optical coats on previously saved artwork.
       if(key.startsWith("filamentOptics") && (state.filamentAmount<=0 ||
@@ -2025,6 +2056,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.psMode=sample(psModes,random);
   s.psAmount=random()<.41?38+random()*62:0;
   for(const key of psControls)if(key!=="psAmount")s[key]=random()*100;
+  s.kdMode=sample(kdModes,random);
+  s.kdAmount=random()<.38?39+random()*61:0;
+  for(const key of kdControls)if(key!=="kdAmount")s[key]=random()*100;
   s.filamentSpecies=different(filamentSpecies,state.filamentSpecies,random);
   s.filamentAmount=random()<.64?39+random()*58:0;
   s.filamentScale=20+random()*78;

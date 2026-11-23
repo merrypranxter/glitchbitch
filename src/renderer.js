@@ -11,6 +11,7 @@ import {breedModes,breedActive,breedGLSL} from "./crossbreed-lab.js";
 import {g2Modes,g2GLSL} from "./g2-torsion-membranes.js";
 import {spxModes,spxGLSL} from "./subpixel-moire-wave11.js";
 import {psModes,psGLSL} from "./prismatic-scale-matrix-wave12.js";
+import {kdModes,kdGLSL} from "./kleinian-dither-wave13.js";
 import { motionGLSL } from "./motion.js";
 import { feedbackVertex, feedbackFragment, feedbackDisplayFragment } from "./feedback.js";
 import { createBiology, BIO_SIZE } from "./biology.js";
@@ -81,6 +82,7 @@ ${bioGLSL}
 /* G2_MODULE */
 /* SPX_MODULE */
 /* PS_MODULE */
+/* KD_MODULE */
 float field(vec2 p,int kind){float t=time*.3,f=0.;
 if(kind==0){for(int i=0;i<5;i++){float n=float(i)+1.;p+=warp*.32*vec2(sin(p.y*n+t/n),cos(p.x*n-t/n));f+=sin(p.x*n+cos(p.y*n+t))/n;}f=f*.25+length(p)*.12;}
 else if(kind==1){f=sin(length(p-vec2(sin(t),cos(t)))*12.)*sin(length(p+vec2(cos(t*.7),sin(t*.8)))*13.);f=f*.4+length(p)*.15;}
@@ -183,6 +185,7 @@ float v=composed(p);/* HEXAGRAM_VALUE */vec3 col=palette(phaseOf(v,uv,source));f
 /* CROSSBREED_POST */
 /* G2_POST */
 /* PS_POST */
+/* KD_POST */
 col=animateLight(col,uv,v);
 col=stainWithBiology(col,uv,p);
 /* LETTERING_POST */
@@ -229,12 +232,12 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
     injuryUnavailable = false, hexagramUnavailable = false, polesUnavailable = false,
     qdUnavailable = false, velvetUnavailable = false, crochetUnavailable = false,
     breedUnavailable = false, g2Unavailable = false, spxUnavailable = false,
-    psUnavailable = false,
+    psUnavailable = false, kdUnavailable = false,
     fossilUnavailable = false,
     successionUnavailable = false, foodWebUnavailable = false;
   function compatibleShaderState(s){
     const source = stereoUnavailable ? safe2DSelection(s) : s;
-    if(!psUnavailable && !spxUnavailable && !g2Unavailable && !breedUnavailable && !velvetUnavailable && !crochetUnavailable && !qdUnavailable && !polesUnavailable && !hexagramUnavailable && !injuryUnavailable && !alchemyUnavailable &&
+    if(!kdUnavailable && !psUnavailable && !spxUnavailable && !g2Unavailable && !breedUnavailable && !velvetUnavailable && !crochetUnavailable && !qdUnavailable && !polesUnavailable && !hexagramUnavailable && !injuryUnavailable && !alchemyUnavailable &&
        !materialUnavailable && !typeShaderUnavailable &&
        !compositionUnavailable && !backdropUnavailable &&
        !microUnavailable && !substanceUnavailable && !wiggleUnavailable &&
@@ -257,6 +260,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       ...(g2Unavailable ? {g2Amount:0}:{}),
       ...(spxUnavailable ? {spxAmount:0}:{}),
       ...(psUnavailable ? {psAmount:0}:{}),
+      ...(kdUnavailable ? {kdAmount:0}:{}),
       ...(injuryUnavailable ? {injuryAmount:0}:{}),
       ...(alchemyUnavailable ? {alchemyAmount:0}:{}),
       ...(materialUnavailable ? {filmAmount:0,opalAmount:0,prismAmount:0,foilRelief:0}:{}),
@@ -824,6 +828,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       withG2 = s.g2Amount>0,
       withSpx = s.spxAmount>0,
       withPs = s.psAmount>0,
+      withKd = s.kdAmount>0,
       withLettering = false, // Lettering is a separate, fail-safe GPU compositing pass.
       withComposition = blended && s.compositionAmount>0,
       withBackdrop = s.backdropAmount>0,
@@ -886,7 +891,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       ),
       withStrange = (s.engine>=17 && s.engine<=19) ||
         (blended && s.secondaryEngine>=17 && s.secondaryEngine<=19),
-      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAdornment ? "trinket"+filamentAdornmentModes.indexOf(s.filamentAdornmentMode)+(withHybrid?"x"+filamentAdornmentModes.indexOf(s.filamentSecondAdornmentMode):"") : "bare-trinkets"}/${withMorph?"morph"+filamentMaterials.indexOf(s.filamentMorphTarget)+(withHybrid?"x"+filamentMaterials.indexOf(s.filamentSecondMorphTarget):""):"no-morph"}/${withContagion?"contagion"+filamentContagionModes.indexOf(s.filamentContagionMode):"no-contagion"}/${withNeural?"neural"+filamentNeuralModes.indexOf(s.filamentNeuralMode):"no-neural"}/${withPlastic?"plastic"+filamentPlasticModes.indexOf(s.filamentPlasticMode):"no-plastic"}/${withScars?"scars"+filamentScarModes.indexOf(s.filamentScarMode):"no-scars"}/${withRegen?"regen"+filamentRegenModes.indexOf(s.filamentRegenMode):"no-regen"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}/${withAlchemy ? "alchemy"+alchemyModes.indexOf(s.alchemyMode) : "no-alchemy"}/${withInjury ? "injury"+injuryModes.indexOf(s.injuryMode) : "no-injury"}/${withOptics ? "struct-opt"+(withOpticsA?structuralOpticsModes.indexOf(s.filamentOpticsMode):0)+"x"+(withOpticsB?structuralOpticsModes.indexOf(s.filamentSecondOpticsMode):0):"bare-optics"}/${withSemantic?"semantic-glyph":"no-semantic-glyph"}/${withHexagram?"hexagram":"no-hexagram"}/${withPoles?"complex-poles":"no-complex-poles"}/${withQd?"quasi-dissolve":"no-quasi-dissolve"}/${withVelvet?"velvet":"no-velvet"}/${withCrochet?"crochet":"no-crochet"}/${withBreed?"crossbreed":"no-crossbreed"}/${withG2?"g2-torsion":"no-g2"}/${withSpx?"subpixel-"+spxModes.indexOf(s.spxMode):"no-subpixel"}/${withPs?"prism-scales-"+psModes.indexOf(s.psMode):"no-prism-scales"}`;
+      key = `${s.engine}/${blended ? s.secondaryEngine : "off"}/${s.split > 0.1}/${withStereo ? "stereo" : "flat"}/${withMaterial ? "foil" : "plain"}/${withLettering ? "letters" : "unlettered"}/${withComposition ? "territories" : "full"}/${withBackdrop ? "backdrop"+backdropModes.indexOf(s.backdropMode) : "unbacked"}/${withMicro ? "micro"+microModes.indexOf(s.microMode) : "untextured"}/${withSubstance ? "substance"+substanceModes.indexOf(s.substanceMode) : "bare"}/${withPhoton ? `photon${photonSpecies.indexOf(s.photonSpecies)}` : "unlit"}/${withUnderlay ? `underlay${underlayModes.indexOf(s.underlayMode)}` : "bare-ground"}/${withFilament ? `filament${filamentSpecies.indexOf(s.filamentSpecies)}` : "unstitched"}/${withHybrid ? `hybrid${filamentSpecies.indexOf(s.filamentSecondSpecies)}` : "single"}/${withFilament ? `fiber${filamentMaterials.indexOf(s.filamentMaterial)}` : "barefiber"}/${withHybrid ? `fiber2${filamentMaterials.indexOf(s.filamentSecondMaterial)}` : "singlefiber"}/${withFiberDetail ? "fiber-detail" : "classic-fiber"}/${withStitch ? "sewing"+filamentStitchModes.indexOf(s.filamentStitchMode) : "still-loom"}/${withSculpt ? "relief"+filamentSculptModes.indexOf(s.filamentSculptMode) : "flat-thread"}/${withAdornment ? "trinket"+filamentAdornmentModes.indexOf(s.filamentAdornmentMode)+(withHybrid?"x"+filamentAdornmentModes.indexOf(s.filamentSecondAdornmentMode):"") : "bare-trinkets"}/${withMorph?"morph"+filamentMaterials.indexOf(s.filamentMorphTarget)+(withHybrid?"x"+filamentMaterials.indexOf(s.filamentSecondMorphTarget):""):"no-morph"}/${withContagion?"contagion"+filamentContagionModes.indexOf(s.filamentContagionMode):"no-contagion"}/${withNeural?"neural"+filamentNeuralModes.indexOf(s.filamentNeuralMode):"no-neural"}/${withPlastic?"plastic"+filamentPlasticModes.indexOf(s.filamentPlasticMode):"no-plastic"}/${withScars?"scars"+filamentScarModes.indexOf(s.filamentScarMode):"no-scars"}/${withRegen?"regen"+filamentRegenModes.indexOf(s.filamentRegenMode):"no-regen"}/${withAtmosphere ? `atmo${atmosphereModes.indexOf(s.atmoMode)}` : "no-atmo"}/${withAtmosphereB ? `atmoB${atmosphereModes.indexOf(s.atmoBMode)}blend${atmosphereBlendModes.indexOf(s.atmoBBlendMode)}` : "no-atmoB"}/${withHabitat ? `habA${atmosphereHabitats.indexOf(s.atmoMaskMode)}habB${atmosphereSecondHabitats.indexOf(s.atmoBMaskMode)}` : "no-habitat"}/${withCortex ? "cortex" : "no-cortex"}/${withSpore ? "spores" : "no-spores"}/${withSubstrate ? "substrate" : "no-substrate"}/${withSymbiosis ? "symbiosis" : "no-symbiosis"}/${withGene ? "bloodlines" : "no-bloodlines"}/${withSelection ? "survival" : "no-survival"}/${withApocalypse ? "apocalypse" : "no-apocalypse"}/${withFossil ? "fossils" : "no-fossils"}/${withSuccession ? "succession" : "no-succession"}/${withFoodWeb ? "food-web" : "no-food-web"}/${withWiggle ? "wiggle" : "still"}/${withAlchemy ? "alchemy"+alchemyModes.indexOf(s.alchemyMode) : "no-alchemy"}/${withInjury ? "injury"+injuryModes.indexOf(s.injuryMode) : "no-injury"}/${withOptics ? "struct-opt"+(withOpticsA?structuralOpticsModes.indexOf(s.filamentOpticsMode):0)+"x"+(withOpticsB?structuralOpticsModes.indexOf(s.filamentSecondOpticsMode):0):"bare-optics"}/${withSemantic?"semantic-glyph":"no-semantic-glyph"}/${withHexagram?"hexagram":"no-hexagram"}/${withPoles?"complex-poles":"no-complex-poles"}/${withQd?"quasi-dissolve":"no-quasi-dissolve"}/${withVelvet?"velvet":"no-velvet"}/${withCrochet?"crochet":"no-crochet"}/${withBreed?"crossbreed":"no-crossbreed"}/${withG2?"g2-torsion":"no-g2"}/${withSpx?"subpixel-"+spxModes.indexOf(s.spxMode):"no-subpixel"}/${withPs?"prism-scales-"+psModes.indexOf(s.psMode):"no-prism-scales"}/${withKd?"klein-dither-"+kdModes.indexOf(s.kdMode):"no-klein-dither"}`;
     if (programs.has(key)) {
       const cached = programs.get(key);
       programs.delete(key);
@@ -903,6 +908,9 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       source = source.replace("if(blend<.001)return a;", "return a;");
     // The offspring reuses existing parent shader diagnostics and never
     // evaluates an extra parent field or raymarch to cross them.
+    source=source.replace("/* KD_MODULE */",withKd ? kdGLSL : "");
+    source=source.replace("/* KD_POST */",withKd
+      ? "col=kdDress(col,uv,p,v);" : "");
     source=source.replace("/* PS_MODULE */",withPs ? psGLSL : "");
     source=source.replace("/* PS_POST */",withPs
       ? "col=psDress(col,uv,p,v);" : "");
@@ -1399,6 +1407,8 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
     fallbackNotice(state) {
       if(!state)return "";
       const missing=[];
+      if(kdUnavailable && state.kdAmount>0)
+        missing.push("Kleinian Dither Cathedral");
       if(psUnavailable && state.psAmount>0)
         missing.push("Prismatic Scale Matrix");
       if(spxUnavailable && state.spxAmount>0)
@@ -1486,7 +1496,10 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
           lastCompileError=e;
           // Preview may downgrade gracefully; exported art must NEVER be downgraded.
           if(exactEffects)throw artworkParityError("Full-effect shader failed to compile",e);
-          if(candidate.psAmount>0 && !psUnavailable){
+          if(candidate.kdAmount>0 && !kdUnavailable){
+            kdUnavailable=true;
+            console.warn("Kleinian Dither Cathedral exceeds this GPU; preserving other shader layers.",e);
+          }else if(candidate.psAmount>0 && !psUnavailable){
             psUnavailable=true;
             console.warn("Prismatic Scale Matrix exceeds this GPU; preserving all older art.",e);
           }else if(candidate.spxAmount>0 && !spxUnavailable){
@@ -1758,6 +1771,9 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "psAmount","psScale","psOverlap","psLift","psMotion","psFilm",
         "psDiffraction","psHue","psWarp","psVariation","psSheen",
         "psEdge","psDomain",
+        "kdAmount","kdScale","kdLayers","kdInversion","kdSpin",
+        "kdParallax","kdDither","kdChroma","kdHue","kdInk",
+        "kdGlow","kdWarp","kdVariation",
         "motionAmount",
         "motionRate",
         "lightMotion",
@@ -1892,6 +1908,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       gl.uniform1i(loc("g2Mode"),g2Modes.indexOf(s.g2Mode));
       gl.uniform1i(loc("spxMode"),spxModes.indexOf(s.spxMode));
       gl.uniform1i(loc("psMode"),psModes.indexOf(s.psMode));
+      gl.uniform1i(loc("kdMode"),kdModes.indexOf(s.kdMode));
       gl.uniform1i(loc("substrateMode"),substrateModes.indexOf(s.substrateMode));
       gl.uniform1i(loc("symbiosisMode"),symbiosisModes.indexOf(s.symbiosisMode));
       gl.uniform1i(loc("selectionMode"),selectionModes.indexOf(s.selectionMode));

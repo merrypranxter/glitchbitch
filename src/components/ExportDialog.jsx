@@ -19,6 +19,8 @@ import { canvasImageFiltersWork } from "../lettering-filter-fallback.js";
 import { exportBlobPixels, analyzeTextExportFrames,
   exportDiagnosticReport } from "../text-export-diagnostics.js";
 import {runShaderStressPreflight} from "../shader-stress-preflight.js";
+import {runChimeraAutopsy,makeAutopsyPlan,AUTOPSY_MAX_EDGE}
+  from "../chimera-autopsy.js";
 export default function ExportDialog({ state, title, timelineRef, onClose, onNotice, onExportBusy }) {
   const [tab,setTab]=useState("Image"),
     [longEdge,setLongEdge]=useState(2160),
@@ -47,6 +49,8 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     [motionAuditStage,setMotionAuditStage]=useState(""),
     [stressReport,setStressReport]=useState(null),
     [stressStage,setStressStage]=useState(""),
+    [autopsyReport,setAutopsyReport]=useState(null),
+    [autopsyStage,setAutopsyStage]=useState(""),
     [auditing,setAuditing]=useState(false);
   const controller=useRef(null), mounted=useRef(true), proofUrl=useRef(null), blendUrls=useRef([]),
     frameAuditUrls=useRef([]),motionAuditUrls=useRef([]),seamAuditUrls=useRef([]);
@@ -122,6 +126,44 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
     const {recipeAt,ratioAt,formatAt,...report}=stressReport;
     download(new Blob([JSON.stringify(report,null,2)],{type:"application/json"}),
       "glitchbitch-gpu-stress-"+state.seed+".json");
+  }
+  async function autopsy(){
+    if(busy||tab!=="Video")return;
+    const abort=new AbortController();
+    controller.current=abort;
+    const snapshot={...state,ratio},timeline={...timelineRef.current};
+    const selectedSize={...size},selectedFps=fps,selectedFormat=clipFormat,
+      selectedDuration=clipDuration,selectedPlayback=playbackMode;
+    setBusy(true);setAuditing(true);setError("");
+    setAutopsyReport(null);setAutopsyStage("Preparing non-destructive parent comparison…");
+    try{
+      // Safari must release the live preview before a second WebGL renderer.
+      onExportBusy?.(true);
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      const report=await runChimeraAutopsy(snapshot,timeline,selectedSize,{
+        fps:selectedFps,duration:selectedDuration,playbackMode:selectedPlayback,
+        signal:abort.signal,
+        onVariant:(done,total,label)=>{
+          if(mounted.current)setAutopsyStage("Autopsy "+done+" / "+total+": "+label);
+        }
+      });
+      if(mounted.current)setAutopsyReport({...report,
+        recipeAt:state,ratioAt:ratio,formatAt:selectedFormat});
+    }catch(e){
+      if(mounted.current)setError(e?.name==="AbortError"
+        ?"Chimera Autopsy cancelled; original art unchanged."
+        :"Chimera Autopsy failed: "+(e?.message||String(e)));
+    }finally{
+      onExportBusy?.(false);
+      if(controller.current===abort)controller.current=null;
+      if(mounted.current){setBusy(false);setAuditing(false);setAutopsyStage("");}
+    }
+  }
+  function saveAutopsyReport(){
+    if(!autopsyReport)return;
+    const {recipeAt,ratioAt,formatAt,...report}=autopsyReport;
+    download(new Blob([JSON.stringify(report,null,2)],{type:"application/json"}),
+      "glitchbitch-chimera-autopsy-"+state.seed+".json");
   }
   async function makeProof(){
     if(busy)return;
@@ -673,6 +715,82 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
           against same-clock PNG references. That is the actual fidelity check.
         </p>
       </div>}
+      {tab==="Video"&&<div className="export-proof-panel">
+        <strong>🧬 Chimera Autopsy · which parent is expensive?</strong>
+        <p className="export-note">
+          Temporarily profile the same artwork with one Shader Vault family
+          removed at a time. Compares real shader timings with the offspring
+          disabled for fairer parent-to-parent comparisons. The original
+          artwork, palette, fonts, effects and recipe are NEVER changed.
+          Diagnostic resolution is capped at {AUTOPSY_MAX_EDGE}px to protect iPhone memory.
+        </p>
+        <button type="button" className="button secondary"
+          disabled={busy||makeAutopsyPlan(state).length===0}
+          onClick={autopsy}>
+          <Film size={15}/> Autopsy active shader parents
+        </button>
+        {makeAutopsyPlan(state).length===0&&<p className="export-note">
+          Enable a Shader Vault family (Hexagram, Poles, Quasicrystal,
+          Velvet or Crochet) before running this test.
+        </p>}
+        {busy&&auditing&&autopsyStage&&
+          <button type="button" className="button secondary"
+            onClick={()=>controller.current?.abort()}>
+            <Square size={12}/> Cancel autopsy
+          </button>}
+        {autopsyReport&&autopsyReport.recipeAt===state&&
+          autopsyReport.ratioAt===ratio&&autopsyReport.formatAt===clipFormat&&
+          autopsyReport.fps===fps&&autopsyReport.duration===clipDuration&&
+          autopsyReport.playbackMode===playbackMode&&
+          autopsyReport.requestedSize.width===size.width&&
+          autopsyReport.requestedSize.height===size.height&&
+          <div className="export-truth-panel" aria-live="polite">
+            <strong>
+              {autopsyReport.gpuMeasured
+                ?"Observed parent shader performance"
+                :"GPU timings unavailable on WebGL1"}
+            </strong>
+            <p className="export-note">
+              Diagnostic canvas: {autopsyReport.size.width} × {autopsyReport.size.height}.
+              {" "}Parents-only baseline: {autopsyReport.anchorMedianMs} ms.
+              {" "}Repeat-baseline drift: {autopsyReport.driftMs} ms
+              {" "}({autopsyReport.stable?"within screening tolerance":"unstable readings"}).
+              {autopsyReport.gpuMeasured
+                ?" Measurements include GPU fence completion; they are short samples, not definitive attribution."
+                :" WebGL1 only reports CPU submission, so NO GPU bottleneck ranking is reliable."}
+            </p>
+            {autopsyReport.child&&<p className="export-note">
+              Offspring interaction: observed {autopsyReport.child.observedReductionMs} ms
+              {" "}extra with the child enabled versus disabled;
+              {" "}{autopsyReport.child.interpretation}. This is not a visual recommendation
+              to hide your offspring.
+            </p>}
+            <div className="export-truth-metrics">
+              {autopsyReport.comparisons.map(result=><div key={result.id}>
+                <strong>
+                  {result.observedReductionMs>0?"+":""}
+                  {result.observedReductionMs} ms
+                </strong>
+                <span>{result.label} switched off</span>
+                <small>{result.interpretation}</small>
+              </div>)}
+            </div>
+            <p className="export-note">
+              Positive values mean the sampled shader ran faster with that
+              parent omitted. Negative means slower; zero means no observed
+              change. Compiler caching, thermal throttling and shader interactions
+              can shift results. No automatic changes or reduced-fidelity exports.
+            </p>
+            <button type="button" className="button secondary"
+              disabled={busy} onClick={saveAutopsyReport}>
+              Save Chimera Autopsy report (JSON)
+            </button>
+          </div>}
+        <p className="export-note">
+          Use the separate exact-size stress test above for your chosen export
+          resolution; use actual decoded MP4/GIF forensics below for color and motion parity.
+        </p>
+      </div>}
       {tab!=="Recipe"&&<div className="export-proof-panel">
         <button type="button" className="button secondary" disabled={busy}
           onClick={makeProof}>See flattened export proof (480px)</button>
@@ -733,7 +851,7 @@ export default function ExportDialog({ state, title, timelineRef, onClose, onNot
           can appear subtle; try Difference or Multiply to verify the effect.</p>
       </div>}
       {error&&<p className="field-error" role="alert">{error}</p>}
-      {busy&&auditing&&<p className="export-note">{stressStage||motionAuditStage||"Inspecting decoded video frames and comparing real pixels…"}</p>}
+      {busy&&auditing&&<p className="export-note">{autopsyStage||stressStage||motionAuditStage||"Inspecting decoded video frames and comparing real pixels…"}</p>}
       {busy&&!auditing&&tab==="Video"&&<div className="record-progress">
         <div><span style={{width:`${progress*100}%`}}/></div>
         <p><i/>{Math.round(progress*clipDuration*fps)} / {Math.round(clipDuration*fps)} frames{" "}

@@ -229,6 +229,16 @@ export const numericRanges = {
   fractalZoom: [0, 100],
   juliaMix: [0, 100],
   quasiDensity: [0, 100],
+  hexagramAmount: [0, 100],
+  hexagramScale: [0, 100],
+  hexagramWarp: [0, 100],
+  hexagramMotion: [0, 100],
+  hexagramRelief: [0, 100],
+  hexagramBorder: [0, 100],
+  hexagramHue: [0, 100],
+  hexagramCoupling: [0, 100],
+  hexagramVariation: [0, 100],
+  hexagramThreshold: [0, 100],
   tunnelTwist: [0, 100],
   tunnelDepth: [0, 100],
   tunnelRidges: [0, 100],
@@ -576,6 +586,16 @@ export const initial = {
   fractalZoom: 25,
   juliaMix: 0,
   quasiDensity: 50,
+  hexagramAmount: 0,
+  hexagramScale: 56,
+  hexagramWarp: 38,
+  hexagramMotion: 46,
+  hexagramRelief: 78,
+  hexagramBorder: 58,
+  hexagramHue: 42,
+  hexagramCoupling: 73,
+  hexagramVariation: 38,
+  hexagramThreshold: 50,
   tunnelMode: "Infinite spiral",
   tunnelTwist: 52,
   tunnelDepth: 61,
@@ -1432,6 +1452,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "blend","block","pixel","vignette","phosphor","dither","riso","windowCascade",
       "glitter","broadcast","misregister","afterimage","datamosh","memoryDrift",
       "memoryDecay","hyperbolicFold","fractalZoom","juliaMix","quasiDensity",
+      "hexagramAmount","hexagramScale","hexagramWarp","hexagramMotion",
+      "hexagramRelief","hexagramBorder","hexagramHue","hexagramCoupling",
+      "hexagramVariation","hexagramThreshold",
       "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
       "tunnelAperture","tunnelVariation",
       "motionAmount","motionRate","lightMotion","bioAmount","bioFeed","bioKill",
@@ -1522,6 +1545,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "colorRepeat","colorAmount","speed","colorSpeed"];
     for(const key of nudges){
       // New behavior settings do not mutate old artwork or wake hidden modes.
+      if(key.startsWith("hexagram") && state.hexagramAmount<=0)continue;
       if(key.startsWith("semanticGravity") && !hasSemanticLettering(state))continue;
       // Do not silently activate optical coats on previously saved artwork.
       if(key.startsWith("filamentOptics") && (state.filamentAmount<=0 ||
@@ -1593,6 +1617,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.blendMode=different(["Mix","Multiply","Difference"],state.blendMode,random);
   s.blend=random()<.18?0:22+random()*70;
   s.complexity=20+random()*80; s.scale=8+random()*80; s.warp=12+random()*88;
+  s.hexagramAmount=random()<.32?35+random()*65:0;
   s.rotation=random()*360;
   s.symmetry=sample([1,1,2,3,4,5,6,8,10,12],random);
   s.mirror=random()<.43;s.bloom=random()<.8;s.posterize=random()<.27;s.invert=random()<.12;

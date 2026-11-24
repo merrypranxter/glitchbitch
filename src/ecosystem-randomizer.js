@@ -9,13 +9,13 @@ import { shuffleColonyCortex } from "./colony-cortex.js";
 import { shuffleSporeDynasty } from "./spore-dynasties.js";
 import { shuffleSubstrate } from "./substrate-alchemy.js";
 import { shuffleSymbiosis, ensureSymbioticContact } from "./symbiosis-lab.js";
-import { seedGenePool } from "./colony-genetics.js";
+import { seedGenePool, mutateGenePool } from "./colony-genetics.js";
 import {shuffleSelection} from "./selection-chamber.js";
-import {shuffleApocalypse} from "./apocalypse-clock.js";
+import {shuffleApocalypse,advanceApocalypseEpoch} from "./apocalypse-clock.js";
 import {archiveFossils,shuffleFossils} from "./fossil-record.js";
 import { MAX_HABITAT_STAMPS } from "./habitat-painter.js";
 import {branchSpecies,speciationModes} from "./speciation-lab.js";
-import {coevolutionModes,evolveCoevolution,stageEncounter} from "./coevolution-lab.js";
+import {coevolutionModes,evolveCoevolution,stageEncounter,encounterNetwork} from "./coevolution-lab.js";
 import {advanceSuccession,shuffleSuccession} from "./ecological-succession.js";
 import {foodWebLinks,shuffleFoodWeb,feedFoodWeb,prepareFoodWeb,stageFoodWeb} from "./living-food-web.js";
 
@@ -505,4 +505,70 @@ export function shuffleLivingWorld(state,rng=Math.random,opts={}){
   s=prepareFoodWeb(stageFoodWeb(shuffleFoodWeb(s,rng)));
   s=feedFoodWeb(s,intensity>.75?3:1);
   return ensureValidEcosystemState(s,rng);
+}
+
+/** Targeted remixes keep every existing colony's identity and position.
+ * Symbiosis may append a contact seed, but only as an explicit choice.
+ * Existing nutrient/fossil/soil ledgers are never cleared by these actions. */
+export const livingRemixGroups=[
+  {id:"feeding",label:"Feeding networks",note:"New relationship, energy routes and pulses. Optionally feed existing colonies."},
+  {id:"adaptation",label:"Genetics & adaptation",note:"New selection pressures and gene settings. Optionally mutate and coevolve existing neighbors."},
+  {id:"symbiosis",label:"Symbiotic chemistry",note:"New A/B contact chemistry. May add a contact seed; never moves your existing seeds."},
+  {id:"anatomy",label:"Bodies & spores",note:"New shapes, living interiors and spore behavior. Keeps the colony map."},
+  {id:"climate",label:"Soil & climate",note:"New terrain, affinities and catastrophe. Keeps the historical epoch unless you advance."},
+  {id:"history",label:"Fossils & succession",note:"Reroll geological appearance. Optionally deposit a new sediment or fossil layer."},
+];
+export function livingRemixDisabled(state,group,opts={}){
+  const count=(state.habitatStamps||[]).length;
+  if(!livingRemixGroups.some(g=>g.id===group))return "Choose a living system.";
+  if(group==="symbiosis"&&opts.allowDual===false)return "Enable two atmosphere parents to remix symbiosis.";
+  if(group==="climate"||group==="symbiosis")return "";
+  if(group==="feeding"&&count<2)return "Plant at least two colonies or randomize a living world first.";
+  if(!count)return "Plant a colony or randomize a living world first.";
+  return "";
+}
+export function remixLivingSystem(state,group,rng=Math.random,opts={}){
+  if(livingRemixDisabled(state,group,opts))return state;
+  const intensity=clamp(Number.isFinite(opts.intensity)?opts.intensity:.7,0,1);
+  const advance=opts.advance===true;
+  const steps=intensity>.75?3:1;
+  let s={...state};
+  switch(group){
+    case "feeding":
+      s=prepareFoodWeb(shuffleFoodWeb(s,rng));
+      // No forced relocation: existing distant colonies may need a longer reach.
+      if(!foodWebLinks(s).length)s={...s,foodWebReach:100};
+      return advance?feedFoodWeb(s,steps):s;
+    case "adaptation":
+      s=shuffleSelection({...s,geneAmount:range(72,100,rng),geneMutation:range(22,92,rng),
+        geneCrossbreed:range(20,95,rng),geneGlow:range(40,95,rng)},rng);
+      if(!advance)return s;
+      s=mutateGenePool(s,rng);
+      // Unlike the full-world shuffle, never drag neighbors into contact.
+      return encounterNetwork(s).length?evolveCoevolution(s,choose(coevolutionModes,rng),
+        range(45,95,rng),steps):s;
+    case "symbiosis":
+      return shuffleSymbiosis(s,rng);
+    case "anatomy":
+      return shuffleSporeDynasty(shuffleColonyCortex(shuffleColonyAnatomy(s,rng),rng),rng);
+    case "climate":{
+      const epoch=s.apocalypseEpoch||0;
+      s={...shuffleApocalypse(shuffleSubstrate(s,rng),rng),apocalypseEpoch:epoch};
+      return advance?advanceApocalypseEpoch(s):s;
+    }
+    case "history":
+      // Rotate the geological system for mobile; preserve existing archived
+      // records even if their display layer is currently switched off.
+      if(opts.allowHeavy===true){
+        s=shuffleFossils(shuffleSuccession(s,rng),rng);
+        return advance?archiveFossils(advanceSuccession(s)):s;
+      }
+      if(roll(.5,rng)){
+        s=shuffleSuccession(s,rng);
+        return advance?advanceSuccession(s):s;
+      }
+      s=shuffleFossils(s,rng);
+      return advance?archiveFossils(s):s;
+    default:return state;
+  }
 }

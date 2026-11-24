@@ -3528,3 +3528,6 @@ main { grid-template-columns: 264px minmax(320px, 1fr) 300px; }
 .ecosystem-dock>.button{width:100%;justify-content:center;min-height:44px}
 .ecosystem-dock details summary{cursor:pointer;padding:7px 0}
 @media(max-width:600px){.studio-page .mobile-controls button{font-size:9px;white-space:nowrap}}
+
+.ecosystem-dock .ecosystem-targeted{width:100%;justify-content:center;min-height:44px;margin-top:8px}
+.ecosystem-dock>details{border-top:1px solid var(--border,#394041);padding:2px 0}

@@ -10,7 +10,7 @@ Specifically, it defines a time-evolving stream function `vcPsi(x,y,t)` and form
 
 `v = (∂psi/∂y, -∂psi/∂x)`
 
-using central differences. That actual 2D flow field warps the coordinates **before the user's chosen math engine evaluates them**. A second fragment-side calculation advects a two-octave/noise wave height field, estimates its gradient and Laplacian from four neighbors, highlights high-curvature crests, and creates palette-dependent flowing filaments, iridescence and sparse glints. Animated `time`, `colorTime`, original seed, scene position and the owner's actual palette all participate.
+using **exact analytic derivatives** of the stream function (instead of sampling four neighboring stream-function values). This makes the velocity identically divergence-free and reduces fragment costs. That actual 2D flow field warps the coordinates **before the user's chosen math engine evaluates them**. A second fragment-side calculation advects a two-octave/noise wave height field, estimates its gradient and Laplacian from four neighbors, highlights high-curvature crests, and creates palette-dependent flowing filaments, iridescence and sparse glints. Animated `time`, `colorTime`, original seed, scene position and the owner's actual palette all participate.
 
 No new canvas, independent Three.js scene, feedback buffer, shader texture/FBO, file format or export pathway. The effect runs inside the **same programmable WebGL renderer used by preview and strict PNG/GIF/MP4 exports**. Animated optical patterns are deterministic functions of the same project clocks and recipe. That is necessary for export fidelity, but true GPU/color comparison still requires browser testing.
 
@@ -39,7 +39,7 @@ Find the lab in **Effects → Materials → Curlwave Witchcraft · Living Curren
 
 ## Verification status
 
-Added **eight Node regression suites** in `tests/curlwave-witchcraft-wave14.test.mjs`, including a numerical divergence-free field check, saved recipe and clock round-trip, all 13 field ranges, missing-field migration, deliberate Surprise Me and protected Mutate behavior, five real shader branches and their source function families, source renderer/strict-export gating and Control Room metadata.
+Added **eight Node regression suites** in `tests/curlwave-witchcraft-wave14.test.mjs`, including a numerical divergence-free field check against analytic derivatives, saved recipe and clock round-trip, all 13 field ranges, missing-field migration, deliberate Surprise Me and protected Mutate behavior, five real shader branches and their source function families, source renderer/strict-export gating and Control Room metadata.
 
 Added **two Playwright browser cases** in `tests/e2e/curlwave-witchcraft-wave14.spec.js` covering touch-friendly selection, presets, hide/undo and confirmed New Canvas.
 

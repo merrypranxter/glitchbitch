@@ -5,6 +5,7 @@ export const colonyCortexModes=[
   "Bare cortex","Growth bands","Hyphal veins","Fruiting cups","Living cortex",
   "Silica puncta","Diatom ribbing","Glass honeycomb","Nucleoid clusters",
   "Ciliate fringe","Radiolarian lace","Pearl chains","Bacterial granules",
+  "Mixed living tissues","Silica tissue mix","Microbial cytoplasm mix",
 ];
 export const colonyCortexControls=[
   "colonyCortexAmount","colonyCortexDetail","colonyCortexMotion",
@@ -65,6 +66,14 @@ vec3 colonyCortexFieldB=vec3(0.);
 vec3 colonyCortexSample(vec2 cell,float angle,float radial,
                        float index,float parent){
   int mode=parent<.5?colonyCortexA:colonyCortexB;
+  if(mode==13)mode=1+int(mod(index*5.+parent*3.,12.));
+  else if(mode==14){
+    int variant=int(mod(index*3.+parent,4.));
+    mode=variant==0?5:variant==1?6:variant==2?7:10;
+  }else if(mode==15){
+    int variant=int(mod(index*3.+parent,4.));
+    mode=variant==0?8:variant==1?9:variant==2?11:12;
+  }
   if(mode==0)return vec3(0.);
   float t=time*(.028+colonyCortexMotion*.31)+index*.73+parent*2.3;
   float detail=colonyCortexDetail;

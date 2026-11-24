@@ -1,7 +1,7 @@
 // Wave 2: independent post-composite refractive pass.
 // Inputs are the ACTUAL final artwork texture, not a recolored approximation.
 // Owns one full-resolution buffer ONLY when no feedback texture is available.
-import {schlierenFragment,schlierenModes} from "./schlieren-glass.js";
+import {schlierenFragment,schlierenModes,glassEtchingModes,glassMotionModes} from "./schlieren-glass.js";
 
 export function createSchlierenPass({gl,gl2,vertex,compile,createTexture,assertGl}){
   let buffer=null,program=null;
@@ -84,6 +84,8 @@ export function createSchlierenPass({gl,gl2,vertex,compile,createTexture,assertG
       gl.uniform2f(loc("resolution"),w,h);
       gl.uniform1f(loc("time"),timeline.time);
       gl.uniform1i(loc("glassMode"),Math.max(0,schlierenModes.indexOf(state.schlierenMode)));
+      gl.uniform1i(loc("glassEtching"),Math.max(0,glassEtchingModes.indexOf(state.schlierenEtching)));
+      gl.uniform1i(loc("glassKinetics"),Math.max(0,glassMotionModes.indexOf(state.schlierenKinetics)));
       const parameters=[
         ["glassAmount","schlierenAmount"],
         ["glassScale","schlierenScale"],

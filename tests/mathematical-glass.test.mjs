@@ -20,7 +20,7 @@ test("focused glass shuffles do not change any unrelated artwork",()=>{
   const next=shuffleMathematicalGlass(state,()=>.83,part);
   assert.deepEqual(validateRecipe(next),next);
   for(const k of Object.keys(state).filter(k=>!k.startsWith("schlieren")))assert.deepEqual(next[k],state[k],k);
-  if(part==="interior")for(const k of Object.keys(state).filter(k=>!mathematicalGlassControls.includes(k)))assert.deepEqual(next[k],state[k],k);
-  if(part==="motion")for(const k of Object.keys(state).filter(k=>!["schlierenMotion","schlierenRipple"].includes(k)))assert.deepEqual(next[k],state[k],k);
+  if(part==="interior")for(const k of Object.keys(state).filter(k=>![...mathematicalGlassControls,"schlierenEtching"].includes(k)))assert.deepEqual(next[k],state[k],k);
+  if(part==="motion")for(const k of Object.keys(state).filter(k=>!["schlierenMotion","schlierenRipple","schlierenKinetics"].includes(k)))assert.deepEqual(next[k],state[k],k);
  }
 });

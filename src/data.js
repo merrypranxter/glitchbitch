@@ -17,7 +17,7 @@ import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculpt
 import { underlayModes } from "./living-underlay.js";
 import {semanticGravityModes,hasSemanticLettering} from "./semantic-gravity.js";
 import {structuralOpticsModes} from "./structural-thread-optics.js";
-import {schlierenModes} from "./schlieren-glass.js";
+import {schlierenModes,mathematicalGlassModes,glassEtchingModes,glassMotionModes} from "./schlieren-glass.js";
 import {polesModes} from "./complex-poles.js";
 import {qdModes,qdOrders,qdControls} from "./quasicrystal-dissolution.js";
 import {velvetModes,crochetModes,velvetControls,crochetControls} from "./living-textiles-wave5.js";
@@ -736,6 +736,8 @@ export const initial = {
   hexagramVariation: 38,
   hexagramThreshold: 50,
   schlierenMode: "Molten portholes",
+  schlierenEtching: "Native architecture",
+  schlierenKinetics: "Original drift",
   schlierenAmount: 0,
   schlierenScale: 45,
   schlierenBend: 68,
@@ -1311,6 +1313,8 @@ export function validateRecipe(input) {
     colorMode: ["Traveling wave", "Color canon", "Phase vortex"],
     motionMode: motionModes,
     schlierenMode: schlierenModes,
+    schlierenEtching: glassEtchingModes,
+    schlierenKinetics: glassMotionModes,
     polesMode: polesModes,
     qdMode: qdModes,
     qdOrder: qdOrders,
@@ -1940,6 +1944,10 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.hexagramAmount=random()<.32?35+random()*65:0;
   s.schlierenMode=sample(schlierenModes,random);
   s.schlierenAmount=random()<.28?40+random()*60:0;
+  if(s.schlierenAmount>0&&mathematicalGlassModes.includes(s.schlierenMode)){
+    s.schlierenEtching=sample(glassEtchingModes,random);
+    s.schlierenKinetics=sample(glassMotionModes,random);
+  }
   s.polesMode=sample(polesModes,random);
   s.polesAmount=random()<.34?40+random()*60:0;
   s.qdMode=sample(qdModes,random);

@@ -42,6 +42,7 @@ import {breedModes,breedPresets,breedRequiredParents,breedActive,
 import {g2Modes,g2Presets,applyG2Preset,shuffleG2,hideG2}
   from "../g2-torsion-membranes.js";
 import { Parameter, Range, Toggle, Switch, Select, Section, Segmented, Pill } from "./Controls";
+import GlassOpticalLab from "./GlassOpticalLab";
 import {microFamilies,microPresets,applyMicroPreset,remixMicro} from "../microstructure.js";
 import {substanceFamilies,substancePresets,applySubstancePreset,remixSubstance} from "../substance.js";
 import {bioRotPresets,applyBioRotPreset,remixBioRot} from "../bio-rot-presets.js";
@@ -3020,6 +3021,7 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
       <Parameter label="Ink misregistration" name="misregister" history={history} />
     </>,
     "schlieren": <>
+      <GlassOpticalLab history={history}/>
       <p className="control-note">
         Real refractive pixel displacement: glass bends your completed
         artwork, including the existing filament dresses, palettes, and

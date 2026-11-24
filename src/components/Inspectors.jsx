@@ -52,7 +52,7 @@ import { backdropFamilies,backdropDescriptions,backdropPresets,
   applyBackdropPreset,remixBackdrop } from "../backdrops.js";
 import {alchemyModes,alchemyFamilies,alchemyDescriptions,alchemyPresets,
   applyAlchemyPreset,shuffleAlchemy,hideAlchemy} from "../chromatic-alchemy.js";
-import {schlierenModes,schlierenPresets,mathematicalGlassModes,mathematicalGlassPresets,glassEtchingModes,glassMotionModes,shuffleMathematicalGlass,applySchlierenPreset,shuffleSchlieren,hideSchlieren} from "../schlieren-glass.js";
+import {schlierenModes,schlierenPresets,mathematicalGlassModes,mathematicalGlassPresets,glassEtchingModes,glassMotionModes,glassCouplingModes,glassCouplingRules,shuffleMathematicalGlass,applySchlierenPreset,shuffleSchlieren,hideSchlieren} from "../schlieren-glass.js";
 import {injuryModes,injuryFamilies,injuryDescriptions,injuryPresets,
   applyInjuryPreset,shuffleInjury,hideInjury} from "../print-spectrum-injury.js";
 import {spxModes,spxPresets,applySpxPreset,shuffleSpx,hideSpx}
@@ -3051,6 +3051,19 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
         <Parameter label="Internal refractive relief" name="schlierenStructure" history={history}/>
         <Parameter label="Lattice and etching density" name="schlierenDetail" history={history}/>
         <Parameter label="Moving caustic highlights" name="schlierenCaustics" history={history}/>
+        <details><summary>Coupled optical fields · second glass layer</summary>
+          <p className="control-note">Interfere a second mathematical field with the existing inner relief. Changes the real artwork displacement and moving optical contours. Single field restores the original behavior.</p>
+          <Select label="Second optical field" value={s.schlierenCoupling} onChange={v=>history.change(x=>({...x,schlierenCoupling:v}))}>
+            {glassCouplingModes.map(v=><option key={v} value={v}>{v}</option>)}
+          </Select>
+          <Select label="Field interaction" value={s.schlierenCouplingRule} onChange={v=>history.change(x=>({...x,schlierenCouplingRule:v}))}>
+            {glassCouplingRules.map(v=><option key={v} value={v}>{v}</option>)}
+          </Select>
+          <Parameter label="Second field influence" name="schlierenLayerAmount" history={history}/>
+          <Parameter label="Relative grating angle (0–180°)" name="schlierenLayerAngle" history={history}/>
+          <Parameter label="Relative lattice frequency" name="schlierenLayerRatio" history={history}/>
+          <button type="button" className="button secondary" disabled={!mathematicalGlassModes.includes(s.schlierenMode)||!s.schlierenAmount} onClick={()=>history.change(x=>shuffleMathematicalGlass(x,Math.random,"coupling"))}><Dices size={13}/> Shuffle optical coupling only</button>
+        </details>
         <div className="pane-actions">
           <button type="button" className="button secondary" onClick={()=>history.change(x=>shuffleMathematicalGlass(x))}><Dices size={13}/> Shuffle mathematical glass</button>
           <button type="button" className="button secondary" onClick={()=>history.change(x=>shuffleMathematicalGlass(x,Math.random,"architecture"))}><Shuffle size={13}/> Shuffle glass architecture only</button>

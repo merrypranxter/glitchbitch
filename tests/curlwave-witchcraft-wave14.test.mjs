@@ -97,13 +97,15 @@ test("Wave 14: Mutate respects dormant currents while Surprise Me can awaken the
 });
 
 // Numerical cross-check of the exact stream-function equations carried
-// into GLSL: the curl (d psi / d y, -d psi / d x) has zero divergence.
+// into GLSL: analytic curl (d psi / d y, -d psi / d x) has zero divergence.
 const psi=(x,y,t,turb)=>Math.sin(x*1.9+t*.48)*Math.cos(y*2.1-t*.31)
   +.48*Math.sin(x*2.8+y*1.5-t*.73)*turb
   +.29*Math.cos(x*.9-y*3.1+t*.57);
 function curl(x,y,t,turb) {
-  const e=.042,dx=(psi(x+e,y,t,turb)-psi(x-e,y,t,turb))/(2*e),
-    dy=(psi(x,y+e,t,turb)-psi(x,y-e,t,turb))/(2*e);
+  const ax=x*1.9+t*.48,ay=y*2.1-t*.31,
+    b=x*2.8+y*1.5-t*.73,c=x*.9-y*3.1+t*.57;
+  const dx=1.9*Math.cos(ax)*Math.cos(ay)+1.344*turb*Math.cos(b)-.261*Math.sin(c);
+  const dy=-2.1*Math.sin(ax)*Math.sin(ay)+.72*turb*Math.cos(b)+.899*Math.sin(c);
   return [dy,-dx];
 }
 test("Wave 14: the source-grounded curl velocity is numerically divergence-free",()=>{
@@ -115,6 +117,8 @@ test("Wave 14: the source-grounded curl velocity is numerically divergence-free"
     assert.ok(curl(x,y,t,.68).every(Number.isFinite));
   }
   assert.match(vcGLSL,/return vec2\(dy,-dx\)/);
+  assert.match(vcGLSL,/float dx=1\.9\*cos\(ax\)/);
+  assert.match(vcGLSL,/float dy=-2\.1\*sin\(ax\)/);
   assert.match(vcGLSL,/vec2 vcWarpPoint\(vec2 p\)/);
   assert.match(vcGLSL,/float vcHeight\(vec2 z,float t\)/);
   assert.match(vcGLSL,/float lap=\(hxp\+hxm\+hyp\+hym-4\.0\*h\)\/\(e\*e\)/);

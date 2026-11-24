@@ -61,6 +61,8 @@ import {psModes,psPresets,applyPsPreset,shufflePs,hidePs}
   from "../prismatic-scale-matrix-wave12.js";
 import {kdModes,kdPresets,applyKdPreset,shuffleKd,hideKd}
   from "../kleinian-dither-wave13.js";
+import {vcModes,vcPresets,applyVcPreset,shuffleVc,hideVc}
+  from "../curlwave-witchcraft-wave14.js";
 import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   xenoVascularSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies, remixFreshFilaments,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
@@ -659,6 +661,7 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [injuryPreset,setInjuryPreset]=React.useState(injuryPresets[0].name);
   const [spxPreset,setSpxPreset]=React.useState(spxPresets[0].name);
   const [kdPreset,setKdPreset]=React.useState(kdPresets[0].name);
+  const [vcPreset,setVcPreset]=React.useState(vcPresets[0].name);
   const [schlierenPreset,setSchlierenPreset]=React.useState(schlierenPresets[0].name);
   const [backdropPreset,setBackdropPreset]=React.useState(backdropPresets[0].name);
   const [filamentPreset,setFilamentPreset]=React.useState(filamentPresets[0].name);
@@ -2949,6 +2952,60 @@ export function EffectsInspector({ history, onTool, tool }) {
         Off by default for older art. Shared preview/export renderer;
         unsupported GPU combinations show visible preview fallback and
         strict exports refuse to omit required effects.
+      </p>
+    </>,
+    "curlwave-witchcraft": <>
+      <p className="control-note">
+        Divergence-free curl currents genuinely advect the underlying
+        geometry, while moving wave crests generate thin-film highlights,
+        flowing filaments and glints. All pigment comes from your current
+        palette, not somebody else's mandatory purple.
+      </p>
+      <Select label="Living curl species" value={s.vcMode}
+        onChange={mode=>history.change(x=>({...x,vcMode:mode,
+          vcAmount:Math.max(x.vcAmount,58)}))}>
+        {vcModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <div className="preset-row">
+        <Select label="Curlwave recipe" value={vcPreset}
+          onChange={setVcPreset}>
+          {vcPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applyVcPreset(x,vcPreset))}>
+          Awaken this current
+        </button>
+      </div>
+      <Parameter label="Curlwave presence" name="vcAmount" history={history}/>
+      {s.vcAmount>0&&<>
+        <Parameter label="Current scale" name="vcScale" history={history}/>
+        <Parameter label="Flow speed" name="vcSpeed" history={history}/>
+        <Parameter label="Geometry advection" name="vcAdvection" history={history}/>
+        <Parameter label="Curvature crests" name="vcCrest" history={history}/>
+        <Parameter label="Thin-film rainbow" name="vcFilm" history={history}/>
+        <Parameter label="Flowing star dust" name="vcDust" history={history}/>
+        <Parameter label="Bioluminescent glow" name="vcGlow" history={history}/>
+        <Parameter label="Palette color phase" name="vcHue" history={history}/>
+        <Parameter label="Fluid body depth" name="vcDepth" history={history}/>
+        <Parameter label="Current turbulence" name="vcTurbulence" history={history}/>
+        <Parameter label="Seeded wave variation" name="vcVariation" history={history}/>
+        <Parameter label="Ribbons and filaments" name="vcStrands" history={history}/>
+      </>}
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleVc(x))}>
+          <Shuffle size={13}/> Shuffle living currents
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.vcAmount<=0} onClick={()=>history.change(hideVc)}>
+          <EyeOff size={13}/> Hide Curlwave
+        </button>
+      </div>
+      <p className="control-note">
+        Off on existing art; one shared preview/export renderer.
+        Current motion bends the scene itself, not just a decorative
+        video layer. On weak GPUs, preview reports missing effects
+        and exact export refuses an incomplete rendering.
       </p>
     </>,
     print: <>

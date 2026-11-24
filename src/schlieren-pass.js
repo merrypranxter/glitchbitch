@@ -1,7 +1,7 @@
 // Wave 2: independent post-composite refractive pass.
 // Inputs are the ACTUAL final artwork texture, not a recolored approximation.
 // Owns one full-resolution buffer ONLY when no feedback texture is available.
-import {schlierenFragment,schlierenModes,glassEtchingModes,glassMotionModes,glassCouplingModes,glassCouplingRules} from "./schlieren-glass.js";
+import {schlierenFragment,schlierenModes,glassEtchingModes,glassMotionModes,glassCouplingModes,glassCouplingRules,glassMaterialModes} from "./schlieren-glass.js";
 
 export function createSchlierenPass({gl,gl2,vertex,compile,createTexture,assertGl}){
   let buffer=null,program=null;
@@ -88,6 +88,7 @@ export function createSchlierenPass({gl,gl2,vertex,compile,createTexture,assertG
       gl.uniform1i(loc("glassKinetics"),Math.max(0,glassMotionModes.indexOf(state.schlierenKinetics)));
       gl.uniform1i(loc("glassCoupling"),Math.max(0,glassCouplingModes.indexOf(state.schlierenCoupling)));
       gl.uniform1i(loc("glassCouplingRule"),Math.max(0,glassCouplingRules.indexOf(state.schlierenCouplingRule)));
+      gl.uniform1i(loc("glassMaterial"),Math.max(0,glassMaterialModes.indexOf(state.schlierenMaterial)));
       const parameters=[
         ["glassAmount","schlierenAmount"],
         ["glassScale","schlierenScale"],
@@ -98,7 +99,7 @@ export function createSchlierenPass({gl,gl2,vertex,compile,createTexture,assertG
         ["glassRipple","schlierenRipple"],
         ["glassVariation","schlierenVariation"],
         ["glassMask","schlierenMask"],
-        ["glassFocus","schlierenFocus"],["glassStructure","schlierenStructure"],["glassDetail","schlierenDetail"],["glassCaustics","schlierenCaustics"],["glassLayerAmount","schlierenLayerAmount"],["glassLayerAngle","schlierenLayerAngle"],["glassLayerRatio","schlierenLayerRatio"]
+        ["glassFocus","schlierenFocus"],["glassStructure","schlierenStructure"],["glassDetail","schlierenDetail"],["glassCaustics","schlierenCaustics"],["glassLayerAmount","schlierenLayerAmount"],["glassLayerAngle","schlierenLayerAngle"],["glassLayerRatio","schlierenLayerRatio"],["glassMaterialAmount","schlierenMaterialAmount"],["glassFilmThickness","schlierenFilmThickness"],["glassMicrograin","schlierenMicrograin"],["glassPolish","schlierenPolish"]
       ];
       for(const [name,key] of parameters)gl.uniform1f(loc(name),(state[key]??0)/100);
       gl.drawArrays(gl.TRIANGLES,0,6);

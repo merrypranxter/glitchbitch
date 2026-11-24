@@ -42,6 +42,7 @@ import {
   TouchInspector,
 } from "./components/Inspectors";
 import ExportDialog from "./components/ExportDialog";
+import EcosystemInspector from "./components/EcosystemInspector";
 import Lookbook from "./components/Lookbook";
 import Modal from "./components/Modal";
 import Collection from "./components/Collection";
@@ -831,11 +832,11 @@ function App() {
                 </button>
               ))}
             </div>
-            <div className="inspector-scroll">
+            <div className="inspector-scroll" key={rightTab} data-panel={rightTab}>
               {rightTab === "Effects" ? (
                 <EffectsInspector key="effects" history={history} onTool={setTool} tool={tool} />
               ) : rightTab === "Ecosystem" ? (
-                <EffectsInspector key="ecosystem" scope="ecosystem" history={history} onTool={setTool} tool={tool} />
+                <EcosystemInspector history={history} onTool={setTool} tool={tool} />
               ) : rightTab === "Text" ? (
                 <TextInspector history={history} />
               ) : rightTab === "Layers" ? (

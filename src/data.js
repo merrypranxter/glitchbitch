@@ -26,6 +26,7 @@ import {g2Modes,g2Controls} from "./g2-torsion-membranes.js";
 import {spxModes,spxControls} from "./subpixel-moire-wave11.js";
 import {psModes,psControls} from "./prismatic-scale-matrix-wave12.js";
 import {kdModes,kdControls} from "./kleinian-dither-wave13.js";
+import {vcModes,vcControls} from "./curlwave-witchcraft-wave14.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
 import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
@@ -427,6 +428,19 @@ export const numericRanges = {
   kdGlow: [0, 100],
   kdWarp: [0, 100],
   kdVariation: [0, 100],
+  vcAmount: [0, 100],
+  vcScale: [0, 100],
+  vcSpeed: [0, 100],
+  vcAdvection: [0, 100],
+  vcCrest: [0, 100],
+  vcFilm: [0, 100],
+  vcDust: [0, 100],
+  vcGlow: [0, 100],
+  vcHue: [0, 100],
+  vcDepth: [0, 100],
+  vcTurbulence: [0, 100],
+  vcVariation: [0, 100],
+  vcStrands: [0, 100],
   filamentAmount: [0, 100],
   filamentScale: [0, 100],
   filamentDensity: [0, 100],
@@ -927,6 +941,20 @@ export const initial = {
   kdGlow: 70,
   kdWarp: 52,
   kdVariation: 42,
+  vcMode: "Violet Curl Sea",
+  vcAmount: 0,
+  vcScale: 56,
+  vcSpeed: 49,
+  vcAdvection: 48,
+  vcCrest: 70,
+  vcFilm: 71,
+  vcDust: 32,
+  vcGlow: 68,
+  vcHue: 52,
+  vcDepth: 66,
+  vcTurbulence: 55,
+  vcVariation: 48,
+  vcStrands: 62,
   filamentSpecies: "Fivefold brocade",
   filamentAmount: 0,
   filamentScale: 54,
@@ -1295,6 +1323,7 @@ export function validateRecipe(input) {
     spxMode: spxModes,
     psMode: psModes,
     kdMode: kdModes,
+    vcMode: vcModes,
     substanceMode: substanceModes,
     photonSpecies: photonSpecies,
     alchemyMode: alchemyModes,
@@ -1722,6 +1751,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       ...spxControls,
       ...psControls,
       ...kdControls,
+      ...vcControls,
       "tunnelTwist","tunnelDepth","tunnelRidges","tunnelPulse",
       "tunnelAperture","tunnelVariation",
       "motionAmount","motionRate","lightMotion","bioAmount","bioFeed","bioKill",
@@ -1823,6 +1853,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       if(key.startsWith("spx") && state.spxAmount<=0)continue;
       if(key.startsWith("ps") && state.psAmount<=0)continue;
       if(key.startsWith("kd") && state.kdAmount<=0)continue;
+      if(key.startsWith("vc") && state.vcAmount<=0)continue;
       if(key.startsWith("semanticGravity") && !hasSemanticLettering(state))continue;
       // Do not silently activate optical coats on previously saved artwork.
       if(key.startsWith("filamentOptics") && (state.filamentAmount<=0 ||
@@ -2059,6 +2090,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.kdMode=sample(kdModes,random);
   s.kdAmount=random()<.38?39+random()*61:0;
   for(const key of kdControls)if(key!=="kdAmount")s[key]=random()*100;
+  s.vcMode=sample(vcModes,random);
+  s.vcAmount=random()<.50?36+random()*64:0;
+  for(const key of vcControls)if(key!=="vcAmount")s[key]=random()*100;
   s.filamentSpecies=different(filamentSpecies,state.filamentSpecies,random);
   s.filamentAmount=random()<.64?39+random()*58:0;
   s.filamentScale=20+random()*78;

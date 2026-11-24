@@ -25,7 +25,7 @@ export default function EffectsWorkbench({ history, body, quickToggles, scope = 
   const selectedEntry = effectEntry(selected);
   const meta = selectedEntry && effectEntry(parentSection(selectedEntry));
   const activeCount = scoped.filter(e => entryActive(e, history.state)).length;
-  const entries = directoryEntries({view, category, query, favorites, state: history.state}).filter(inScope);
+  const entries = directoryEntries({view, category, query, favorites, state: history.state}).filter(e=>scope==="effects"&&query.trim()?true:inScope(e));
   const family = effectCategories.find(c => c.id === (meta?.group || category));
   const scrollTop = () => root.current?.closest('.inspector-scroll')?.scrollTo({top: 0});
   function chooseFamily(value) {
@@ -69,7 +69,7 @@ export default function EffectsWorkbench({ history, body, quickToggles, scope = 
       </div>
       {selectedEntry ? <><div className="effect-editor-nav">
         <button type="button" onClick={back}><ArrowLeft size={16}/> {query ? 'Search results' : view === 'browse' ? category : view === 'active' ? 'Active effects' : 'Favorites'}</button>
-        <button type="button" aria-label="Search this workspace" onClick={() => {back(); requestAnimationFrame(() => search.current?.focus());}}><Search size={17}/></button>
+        <button type="button" aria-label={scope==="ecosystem"?"Search ecosystem":"Search all effects"} onClick={() => {back(); requestAnimationFrame(() => search.current?.focus());}}><Search size={17}/></button>
       </div>
       {effectDetails.some(d => d.sectionId === meta.id) && <label className="effect-lab-jump">
         <select aria-label="Jump to a laboratory" value={selectedEntry.sectionId ? selectedEntry.id : ''}
@@ -84,7 +84,7 @@ export default function EffectsWorkbench({ history, body, quickToggles, scope = 
           </select>
         </label>}
         <label className="effects-search"><Search size={16}/><input ref={search} type="search" value={query}
-          aria-label="Search this workspace" placeholder="Find in this workspace…" onChange={e => setQuery(e.target.value)}/></label>
+          aria-label={scope==="ecosystem"?"Search ecosystem":"Search all effects"} placeholder={scope==="ecosystem"?"Find a living laboratory…":"Find any effect or laboratory…"} onChange={e => setQuery(e.target.value)}/></label>
       </div>}
     </div>
     {selectedEntry ? <div className="effect-editor">
@@ -94,7 +94,7 @@ export default function EffectsWorkbench({ history, body, quickToggles, scope = 
 
     </div> : <>
       <div className="effect-directory-heading"><h2>{query ? 'Search results' : view === 'browse' ? category : view === 'active' ? 'In the mix' : 'Your favorites'}</h2><span>{entries.length}</span></div>
-      <p className="effect-directory-note">{query ? 'Across this workspace, including nested laboratories.' : view === 'browse' ? family.description : view === 'active' ? 'Enabled sections and laboratories. Open one to tune its controls.' : 'Your shortcuts, saved on this device separately from artwork.'}</p>
+      <p className="effect-directory-note">{query ? 'Across the available families, including nested laboratories.' : view === 'browse' ? family.description : view === 'active' ? 'Enabled sections and laboratories. Open one to tune its controls.' : 'Your shortcuts, saved on this device separately from artwork.'}</p>
       <div className="effect-directory">
         {entries.map(entry => <div className="effect-card" key={entry.id}>
           <button className="effect-card-open" type="button" onClick={() => open(entry)}>

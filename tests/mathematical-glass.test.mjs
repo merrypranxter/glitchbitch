@@ -10,7 +10,7 @@ test("new glass modes are additive and every preset round-trips",()=>{
   assert.deepEqual(validateRecipe(next),next);
   assert.deepEqual(parseDocument(recipeDocument(next,preset.name,{time:0,colorTime:0})).state,next);
  }
- assert.match(schlierenFragment,/if\(glassMode>=5 && glassStructure/);
+ assert.match(schlierenFragment,/if\(glassMode>=5 && \(glassStructure/);
  assert.match(schlierenFragment,/displacement\+=gradient/);
  assert.match(schlierenFragment,/mathematicalGlassRelief/);
 });

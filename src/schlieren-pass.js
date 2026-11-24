@@ -94,9 +94,9 @@ export function createSchlierenPass({gl,gl2,vertex,compile,createTexture,assertG
         ["glassRipple","schlierenRipple"],
         ["glassVariation","schlierenVariation"],
         ["glassMask","schlierenMask"],
-        ["glassFocus","schlierenFocus"]
+        ["glassFocus","schlierenFocus"],["glassStructure","schlierenStructure"],["glassDetail","schlierenDetail"],["glassCaustics","schlierenCaustics"]
       ];
-      for(const [name,key] of parameters)gl.uniform1f(loc(name),state[key]/100);
+      for(const [name,key] of parameters)gl.uniform1f(loc(name),(state[key]??0)/100);
       gl.drawArrays(gl.TRIANGLES,0,6);
       assertGl("Schlieren refraction draw failed");
     }finally{

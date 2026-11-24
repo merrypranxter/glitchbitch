@@ -160,18 +160,18 @@ float microbialPore(vec2 cell,float index,float parent,float clockPhase){
     grid=vec2(length(q)*density,theta*(3.+floor(colonyPoreDensity*9.))/TAU);
     if(colonyPoreMode==8)grid.y+=.5*mod(floor(grid.x),2.);
   }
-  vec2 local=fract(grid)-.5;
+  vec2 poreCell=fract(grid)-.5;
   if(colonyPoreMode==5){
     vec2 id=floor(grid);
     float j=fract(sin(dot(id,vec2(127.1,311.7))+index*9.1)*43758.5453);
     float k=fract(sin(dot(id,vec2(269.5,183.3))+index*2.7)*43758.5453);
-    local-=vec2(j-.5,k-.5)*.32;
+    poreCell-=vec2(j-.5,k-.5)*.32;
     size*=.45+.6*j;
   }
-  float dist=length(local);
-  if(colonyPoreMode==6)dist=length(local*vec2(.62,2.3));
+  float dist=length(poreCell);
+  if(colonyPoreMode==6)dist=length(poreCell*vec2(.62,2.3));
   if(colonyPoreMode==7)return 1.-smoothstep(.035,.085,abs(dist-size*.72));
-  if(colonyPoreMode==9)dist=max(abs(local.x),abs(local.y));
+  if(colonyPoreMode==9)dist=max(abs(poreCell.x),abs(poreCell.y));
   return 1.-smoothstep(size*.76,size,dist);
 }
 `;

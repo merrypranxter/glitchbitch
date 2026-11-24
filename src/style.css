@@ -2974,7 +2974,7 @@ footer > span:last-child svg {
   .studio-splitter .splitter-grip{display:flex;align-items:center;gap:3px}
   .studio-splitter .splitter-grip i{width:11px;height:3px;background:var(--lime);opacity:.85;border-radius:5px}
   .studio-splitter .splitter-label{font-size:8px;letter-spacing:1.3px}
-  .studio-page>.studio-main>.mobile-controls{order:2;flex:none;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;padding:3px;margin:3px 10px 5px;width:auto}
+  .studio-page>.studio-main>.mobile-controls{order:2;flex:none;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;padding:3px;margin:3px 10px 5px;width:auto}
   .studio-page .mobile-controls button{min-width:0;padding:7px 2px;min-height:38px;gap:3px;display:flex;flex-direction:column;font-size:10px}
   .studio-page .mobile-controls button svg{width:16px;height:16px}
   .studio-page>.studio-main>.inspector{order:3;display:none;flex:1 1 auto;min-height:0!important;max-height:none;height:0!important;margin:0 10px 6px;overflow:hidden;border:1px solid #36363f;background:#18181b}
@@ -3523,3 +3523,8 @@ main { grid-template-columns: 264px minmax(320px, 1fr) 300px; }
     font-size: 9px;
   }
 }
+
+.ecosystem-dock{display:grid;gap:8px;padding:12px;border-bottom:1px solid var(--border, #394041)}
+.ecosystem-dock>.button{width:100%;justify-content:center;min-height:44px}
+.ecosystem-dock details summary{cursor:pointer;padding:7px 0}
+@media(max-width:600px){.studio-page .mobile-controls button{font-size:9px;white-space:nowrap}}

@@ -8,7 +8,7 @@ import { shuffleColonyAnatomy } from "./colony-anatomy.js";
 import { shuffleColonyCortex } from "./colony-cortex.js";
 import { shuffleSporeDynasty } from "./spore-dynasties.js";
 import { shuffleSubstrate } from "./substrate-alchemy.js";
-import { shuffleSymbiosis } from "./symbiosis-lab.js";
+import { shuffleSymbiosis, ensureSymbioticContact } from "./symbiosis-lab.js";
 import { seedGenePool } from "./colony-genetics.js";
 import {shuffleSelection} from "./selection-chamber.js";
 import {shuffleApocalypse} from "./apocalypse-clock.js";
@@ -17,7 +17,7 @@ import { MAX_HABITAT_STAMPS } from "./habitat-painter.js";
 import {branchSpecies,speciationModes} from "./speciation-lab.js";
 import {coevolutionModes,evolveCoevolution,stageEncounter} from "./coevolution-lab.js";
 import {advanceSuccession,shuffleSuccession} from "./ecological-succession.js";
-import {foodWebLinks,shuffleFoodWeb,feedFoodWeb,prepareFoodWeb} from "./living-food-web.js";
+import {foodWebLinks,shuffleFoodWeb,feedFoodWeb,prepareFoodWeb,stageFoodWeb} from "./living-food-web.js";
 
 const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
 const unit=rng=>{
@@ -464,4 +464,45 @@ export function mixEcosystemIntoSurprise(state,rng=Math.random,opts={}){
   // when adding a new, expensive two-parent colony ecology.
   if(s.atmoBAmount>0)s=enforceChaosBudget(s,rng,{level:"Feral"});
   return s;
+}
+
+/** Dedicated, intentional living-world reroll. Unlike Surprise, always
+ * produces real colonies, a connected food web and an evolved encounter.
+ * Core art, lettering, palette, marks and unrelated effect values survive.
+ * Only explicit user actions evolve the saved recipe. */
+export function shuffleLivingWorld(state,rng=Math.random,opts={}){
+  const intensity=clamp(Number.isFinite(opts.intensity)?opts.intensity:.7,0,1);
+  const dual=opts.allowDual!==false;
+  const heavy=opts.allowHeavy===true;
+  let s=shuffleEcosystem(state,rng,{allowDual:dual,dualChance:dual?1:0,
+    lifeChance:1,intensity,allowHeavy:false});
+  // Start a genuinely new ecology rather than retaining obsolete ledgers.
+  s={...s,atmoMaskMode:"Painted colonies",atmoBMaskMode:dual?"Painted colonies":"Everywhere",
+    atmoBAmount:dual?Math.max(65,s.atmoBAmount||0):0,
+    habitatStamps:generateHabitatStamps(s,rng,{needA:true,needB:dual,count:Math.round(range(4,10,rng))}),
+    sporeGeneration:0,coevoRound:0,foodWebRound:0,apocalypseEpoch:0,
+    fossilRecords:[],fossilAmount:0,fossilMode:"Dormant",
+    successionRecords:[],successionEpoch:0,successionAmount:0};
+  if(!dual&&s.colonyLifeMode==="Territory war"){
+    s.colonyLifeMode="Germinate & bloom";s.colonyCompetition=0;
+  }
+  s=shuffleSubstrate(s,rng);
+  s=shuffleColonyAnatomy(s,rng);
+  s=shuffleColonyCortex(s,rng);
+  s=shuffleSporeDynasty(s,rng);
+  if(dual) s=ensureSymbioticContact(shuffleSymbiosis(s,rng));
+  else s={...s,symbiosisMode:"Dormant",symbiosisAmount:0};
+  s=seedGenePool({...s,geneAmount:range(72,100,rng),geneMutation:range(22,92,rng),
+    geneCrossbreed:range(20,95,rng),geneGlow:range(40,95,rng)},rng);
+  s=shuffleSelection(s,rng);
+  s=branchSpecies(s,choose(speciationModes,rng),range(45,90,rng));
+  s=evolveCoevolution(stageEncounter(s),choose(coevolutionModes,rng),
+    range(45,95,rng),intensity>.75?2:1);
+  s=shuffleApocalypse(s,rng);
+  // Rotate geology rather than stacking every expensive archive by default.
+  if(heavy||roll(.5,rng)) s=advanceSuccession(shuffleSuccession(s,rng));
+  if(heavy||!s.successionAmount) s=archiveFossils(shuffleFossils(s,rng));
+  s=prepareFoodWeb(stageFoodWeb(shuffleFoodWeb(s,rng)));
+  s=feedFoodWeb(s,intensity>.75?3:1);
+  return ensureValidEcosystemState(s,rng);
 }

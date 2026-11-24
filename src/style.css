@@ -3531,3 +3531,6 @@ main { grid-template-columns: 264px minmax(320px, 1fr) 300px; }
 
 .ecosystem-dock .ecosystem-targeted{width:100%;justify-content:center;min-height:44px;margin-top:8px}
 .ecosystem-dock>details{border-top:1px solid var(--border,#394041);padding:2px 0}
+
+.ecosystem-workspace{min-width:0;display:flex;flex-direction:column}
+.ecosystem-workspace .ecosystem-dock{flex:none}

@@ -8,14 +8,16 @@ import { Section, requestReveal, useReveal } from './Controls';
 import '../effects-workbench.css';
 
 const NAV_KEY = 'glitch-effect-category-v2';
-function initialCategory() {
-  try { return validCategory(localStorage.getItem(NAV_KEY)); } catch { return 'Signal'; }
+const ECOSYSTEM_NAV_KEY = 'glitch-ecosystem-category-v1';
+function initialCategory(scope) {
+  const fallback=scope==="ecosystem"?"Organisms":"Signal";
+  try { const value=localStorage.getItem(scope==="ecosystem"?ECOSYSTEM_NAV_KEY:NAV_KEY); return value?validCategory(value):fallback; } catch { return fallback; }
 }
 export default function EffectsWorkbench({ history, body, quickToggles, scope = "effects" }) {
   const scoped = entriesForScope(scope);
   const categories = effectCategories.filter(c=>scoped.some(e=>e.group===c.id));
   const inScope = e=>Boolean(e&&scoped.some(item=>item.id===e.id));
-  const [category, setCategory] = useState(()=>scope==="ecosystem"?"Organisms":categories.some(c=>c.id===initialCategory())?initialCategory():categories[0].id);
+  const [category, setCategory] = useState(()=>categories.some(c=>c.id===initialCategory(scope))?initialCategory(scope):categories[0].id);
   const [view, setView] = useState('browse');
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(null);
@@ -30,7 +32,7 @@ export default function EffectsWorkbench({ history, body, quickToggles, scope = 
   const scrollTop = () => root.current?.closest('.inspector-scroll')?.scrollTo({top: 0});
   function chooseFamily(value) {
     setCategory(value);
-    try { localStorage.setItem(NAV_KEY, value); } catch { /* session only */ }
+    try { localStorage.setItem(scope==="ecosystem"?ECOSYSTEM_NAV_KEY:NAV_KEY, value); } catch { /* session only */ }
     setSelected(null); setQuery(''); scrollTop();
   }
   function bookmark(id) {

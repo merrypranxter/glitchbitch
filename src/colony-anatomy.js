@@ -5,8 +5,9 @@ export const colonyAnatomyModes=[
   "Pennate diatoms","Centric diatoms","Bacillus rods","Coccoid twins",
   "Desmid crescents","Dinoflagellate horns","Radiolarian stars","Silica triangles",
   "Glass hexagons","Ciliate slippers","Budding yeast","Squishy amoebae",
+  "Mixed microbial soup","Diatom assemblage","Bacterial culture","Mixed kingdoms",
 ];
-export const colonyPoreModes=["Classic pores","Polka dots","Staggered pits","Diatom striae","Concentric pits","Random freckles","Bacterial dashes","Hollow rings","Radial rosettes","Silica windows"];
+export const colonyPoreModes=["Classic pores","Polka dots","Staggered pits","Diatom striae","Concentric pits","Random freckles","Bacterial dashes","Hollow rings","Radial rosettes","Silica windows","Mixed perforations","Diatom perforation mix"];
 export const colonyAnatomyControls=[
   "colonyAnatomyAmount","colonyAnatomyDetail","colonyAnatomyMotion",
   "colonyAnatomyPores","colonyAnatomyRim",
@@ -73,6 +74,16 @@ uniform float colonyPoreDensity,colonyPoreSize;
 // needing path tessellation, 3D assets, FBO feedback, or frame history.
 float mutantColonyRadius(float angle,float index,float parent){
   int species=parent<.5?colonyShapeA:colonyShapeB;
+  // Stable for a given seed ordering; no time-based species switching.
+  // Only concrete modes reach the radius formulas below.
+  if(species==17)species=5+int(mod(index*5.+parent*3.,12.));
+  else if(species==18){
+    int variant=int(mod(index*3.+parent,5.));
+    species=variant==0?5:variant==1?6:variant==2?12:variant==3?13:11;
+  }else if(species==19){
+    int variant=int(mod(index*3.+parent,5.));
+    species=variant==0?7:variant==1?8:variant==2?15:variant==3?16:14;
+  }else if(species==20)species=1+int(mod(index*7.+parent*5.,16.));
   if(species==0)return 1.;
   float t=time*(.045+colonyAnatomyMotion*.48)+index*1.21+parent*1.71;
   float detail=colonyAnatomyDetail;
@@ -148,20 +159,26 @@ float mutantColonyRadius(float angle,float index,float parent){
 // Perforation motifs remove pigment from the same living silhouette.
 // No extra passes; all coordinates are local to each colony.
 float microbialPore(vec2 cell,float index,float parent,float clockPhase){
+  int poreStyle=colonyPoreMode;
+  if(poreStyle==10)poreStyle=1+int(mod(index*5.+parent*2.,9.));
+  else if(poreStyle==11){
+    int variant=int(mod(index*3.+parent,4.));
+    poreStyle=variant==0?2:variant==1?3:variant==2?7:9;
+  }
   float density=mix(3.,18.,colonyPoreDensity);
   float size=mix(.09,.43,colonyPoreSize);
   float a=index*2.399963+parent*.64;
   vec2 q=mat2(cos(a),-sin(a),sin(a),cos(a))*cell;
   vec2 grid=q*density+vec2(index*.137,clockPhase*.014);
-  if(colonyPoreMode==2)grid.x+=.5*mod(floor(grid.y),2.);
-  if(colonyPoreMode==3)grid*=vec2(.62,1.75);
-  if(colonyPoreMode==4 || colonyPoreMode==8){
+  if(poreStyle==2)grid.x+=.5*mod(floor(grid.y),2.);
+  if(poreStyle==3)grid*=vec2(.62,1.75);
+  if(poreStyle==4 || poreStyle==8){
     float theta=atan(q.y,q.x);
     grid=vec2(length(q)*density,theta*(3.+floor(colonyPoreDensity*9.))/TAU);
-    if(colonyPoreMode==8)grid.y+=.5*mod(floor(grid.x),2.);
+    if(poreStyle==8)grid.y+=.5*mod(floor(grid.x),2.);
   }
   vec2 poreCell=fract(grid)-.5;
-  if(colonyPoreMode==5){
+  if(poreStyle==5){
     vec2 id=floor(grid);
     float j=fract(sin(dot(id,vec2(127.1,311.7))+index*9.1)*43758.5453);
     float k=fract(sin(dot(id,vec2(269.5,183.3))+index*2.7)*43758.5453);
@@ -169,9 +186,9 @@ float microbialPore(vec2 cell,float index,float parent,float clockPhase){
     size*=.45+.6*j;
   }
   float dist=length(poreCell);
-  if(colonyPoreMode==6)dist=length(poreCell*vec2(.62,2.3));
-  if(colonyPoreMode==7)return 1.-smoothstep(.035,.085,abs(dist-size*.72));
-  if(colonyPoreMode==9)dist=max(abs(poreCell.x),abs(poreCell.y));
+  if(poreStyle==6)dist=length(poreCell*vec2(.62,2.3));
+  if(poreStyle==7)return 1.-smoothstep(.035,.085,abs(dist-size*.72));
+  if(poreStyle==9)dist=max(abs(poreCell.x),abs(poreCell.y));
   return 1.-smoothstep(size*.76,size,dist);
 }
 `;

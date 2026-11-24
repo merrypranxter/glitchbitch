@@ -2,6 +2,7 @@ import React from "react";
 import {Dices, Shuffle, Hourglass} from "lucide-react";
 import {evolutionRhythms,ecosystemCensus,advanceLivingTimeline} from "../ecosystem-timeline.js";
 import {Select, Toggle} from "./Controls";
+import {microbialCollections,microbialVisible,remixMicrobes,applyMicrobialCollection} from "../microbial-remix.js";
 import {EffectsInspector} from "./Inspectors";
 import {livingRemixGroups,livingRemixDisabled,remixLivingSystem,shuffleLivingWorld,chaosLevels} from "../ecosystem-randomizer.js";
 
@@ -15,6 +16,8 @@ export default function EcosystemInspector({history,onTool,tool}){
   const [livingRemix,setLivingRemix]=React.useState("feeding");
   const [advanceRemix,setAdvanceRemix]=React.useState(false);
   const [rhythm,setRhythm]=React.useState("Balanced");
+  const [microbialCollection,setMicrobialCollection]=React.useState(microbialCollections[0].name);
+  const canRemixMicrobes=microbialVisible(s);
   const [turnover,setTurnover]=React.useState(false);
   const census=ecosystemCensus(s);
   const advanceWorld=steps=>history.change(x=>advanceLivingTimeline(x,Math.random,{steps,rhythm,allowTurnover:turnover}));
@@ -40,6 +43,17 @@ export default function EcosystemInspector({history,onTool,tool}){
         <button type="button" className="button secondary ecosystem-targeted" onClick={spinTargeted} disabled={!!remixReason}><Shuffle size={15}/> Remix selected system</button>
         {remixReason&&<p className="control-note" role="status">{remixReason}</p>}
         <p className="control-note">No world reset. Your existing colony positions, artwork, text and unrelated controls survive. Undo restores the previous state.</p>
+      </details>
+      <details><summary>Microbial zoo · shapes & dots</summary>
+        <p className="control-note">Remix the organisms already on your canvas, not the ecosystem underneath. Mixed collections give different colonies their own silhouette and interior, even inside a single parent population.</p>
+        <Select label="Mixed population" value={microbialCollection} onChange={setMicrobialCollection}>
+          {microbialCollections.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <button type="button" className="button secondary ecosystem-targeted" disabled={!canRemixMicrobes} onClick={()=>history.change(x=>applyMicrobialCollection(x,microbialCollection))}><Dices size={15}/> Apply mixed population</button>
+        <div className="pane-actions">
+          {[["shapes","Shuffle shapes only"],["pores","Shuffle dots only"],["tissue","Shuffle interiors only"]].map(([part,label])=><button key={part} type="button" className="button secondary" disabled={!canRemixMicrobes} onClick={()=>history.change(x=>remixMicrobes(x,part))}><Shuffle size={13}/> {label}</button>)}
+        </div>
+        <p className="control-note">{canRemixMicrobes?"All colony positions, genetics, nutrients and histories stay intact. A hidden layer may be enabled to show the selected change. Mixed assignments follow the saved colony order.":"Randomize a living world or plant visible colonies first."}</p>
       </details>
       <details><summary>Evolution clock · advance this world</summary>
         <p className="control-note">Keep this world and run randomized ecological events through the systems you have enabled. Each batch is one Undo.</p>

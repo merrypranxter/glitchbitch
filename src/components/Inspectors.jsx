@@ -52,7 +52,7 @@ import { backdropFamilies,backdropDescriptions,backdropPresets,
   applyBackdropPreset,remixBackdrop } from "../backdrops.js";
 import {alchemyModes,alchemyFamilies,alchemyDescriptions,alchemyPresets,
   applyAlchemyPreset,shuffleAlchemy,hideAlchemy} from "../chromatic-alchemy.js";
-import {schlierenModes,schlierenPresets,mathematicalGlassModes,mathematicalGlassPresets,glassEtchingModes,glassMotionModes,glassCouplingModes,glassCouplingRules,shuffleMathematicalGlass,applySchlierenPreset,shuffleSchlieren,hideSchlieren} from "../schlieren-glass.js";
+import {schlierenModes,schlierenPresets,mathematicalGlassModes,mathematicalGlassPresets,glassEtchingModes,glassMotionModes,glassCouplingModes,glassCouplingRules,glassMaterialModes,shuffleMathematicalGlass,applySchlierenPreset,shuffleSchlieren,hideSchlieren} from "../schlieren-glass.js";
 import {injuryModes,injuryFamilies,injuryDescriptions,injuryPresets,
   applyInjuryPreset,shuffleInjury,hideInjury} from "../print-spectrum-injury.js";
 import {spxModes,spxPresets,applySpxPreset,shuffleSpx,hideSpx}
@@ -3040,6 +3040,17 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
       <Parameter label="Pattern variation" name="schlierenVariation" history={history}/>
       <Parameter label="Glass coverage" name="schlierenMask" history={history}/>
       <Parameter label="Lens focus" name="schlierenFocus" history={history}/>
+      <details className="effect-explanation"><summary>Glass material alchemy</summary>
+        <p className="control-note">Change optical material independently of shape, etching or motion. Original glass restores unmodified refraction. Frosted and birefringent materials use extra pixel samples.</p>
+        <Select label="Optical material" value={s.schlierenMaterial} onChange={v=>history.change(x=>({...x,schlierenMaterial:v,schlierenAmount:Math.max(x.schlierenAmount,65)}))}>
+          {glassMaterialModes.map(v=><option key={v} value={v}>{v}</option>)}
+        </Select>
+        <Parameter label="Material influence" name="schlierenMaterialAmount" history={history}/>
+        <Parameter label="Optical film thickness" name="schlierenFilmThickness" history={history}/>
+        <Parameter label="Microscopic surface grain" name="schlierenMicrograin" history={history}/>
+        <Parameter label="Surface polish" name="schlierenPolish" history={history}/>
+        <button type="button" className="button secondary" disabled={!s.schlierenAmount} onClick={()=>history.change(x=>shuffleMathematicalGlass(x,Math.random,"material"))}><Dices size={13}/> Shuffle glass material only</button>
+      </details>
       <details className="effect-explanation"><summary>Mathematical glass · optical architecture</summary>
         <p className="control-note">Eight non-floral optical structures. Interior relief bends real artwork pixels; moving caustic-like contours add spectral light. The original five modes are unchanged.</p>
         <Select label="Interior etching geometry" value={s.schlierenEtching} onChange={v=>history.change(x=>({...x,schlierenEtching:v}))}>

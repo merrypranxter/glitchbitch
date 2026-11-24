@@ -77,7 +77,7 @@ float paintedHabitat(vec2 uv,float parent){
             float freq=18.+colonyAnatomyDetail*19.;
             float spots=sin(cell.x*freq+index*2.17+t*.11)*
               cos(cell.y*(freq*1.09)-index*.83-t*.09);
-            float pore=smoothstep(.78,.96,spots);
+            float pore=colonyPoreMode==0?smoothstep(.78,.96,spots):microbialPore(cell,index,parent,t);
             disk*=1.-pore*colonyAnatomyPores*.76*
               colonyAnatomyAmount;
           }

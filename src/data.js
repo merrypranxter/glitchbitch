@@ -29,7 +29,7 @@ import {kdModes,kdControls} from "./kleinian-dither-wave13.js";
 import {vcModes,vcControls} from "./curlwave-witchcraft-wave14.js";
 import { atmosphereModes, hybridAtmospherePresets } from "./mutant-atmospheres.js";
 import { colonyLifeModes, colonyLifePresets } from "./colony-lifecycle.js";
-import { colonyAnatomyModes, colonyAnatomyPresets } from "./colony-anatomy.js";
+import { colonyAnatomyModes, colonyAnatomyPresets, colonyPoreModes } from "./colony-anatomy.js";
 import { colonyCortexModes, colonyCortexPresets } from "./colony-cortex.js";
 import { sporeModes, sporePresets } from "./spore-dynasties.js";
 import { substrateModes, substratePresets } from "./substrate-alchemy.js";
@@ -612,6 +612,8 @@ export const numericRanges = {
   colonyAnatomyDetail: [0, 100],
   colonyAnatomyMotion: [0, 100],
   colonyAnatomyPores: [0, 100],
+  colonyPoreDensity: [0, 100],
+  colonyPoreSize: [0, 100],
   colonyAnatomyRim: [0, 100],
   colonyCortexAmount: [0, 100],
   colonyCortexDetail: [0, 100],
@@ -1156,6 +1158,9 @@ export const initial = {
   colonyAnatomyDetail: 57,
   colonyAnatomyMotion: 47,
   colonyAnatomyPores: 0,
+  colonyPoreMode: "Classic pores",
+  colonyPoreDensity: 50,
+  colonyPoreSize: 50,
   colonyAnatomyRim: 0,
   colonyCortexA: "Bare cortex",
   colonyCortexB: "Bare cortex",
@@ -1356,6 +1361,7 @@ export function validateRecipe(input) {
     colonyLifeMode: colonyLifeModes,
     colonyShapeA: colonyAnatomyModes,
     colonyShapeB: colonyAnatomyModes,
+    colonyPoreMode: colonyPoreModes,
     colonyCortexA: colonyCortexModes,
     colonyCortexB: colonyCortexModes,
     sporeMode: sporeModes,
@@ -2252,6 +2258,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.colonyShapeA="Classic disks";s.colonyShapeB="Classic disks";
   s.colonyAnatomyAmount=0;s.colonyAnatomyDetail=57;
   s.colonyAnatomyMotion=47;s.colonyAnatomyPores=0;s.colonyAnatomyRim=0;
+  s.colonyPoreMode="Classic pores";s.colonyPoreDensity=50;s.colonyPoreSize=50;
   s.colonyCortexA="Bare cortex";s.colonyCortexB="Bare cortex";
   s.colonyCortexAmount=0;s.colonyCortexDetail=55;
   s.colonyCortexMotion=45;s.colonyCortexRelief=50;

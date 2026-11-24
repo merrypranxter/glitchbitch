@@ -3,6 +3,8 @@
 // history. The masks' existing per-seed loop computes these channels ONCE.
 export const colonyCortexModes=[
   "Bare cortex","Growth bands","Hyphal veins","Fruiting cups","Living cortex",
+  "Silica puncta","Diatom ribbing","Glass honeycomb","Nucleoid clusters",
+  "Ciliate fringe","Radiolarian lace","Pearl chains","Bacterial granules",
 ];
 export const colonyCortexControls=[
   "colonyCortexAmount","colonyCortexDetail","colonyCortexMotion",
@@ -95,6 +97,48 @@ vec3 colonyCortexSample(vec2 cell,float angle,float radial,
     float head=pow(max(0.,cos(angle*count+t*.07+index*1.9)),18.);
     cups=head*radialBelt;
     cups*=.6+.4*sin(t*.12+angle*4.)*sin(t*.12+angle*4.);
+  }
+  if(mode>=5){
+    float pitch=5.+floor(detail*17.);
+    float rot=index*2.399963+parent*.64;
+    vec2 q=mat2(cos(rot),-sin(rot),sin(rot),cos(rot))*cell;
+    vec2 g=q*pitch;
+    if(mode==5 || mode==7)g.x+=.5*mod(floor(g.y),2.);
+    vec2 f=fract(g)-.5;
+    float d=length(f);
+    if(mode==5){ // punched glass dots with glowing rims
+      cups=1.-smoothstep(.075,.16,d);
+      rings=1.-smoothstep(.035,.09,abs(d-.24));
+    }else if(mode==6){ // pennate silica ribs and central raphe
+      veins=pow(abs(cos(q.y*pitch*TAU)),12.);
+      rings=exp(-abs(q.x)*24.);
+      cups=(1.-smoothstep(.10,.22,d))*.8;
+    }else if(mode==7){ // offset silica mesh
+      float hex=max(abs(f.x),dot(abs(f),vec2(.5,.866)));
+      veins=1.-smoothstep(.025,.075,abs(hex-.39));
+      cups=(1.-smoothstep(.075,.15,d))*.7;
+    }else if(mode==8){ // bacterial nucleoid and granular cytoplasm
+      vec2 n=q*vec2(1.8,3.);
+      veins=exp(-dot(n,n))*pow(abs(sin(q.x*18.+sin(q.y*21.+t*.12))),4.);
+      cups=1.-smoothstep(.08,.19,d);
+    }else if(mode==9){ // edge-local ciliate comb
+      float n=18.+floor(detail*26.);
+      veins=pow(max(0.,cos(angle*n+t*.15)),10.)*smoothstep(.50,.85,radial);
+      cups=(1.-smoothstep(.10,.21,d))*.65;
+    }else if(mode==10){ // radial glass skeleton
+      rings=pow(abs(cos(radial*pitch*PI)),12.);
+      veins=pow(max(0.,cos(angle*(8.+floor(detail*14.)))),9.);
+      cups=rings*veins;
+    }else if(mode==11){ // beaded strings follow curved paths
+      g.y+=.43*sin(g.x*.81+t*.13);
+      f=fract(g)-.5;
+      cups=1.-smoothstep(.12,.29,length(f));
+      rings=1.-smoothstep(.025,.075,abs(f.y));
+    }else{ // scattered microgranules
+      vec2 id=floor(g);
+      float noise=fract(sin(dot(id,vec2(127.1,311.7))+index*3.1)*43758.5453);
+      cups=(1.-smoothstep(.06,.12+noise*.24,d))*noise;
+    }
   }
   return vec3(rings,veins,cups)*interior;
 }

@@ -15,7 +15,7 @@ const base={...initial,engine:18,seed:731290,
   palette:-1,colors:["#ff00aa","#00ffff","#faff00"],
   lettering:"NOTHING EATS MY WORDS"};
 test("bare cortex is a completely opt-in migration for old painted artworks",()=>{
-  assert.deepEqual(colonyCortexModes,[
+  assert.deepEqual(colonyCortexModes.slice(0,5),[
     "Bare cortex","Growth bands","Hyphal veins","Fruiting cups","Living cortex"]);
   assert.equal(initial.colonyCortexA,"Bare cortex");
   assert.equal(initial.colonyCortexB,"Bare cortex");

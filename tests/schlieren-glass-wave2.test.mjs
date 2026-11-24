@@ -13,8 +13,8 @@ const previous={...initial,engine:6,filamentAmount:89,
   colors:["#fa19ac","#03e7ef","#ffdd44"],ratio:"9:16",seed:912311};
 
 test("old recipes keep glass off, five modes and ten bounded controls",()=>{
-  assert.equal(schlierenModes.length,5);
-  assert.equal(new Set(schlierenModes).size,5);
+  assert.equal(schlierenModes.length,13);
+  assert.equal(new Set(schlierenModes).size,13);
   assert.equal(schlierenControls.length,10);
   assert.equal(new Set(schlierenControls).size,10);
   assert.equal(initial.schlierenAmount,0);

@@ -52,7 +52,7 @@ import { backdropFamilies,backdropDescriptions,backdropPresets,
   applyBackdropPreset,remixBackdrop } from "../backdrops.js";
 import {alchemyModes,alchemyFamilies,alchemyDescriptions,alchemyPresets,
   applyAlchemyPreset,shuffleAlchemy,hideAlchemy} from "../chromatic-alchemy.js";
-import {schlierenModes,schlierenPresets,applySchlierenPreset,shuffleSchlieren,hideSchlieren} from "../schlieren-glass.js";
+import {schlierenModes,schlierenPresets,mathematicalGlassModes,mathematicalGlassPresets,shuffleMathematicalGlass,applySchlierenPreset,shuffleSchlieren,hideSchlieren} from "../schlieren-glass.js";
 import {injuryModes,injuryFamilies,injuryDescriptions,injuryPresets,
   applyInjuryPreset,shuffleInjury,hideInjury} from "../print-spectrum-injury.js";
 import {spxModes,spxPresets,applySpxPreset,shuffleSpx,hideSpx}
@@ -3040,10 +3040,21 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
       <Parameter label="Pattern variation" name="schlierenVariation" history={history}/>
       <Parameter label="Glass coverage" name="schlierenMask" history={history}/>
       <Parameter label="Lens focus" name="schlierenFocus" history={history}/>
+      <details className="effect-explanation"><summary>Mathematical glass · optical architecture</summary>
+        <p className="control-note">Eight non-floral optical structures. Interior relief bends real artwork pixels; moving caustic-like contours add spectral light. The original five modes are unchanged.</p>
+        <Parameter label="Internal refractive relief" name="schlierenStructure" history={history}/>
+        <Parameter label="Lattice and etching density" name="schlierenDetail" history={history}/>
+        <Parameter label="Moving caustic highlights" name="schlierenCaustics" history={history}/>
+        <div className="pane-actions">
+          <button type="button" className="button secondary" onClick={()=>history.change(x=>shuffleMathematicalGlass(x))}><Dices size={13}/> Shuffle mathematical glass</button>
+          <button type="button" className="button secondary" disabled={!mathematicalGlassModes.includes(s.schlierenMode)||!s.schlierenAmount} onClick={()=>history.change(x=>shuffleMathematicalGlass(x,Math.random,"interior"))}><Shuffle size={13}/> Shuffle glass interior only</button>
+          <button type="button" className="button secondary" disabled={!mathematicalGlassModes.includes(s.schlierenMode)||!s.schlierenAmount} onClick={()=>history.change(x=>shuffleMathematicalGlass(x,Math.random,"motion"))}><Shuffle size={13}/> Shuffle glass motion only</button>
+        </div>
+      </details>
       <div className="preset-row">
         <Select label="Glass recipe" value={schlierenPreset}
           onChange={setSchlierenPreset}>
-          {schlierenPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+          {[...schlierenPresets,...mathematicalGlassPresets].map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
         </Select>
         <button type="button" className="button secondary"
           onClick={()=>history.change(x=>applySchlierenPreset(x,schlierenPreset))}>

@@ -38,7 +38,7 @@ import { tunnelGLSL } from "./tunnels.js";
 import { strangeFieldsGLSL } from "./strange-fields.js";
 import { atmosphereGLSL, atmosphereModes, specializeAtmosphereVariant } from "./mutant-atmospheres.js";
 import { colonyLifeModes } from "./colony-lifecycle.js";
-import { colonyAnatomyModes } from "./colony-anatomy.js";
+import { colonyAnatomyModes, colonyPoreModes } from "./colony-anatomy.js";
 import { colonyCortexModes, colonyCortexGLSL } from "./colony-cortex.js";
 import { sporeModes, sporeDynastyGLSL, daughterSite } from "./spore-dynasties.js";
 import { substrateModes, substrateGLSL, substrateEnabled } from "./substrate-alchemy.js";
@@ -1869,7 +1869,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "atmoMaskScale","atmoMaskFeather","atmoMaskMotion","atmoMaskVariation",
         "colonyLifeAmount","colonyLifeSpeed","colonyFrontGlow","colonyCompetition",
         "colonyAnatomyAmount","colonyAnatomyDetail","colonyAnatomyMotion",
-        "colonyAnatomyPores","colonyAnatomyRim",
+        "colonyAnatomyPores","colonyAnatomyRim","colonyPoreDensity","colonyPoreSize",
         "colonyCortexAmount","colonyCortexDetail",
         "colonyCortexMotion","colonyCortexRelief",
         "sporeAmount","sporeSpeed","sporeReach","sporeFertility","sporeGlow",
@@ -1921,6 +1921,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       gl.uniform1i(loc("colonyLifeMode"),colonyLifeModes.indexOf(s.colonyLifeMode));
       gl.uniform1i(loc("colonyShapeA"),colonyAnatomyModes.indexOf(s.colonyShapeA));
       gl.uniform1i(loc("colonyShapeB"),colonyAnatomyModes.indexOf(s.colonyShapeB));
+      gl.uniform1i(loc("colonyPoreMode"),Math.max(0,colonyPoreModes.indexOf(s.colonyPoreMode)));
       gl.uniform1i(loc("colonyCortexA"),colonyCortexModes.indexOf(s.colonyCortexA));
       gl.uniform1i(loc("colonyCortexB"),colonyCortexModes.indexOf(s.colonyCortexB));
       gl.uniform1i(loc("sporeMode"),sporeModes.indexOf(s.sporeMode));

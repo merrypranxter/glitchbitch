@@ -108,7 +108,7 @@ import { atmosphereHabitats, atmosphereSecondHabitats,
 import { habitatTools, MAX_HABITAT_STAMPS, clearColonies } from "../habitat-painter.js";
 import { colonyLifeModes, colonyLifePresets, applyColonyLifePreset,
   stopColonyLife } from "../colony-lifecycle.js";
-import { colonyAnatomyModes, colonyAnatomyPresets, applyColonyAnatomyPreset,
+import { colonyAnatomyModes, colonyAnatomyPresets, colonyPoreModes, applyColonyAnatomyPreset,
   clearColonyAnatomy, shuffleColonyAnatomy } from "../colony-anatomy.js";
 import { colonyCortexModes, colonyCortexPresets, applyColonyCortexPreset,
   clearColonyCortex, shuffleColonyCortex } from "../colony-cortex.js";
@@ -1702,6 +1702,12 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
       <Parameter label="Lobes, spikes and petal detail" name="colonyAnatomyDetail" history={history}/>
       <Parameter label="Anatomy motion" name="colonyAnatomyMotion" history={history}/>
       <Parameter label="Microscopic pores" name="colonyAnatomyPores" history={history}/>
+      <Select label="Perforation pattern" value={s.colonyPoreMode} onChange={mode=>history.change(x=>({...x,colonyPoreMode:mode,colonyAnatomyAmount:Math.max(70,x.colonyAnatomyAmount||0),colonyAnatomyPores:Math.max(60,x.colonyAnatomyPores||0)}))}>
+        {colonyPoreModes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+      </Select>
+      <Parameter label="Pore density" name="colonyPoreDensity" history={history}/>
+      <Parameter label="Pore size" name="colonyPoreSize" history={history}/>
+      <button type="button" className="button secondary" onClick={()=>history.change(x=>({...x,colonyPoreMode:colonyPoreModes[Math.floor(Math.random()*colonyPoreModes.length)],colonyPoreDensity:20+Math.random()*75,colonyPoreSize:20+Math.random()*70,colonyAnatomyAmount:Math.max(70,x.colonyAnatomyAmount||0),colonyAnatomyPores:Math.max(65,x.colonyAnatomyPores||0)}))}><Dices size={13}/> Shuffle pores only</button>
       <Parameter label="Luminous rim" name="colonyAnatomyRim" history={history}/>
       <Select label="Anatomy specimen" value={colonyAnatomyPreset}
         onChange={setColonyAnatomyPreset}>

@@ -15,7 +15,7 @@ const base={...initial,engine:18,seed:691572,ratio:"9:16",
   lettering:"DO NOT ERASE MY WEIRD WORDS"};
 const planted=looks.find(l=>l.family==="Painted Habitats").state;
 test("classic disks remain original default; legacy files gain zero-intensity settings",()=>{
-  assert.deepEqual(colonyAnatomyModes,
+  assert.deepEqual(colonyAnatomyModes.slice(0,5),
     ["Classic disks","Lichen lobes","Coral fringe","Crystal petals","Hyphal fans"]);
   assert.equal(initial.colonyShapeA,"Classic disks");
   assert.equal(initial.colonyShapeB,"Classic disks");

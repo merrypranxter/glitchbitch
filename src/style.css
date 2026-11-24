@@ -3534,3 +3534,5 @@ main { grid-template-columns: 264px minmax(320px, 1fr) 300px; }
 
 .ecosystem-workspace{min-width:0;display:flex;flex-direction:column}
 .ecosystem-workspace .ecosystem-dock{flex:none}
+
+.ecosystem-census{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:10px 0}.ecosystem-census>div{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--border,#394041);border-radius:6px;font-size:11px}.ecosystem-census strong{font-variant-numeric:tabular-nums;color:#b9ed92}

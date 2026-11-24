@@ -29,3 +29,14 @@ export function directoryEntries({ view, category, query, favorites, state }) {
   });
 }
 export const validCategory = value => effectCategories.some(c => c.id === value) ? value : 'Signal';
+
+const ecosystemIds=new Set(["chaos-lab","living-food-web","ecological-succession",
+  "fossil-record","speciation-lab","coevolution-lab","apocalypse-clock",
+  "selection-chamber","mutation-bloodlines","symbiosis-lab","substrate-alchemy",
+  "spore-dynasty","colony-cortex","colony-anatomy","colony-life","atmosphere"]);
+export const isEcosystemEntry=id=>{
+  const entry=effectEntry(id);
+  return Boolean(entry&&ecosystemIds.has(parentSection(entry)));
+};
+export const entriesForScope=scope=>effectEntries.filter(e=>
+  scope==="ecosystem"?isEcosystemEntry(e.id):!isEcosystemEntry(e.id));

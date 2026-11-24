@@ -49,6 +49,7 @@ import FindControl from "./components/FindControl";
 import { requestReveal } from "./components/Controls";
 import { engines, engineInfo, ratios, parseDocument, randomize } from "./data";
 import { fullWeirdShuffle } from "./ecosystem-randomizer.js";
+import { isEcosystemEntry } from "./effects-navigation.js";
 import useHistory from "./useHistory";
 import {createNewCanvas} from "./new-canvas.js";
 import {
@@ -440,7 +441,7 @@ function App() {
       return;
     }
     setPage("Studio");
-    showMobile(hit.tab);
+    showMobile(hit.tab === "Effects" && isEcosystemEntry(hit.id) ? "Ecosystem" : hit.tab);
     requestReveal({ id: hit.id, pane: hit.pane });
   }
   const active =
@@ -787,6 +788,7 @@ function App() {
               ["Math", SlidersHorizontal],
               ["Color", Palette],
               ["Effects", Sparkles],
+                ["Ecosystem", Asterisk],
               ["Text", Type],
               ["Touch", Hand],
               ["Layers", Layers],
@@ -805,7 +807,7 @@ function App() {
           <aside
             className={
               "right-panel inspector " +
-              (["Effects", "Text", "Touch", "Layers"].includes(mobilePanel)
+              (["Effects", "Ecosystem", "Text", "Touch", "Layers"].includes(mobilePanel)
                 ? "mobile-open"
                 : "")
             }
@@ -813,6 +815,7 @@ function App() {
             <div className="inspector-tabs">
               {[
                 ["Effects", Sparkles],
+                ["Ecosystem", Asterisk],
                 ["Text", Type],
                 ["Touch", Hand],
                 ["Layers", Layers],
@@ -830,7 +833,9 @@ function App() {
             </div>
             <div className="inspector-scroll">
               {rightTab === "Effects" ? (
-                <EffectsInspector history={history} onTool={setTool} tool={tool} />
+                <EffectsInspector key="effects" history={history} onTool={setTool} tool={tool} />
+              ) : rightTab === "Ecosystem" ? (
+                <EffectsInspector key="ecosystem" scope="ecosystem" history={history} onTool={setTool} tool={tool} />
               ) : rightTab === "Text" ? (
                 <TextInspector history={history} />
               ) : rightTab === "Layers" ? (

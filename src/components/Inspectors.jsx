@@ -143,7 +143,7 @@ import {substrateResourceAt} from "../substrate-alchemy.js";
 import {foodWebModes,foodWebLinks,foodWebActive,foodWebLedger,
   prepareFoodWeb,stageFoodWeb,feedFoodWeb,shuffleFoodWeb,
   hideFoodWeb,MAX_FOOD_WEB_LINKS} from "../living-food-web.js";
-import { shuffleColonies, shuffleColonyLife, shuffleEcosystem,
+import { shuffleLivingWorld, shuffleColonies, shuffleColonyLife, shuffleEcosystem,
   fullWeirdShuffle, chaosLevels } from "../ecosystem-randomizer.js";
 export { TextInspector } from "./TextInspector";
 const icons = [
@@ -654,7 +654,7 @@ export function MathInspector({ history, locked, onLock, onLookbook }) {
 }
 
 // ---- Effects ----------------------------------------------------------------
-export function EffectsInspector({ history, onTool, tool }) {
+export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
   const s = history.state;
   const [photonPreset,setPhotonPreset]=React.useState(photonPresets[0].name);
   const [alchemyPreset,setAlchemyPreset]=React.useState(alchemyPresets[0].name);
@@ -714,6 +714,9 @@ export function EffectsInspector({ history, onTool, tool }) {
   const [allowHeavy,setAllowHeavy]=React.useState(false);
   const spinEcosystem=()=>history.change(x=>shuffleEcosystem(x,Math.random,{
     allowDual,intensity:chaosLevels.indexOf(chaosLevel)/3,
+  }));
+  const spinLiving=()=>history.change(x=>shuffleLivingWorld(x,Math.random,{
+    allowDual,allowHeavy,intensity:chaosLevels.indexOf(chaosLevel)/3,
   }));
   const spinFullWeird=()=>history.change(x=>fullWeirdShuffle(x,Math.random,{
     level:chaosLevel,preserveColors,preserveText,preserveCore,
@@ -3435,7 +3438,19 @@ export function EffectsInspector({ history, onTool, tool }) {
       <Pill key={k} label={label} checked={s[k]}
         onChange={()=>history.change(x=>({...x,[k]:!x[k]}))}/>)}
   </div>;
-  return <EffectsWorkbench history={history} body={body} quickToggles={body["fx-toggles"]}/>;
+  return <>
+    {scope === "ecosystem" && <div className="ecosystem-dock">
+      <strong>LIVING ECOSYSTEM</strong>
+      <button type="button" className="button primary" onClick={spinLiving}><Dices size={16}/> Randomize living world</button>
+      <p className="control-note">New colonies, feeding, adaptation, genetics, symbiosis and geology. Keeps your core art, palette and text. One Undo restores the previous world.</p>
+      <details><summary>Shuffle options</summary>
+        <Select label="Chaos intensity" value={chaosLevel} onChange={setChaosLevel}>{chaosLevels.map(level=><option key={level} value={level}>{level}</option>)}</Select>
+        <Toggle label="Allow two atmosphere parents" checked={allowDual} onChange={setAllowDual}/>
+        <Toggle label="Allow extra heavyweight GPU combinations" checked={allowHeavy} onChange={setAllowHeavy}/>
+      </details>
+    </div>}
+    <EffectsWorkbench history={history} body={body} quickToggles={body["fx-toggles"]} scope={scope}/>
+  </>;
 }
 
 // ---- Layers -----------------------------------------------------------------

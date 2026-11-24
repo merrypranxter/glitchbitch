@@ -52,7 +52,7 @@ import { backdropFamilies,backdropDescriptions,backdropPresets,
   applyBackdropPreset,remixBackdrop } from "../backdrops.js";
 import {alchemyModes,alchemyFamilies,alchemyDescriptions,alchemyPresets,
   applyAlchemyPreset,shuffleAlchemy,hideAlchemy} from "../chromatic-alchemy.js";
-import {schlierenModes,schlierenPresets,mathematicalGlassModes,mathematicalGlassPresets,glassEtchingModes,glassMotionModes,glassCouplingModes,glassCouplingRules,glassMaterialModes,shuffleMathematicalGlass,applySchlierenPreset,shuffleSchlieren,hideSchlieren} from "../schlieren-glass.js";
+import {schlierenModes,schlierenPresets,mathematicalGlassModes,mathematicalGlassPresets,glassEtchingModes,glassMotionModes,glassCouplingModes,glassCouplingRules,glassMaterialModes,glassTransportModes,shuffleMathematicalGlass,applySchlierenPreset,shuffleSchlieren,hideSchlieren} from "../schlieren-glass.js";
 import {injuryModes,injuryFamilies,injuryDescriptions,injuryPresets,
   applyInjuryPreset,shuffleInjury,hideInjury} from "../print-spectrum-injury.js";
 import {spxModes,spxPresets,applySpxPreset,shuffleSpx,hideSpx}
@@ -3062,6 +3062,17 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
         <Parameter label="Internal refractive relief" name="schlierenStructure" history={history}/>
         <Parameter label="Lattice and etching density" name="schlierenDetail" history={history}/>
         <Parameter label="Moving caustic highlights" name="schlierenCaustics" history={history}/>
+        <details><summary>Caustic cartography · focal light networks</summary>
+          <p className="control-note">Highlights follow local curvature of the moving mathematical relief. Choose a focusing model, rather than another static overlay. Original highlights disables this layer.</p>
+          <Select label="Light transport" value={s.schlierenTransport} onChange={v=>history.change(x=>({...x,schlierenTransport:v}))}>
+            {glassTransportModes.map(v=><option key={v} value={v}>{v}</option>)}
+          </Select>
+          <Parameter label="Focal light intensity" name="schlierenTransportAmount" history={history}/>
+          <Parameter label="Optical focusing power" name="schlierenLightFocus" history={history}/>
+          <Parameter label="Caustic line sharpness" name="schlierenLightSharpness" history={history}/>
+          <Parameter label="Optical shadow depth" name="schlierenOpticalShadow" history={history}/>
+          <button type="button" className="button secondary" disabled={!mathematicalGlassModes.includes(s.schlierenMode)||!s.schlierenAmount} onClick={()=>history.change(x=>shuffleMathematicalGlass(x,Math.random,"transport"))}><Dices size={13}/> Shuffle focal light only</button>
+        </details>
         <details><summary>Coupled optical fields · second glass layer</summary>
           <p className="control-note">Interfere a second mathematical field with the existing inner relief. Changes the real artwork displacement and moving optical contours. Single field restores the original behavior.</p>
           <Select label="Second optical field" value={s.schlierenCoupling} onChange={v=>history.change(x=>({...x,schlierenCoupling:v}))}>

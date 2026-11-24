@@ -17,7 +17,7 @@ import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculpt
 import { underlayModes } from "./living-underlay.js";
 import {semanticGravityModes,hasSemanticLettering} from "./semantic-gravity.js";
 import {structuralOpticsModes} from "./structural-thread-optics.js";
-import {schlierenModes,mathematicalGlassModes,glassEtchingModes,glassMotionModes,glassCouplingModes,glassCouplingRules,randomGlassCoupling,glassMaterialModes,randomGlassMaterial} from "./schlieren-glass.js";
+import {schlierenModes,mathematicalGlassModes,glassEtchingModes,glassMotionModes,glassCouplingModes,glassCouplingRules,randomGlassCoupling,glassMaterialModes,randomGlassMaterial,glassTransportModes,randomGlassTransport} from "./schlieren-glass.js";
 import {polesModes} from "./complex-poles.js";
 import {qdModes,qdOrders,qdControls} from "./quasicrystal-dissolution.js";
 import {velvetModes,crochetModes,velvetControls,crochetControls} from "./living-textiles-wave5.js";
@@ -269,6 +269,10 @@ export const numericRanges = {
   schlierenFilmThickness: [0, 100],
   schlierenMicrograin: [0, 100],
   schlierenPolish: [0, 100],
+  schlierenTransportAmount: [0, 100],
+  schlierenLightFocus: [0, 100],
+  schlierenLightSharpness: [0, 100],
+  schlierenOpticalShadow: [0, 100],
   polesAmount: [0, 100],
   polesScale: [0, 100],
   polesWarp: [0, 100],
@@ -747,6 +751,11 @@ export const initial = {
   schlierenKinetics: "Original drift",
   schlierenCoupling: "Single field",
   schlierenMaterial: "Original glass",
+  schlierenTransport: "Original highlights",
+  schlierenTransportAmount: 80,
+  schlierenLightFocus: 60,
+  schlierenLightSharpness: 65,
+  schlierenOpticalShadow: 45,
   schlierenMaterialAmount: 80,
   schlierenFilmThickness: 55,
   schlierenMicrograin: 40,
@@ -1334,6 +1343,7 @@ export function validateRecipe(input) {
     schlierenKinetics: glassMotionModes,
     schlierenCoupling: glassCouplingModes,
     schlierenMaterial: glassMaterialModes,
+    schlierenTransport: glassTransportModes,
     schlierenCouplingRule: glassCouplingRules,
     polesMode: polesModes,
     qdMode: qdModes,
@@ -1775,7 +1785,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "hexagramVariation","hexagramThreshold",
       "schlierenAmount","schlierenScale","schlierenBend","schlierenMotion",
       "schlierenDispersion","schlierenRim","schlierenRipple",
-      "schlierenVariation","schlierenMask","schlierenFocus","schlierenStructure","schlierenDetail","schlierenCaustics","schlierenLayerAmount","schlierenLayerAngle","schlierenLayerRatio","schlierenMaterialAmount","schlierenFilmThickness","schlierenMicrograin","schlierenPolish",
+      "schlierenVariation","schlierenMask","schlierenFocus","schlierenStructure","schlierenDetail","schlierenCaustics","schlierenLayerAmount","schlierenLayerAngle","schlierenLayerRatio","schlierenMaterialAmount","schlierenFilmThickness","schlierenMicrograin","schlierenPolish","schlierenTransportAmount","schlierenLightFocus","schlierenLightSharpness","schlierenOpticalShadow",
       "polesAmount","polesScale","polesWarp","polesOrbit","polesMotion",
       "polesSoftness","polesZeroPull","polesFiligree","polesGlow",
       "polesHue","polesVariation",
@@ -1967,7 +1977,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   if(s.schlierenAmount>0&&mathematicalGlassModes.includes(s.schlierenMode)){
     s.schlierenEtching=sample(glassEtchingModes,random);
     s.schlierenKinetics=sample(glassMotionModes,random);
-    Object.assign(s,randomGlassCoupling(random),randomGlassMaterial(random));
+    Object.assign(s,randomGlassCoupling(random),randomGlassMaterial(random),randomGlassTransport(random));
   }
   s.polesMode=sample(polesModes,random);
   s.polesAmount=random()<.34?40+random()*60:0;

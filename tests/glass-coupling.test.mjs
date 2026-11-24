@@ -11,7 +11,7 @@ test("coupled optical fields save all valid combinations and default to old beha
  assert.throws(()=>validateRecipe({...initial,schlierenCoupling:"unknown"}));
  assert.throws(()=>validateRecipe({...initial,schlierenLayerAmount:101}));
  assert.match(schlierenFragment,/if\(glassCoupling==0\|\|glassLayerAmount<=\.001\)return first/);
- assert.match(schlierenFragment,/float rx=mathematicalGlassRelief/);
+ assert.match(schlierenFragment,/float xPlus=mathematicalGlassRelief/);
 });
 test("coupling-only shuffles preserve every other control and existing presets restore single field",()=>{
  const s={...initial,schlierenMode:"Quasicrystal glass",schlierenAmount:92,schlierenCoupling:"Crossed crystal gratings"};

@@ -15,6 +15,7 @@ export const weavingRemixGroups=[
  {id:"dress",label:"Dress the threads",note:"Fiber materials, beads, nap, sheen and thread jewelry together."},
  {id:"fiber",label:"Fiber materials only",note:"Change the yarn without changing its jewelry or stitch motion."},
  {id:"jewelry",label:"Jewelry & ornament only",note:"Decorate existing thread paths."},
+ {id:"jewel-interior",label:"Ornament microarchitecture only",note:"Change tiny internal perforations, ribs and engraved patterns without changing the jewelry shape or yarn."},
  {id:"finish",label:"Jewelry optical finish only",note:"Change ornament materials and optical coatings without changing the yarn, shape or motion."},
  {id:"choreography",label:"Jewelry choreography only",note:"Redistribute and animate the current ornaments without changing their shapes."},
  {id:"optics",label:"Structural-color coats",note:"Thin-film and iridescent fiber optics."},
@@ -45,9 +46,10 @@ export function weavingRemixDisabled(s,id){return id==="semantic"&&!textVisible(
 export function remixWeavingSystem(state,id,rng=Math.random){
  switch(id){
  case "weave":return weave(state,rng);
- case "dress":return {...F.remixJewelryFinish(F.remixThreadCouture(state,rng),rng),filamentBeadSize:range(15,95,rng),filamentSecondHue:range(0,100,rng)};
+ case "dress":return {...F.remixJewelryInterior(F.remixJewelryFinish(F.remixThreadCouture(state,rng),rng),rng),filamentBeadSize:range(15,95,rng),filamentSecondHue:range(0,100,rng)};
  case "fiber":return {...F.remixFilamentMaterials(state,rng),filamentBeadSize:range(15,95,rng),filamentSecondHue:range(0,100,rng)};
- case "jewelry":return F.remixJewelryFinish(F.remixJewelryChoreography(F.remixFilamentAdornments(state,rng),rng),rng);
+ case "jewelry":return F.remixJewelryInterior(F.remixJewelryFinish(F.remixJewelryChoreography(F.remixFilamentAdornments(state,rng),rng),rng),rng);
+ case "jewel-interior":return F.remixJewelryInterior(state,rng);
  case "finish":return F.remixJewelryFinish(state,rng);
  case "choreography":return F.remixJewelryChoreography(state,rng);
  case "optics":return remixStructuralOptics(state,rng);
@@ -73,6 +75,7 @@ export function shuffleWeavingWorld(state,rng=Math.random,{intensity="Wild",allo
  if(s.filamentSecondSpecies==="Feral Jacquard"&&s.filamentCrossbreed>0){const a=s.filamentSpecies;s={...F.remixFeralJacquard(s,rng),filamentSpecies:a};}
  if(s.filamentSecondSpecies==="Quasicrystal Brocade"&&s.filamentCrossbreed>0){const a=s.filamentSpecies;s={...F.remixQuasicrystalBrocade(s,rng),filamentSpecies:a};}
  s=remixWeavingSystem(s,"dress",rng);
+ if(!roll(p,rng))s={...s,filamentAdornmentInterior:"Native ornament"};
  if(roll(p,rng))s=F.remixJewelryFinish(s,rng);
  else s={...s,filamentAdornmentFinish:"Original jewelry"};
  if(roll(p,rng))s=F.remixJewelryChoreography(s,rng);

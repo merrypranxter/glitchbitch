@@ -1349,6 +1349,23 @@ export const filamentAdornmentModes=[
   "Diffraction sequins",
   "Fractal branch charms"
 ];
+export const jewelryPlacementModes=["Original stations","Alternating links","Quasiperiodic necklace","Clustered constellations","Graduated bead runs","Migrating clusters","Resonant nodes"];
+export const jewelryKineticModes=["Original movement","Traveling procession","Counterflow relay","Breathing collars","Pendulum swing","Phase shimmer","Stop-and-go stitching"];
+export const jewelryChoreographyControls=["filamentAdornmentPlacement","filamentAdornmentKinetics","filamentAdornmentPopulation","filamentAdornmentRhythm"];
+export function remixJewelryChoreography(state,rng=Math.random,part="all"){
+  const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
+  const pick=(modes,old)=>{const pool=modes.slice(1).filter(x=>x!==old);return pool[Math.floor(unit()*pool.length)];};
+  const next={...state};
+  if(part!=="motion"){
+    next.filamentAdornmentPlacement=pick(jewelryPlacementModes,state.filamentAdornmentPlacement);
+    next.filamentAdornmentPopulation=35+unit()*65;
+  }
+  if(part!=="placement"){
+    next.filamentAdornmentKinetics=pick(jewelryKineticModes,state.filamentAdornmentKinetics);
+    next.filamentAdornmentRhythm=35+unit()*65;
+  }
+  return next;
+}
 export const mathematicalAdornmentModes=filamentAdornmentModes.slice(13);
 export const filamentAdornmentFamilies=[
   {name:"Unadorned",modes:filamentAdornmentModes.slice(0,1)},
@@ -1443,7 +1460,7 @@ export function applyFilamentAdornmentPreset(state,name){
   const preset=filamentAdornmentPresets.find(x=>x.name===name);
   if(!preset)return state;
   const {name:label,...adornment}=preset;
-  return {...state,...adornment,filamentAmount:Math.max(60,state.filamentAmount||0)};
+  return {...state,filamentAdornmentPlacement:"Original stations",filamentAdornmentKinetics:"Original movement",...adornment,filamentAmount:Math.max(60,state.filamentAmount||0)};
 }
 export function remixFilamentAdornments(state,rng=Math.random,onlyWeird=false){
   const unit=()=>{const n=Number(rng());return Number.isFinite(n)?
@@ -2009,6 +2026,8 @@ uniform float filamentSecondOpticsAnisotropy,filamentSecondOpticsCurvature,filam
 uniform int filamentStitchMode;
 uniform int filamentSculptMode;
 uniform int filamentAdornmentMode,filamentSecondAdornmentMode;
+uniform int filamentAdornmentPlacement,filamentAdornmentKinetics;
+uniform float filamentAdornmentPopulation,filamentAdornmentRhythm;
 uniform int filamentMorphMode;
 uniform int filamentContagionMode;
 uniform int filamentNeuralMode;
@@ -3529,6 +3548,41 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float adornClock=time*(.18+filamentAdornmentMotion*1.5)+phaseOffset*.32;
   float adornPhase=phase*(7.0+filamentAdornmentSpacing*27.0)+
     q.x*.29+seedPhase*.17;
+  // Choreograph ornaments in carrier coordinates. Original modes leave
+  // the historical phase and clock exactly unchanged. No screen-space stickers.
+  float choreo=filamentAdornmentRhythm;
+  float movement=filamentAdornmentMotion*choreo;
+  float originalStation=floor(adornPhase/6.2831853+.5);
+  if(filamentAdornmentKinetics==1){
+    adornPhase-=adornClock*2.4*movement;
+  }else if(filamentAdornmentKinetics==2){
+    adornPhase+=sin(originalStation*3.14159265*.5+phaseOffset)*adornClock*1.2*movement;
+  }else if(filamentAdornmentKinetics==3){
+    adornPhase+=sin(adornPhase*.34+adornClock)*movement*1.8;
+  }else if(filamentAdornmentKinetics==4){
+    adornPhase+=sin(adornClock*1.7+originalStation*.61)*movement*1.7;
+  }else if(filamentAdornmentKinetics==5){
+    adornClock+=sin(adornPhase*.7+adornClock*.4)*movement*2.;
+  }else if(filamentAdornmentKinetics==6){
+    adornPhase-= (adornClock+sin(adornClock*2.)*.45)*movement*1.9;
+  }
+  float stationId=floor(adornPhase/6.2831853+.5);
+  float occupancy=1.;
+  float population=filamentAdornmentPopulation;
+  if(filamentAdornmentPlacement==1){
+    occupancy=mix(.08,1.,step(.5,mod(stationId,2.)));
+  }else if(filamentAdornmentPlacement==2){
+    occupancy=smoothstep(1.-population-.12,1.-population+.12,fract(stationId*.61803398875+.23));
+  }else if(filamentAdornmentPlacement==3){
+    occupancy=smoothstep(.55-population*.48,.85-population*.48,.5+.5*cos(stationId*.93+seedPhase));
+  }else if(filamentAdornmentPlacement==4){
+    occupancy=mix(.14,1.,smoothstep(0.,1.,fract(stationId*.137+seedPhase*.11)));
+  }else if(filamentAdornmentPlacement==5){
+    occupancy=smoothstep(.72-population*.55,.92-population*.55,.5+.5*cos(stationId*.73-adornClock*.6*movement));
+  }else if(filamentAdornmentPlacement==6){
+    occupancy=pow(.5+.5*cos(stationId*1.618+sin(phaseOffset)*2.),mix(8.,1.,population));
+  }
+  if(filamentAdornmentPlacement>0)occupancy=mix(occupancy,1.,population*.22);
   float beadBeat=.5+.5*cos(adornPhase);
   float beadStation=pow(beadBeat,mix(18.0,6.0,filamentAdornmentSize));
   float fiberRadial=threadD/max(width,.003);
@@ -3749,7 +3803,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   // Paint trinkets on real filament geometry, obeying stitch-reveal and
   // each parent's individual material/geometry. No full-frame sticker pass.
   vec3 accent=palette(fract(pigmentPhase+colorShift));
-  float jewelry=collar*filamentAdornmentAmount;
+  float jewelry=collar*filamentAdornmentAmount*occupancy;
   float opacity=clamp(jewelry*trinket,0.0,.9);
   result=mix(result,result*.46+accent*.94,opacity*.78);
   result+=mix(accent,vec3(1.0,.98,1.0),.67)*

@@ -2698,7 +2698,7 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
       </details>
       <details data-effect-detail="filament-jewelry" className="filament-crossbreeder filament-adornment-lab">
         <summary>💎 THREAD JEWELRY — CHARMS, FRINGE & WEIRD SHIT</summary>
-        <p className="control-note">Twelve stitch-attached ornaments, from pearls and French knots to opal barnacles, tiny eyes and haunted teeth. Each hybrid parent can wear DIFFERENT jewelry over its own material. No random screen-wide stickers.</p>
+        <p className="control-note">Twenty-two stitch-attached ornaments, from classic pearls to silica cages, diffraction sequins and mathematical glass charms. Each hybrid parent can wear DIFFERENT jewelry over its own material. No random screen-wide stickers.</p>
         <Select label="First parent jewelry" value={s.filamentAdornmentMode}
           onChange={mode=>history.change(x=>({...x,filamentAdornmentMode:mode,
             filamentAdornmentAmount:mode==="Bare threads"?x.filamentAdornmentAmount:
@@ -2737,6 +2737,9 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
           <button type="button" className="button secondary"
             onClick={()=>history.change(x=>remixFilamentAdornments(x,Math.random,true))}>
             <Dices size={13}/> Shuffle cursed jewelry
+          </button>
+          <button type="button" className="button secondary" onClick={()=>history.change(x=>remixFilamentAdornments(x,Math.random,"mathematical"))}>
+            <Dices size={13}/> Shuffle mathematical jewelry
           </button>
           <button type="button" className="button secondary"
             onClick={()=>history.change(x=>remixThreadCouture(x,Math.random,true))}>

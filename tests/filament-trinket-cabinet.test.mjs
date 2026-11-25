@@ -15,7 +15,8 @@ const classics=["Pearl stations","Sequin chain","French knots","Tassel fringe",
   "Lace picots","Glass bugles"];
 const weird=["Opal barnacles","Electric thorns","Watching eyes",
   "Mycelium spores","Neon teeth","Orbiting halos"];
-const full=["Bare threads",...classics,...weird];
+const mathematical=["Diatom valves","Radiolarian cages","Quasicrystal jewels","Prism lozenges","Möbius clasps","Fresnel cabochons","Articulated linklets","Silica honeycomb","Diffraction sequins","Fractal branch charms"];
+const full=["Bare threads",...classics,...weird,...mathematical];
 const artwork={...initial,ratio:"9:16",seed:47235,engine:12,
   lettering:"DO NOT ERASE THIS TEXT",
   colors:["#ff00ff","#00eeff","#faff00"],filamentAmount:0,
@@ -31,11 +32,11 @@ const protectedKeys=["ratio","seed","engine","lettering","colors",
   "filamentStitchAmount","filamentSculptAmount"];
 const brace=s=>[...s].reduce((n,c)=>n+(c==="{")-(c==="}"),0);
 
-test("all 12 ornament laws, presets, UI families and bounded controls",()=>{
+test("all 22 ornament laws, presets, UI families and bounded controls",()=>{
   assert.deepEqual(filamentAdornmentModes,full);
-  assert.equal(filamentAdornmentPresets.length,12);
+  assert.equal(filamentAdornmentPresets.length,22);
   assert.deepEqual(filamentAdornmentFamilies.flatMap(g=>g.modes),full);
-  assert.equal(new Set(filamentAdornmentPresets.map(x=>x.name)).size,12);
+  assert.equal(new Set(filamentAdornmentPresets.map(x=>x.name)).size,22);
   for(const name of full)assert.ok(filamentAdornmentDescriptions[name],name);
   for(const p of filamentAdornmentPresets){
     for(const key of filamentAdornmentControls){
@@ -87,8 +88,8 @@ test("new jewelry randomizers only change jewelry and can target the weird six",
     assert.notEqual(next.filamentSecondAdornmentMode,artwork.filamentSecondAdornmentMode);
     for(const k of protectedKeys)assert.deepEqual(next[k],artwork[k],k);
     if(unusual){
-      assert.ok(weird.includes(next.filamentAdornmentMode));
-      assert.ok(weird.includes(next.filamentSecondAdornmentMode));
+      assert.ok([...weird,...mathematical].includes(next.filamentAdornmentMode));
+      assert.ok([...weird,...mathematical].includes(next.filamentSecondAdornmentMode));
     }
     assert.deepEqual(next,remixFilamentAdornments(artwork,fn,unusual));
     assert.deepEqual(validateRecipe(next),next);
@@ -99,12 +100,12 @@ test("entire garments can be randomized without touching their existing art or t
   for(const rng of [()=>0,()=>.44,()=>.999,()=>NaN]){
     for(const onlyWeird of [false,true]){
       const dressed=remixThreadCouture(artwork,rng,onlyWeird);
-      for(const k of protectedKeys)assert.deepEqual(dressed[k],artwork[k],k);
+      for(const k of protectedKeys.filter(k=>!["filamentMaterial","filamentSecondMaterial"].includes(k)))assert.deepEqual(dressed[k],artwork[k],k);
       assert.ok(dressed.filamentAdornmentAmount>=82);
       assert.notEqual(dressed.filamentMaterial,artwork.filamentMaterial);
       assert.notEqual(dressed.filamentAdornmentMode,"Bare threads");
       if(onlyWeird){
-        assert.ok(weird.includes(dressed.filamentAdornmentMode));
+        assert.ok([...weird,...mathematical].includes(dressed.filamentAdornmentMode));
         assert.ok(["Fiber-optic rainbow","Gelatin nerve cord","Oil-slick latex",
           "Bioluminescent mycelium"].includes(dressed.filamentMaterial));
       }
@@ -114,7 +115,7 @@ test("entire garments can be randomized without touching their existing art or t
   }
 });
 
-test("13×13 parent jewelry combinations specialize to exactly selected GLSL branches",()=>{
+test("23×23 parent jewelry combinations specialize to exactly selected GLSL branches",()=>{
   for(let a=0;a<filamentAdornmentModes.length;a++)
     for(let b=0;b<filamentAdornmentModes.length;b++){
       const trimmed=specializeFilamentAdornments(filamentGLSL,a,b);
@@ -165,3 +166,5 @@ test("same main shader covers preview and export, Find and Reset recognize every
   assert.ok(filamentAdornmentModes.includes(random.filamentAdornmentMode));
   assert.ok(filamentAdornmentModes.includes(random.filamentSecondAdornmentMode));
 });
+
+test("mathematical jewelry shuffle stays in the new family and preserves the weave",()=>{for(const rng of [()=>0,()=>.45,()=>.9999]){const next=remixFilamentAdornments(artwork,rng,"mathematical");assert.ok(mathematical.includes(next.filamentAdornmentMode));assert.ok(mathematical.includes(next.filamentSecondAdornmentMode));for(const k of protectedKeys)assert.deepEqual(next[k],artwork[k],k);}});

@@ -68,7 +68,7 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   xenoVascularSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies, remixFreshFilaments,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
   filamentMaterials,filamentMaterialPresets,applyFilamentMaterialPreset,remixUnusualFilamentMaterials,
-  filamentAdornmentModes,filamentAdornmentFamilies,filamentAdornmentDescriptions,
+  filamentAdornmentModes,filamentAdornmentFamilies,filamentAdornmentDescriptions,jewelryPlacementModes,jewelryKineticModes,remixJewelryChoreography,
   filamentAdornmentPresets,applyFilamentAdornmentPreset,remixFilamentAdornments,remixThreadCouture,
   filamentMorphModes,filamentMorphFamilies,filamentMorphDescriptions,
   filamentMorphPresets,applyFilamentMorphPreset,remixFilamentMorph,
@@ -2722,6 +2722,16 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
         <Parameter label="Jewelry size / fringe reach" name="filamentAdornmentSize" history={history}/>
         <Parameter label="Living ornaments / movement" name="filamentAdornmentMotion" history={history}/>
         <Parameter label="Jewel shine / phosphor" name="filamentAdornmentGlow" history={history}/>
+        <details><summary>Jewelry choreography · placement & movement</summary>
+          <p className="control-note">Change how ornaments are distributed and move on the actual thread coordinate field, independently of their shapes. Original modes restore classic placement and motion.</p>
+          <Select label="Ornament distribution" value={s.filamentAdornmentPlacement} onChange={v=>history.change(x=>({...x,filamentAdornmentPlacement:v}))}>{jewelryPlacementModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <Parameter label="Ornament population / coverage" name="filamentAdornmentPopulation" history={history}/>
+          <Select label="Ornament choreography" value={s.filamentAdornmentKinetics} onChange={v=>history.change(x=>({...x,filamentAdornmentKinetics:v}))}>{jewelryKineticModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <Parameter label="Choreography strength" name="filamentAdornmentRhythm" history={history}/>
+          <div className="pane-actions">
+            {[["all","Shuffle jewelry choreography"],["placement","Shuffle placement only"],["motion","Shuffle ornament motion only"]].map(([part,label])=><button key={part} type="button" className="button secondary" disabled={!s.filamentAmount||!s.filamentAdornmentAmount} onClick={()=>history.change(x=>remixJewelryChoreography(x,Math.random,part))}><Shuffle size={13}/> {label}</button>)}
+          </div>
+        </details>
         <Select label="Thread jewelry recipe" value={adornmentPreset} onChange={setAdornmentPreset}>
           {filamentAdornmentPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
         </Select>

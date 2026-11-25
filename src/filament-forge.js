@@ -1337,12 +1337,24 @@ export const filamentAdornmentModes=[
   "Watching eyes",
   "Mycelium spores",
   "Neon teeth",
-  "Orbiting halos"
+  "Orbiting halos",
+  "Diatom valves",
+  "Radiolarian cages",
+  "Quasicrystal jewels",
+  "Prism lozenges",
+  "Möbius clasps",
+  "Fresnel cabochons",
+  "Articulated linklets",
+  "Silica honeycomb",
+  "Diffraction sequins",
+  "Fractal branch charms"
 ];
+export const mathematicalAdornmentModes=filamentAdornmentModes.slice(13);
 export const filamentAdornmentFamilies=[
   {name:"Unadorned",modes:filamentAdornmentModes.slice(0,1)},
   {name:"Classic haberdashery",modes:filamentAdornmentModes.slice(1,7)},
-  {name:"Gothic alien couture",modes:filamentAdornmentModes.slice(7)}
+  {name:"Gothic alien couture",modes:filamentAdornmentModes.slice(7,13)},
+  {name:"Mathematical glass & micro-jewelry",modes:mathematicalAdornmentModes}
 ];
 export const filamentAdornmentDescriptions={
   "Bare threads":"No additional objects are attached to the fibers.",
@@ -1357,7 +1369,17 @@ export const filamentAdornmentDescriptions={
   "Watching eyes":"Little chromatic iris-and-pupil charms track the passing light.",
   "Mycelium spores":"Fungal spores bud and pulse at seeded fiber junctions.",
   "Neon teeth":"A tiny luminous zipper jaw snaps open and shut.",
-  "Orbiting halos":"Phase-shifted halo collars pass along the moving thread."
+  "Orbiting halos":"Phase-shifted halo collars pass along the moving thread.",
+  "Diatom valves":"Ribbed silica capsules with alternating tiny perforations.",
+  "Radiolarian cages":"Nested geometric silica rims and moving spoke junctions.",
+  "Quasicrystal jewels":"Five-direction interference etched into angular bead stations.",
+  "Prism lozenges":"Faceted diamond beads with traveling spectral highlights.",
+  "Möbius clasps":"Twisting paired ribbon loops that exchange apparent depth.",
+  "Fresnel cabochons":"Nested optical rings with moving focal bands.",
+  "Articulated linklets":"Linked angular collars that bend with a traveling phase.",
+  "Silica honeycomb":"Tiny hexagonal window lattices on the thread.",
+  "Diffraction sequins":"Fine crossed gratings with changing colored flashes.",
+  "Fractal branch charms":"Nested branching filigree with pulsing junctions."
 };
 export const filamentAdornmentControls=[
   "filamentAdornmentAmount","filamentAdornmentSpacing",
@@ -1411,7 +1433,11 @@ export const filamentAdornmentPresets=[
   {name:"Sacred halo relay",filamentAdornmentMode:"Orbiting halos",
     filamentSecondAdornmentMode:"Watching eyes",filamentAdornmentAmount:94,
     filamentAdornmentSpacing:56,filamentAdornmentSize:84,
-    filamentAdornmentMotion:71,filamentAdornmentGlow:98}
+    filamentAdornmentMotion:71,filamentAdornmentGlow:98},
+  ...mathematicalAdornmentModes.map((mode,n)=>({name:["Diatom bridal filigree","Radiolarian reliquary","Aperiodic crown","Prism chain","Impossible clasps","Fresnel heirloom","Mechanical lace","Honeycomb reliquary","Diffraction disco","Fractal trinkets"][n],filamentAdornmentMode:mode,
+    filamentSecondAdornmentMode:mathematicalAdornmentModes[(n+3)%mathematicalAdornmentModes.length],
+    filamentAdornmentAmount:92,filamentAdornmentSpacing:48+n%4*11,filamentAdornmentSize:55+n%3*13,
+    filamentAdornmentMotion:55+n%4*10,filamentAdornmentGlow:84}))
 ];
 export function applyFilamentAdornmentPreset(state,name){
   const preset=filamentAdornmentPresets.find(x=>x.name===name);
@@ -1422,7 +1448,7 @@ export function applyFilamentAdornmentPreset(state,name){
 export function remixFilamentAdornments(state,rng=Math.random,onlyWeird=false){
   const unit=()=>{const n=Number(rng());return Number.isFinite(n)?
     Math.min(1-Number.EPSILON,Math.max(0,n)):0;};
-  const set=onlyWeird?filamentAdornmentModes.slice(7):filamentAdornmentModes.slice(1);
+  const set=onlyWeird==="mathematical"?mathematicalAdornmentModes:onlyWeird?filamentAdornmentModes.slice(7):filamentAdornmentModes.slice(1);
   const pick=old=>{const pool=set.filter(x=>x!==old);
     return pool[Math.floor(unit()*pool.length)];};
   return {...state,filamentAdornmentMode:pick(state.filamentAdornmentMode),
@@ -3603,6 +3629,119 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     sparkle=ring*pow(relay,1.7);
     shadow=relay*.1;
     colorShift=.93;
+  }else if(adornmentMode==13){ // DIATOM VALVES
+    float station=fract(adornPhase/6.2831853+.5)-.5;
+    vec2 v=vec2(station*2.7,fiberRadial*.56);
+    float shell=length(v*vec2(.84,1.18));
+    float body=1.0-smoothstep(.77,.96,shell);
+    float lip=1.0-smoothstep(.045,.15,abs(shell-.73));
+    float ribs=pow(.5+.5*cos(v.x*28.0),5.0);
+    float pores=smoothstep(.45,.82,.5+.5*cos(v.y*24.0))*ribs;
+    trinket=body*(.16+.48*ribs+.35*lip)*(1.0-.7*pores);
+    sparkle=body*(lip*.7+.3*ribs)*(.45+.55*(.5+.5*sin(adornClock+v.x*8.0)));
+    shadow=body*pores*.65;
+    colorShift=.12+.12*sin(adornClock*.48+v.x*4.0);
+  }else if(adornmentMode==14){ // RADIOLARIAN CAGES
+    vec2 v=vec2((fract(adornPhase/6.2831853+.5)-.5)*3.0,fiberRadial*.6);
+    float r=length(v);
+    float a=atan(v.y,v.x+.00001)+adornClock*.18;
+    float polygon=r*(.94+.06*cos(a*6.0));
+    float shell=1.0-smoothstep(.035,.14,abs(polygon-.72));
+    float inner=1.0-smoothstep(.025,.12,abs(polygon-.42));
+    float spoke=pow(abs(cos(a*3.0)),16.0)*(1.0-smoothstep(.66,.81,r));
+    trinket=clamp(shell+inner*.65+spoke*.55,0.0,1.0);
+    sparkle=trinket*(.34+.66*pow(.5+.5*cos(a*6.0-adornClock),5.0));
+    shadow=(1.0-trinket)*(1.0-smoothstep(.68,.86,r))*.4;
+    colorShift=.29;
+  }else if(adornmentMode==15){ // QUASICRYSTAL JEWELS
+    vec2 v=vec2((fract(adornPhase/6.2831853+.5)-.5)*3.0,fiberRadial*.6);
+    float field=0.0;
+    for(int axisIndex=0;axisIndex<5;axisIndex++){
+      float a=float(axisIndex)*1.25663706;
+      field+=cos(dot(v,vec2(cos(a),sin(a)))*18.0+sin(adornClock*.4+float(axisIndex)*1.7));
+    }
+    float grid=pow(.5+.5*cos(field*2.2),7.0);
+    float envelope=1.0-smoothstep(.64,.9,length(v));
+    trinket=envelope*(.19+.81*grid);
+    sparkle=envelope*grid;
+    shadow=envelope*(1.0-grid)*.28;
+    colorShift=.45+.1*sin(field);
+  }else if(adornmentMode==16){ // PRISM LOZENGES
+    vec2 v=vec2((fract(adornPhase/6.2831853+.5)-.5)*2.8,fiberRadial*.58);
+    float diamond=abs(v.x)+abs(v.y);
+    float body=1.0-smoothstep(.75,.95,diamond);
+    float ridge=1.0-smoothstep(.025,.13,abs(abs(v.x)-v.y));
+    float flash=pow(.5+.5*cos(adornClock*1.3+v.x*7.0+v.y*4.0),6.0);
+    trinket=body*(.3+.7*ridge);
+    sparkle=body*(ridge*.46+flash*.54);
+    shadow=body*(1.0-ridge)*.35;
+    colorShift=.52+.2*sin(adornClock*.7+v.x*6.0);
+  }else if(adornmentMode==17){ // MOBIUS CLASPS
+    float x=(fract(adornPhase/6.2831853+.5)-.5)*2.8;
+    float twist=sin(x*5.0+adornClock*.85);
+    float r1=abs(fiberRadial-(1.1+.52*twist));
+    float r2=abs(fiberRadial-(1.1-.52*twist));
+    float a=1.0-smoothstep(.08,.28,r1);
+    float b=1.0-smoothstep(.08,.28,r2);
+    float station=1.0-smoothstep(.72,1.15,abs(x));
+    trinket=station*max(a,b*.8);
+    sparkle=station*max(a*(.55+.45*twist),b*(.55-.45*twist));
+    shadow=station*min(a,b)*.4;
+    colorShift=.65+.1*twist;
+  }else if(adornmentMode==18){ // FRESNEL CABOCHONS
+    vec2 v=vec2((fract(adornPhase/6.2831853+.5)-.5)*2.8,fiberRadial*.58);
+    float r=length(v);
+    float dome=1.0-smoothstep(.72,.93,r);
+    float rings=pow(.5+.5*cos(r*33.0-adornClock*.8),8.0);
+    float focus=pow(max(0.0,1.0-r),3.0);
+    trinket=dome*(.21+.79*rings);
+    sparkle=dome*(rings*.65+focus*.35);
+    shadow=dome*(1.0-rings)*.3;
+    colorShift=.74+.15*sin(r*14.0-adornClock*.6);
+  }else if(adornmentMode==19){ // ARTICULATED LINKLETS
+    float station=fract(adornPhase/6.2831853+.5)-.5;
+    float bend=.38*sin(adornClock+floor(adornPhase/6.2831853+.5)*.8);
+    vec2 v=vec2(station*2.6,fiberRadial*.55);
+    float link=max(abs(v.x),abs(v.y-.42-bend*v.x));
+    float ring=1.0-smoothstep(.055,.16,abs(link-.48));
+    float pin=1.0-smoothstep(.07,.18,length(v-vec2(.42,.42+bend*.42)));
+    trinket=max(ring,pin);
+    sparkle=ring*(.3+.7*(.5+.5*cos(adornClock+v.x*5.0)))+pin*.4;
+    shadow=ring*.17;
+    colorShift=.18;
+  }else if(adornmentMode==20){ // SILICA HONEYCOMB
+    vec2 v=vec2((fract(adornPhase/6.2831853+.5)-.5)*2.8,fiberRadial*.58);
+    vec2 grid=v*3.8+vec2(0.0,.12*sin(adornClock*.7));
+    vec2 basis=vec2(1.0,1.7320508);
+    vec2 a=mod(grid+basis*.5,basis)-basis*.5;
+    vec2 b=mod(grid,basis)-basis*.5;
+    vec2 cell=abs(dot(a,a)<dot(b,b)?a:b);
+    float hex=max(cell.x,dot(cell,vec2(.5,.8660254)));
+    float rim=1.0-smoothstep(.035,.11,abs(hex-.46));
+    float env=1.0-smoothstep(.68,.93,length(v));
+    trinket=env*rim;
+    sparkle=trinket*(.38+.62*pow(.5+.5*cos(adornClock+v.x*9.0),4.0));
+    shadow=env*(1.0-rim)*.36;
+    colorShift=.35;
+  }else if(adornmentMode==21){ // DIFFRACTION SEQUINS
+    vec2 v=vec2((fract(adornPhase/6.2831853+.5)-.5)*2.8,fiberRadial*.58);
+    float disc=1.0-smoothstep(.7,.91,length(v));
+    float lines=pow(.5+.5*cos(v.x*39.0+v.y*17.0+adornClock*.6),5.0);
+    float crossLines=pow(.5+.5*cos(v.x*38.0-v.y*16.0-adornClock*.45),5.0);
+    trinket=disc*(.24+.76*max(lines,crossLines));
+    sparkle=disc*clamp(lines+crossLines,0.0,1.0);
+    shadow=disc*(1.0-max(lines,crossLines))*.22;
+    colorShift=.5+.25*sin(v.x*12.0+v.y*7.0+adornClock*.8);
+  }else if(adornmentMode==22){ // FRACTAL BRANCH CHARMS
+    vec2 v=vec2((fract(adornPhase/6.2831853+.5)-.5)*2.8,fiberRadial*.58);
+    float stem=1.0-smoothstep(.035,.11,abs(v.x));
+    float branch=1.0-smoothstep(.035,.1,abs(abs(v.x)-.64*abs(fract(v.y*3.0)-.5)));
+    float finer=1.0-smoothstep(.025,.075,abs(abs(fract(v.x*4.0)-.5)-.7*abs(fract(v.y*6.0)-.5)));
+    float env=1.0-smoothstep(.68,.94,length(v));
+    trinket=env*max(stem,max(branch*.8,finer*.55));
+    sparkle=trinket*pow(.5+.5*cos(v.y*16.0-adornClock),4.0);
+    shadow=env*(1.0-trinket)*.25;
+    colorShift=.8+.08*sin(adornClock*.5+v.y*6.0);
   }else{ // Unsupported adornment mode: no accessory rendered.
     trinket=0.0;
     sparkle=0.0;

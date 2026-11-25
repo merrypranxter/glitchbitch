@@ -68,7 +68,7 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   xenoVascularSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies, remixFreshFilaments,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
   filamentMaterials,filamentMaterialPresets,applyFilamentMaterialPreset,remixUnusualFilamentMaterials,
-  filamentAdornmentModes,filamentAdornmentFamilies,filamentAdornmentDescriptions,jewelryPlacementModes,jewelryKineticModes,remixJewelryChoreography,
+  filamentAdornmentModes,filamentAdornmentFamilies,filamentAdornmentDescriptions,jewelryPlacementModes,jewelryKineticModes,remixJewelryChoreography,jewelryFinishModes,remixJewelryFinish,
   filamentAdornmentPresets,applyFilamentAdornmentPreset,remixFilamentAdornments,remixThreadCouture,
   filamentMorphModes,filamentMorphFamilies,filamentMorphDescriptions,
   filamentMorphPresets,applyFilamentMorphPreset,remixFilamentMorph,
@@ -2722,6 +2722,15 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
         <Parameter label="Jewelry size / fringe reach" name="filamentAdornmentSize" history={history}/>
         <Parameter label="Living ornaments / movement" name="filamentAdornmentMotion" history={history}/>
         <Parameter label="Jewel shine / phosphor" name="filamentAdornmentGlow" history={history}/>
+        <details><summary>Ornament material alchemy · optical finishes</summary>
+          <p className="control-note">Both parents keep their individual ornament shapes and yarn materials. This independent finish changes only ornament shading and highlights, not the underlying threads.</p>
+          <Select label="Jewelry optical finish" value={s.filamentAdornmentFinish} onChange={v=>history.change(x=>({...x,filamentAdornmentFinish:v}))}>{jewelryFinishModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <Parameter label="Finish influence" name="filamentAdornmentFinishAmount" history={history}/>
+          <Parameter label="Optical film thickness" name="filamentAdornmentFilm" history={history}/>
+          <Parameter label="Microfacet / engraving detail" name="filamentAdornmentFacet" history={history}/>
+          <Parameter label="Jewelry polish" name="filamentAdornmentPolish" history={history}/>
+          <button type="button" className="button secondary" disabled={!s.filamentAmount||!s.filamentAdornmentAmount} onClick={()=>history.change(x=>remixJewelryFinish(x))}><Dices size={13}/> Shuffle jewelry finish only</button>
+        </details>
         <details><summary>Jewelry choreography · placement & movement</summary>
           <p className="control-note">Change how ornaments are distributed and move on the actual thread coordinate field, independently of their shapes. Original modes restore classic placement and motion.</p>
           <Select label="Ornament distribution" value={s.filamentAdornmentPlacement} onChange={v=>history.change(x=>({...x,filamentAdornmentPlacement:v}))}>{jewelryPlacementModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>

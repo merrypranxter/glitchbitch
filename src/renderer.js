@@ -32,7 +32,7 @@ import { backdropGLSL, backdropModes, specializeBackdropGLSL } from "./backdrops
 import { microGLSL, microModes, specializeMicroGLSL } from "./microstructure.js";
 import { substanceGLSL, substanceModes, specializeSubstanceGLSL } from "./substance.js";
 import { photonGLSL, photonSpecies, specializePhotonGeometry } from "./photon-zoo.js";
-import { filamentGLSL, filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, jewelryPlacementModes, jewelryKineticModes, filamentMorphModes, filamentContagionModes, filamentNeuralModes, filamentPlasticModes, filamentScarModes, filamentRegenModes, specializeFilamentGeometry, specializeFilamentStitchMotion, specializeFilamentSculptMotion, specializeFilamentMaterials, specializeFilamentAdornments, specializeFilamentMorphMaterials, specializeFilamentContagion, specializeFilamentNeural, specializeFilamentPlasticity, specializeFilamentScars, specializeFilamentRegeneration } from "./filament-forge.js";
+import { filamentGLSL, filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, jewelryPlacementModes, jewelryKineticModes, jewelryFinishModes, filamentMorphModes, filamentContagionModes, filamentNeuralModes, filamentPlasticModes, filamentScarModes, filamentRegenModes, specializeFilamentGeometry, specializeFilamentStitchMotion, specializeFilamentSculptMotion, specializeFilamentMaterials, specializeFilamentAdornments, specializeFilamentMorphMaterials, specializeFilamentContagion, specializeFilamentNeural, specializeFilamentPlasticity, specializeFilamentScars, specializeFilamentRegeneration } from "./filament-forge.js";
 import { underlayGLSL, underlayModes, specializeUnderlayGLSL } from "./living-underlay.js";
 import { tunnelGLSL } from "./tunnels.js";
 import { strangeFieldsGLSL } from "./strange-fields.js";
@@ -1841,7 +1841,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "filamentRetroLead","filamentRetroEcho","filamentRetroParadox",
         "filamentRetroKnots","filamentRetroReversal","filamentRetroCoherence",
         "filamentAdornmentAmount","filamentAdornmentSpacing","filamentAdornmentSize",
-        "filamentAdornmentMotion","filamentAdornmentGlow","filamentAdornmentPopulation","filamentAdornmentRhythm",
+        "filamentAdornmentMotion","filamentAdornmentGlow","filamentAdornmentPopulation","filamentAdornmentRhythm","filamentAdornmentFinishAmount","filamentAdornmentFilm","filamentAdornmentFacet","filamentAdornmentPolish",
         "filamentMorphAmount","filamentMorphScale","filamentMorphSpeed",
         "filamentMorphSharpness","filamentMorphGlow",
         "filamentContagionAmount","filamentContagionReach","filamentContagionSpeed",
@@ -2014,6 +2014,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       gl.uniform1i(loc("filamentSecondAdornmentMode"), filamentAdornmentModes.indexOf(s.filamentSecondAdornmentMode));
       gl.uniform1i(loc("filamentAdornmentPlacement"),Math.max(0,jewelryPlacementModes.indexOf(s.filamentAdornmentPlacement)));
       gl.uniform1i(loc("filamentAdornmentKinetics"),Math.max(0,jewelryKineticModes.indexOf(s.filamentAdornmentKinetics)));
+      gl.uniform1i(loc("filamentAdornmentFinish"),Math.max(0,jewelryFinishModes.indexOf(s.filamentAdornmentFinish)));
       gl.uniform1i(loc("filamentMorphMode"), filamentMorphModes.indexOf(s.filamentMorphMode));
       gl.uniform1i(loc("filamentContagionMode"), filamentContagionModes.indexOf(s.filamentContagionMode));
       gl.uniform1i(loc("filamentNeuralMode"), filamentNeuralModes.indexOf(s.filamentNeuralMode));

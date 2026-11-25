@@ -1349,6 +1349,15 @@ export const filamentAdornmentModes=[
   "Diffraction sequins",
   "Fractal branch charms"
 ];
+export const jewelryFinishModes=["Original jewelry","Dichroic enamel","Opal cabochon","Faceted zircon","Brushed mercury","Frosted silica","Nacre scales","Diffraction foil","Spectral obsidian"];
+export const jewelryFinishControls=["filamentAdornmentFinish","filamentAdornmentFinishAmount","filamentAdornmentFilm","filamentAdornmentFacet","filamentAdornmentPolish"];
+export function remixJewelryFinish(state,rng=Math.random){
+ const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
+ const pool=jewelryFinishModes.slice(1).filter(x=>x!==state.filamentAdornmentFinish);
+ return {...state,filamentAdornmentFinish:pool[Math.floor(unit()*pool.length)],
+   filamentAdornmentFinishAmount:60+unit()*40,filamentAdornmentFilm:12+unit()*88,
+   filamentAdornmentFacet:20+unit()*80,filamentAdornmentPolish:25+unit()*75};
+}
 export const jewelryPlacementModes=["Original stations","Alternating links","Quasiperiodic necklace","Clustered constellations","Graduated bead runs","Migrating clusters","Resonant nodes"];
 export const jewelryKineticModes=["Original movement","Traveling procession","Counterflow relay","Breathing collars","Pendulum swing","Phase shimmer","Stop-and-go stitching"];
 export const jewelryChoreographyControls=["filamentAdornmentPlacement","filamentAdornmentKinetics","filamentAdornmentPopulation","filamentAdornmentRhythm"];
@@ -1460,7 +1469,7 @@ export function applyFilamentAdornmentPreset(state,name){
   const preset=filamentAdornmentPresets.find(x=>x.name===name);
   if(!preset)return state;
   const {name:label,...adornment}=preset;
-  return {...state,filamentAdornmentPlacement:"Original stations",filamentAdornmentKinetics:"Original movement",...adornment,filamentAmount:Math.max(60,state.filamentAmount||0)};
+  return {...state,filamentAdornmentPlacement:"Original stations",filamentAdornmentKinetics:"Original movement",filamentAdornmentFinish:"Original jewelry",...adornment,filamentAmount:Math.max(60,state.filamentAmount||0)};
 }
 export function remixFilamentAdornments(state,rng=Math.random,onlyWeird=false){
   const unit=()=>{const n=Number(rng());return Number.isFinite(n)?
@@ -2028,6 +2037,8 @@ uniform int filamentSculptMode;
 uniform int filamentAdornmentMode,filamentSecondAdornmentMode;
 uniform int filamentAdornmentPlacement,filamentAdornmentKinetics;
 uniform float filamentAdornmentPopulation,filamentAdornmentRhythm;
+uniform int filamentAdornmentFinish;
+uniform float filamentAdornmentFinishAmount,filamentAdornmentFilm,filamentAdornmentFacet,filamentAdornmentPolish;
 uniform int filamentMorphMode;
 uniform int filamentContagionMode;
 uniform int filamentNeuralMode;
@@ -3805,10 +3816,77 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   vec3 accent=palette(fract(pigmentPhase+colorShift));
   float jewelry=collar*filamentAdornmentAmount*occupancy;
   float opacity=clamp(jewelry*trinket,0.0,.9);
-  result=mix(result,result*.46+accent*.94,opacity*.78);
-  result+=mix(accent,vec3(1.0,.98,1.0),.67)*
-    jewelry*sparkle*filamentAdornmentGlow*.59;
-  result*=1.0-clamp(jewelry*shadow*.3,0.0,.25);
+  vec3 jewelBody=accent;
+  vec3 jewelLight=mix(accent,vec3(1.0,.98,1.0),.67);
+  float jewelSpark=sparkle;
+  float jewelShade=shadow;
+  // Independent finish in the local carrier coordinates. No texture taps
+  // or changes to the underlying yarn, station distribution or ornament mask.
+  if(filamentAdornmentFinish>0 && filamentAdornmentFinishAmount>.001){
+    float jStrength=filamentAdornmentFinishAmount;
+    float jStation=fract(adornPhase/6.2831853+.5)-.5;
+    vec2 jUV=vec2(jStation*2.0,fiberRadial*.55);
+    float jDetail=mix(5.0,28.0,filamentAdornmentFacet);
+    float jSlope=.5+.5*cos(jUV.x*3.7+jUV.y*2.1+adornClock*.28);
+    float jFilm=mix(.16,1.6,filamentAdornmentFilm)*(.65+.35*jSlope)
+      +.055*filamentAdornmentMotion*sin(adornClock*.64+jUV.y*5.0);
+    // Three representative optical wavelengths, an artistic thin-film model.
+    vec3 jSpectrum=.5+.5*cos(6.2831853*jFilm/vec3(.650,.535,.450));
+    float jGrain=.5+.5*cos(jUV.x*jDetail+jUV.y*jDetail*.73);
+    float jFlash=pow(clamp(jSlope,0.0,1.0),mix(2.0,20.0,filamentAdornmentPolish));
+    vec3 jBody=accent;
+    vec3 jLight=jewelLight;
+    float jSpark=sparkle;
+    float jShade=shadow;
+    if(filamentAdornmentFinish==1){ // Dichroic enamel
+      jBody=accent*(.34+.74*jSpectrum)+jSpectrum*.28;
+      jLight=mix(jSpectrum,vec3(1.0),.28+.38*jFlash);
+      jSpark*=.62+.72*jFlash;
+    }else if(filamentAdornmentFinish==2){ // Opal cabochon
+      float jCloud=.5+.5*sin(jUV.x*jDetail*.65+sin(jUV.y*jDetail)*1.3);
+      jBody=mix(accent,vec3(.84,.9,.96),.48)+jSpectrum*jCloud*.24;
+      jLight=mix(jSpectrum,vec3(.98,1.,1.),.58);
+      jSpark*=.65+.55*jFlash;
+    }else if(filamentAdornmentFinish==3){ // Faceted zircon
+      float jFacet=abs(fract(jUV.x*jDetail*.4+jUV.y*jDetail*.31)-.5);
+      float jRidge=1.-smoothstep(.04,.16,jFacet);
+      jBody=accent*(.4+.6*jSlope)+jSpectrum*jRidge*.24;
+      jLight=mix(jSpectrum,vec3(1.),.6);
+      jSpark=clamp(sparkle*(.4+.7*jFlash)+trinket*jRidge*.46,0.,1.);
+    }else if(filamentAdornmentFinish==4){ // Brushed mercury
+      float jBrush=pow(.5+.5*cos(jUV.y*jDetail*.8+adornClock*.35),5.);
+      jBody=mix(accent,vec3(.64,.72,.83),.74)*(.5+.5*jSlope);
+      jLight=vec3(.88,.96,1.);
+      jSpark=clamp(sparkle*(.3+.9*jFlash)+trinket*jBrush*.23,0.,1.);
+    }else if(filamentAdornmentFinish==5){ // Frosted silica
+      jBody=mix(accent,vec3(.78,.85,.9),.50)*(.78+.22*jGrain);
+      jLight=mix(accent,vec3(.94,.97,1.),.8);
+      jSpark*=.32+.38*(1.-filamentAdornmentPolish)+.25*jGrain;
+      jShade*=.45;
+    }else if(filamentAdornmentFinish==6){ // Nacre scales
+      float jLayer=.5+.5*cos(jUV.y*jDetail*.9+sin(jUV.x*8.)+adornClock*.4);
+      jBody=mix(accent,vec3(.92,.88,.96),.46)+jSpectrum*jLayer*.23;
+      jLight=mix(jSpectrum,vec3(1.,.96,.98),.55);
+      jSpark=clamp(sparkle*.68+trinket*jLayer*jFlash*.46,0.,1.);
+    }else if(filamentAdornmentFinish==7){ // Diffraction foil
+      float jComb=pow(.5+.5*cos(jUV.x*jDetail*1.7+jUV.y*jDetail*.8-adornClock*.5),7.);
+      jBody=accent*.46+jSpectrum*(.35+.4*jComb);
+      jLight=mix(jSpectrum,vec3(1.),.15);
+      jSpark=clamp(sparkle*.75+trinket*jComb*.5,0.,1.);
+    }else{ // Spectral obsidian
+      jBody=accent*.14+jSpectrum*(.07+.34*jFlash);
+      jLight=mix(jSpectrum,vec3(1.),.21);
+      jSpark*=.5+.75*jFlash;
+      jShade=clamp(shadow+.35*trinket,0.,1.);
+    }
+    jewelBody=mix(accent,clamp(jBody,0.,1.4),jStrength);
+    jewelLight=mix(jewelLight,jLight,jStrength);
+    jewelSpark=mix(sparkle,jSpark,jStrength);
+    jewelShade=mix(shadow,jShade,jStrength);
+  }
+  result=mix(result,result*.46+jewelBody*.94,opacity*.78);
+  result+=jewelLight*jewelry*jewelSpark*filamentAdornmentGlow*.59;
+  result*=1.0-clamp(jewelry*jewelShade*.3,0.0,.25);
 #endif
 #ifdef FILAMENT_SCULPT
   // Geometry-constrained 2.5D emboss: a rounded cross-section, directional

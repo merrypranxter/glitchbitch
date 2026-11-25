@@ -9,7 +9,7 @@ async function start(page, isMobile) {
   await expect(room(page)).toBeVisible();
 }
 async function search(page, term) {
-  await room(page).getByRole('searchbox', {name:'Search all effects'}).fill(term);
+  await room(page).getByRole('searchbox', {name:/Search all effects|Search weaving/}).fill(term);
 }
 const editor = (page,id) => room(page).locator(`[data-section="${id}"]`);
 
@@ -55,7 +55,8 @@ test('global search opens deepest labs; sticky switch and favorites survive relo
   await expect(room(page).locator('.effect-card')).toHaveCount(1);
   expect(await page.locator('.art-stage').boundingBox()).toEqual(canvas);
   await page.reload({waitUntil:'domcontentloaded'});
-  if(isMobile)await page.locator('.mobile-controls').getByRole('button',{name:'Effects',exact:true}).click();
+  const tabs=isMobile?page.locator('.mobile-controls'):page.locator('.right-panel .inspector-tabs');
+  await tabs.getByRole('button',{name:'Weaving',exact:true}).click();
   await room(page).getByRole('button',{name:/^Favorites ·/}).click();
   await expect(room(page).locator('.effect-card')).toHaveCount(1);
   await expect(room(page).getByRole('button',{name:'Unfavorite Neural loom',exact:true})).toHaveAttribute('aria-pressed','true');

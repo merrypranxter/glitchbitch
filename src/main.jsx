@@ -26,6 +26,7 @@ import {
   SlidersHorizontal,
   Palette,
   Layers,
+  Grid3X3,
   Type,
   ChevronDown,
   LoaderCircle,
@@ -43,6 +44,7 @@ import {
 } from "./components/Inspectors";
 import ExportDialog from "./components/ExportDialog";
 import EcosystemInspector from "./components/EcosystemInspector";
+import WeavingInspector from "./components/WeavingInspector";
 import Lookbook from "./components/Lookbook";
 import Modal from "./components/Modal";
 import Collection from "./components/Collection";
@@ -50,7 +52,7 @@ import FindControl from "./components/FindControl";
 import { requestReveal } from "./components/Controls";
 import { engines, engineInfo, ratios, parseDocument, randomize } from "./data";
 import { fullWeirdShuffle } from "./ecosystem-randomizer.js";
-import { isEcosystemEntry } from "./effects-navigation.js";
+import { isEcosystemEntry, isWeavingEntry } from "./effects-navigation.js";
 import useHistory from "./useHistory";
 import {createNewCanvas} from "./new-canvas.js";
 import {
@@ -442,7 +444,7 @@ function App() {
       return;
     }
     setPage("Studio");
-    showMobile(hit.tab === "Effects" && isEcosystemEntry(hit.id) ? "Ecosystem" : hit.tab);
+    showMobile(isWeavingEntry(hit.id) ? "Weaving" : hit.tab === "Effects" && isEcosystemEntry(hit.id) ? "Ecosystem" : hit.tab);
     requestReveal({ id: hit.id, pane: hit.pane });
   }
   const active =
@@ -790,6 +792,7 @@ function App() {
               ["Color", Palette],
               ["Effects", Sparkles],
                 ["Ecosystem", Asterisk],
+                ["Weaving", Grid3X3],
               ["Text", Type],
               ["Touch", Hand],
               ["Layers", Layers],
@@ -808,7 +811,7 @@ function App() {
           <aside
             className={
               "right-panel inspector " +
-              (["Effects", "Ecosystem", "Text", "Touch", "Layers"].includes(mobilePanel)
+              (["Effects", "Ecosystem", "Weaving", "Text", "Touch", "Layers"].includes(mobilePanel)
                 ? "mobile-open"
                 : "")
             }
@@ -817,6 +820,7 @@ function App() {
               {[
                 ["Effects", Sparkles],
                 ["Ecosystem", Asterisk],
+                ["Weaving", Grid3X3],
                 ["Text", Type],
                 ["Touch", Hand],
                 ["Layers", Layers],
@@ -837,6 +841,8 @@ function App() {
                 <EffectsInspector key="effects" history={history} onTool={setTool} tool={tool} />
               ) : rightTab === "Ecosystem" ? (
                 <EcosystemInspector history={history} onTool={setTool} tool={tool} />
+              ) : rightTab === "Weaving" ? (
+                <WeavingInspector history={history} onTool={setTool} tool={tool} />
               ) : rightTab === "Text" ? (
                 <TextInspector history={history} />
               ) : rightTab === "Layers" ? (

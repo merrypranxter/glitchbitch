@@ -20,10 +20,10 @@ test("dedicated shuffle creates living connected worlds without changing the bas
   else assert.ok(result.symbiosisAmount>0);
  }
 });
-test("ecosystem and effects directory partition every original control including nested labs",()=>{
- const eco=entriesForScope("ecosystem"),fx=entriesForScope("effects");
- assert.equal(new Set([...eco,...fx].map(e=>e.id)).size,effectEntries.length);
- assert.equal(eco.length+fx.length,effectEntries.length);
+test("ecosystem, weaving and effects directory partition every original control including nested labs",()=>{
+ const eco=entriesForScope("ecosystem"),fx=entriesForScope("effects"),weave=entriesForScope("weaving");
+ assert.equal(new Set([...eco,...fx,...weave].map(e=>e.id)).size,effectEntries.length);
+ assert.equal(eco.length+fx.length+weave.length,effectEntries.length);
  for(const id of ["living-food-web","coevolution-lab","symbiosis-lab","fossil-resurrection","atmosphere-habitats"])assert.ok(isEcosystemEntry(id),id);
  assert.ok(!isEcosystemEntry("filament-neural"));
 });

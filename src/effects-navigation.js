@@ -38,5 +38,11 @@ export const isEcosystemEntry=id=>{
   const entry=effectEntry(id);
   return Boolean(entry&&ecosystemIds.has(parentSection(entry)));
 };
+const weavingIds=new Set(["filament","underlay"]);
+export const isWeavingEntry=id=>{
+  if(id==="living-velvet"||id==="hyperbolic-crochet")return true;
+  const entry=effectEntry(id);
+  return Boolean(entry&&weavingIds.has(parentSection(entry)));
+};
 export const entriesForScope=scope=>effectEntries.filter(e=>
-  scope==="ecosystem"?isEcosystemEntry(e.id):!isEcosystemEntry(e.id));
+  scope==="ecosystem"?isEcosystemEntry(e.id):scope==="weaving"?isWeavingEntry(e.id):!isEcosystemEntry(e.id)&&!isWeavingEntry(e.id));

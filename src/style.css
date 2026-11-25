@@ -3536,3 +3536,7 @@ main { grid-template-columns: 264px minmax(320px, 1fr) 300px; }
 .ecosystem-workspace .ecosystem-dock{flex:none}
 
 .ecosystem-census{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:10px 0}.ecosystem-census>div{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--border,#394041);border-radius:6px;font-size:11px}.ecosystem-census strong{font-variant-numeric:tabular-nums;color:#b9ed92}
+
+.weaving-workspace{min-width:0;display:flex;flex-direction:column}.weaving-dock{flex:none}.weaving-math{min-width:0;padding:0 8px 10px}.right-panel .inspector-tabs{overflow-x:auto}.right-panel .inspector-tabs button{flex:1 0 auto;gap:4px}
+@media(max-width:900px){.studio-page>.studio-main>.mobile-controls{grid-template-columns:repeat(8,minmax(0,1fr))}.studio-page .mobile-controls button{font-size:9px;min-height:44px}}
+@media(max-width:480px){.studio-page>.studio-main>.mobile-controls{grid-template-columns:repeat(4,minmax(0,1fr))}.studio-page .mobile-controls button{flex-direction:row;justify-content:center;min-height:36px;font-size:10px;gap:4px}}

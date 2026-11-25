@@ -13,7 +13,7 @@ export { injuryModes };
 export { alchemyModes };
 import { backdropModes } from "./backdrops.js";
 export { backdropModes };
-import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, jewelryPlacementModes, jewelryKineticModes, remixJewelryChoreography, jewelryFinishModes, jewelryFinishControls, remixJewelryFinish, filamentMorphModes, filamentContagionModes, filamentNeuralModes, filamentPlasticModes, filamentScarModes, filamentRegenModes } from "./filament-forge.js";
+import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, jewelryPlacementModes, jewelryKineticModes, remixJewelryChoreography, jewelryFinishModes, jewelryFinishControls, remixJewelryFinish, jewelryInteriorModes, jewelryInteriorControls, remixJewelryInterior, filamentMorphModes, filamentContagionModes, filamentNeuralModes, filamentPlasticModes, filamentScarModes, filamentRegenModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
 import {semanticGravityModes,hasSemanticLettering} from "./semantic-gravity.js";
 import {structuralOpticsModes} from "./structural-thread-optics.js";
@@ -547,6 +547,10 @@ export const numericRanges = {
   filamentAdornmentFilm: [0, 100],
   filamentAdornmentFacet: [0, 100],
   filamentAdornmentPolish: [0, 100],
+  filamentAdornmentInteriorAmount: [0, 100],
+  filamentAdornmentInteriorDensity: [0, 100],
+  filamentAdornmentInteriorOpenwork: [0, 100],
+  filamentAdornmentInteriorDrift: [0, 100],
   filamentStitchAmount: [0, 100],
   filamentStitchSpeed: [0, 100],
   filamentStitchLength: [0, 100],
@@ -1100,6 +1104,11 @@ export const initial = {
   filamentAdornmentFilm: 52,
   filamentAdornmentFacet: 65,
   filamentAdornmentPolish: 72,
+  filamentAdornmentInterior: "Native ornament",
+  filamentAdornmentInteriorAmount: 80,
+  filamentAdornmentInteriorDensity: 65,
+  filamentAdornmentInteriorOpenwork: 55,
+  filamentAdornmentInteriorDrift: 60,
   filamentSecondAdornmentMode: "Bare threads",
   filamentAdornmentAmount: 0,
   filamentAdornmentSpacing: 56,
@@ -1408,6 +1417,7 @@ export function validateRecipe(input) {
     filamentAdornmentPlacement: jewelryPlacementModes,
     filamentAdornmentKinetics: jewelryKineticModes,
     filamentAdornmentFinish: jewelryFinishModes,
+    filamentAdornmentInterior: jewelryInteriorModes,
     filamentSecondAdornmentMode: filamentAdornmentModes,
     filamentSculptMode: filamentSculptModes,
     underlayMode: underlayModes,
@@ -1851,7 +1861,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "filamentSecondOpticsAnisotropy","filamentSecondOpticsCurvature",
       "filamentSecondOpticsPearl","filamentSecondOpticsPhase",
       "filamentAdornmentAmount","filamentAdornmentSpacing","filamentAdornmentSize",
-      "filamentAdornmentMotion","filamentAdornmentGlow","filamentAdornmentPopulation","filamentAdornmentRhythm","filamentAdornmentFinishAmount","filamentAdornmentFilm","filamentAdornmentFacet","filamentAdornmentPolish",
+      "filamentAdornmentMotion","filamentAdornmentGlow","filamentAdornmentPopulation","filamentAdornmentRhythm","filamentAdornmentFinishAmount","filamentAdornmentFilm","filamentAdornmentFacet","filamentAdornmentPolish","filamentAdornmentInteriorAmount","filamentAdornmentInteriorDensity","filamentAdornmentInteriorOpenwork","filamentAdornmentInteriorDrift",
       "filamentMorphAmount","filamentMorphScale","filamentMorphSpeed",
       "filamentMorphSharpness","filamentMorphGlow",
       "filamentContagionAmount","filamentContagionReach","filamentContagionSpeed",
@@ -2203,6 +2213,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.filamentAdornmentSize=24+random()*75;
   s.filamentAdornmentMotion=18+random()*80;
   s.filamentAdornmentGlow=32+random()*66;
+  s.filamentAdornmentInterior="Native ornament";
+  if(s.filamentAdornmentAmount>0&&random()<.6){const interior=remixJewelryInterior(s,random);for(const key of jewelryInteriorControls)s[key]=interior[key];}
   s.filamentAdornmentFinish="Original jewelry";
   if(s.filamentAdornmentAmount>0&&random()<.7){const finish=remixJewelryFinish(s,random);for(const key of jewelryFinishControls)s[key]=finish[key];}
   s.filamentAdornmentPlacement="Original stations";s.filamentAdornmentKinetics="Original movement";

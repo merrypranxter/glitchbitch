@@ -68,7 +68,7 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   xenoVascularSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies, remixFreshFilaments,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
   filamentMaterials,filamentMaterialPresets,applyFilamentMaterialPreset,remixUnusualFilamentMaterials,
-  filamentAdornmentModes,filamentAdornmentFamilies,filamentAdornmentDescriptions,jewelryPlacementModes,jewelryKineticModes,remixJewelryChoreography,jewelryFinishModes,remixJewelryFinish,
+  filamentAdornmentModes,filamentAdornmentFamilies,filamentAdornmentDescriptions,jewelryPlacementModes,jewelryKineticModes,remixJewelryChoreography,jewelryFinishModes,remixJewelryFinish,jewelryInteriorModes,remixJewelryInterior,
   filamentAdornmentPresets,applyFilamentAdornmentPreset,remixFilamentAdornments,remixThreadCouture,
   filamentMorphModes,filamentMorphFamilies,filamentMorphDescriptions,
   filamentMorphPresets,applyFilamentMorphPreset,remixFilamentMorph,
@@ -2722,6 +2722,15 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
         <Parameter label="Jewelry size / fringe reach" name="filamentAdornmentSize" history={history}/>
         <Parameter label="Living ornaments / movement" name="filamentAdornmentMotion" history={history}/>
         <Parameter label="Jewel shine / phosphor" name="filamentAdornmentGlow" history={history}/>
+        <details><summary>Ornament microarchitecture · engraving & openwork</summary>
+          <p className="control-note">Add microscopic patterns inside the current ornaments. Openwork reveals the underlying yarn/art through the ornament layer; it does not erase the yarn or canvas. Both parents share this interior law.</p>
+          <Select label="Ornament interior" value={s.filamentAdornmentInterior} onChange={v=>history.change(x=>({...x,filamentAdornmentInterior:v}))}>{jewelryInteriorModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <Parameter label="Interior pattern influence" name="filamentAdornmentInteriorAmount" history={history}/>
+          <Parameter label="Microscopic pattern density" name="filamentAdornmentInteriorDensity" history={history}/>
+          <Parameter label="Openwork / perforation depth" name="filamentAdornmentInteriorOpenwork" history={history}/>
+          <Parameter label="Internal pattern drift" name="filamentAdornmentInteriorDrift" history={history}/>
+          <button type="button" className="button secondary" disabled={!s.filamentAmount||!s.filamentAdornmentAmount} onClick={()=>history.change(x=>remixJewelryInterior(x))}><Dices size={13}/> Shuffle ornament interior only</button>
+        </details>
         <details><summary>Ornament material alchemy · optical finishes</summary>
           <p className="control-note">Both parents keep their individual ornament shapes and yarn materials. This independent finish changes only ornament shading and highlights, not the underlying threads.</p>
           <Select label="Jewelry optical finish" value={s.filamentAdornmentFinish} onChange={v=>history.change(x=>({...x,filamentAdornmentFinish:v}))}>{jewelryFinishModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>

@@ -1,0 +1,92 @@
+// Weaving workspace: compose existing, recipe-safe textile helpers only.
+// No full-art randomization, new shaders, seed changes or ecological mutations.
+import * as F from "./filament-forge.js";
+import {remixStructuralOptics} from "./structural-thread-optics.js";
+import {remixUnderlay} from "./living-underlay.js";
+import {shuffleVelvet,shuffleCrochet} from "./living-textiles-wave5.js";
+import {remixSemanticGravity,hasSemanticLettering} from "./semantic-gravity.js";
+const unit=rng=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
+const pick=(xs,rng)=>xs[Math.floor(unit(rng)*xs.length)];
+const roll=(p,rng)=>unit(rng)<p;
+const range=(lo,hi,rng)=>lo+(hi-lo)*unit(rng);
+const visible=s=>({...s,filamentAmount:Math.max(65,s.filamentAmount||0)});
+export const weavingRemixGroups=[
+ {id:"weave",label:"Weave geometry & scale",note:"Pattern, thickness, density and geometry-specific controls; keeps the thread wardrobe."},
+ {id:"dress",label:"Dress the threads",note:"Fiber materials, beads, nap, sheen and thread jewelry together."},
+ {id:"fiber",label:"Fiber materials only",note:"Change the yarn without changing its jewelry or stitch motion."},
+ {id:"jewelry",label:"Jewelry & ornament only",note:"Decorate existing thread paths."},
+ {id:"optics",label:"Structural-color coats",note:"Thin-film and iridescent fiber optics."},
+ {id:"stitch",label:"Stitch motion & needle laws",note:"Animated sewing, including the Chladni and retrocausal systems."},
+ {id:"relief",label:"Sculpted thread relief",note:"Puffy, engraved or embossed-looking stitches."},
+ {id:"hybrid",label:"Second weave / crossbreed",note:"Introduce a different second pattern, retaining the first."},
+ {id:"living",label:"Living thread behavior",note:"Metamorphosis, contagion, neural activity, plasticity, scars or regeneration; required parent effects activate."},
+ {id:"ground",label:"Woven fabric ground",note:"Change the fabric underneath your threads."},
+ {id:"velvet",label:"Living velvet damask",note:"Shuffle only the independent velvet layer."},
+ {id:"crochet",label:"Hyperbolic crochet & lace",note:"Shuffle only fractal crochet; conservative raymarch quality."},
+ {id:"semantic",label:"Semantic gravity",note:"Let your existing visible text bend the weave; no words are generated."},
+];
+function textVisible(s){return hasSemanticLettering({...s,filamentAmount:1,semanticGravityMode:"Attract",semanticGravityAmount:1});}
+function weave(s,rng){
+ let next=F.nextFilamentSpecies(s,rng);
+ if(next.filamentSpecies==="Feral Jacquard")next=F.remixFeralJacquard(next,rng);
+ if(next.filamentSpecies==="Quasicrystal Brocade")next=F.remixQuasicrystalBrocade(next,rng);
+ return {...next,filamentScale:range(22,88,rng),filamentDensity:range(35,92,rng),filamentWidth:range(18,78,rng),filamentVariation:range(0,100,rng)};
+}
+function stitch(s,rng){
+ let next=F.remixFilamentStitchMotion(s,rng);
+ if(next.filamentStitchMode==="Chladni Needle Orchestra")next=F.remixChladniNeedles(next,rng);
+ if(next.filamentStitchMode==="Retrocausal Embroidery")next=F.remixRetrocausalEmbroidery(next,rng);
+ return {...next,filamentMotion:range(40,98,rng)};
+}
+const livingFns=[F.remixFilamentMorph,F.remixFilamentContagion,F.remixFilamentNeural,F.remixFilamentPlastic,F.remixFilamentScars,F.remixFilamentRegeneration];
+export function weavingRemixDisabled(s,id){return id==="semantic"&&!textVisible(s)?"Add visible text first.":"";}
+export function remixWeavingSystem(state,id,rng=Math.random){
+ switch(id){
+ case "weave":return weave(state,rng);
+ case "dress":return {...F.remixThreadCouture(state,rng),filamentBeadSize:range(15,95,rng),filamentSecondHue:range(0,100,rng)};
+ case "fiber":return {...F.remixFilamentMaterials(state,rng),filamentBeadSize:range(15,95,rng),filamentSecondHue:range(0,100,rng)};
+ case "jewelry":return F.remixFilamentAdornments(state,rng);
+ case "optics":return remixStructuralOptics(state,rng);
+ case "stitch":return stitch(state,rng);
+ case "relief":return F.remixFilamentSculpt(state,rng);
+ case "hybrid":return {...F.breedFilaments(state,rng),filamentSpecies:state.filamentSpecies,filamentSecondSpecies:pick(F.filamentSpecies.filter(x=>x!==state.filamentSpecies),rng)};
+ case "living":return pick(livingFns,rng)(state,rng);
+ case "ground":return remixUnderlay(state,rng);
+ case "velvet":return shuffleVelvet(state,rng);
+ case "crochet":{const next=shuffleCrochet(state,rng);return {...next,hcrQuality:Math.min(48,next.hcrQuality)};}
+ case "semantic":return textVisible(state)?remixSemanticGravity(state,rng):state;
+ default:return state;
+ }
+}
+const optionalAmounts=["filamentMorphAmount","filamentContagionAmount","filamentNeuralAmount","filamentPlasticAmount","filamentScarAmount","filamentRegenAmount","filamentOpticsAmount","filamentSecondOpticsAmount","filamentSculptAmount","filamentStitchAmount","filamentAdornmentAmount","semanticGravityAmount","underlayAmount","vldAmount","hcrAmount"];
+export function shuffleWeavingWorld(state,rng=Math.random,{intensity="Wild",allowHybrid=true,allowHeavy=false}={}){
+ const p=intensity==="Gentle"?.28:intensity==="Balanced"?.55:.82;
+ // Reset only textile layer presences, then rebuild a coherent wardrobe.
+ let s={...state};for(const key of optionalAmounts)s[key]=0;
+ s=weave(s,rng);
+ s={...s,filamentAmount:range(76,100,rng),filamentRelief:range(40,96,rng),filamentHue:range(0,100,rng),filamentCrossbreed:0};
+ if(allowHybrid&&roll(p,rng))s=remixWeavingSystem(s,"hybrid",rng);
+ if(s.filamentSecondSpecies==="Feral Jacquard"&&s.filamentCrossbreed>0){const a=s.filamentSpecies;s={...F.remixFeralJacquard(s,rng),filamentSpecies:a};}
+ if(s.filamentSecondSpecies==="Quasicrystal Brocade"&&s.filamentCrossbreed>0){const a=s.filamentSpecies;s={...F.remixQuasicrystalBrocade(s,rng),filamentSpecies:a};}
+ s=remixWeavingSystem(s,"dress",rng);
+ s=stitch(s,rng);
+ if(roll(p,rng))s=remixStructuralOptics(s,rng);
+ if(roll(p,rng))s=F.remixFilamentSculpt(s,rng);
+ if(roll(p,rng))s=remixUnderlay(s,rng);
+ // The optional living families have real shader dependencies. Existing
+ // helpers activate their prerequisites; don't blindly enable every branch.
+ if(roll(p,rng))s=remixWeavingSystem(s,"living",rng);
+ if(allowHeavy){
+   s=F.remixFilamentContagion(s,rng);
+   s=F.remixFilamentPlastic(s,rng);
+   s=F.remixFilamentRegeneration(s,rng);
+   s=remixStructuralOptics(s,rng);
+   s=F.remixFilamentSculpt(s,rng);
+   s=remixUnderlay(s,rng);
+   s=shuffleVelvet(s,rng);
+   s=remixWeavingSystem(s,"crochet",rng);
+ }else if(roll(p*.55,rng))s=remixWeavingSystem(s,pick(["velvet","crochet"],rng),rng);
+ if(textVisible(s)&&roll(p*.45,rng))s=remixSemanticGravity(s,rng);
+ if(!s.filamentCrossbreed)s.filamentSecondOpticsAmount=0;
+ return visible(s);
+}

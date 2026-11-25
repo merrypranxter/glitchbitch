@@ -9,9 +9,11 @@ import '../effects-workbench.css';
 
 const NAV_KEY = 'glitch-effect-category-v2';
 const ECOSYSTEM_NAV_KEY = 'glitch-ecosystem-category-v1';
+const WEAVING_NAV_KEY = 'glitch-weaving-category-v1';
+const navKey=scope=>scope==='ecosystem'?ECOSYSTEM_NAV_KEY:scope==='weaving'?WEAVING_NAV_KEY:NAV_KEY;
 function initialCategory(scope) {
-  const fallback=scope==="ecosystem"?"Organisms":"Signal";
-  try { const value=localStorage.getItem(scope==="ecosystem"?ECOSYSTEM_NAV_KEY:NAV_KEY); return value?validCategory(value):fallback; } catch { return fallback; }
+  const fallback=scope==="ecosystem"?"Organisms":scope==="weaving"?"Materials":"Signal";
+  try { const value=localStorage.getItem(navKey(scope)); return value?validCategory(value):fallback; } catch { return fallback; }
 }
 export default function EffectsWorkbench({ history, body, quickToggles, scope = "effects" }) {
   const scoped = entriesForScope(scope);
@@ -32,7 +34,7 @@ export default function EffectsWorkbench({ history, body, quickToggles, scope = 
   const scrollTop = () => root.current?.closest('.inspector-scroll')?.scrollTo({top: 0});
   function chooseFamily(value) {
     setCategory(value);
-    try { localStorage.setItem(scope==="ecosystem"?ECOSYSTEM_NAV_KEY:NAV_KEY, value); } catch { /* session only */ }
+    try { localStorage.setItem(navKey(scope), value); } catch { /* session only */ }
     setSelected(null); setQuery(''); scrollTop();
   }
   function bookmark(id) {
@@ -63,7 +65,7 @@ export default function EffectsWorkbench({ history, body, quickToggles, scope = 
   }
   return <div className={"effects-workbench " + (selectedEntry ? "is-editing" : "")} ref={root} style={{'--family-color': family.color}}>
     <div className="effects-nav">
-      <div className="effects-heading"><span>{scope==="ecosystem"?"LIVING LABS":"CONTROL ROOM"}</span><small>{activeCount} active systems</small></div>
+      <div className="effects-heading"><span>{scope==="ecosystem"?"LIVING LABS":scope==="weaving"?"TEXTILE LABS":"CONTROL ROOM"}</span><small>{activeCount} active systems</small></div>
       <div className="effects-views" role="group" aria-label="Effects views">
         {[["browse", "Explore"], ["active", `Active · ${activeCount}`], ["favorites", `Favorites · ${favorites.filter(id=>scoped.some(e=>e.id===id)).length}`]].map(([id,label]) =>
           <button type="button" key={id} aria-pressed={view === id}
@@ -71,7 +73,7 @@ export default function EffectsWorkbench({ history, body, quickToggles, scope = 
       </div>
       {selectedEntry ? <><div className="effect-editor-nav">
         <button type="button" onClick={back}><ArrowLeft size={16}/> {query ? 'Search results' : view === 'browse' ? category : view === 'active' ? 'Active effects' : 'Favorites'}</button>
-        <button type="button" aria-label={scope==="ecosystem"?"Search ecosystem":"Search all effects"} onClick={() => {back(); requestAnimationFrame(() => search.current?.focus());}}><Search size={17}/></button>
+        <button type="button" aria-label={scope==="ecosystem"?"Search ecosystem":scope==="weaving"?"Search weaving":"Search all effects"} onClick={() => {back(); requestAnimationFrame(() => search.current?.focus());}}><Search size={17}/></button>
       </div>
       {effectDetails.some(d => d.sectionId === meta.id) && <label className="effect-lab-jump">
         <select aria-label="Jump to a laboratory" value={selectedEntry.sectionId ? selectedEntry.id : ''}
@@ -86,7 +88,7 @@ export default function EffectsWorkbench({ history, body, quickToggles, scope = 
           </select>
         </label>}
         <label className="effects-search"><Search size={16}/><input ref={search} type="search" value={query}
-          aria-label={scope==="ecosystem"?"Search ecosystem":"Search all effects"} placeholder={scope==="ecosystem"?"Find a living laboratory…":"Find any effect or laboratory…"} onChange={e => setQuery(e.target.value)}/></label>
+          aria-label={scope==="ecosystem"?"Search ecosystem":scope==="weaving"?"Search weaving":"Search all effects"} placeholder={scope==="ecosystem"?"Find a living laboratory…":scope==="weaving"?"Find a weave, stitch or fiber…":"Find any effect or laboratory…"} onChange={e => setQuery(e.target.value)}/></label>
       </div>}
     </div>
     {selectedEntry ? <div className="effect-editor">
@@ -107,8 +109,8 @@ export default function EffectsWorkbench({ history, body, quickToggles, scope = 
         </div>)}
       </div>
       {!entries.length && <p className="effect-empty">{query ? 'No effects found. Try a material, behavior or control name.' : view === 'favorites' ? 'Tap a star beside an effect or laboratory to keep it here.' : 'No effects enabled yet. Explore a family and turn something up.'}</p>}
-      {scope !== "ecosystem" && <div className="effect-quick-strip"><span>Quick switches</span>{quickToggles}</div>}
-      <p className="effect-directory-foot">Math engines & Shader Vault live in Math. Artwork stays unchanged while you explore.</p>
+      {scope === "effects" && <div className="effect-quick-strip"><span>Quick switches</span>{quickToggles}</div>}
+      <p className="effect-directory-foot">{scope==="weaving"?"Velvet and fractal crochet controls are also below.":"Math engines & Shader Vault live in Math."} Artwork stays unchanged while you explore.</p>
     </>}
   </div>;
 }

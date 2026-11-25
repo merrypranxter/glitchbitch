@@ -13,7 +13,7 @@ export { injuryModes };
 export { alchemyModes };
 import { backdropModes } from "./backdrops.js";
 export { backdropModes };
-import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, jewelryPlacementModes, jewelryKineticModes, remixJewelryChoreography, filamentMorphModes, filamentContagionModes, filamentNeuralModes, filamentPlasticModes, filamentScarModes, filamentRegenModes } from "./filament-forge.js";
+import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, jewelryPlacementModes, jewelryKineticModes, remixJewelryChoreography, jewelryFinishModes, jewelryFinishControls, remixJewelryFinish, filamentMorphModes, filamentContagionModes, filamentNeuralModes, filamentPlasticModes, filamentScarModes, filamentRegenModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
 import {semanticGravityModes,hasSemanticLettering} from "./semantic-gravity.js";
 import {structuralOpticsModes} from "./structural-thread-optics.js";
@@ -543,6 +543,10 @@ export const numericRanges = {
   filamentAdornmentGlow: [0, 100],
   filamentAdornmentPopulation: [0, 100],
   filamentAdornmentRhythm: [0, 100],
+  filamentAdornmentFinishAmount: [0, 100],
+  filamentAdornmentFilm: [0, 100],
+  filamentAdornmentFacet: [0, 100],
+  filamentAdornmentPolish: [0, 100],
   filamentStitchAmount: [0, 100],
   filamentStitchSpeed: [0, 100],
   filamentStitchLength: [0, 100],
@@ -1091,6 +1095,11 @@ export const initial = {
   filamentAdornmentKinetics: "Original movement",
   filamentAdornmentPopulation: 70,
   filamentAdornmentRhythm: 60,
+  filamentAdornmentFinish: "Original jewelry",
+  filamentAdornmentFinishAmount: 82,
+  filamentAdornmentFilm: 52,
+  filamentAdornmentFacet: 65,
+  filamentAdornmentPolish: 72,
   filamentSecondAdornmentMode: "Bare threads",
   filamentAdornmentAmount: 0,
   filamentAdornmentSpacing: 56,
@@ -1398,6 +1407,7 @@ export function validateRecipe(input) {
     filamentAdornmentMode: filamentAdornmentModes,
     filamentAdornmentPlacement: jewelryPlacementModes,
     filamentAdornmentKinetics: jewelryKineticModes,
+    filamentAdornmentFinish: jewelryFinishModes,
     filamentSecondAdornmentMode: filamentAdornmentModes,
     filamentSculptMode: filamentSculptModes,
     underlayMode: underlayModes,
@@ -1841,7 +1851,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "filamentSecondOpticsAnisotropy","filamentSecondOpticsCurvature",
       "filamentSecondOpticsPearl","filamentSecondOpticsPhase",
       "filamentAdornmentAmount","filamentAdornmentSpacing","filamentAdornmentSize",
-      "filamentAdornmentMotion","filamentAdornmentGlow","filamentAdornmentPopulation","filamentAdornmentRhythm",
+      "filamentAdornmentMotion","filamentAdornmentGlow","filamentAdornmentPopulation","filamentAdornmentRhythm","filamentAdornmentFinishAmount","filamentAdornmentFilm","filamentAdornmentFacet","filamentAdornmentPolish",
       "filamentMorphAmount","filamentMorphScale","filamentMorphSpeed",
       "filamentMorphSharpness","filamentMorphGlow",
       "filamentContagionAmount","filamentContagionReach","filamentContagionSpeed",
@@ -2193,6 +2203,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.filamentAdornmentSize=24+random()*75;
   s.filamentAdornmentMotion=18+random()*80;
   s.filamentAdornmentGlow=32+random()*66;
+  s.filamentAdornmentFinish="Original jewelry";
+  if(s.filamentAdornmentAmount>0&&random()<.7){const finish=remixJewelryFinish(s,random);for(const key of jewelryFinishControls)s[key]=finish[key];}
   s.filamentAdornmentPlacement="Original stations";s.filamentAdornmentKinetics="Original movement";
   if(s.filamentAdornmentAmount>0&&random()<.6){
     const choreo=remixJewelryChoreography(s,random);

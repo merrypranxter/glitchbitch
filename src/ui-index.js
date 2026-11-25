@@ -302,7 +302,7 @@ export const sections = [
       "filamentRegenMode","filamentRegenAmount","filamentRegenBranches",
       "filamentRegenSpeed","filamentRegenHealing","filamentRegenGlow",
       "filamentAdornmentAmount","filamentAdornmentSpacing","filamentAdornmentSize",
-      "filamentAdornmentMotion","filamentAdornmentGlow","filamentAdornmentPlacement","filamentAdornmentKinetics","filamentAdornmentPopulation","filamentAdornmentRhythm",
+      "filamentAdornmentMotion","filamentAdornmentGlow","filamentAdornmentPlacement","filamentAdornmentKinetics","filamentAdornmentPopulation","filamentAdornmentRhythm","filamentAdornmentFinish","filamentAdornmentFinishAmount","filamentAdornmentFilm","filamentAdornmentFacet","filamentAdornmentPolish",
       "filamentStitchMode","filamentStitchAmount","filamentStitchSpeed",
       "filamentStitchLength","filamentStitchGlow",
       "filamentChladniOrder","filamentChladniResonance","filamentChladniDensity",

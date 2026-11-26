@@ -159,6 +159,16 @@ export function remixUnusualFilamentMaterials(state,rng=Math.random){
 
 // Projected thread-local construction; not a literal 3D yarn mesh.
 // Analytic time-dependent deformation of projected carrier distances.
+export const textileChromaModes=["Original pigment","Spectral braid","Traveling dye fronts","Chromatic counterflow","Quasiperiodic dye work","Pigment standing waves","Chromosomal banding","Interference brocade","Crossing pigment exchange"];
+export const textileChromaControls=["filamentChroma","filamentChromaAmount","filamentChromaScale","filamentChromaSpread","filamentChromaSpeed","filamentChromaContrast","filamentChromaExchange"];
+export function remixTextileChroma(state,rng=Math.random){
+ const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
+ const pool=textileChromaModes.slice(1).filter(x=>x!==state.filamentChroma&&(x!=="Crossing pigment exchange"||state.filamentCrossbreed>0));
+ return {...state,filamentChroma:pool[Math.floor(unit()*pool.length)],
+ filamentChromaAmount:65+35*unit(),filamentChromaScale:15+75*unit(),
+ filamentChromaSpread:35+65*unit(),filamentChromaSpeed:20+80*unit(),
+ filamentChromaContrast:25+75*unit(),filamentChromaExchange:45+55*unit()};
+}
 export const textilePhysicsModes=["Stable threads","Unzipping seams","Fission & fusion","Fraying wavefront","Unravel & rewind","Living splice","Braided convergence","Tension rupture","Crossbreed grafts"];
 export const textilePhysicsControls=["filamentPhysics","filamentPhysicsAmount","filamentPhysicsScale","filamentPhysicsReach","filamentPhysicsSpeed","filamentPhysicsRepair","filamentPhysicsGlow"];
 export function remixTextilePhysics(state,rng=Math.random){
@@ -2130,6 +2140,10 @@ uniform float filamentChladniPhase,filamentChladniDetune;
 uniform float filamentRetroLead,filamentRetroEcho,filamentRetroParadox;
 uniform float filamentRetroKnots,filamentRetroReversal,filamentRetroCoherence;
 uniform float filamentNap,filamentLuster,filamentBeads,filamentBeadSize,filamentSecondHue;
+#ifdef FILAMENT_CHROMA
+uniform int filamentChroma;
+uniform float filamentChromaAmount,filamentChromaScale,filamentChromaSpread,filamentChromaSpeed,filamentChromaContrast,filamentChromaExchange;
+#endif
 #ifdef FILAMENT_PHYSICS
 uniform int filamentPhysics;
 uniform float filamentPhysicsAmount,filamentPhysicsScale,filamentPhysicsReach,filamentPhysicsSpeed,filamentPhysicsRepair,filamentPhysicsGlow;
@@ -2214,9 +2228,10 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     int opticalLaw,float opticalAmount,float opticalThickness,float opticalDispersion,
     float opticalAnisotropy,float opticalCurvature,float opticalPearl,float opticalPhase,
     float incomingCore,float incomingCarrier,
-    float incomingNeural,float incomingLuma,
+    float incomingNeural,float incomingLuma,float incomingPigment,
     out float maskCore,out float outgoingCarrier,
-    out float outgoingNeural,out float outgoingLuma){
+    out float outgoingNeural,out float outgoingLuma,out float outgoingPigment){
+  outgoingPigment=0.0;
   outgoingCarrier=0.0;
   outgoingNeural=0.0;
   outgoingLuma=0.0;
@@ -3201,6 +3216,55 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
 #endif
   float pigmentPhase=fract(phase*.17+filamentHue*.88+hueOffset+
     seedPhase*.047+ct*(.023+.017*filamentMotion)+fieldV*.06);
+#ifdef FILAMENT_CHROMA
+  // Modulate the existing palette coordinate on the carrier, before fiber
+  // materials, neural stimuli and jewelry use it. Projected radial bands
+  // can distinguish subfibers without claiming true signed 3D strand IDs.
+  float chAcross=threadD/max(width,.003);
+  float chRate=mix(2.,19.,filamentChromaScale);
+  float chAlong=(phase+q.x*.13+q.y*.09)*chRate;
+  float chClock=time*filamentChromaSpeed*1.75;
+  float chDepth=filamentChromaSpread*.48;
+  float chWave=0.;
+  if(filamentChroma==1){
+    float strand=chAcross*mix(2.,7.,filamentChromaScale)+.42*sin(chAlong-chClock);
+    chWave=2.*fract(strand)-1.;
+  }else if(filamentChroma==2){
+    float front=.5+.5*sin(chAlong-chClock);
+    chWave=2.*smoothstep(.28,.72,front)-1.;
+  }else if(filamentChroma==3){
+    float a=sin(chAlong-chClock+chAcross*4.);
+    float b=sin(chAlong+chClock-chAcross*4.);
+    chWave=mix(a,b,smoothstep(.18,.82,chAcross));
+  }else if(filamentChroma==4){
+    chWave=(sin(chAlong-chClock*.43)+sin(chAlong*1.618034+chClock*.61+chAcross*3.))*.5;
+  }else if(filamentChroma==5){
+    chWave=sin(chAlong+chAcross*5.)*cos(chClock);
+  }else if(filamentChroma==6){
+    float bands=chAlong*.58-chClock*.24;
+    float bandId=floor(bands);
+    float h=fract(sin(bandId*17.731+seedPhase)*43758.5453);
+    float prev=fract(sin((bandId-1.)*17.731+seedPhase)*43758.5453);
+    chWave=2.*mix(prev,h,smoothstep(0.,.19,fract(bands)))-1.;
+  }else if(filamentChroma==7){
+    chWave=sin(chAlong-chClock)*sin(chAlong*1.13+chClock*.77+chAcross*7.);
+  }else if(filamentChroma==8){
+    // Real incoming first-parent pigment coordinate, not composited RGB or
+    // a guessed neighbor. Wrap the difference across the palette seam.
+    float contact=clamp(incomingCore*core,0.,1.);
+    float delta=fract(incomingPigment-pigmentPhase+.5)-.5;
+    pigmentPhase=fract(pigmentPhase+delta*contact*filamentChromaExchange*filamentChromaAmount);
+    chWave=sin(chAlong-chClock)*contact*.6;
+  }
+  float chSharpen=mix(1.,3.5,filamentChromaContrast);
+  chWave=clamp(chWave*chSharpen,-1.,1.);
+  // Attenuate extremely fine transverse bands at low preview resolution.
+  float chFoot=aa/max(width,.003);
+  float chVisible=1.-smoothstep(.24,.85,chFoot);
+  float chWeight=filamentChroma==1?chVisible:1.;
+  pigmentPhase=fract(pigmentPhase+chWave*chDepth*filamentChromaAmount*chWeight);
+#endif
+  outgoingPigment=pigmentPhase;
   vec3 ink=palette(pigmentPhase);
   vec3 glimmer=palette(fract(pigmentPhase+.23+.16*filamentRelief));
 #ifdef FILAMENT_NEURAL
@@ -4424,16 +4488,16 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
 }
 vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
   if(filamentAmount<.001)return background;
-  float firstCore=0.0,firstCarrier=0.0,firstNeural=0.0,firstLuma=0.0;
+  float firstCore=0.0,firstCarrier=0.0,firstNeural=0.0,firstLuma=0.0,firstPigment=0.0;
   vec3 first=filamentField(background,uv,fieldP,fieldV,
     filamentSpecies,filamentMaterial,filamentAdornmentMode,filamentMorphTarget,
     0.0,0.0,0.0,
     filamentOpticsMode,filamentOpticsAmount,filamentOpticsThickness,filamentOpticsDispersion,
     filamentOpticsAnisotropy,filamentOpticsCurvature,filamentOpticsPearl,filamentOpticsPhase,
-    0.0,0.0,0.0,0.0,firstCore,firstCarrier,firstNeural,firstLuma);
+    0.0,0.0,0.0,0.0,0.0,firstCore,firstCarrier,firstNeural,firstLuma,firstPigment);
 #ifdef FILAMENT_HYBRID
   if(filamentCrossbreed<.001)return first;
-  float secondCore=0.0,secondCarrier=0.0,secondNeural=0.0,secondLuma=0.0;
+  float secondCore=0.0,secondCarrier=0.0,secondNeural=0.0,secondLuma=0.0,secondPigment=0.0;
   vec3 second=filamentField(first,uv,fieldP,fieldV,
     filamentSecondSpecies,filamentSecondMaterial,filamentSecondAdornmentMode,
     filamentSecondMorphTarget,filamentPhase*6.2831853,filamentTwist*6.2831853,
@@ -4442,8 +4506,8 @@ vec3 livingFilamentForge(vec3 background,vec2 uv,vec2 fieldP,float fieldV){
     filamentSecondOpticsThickness,filamentSecondOpticsDispersion,
     filamentSecondOpticsAnisotropy,filamentSecondOpticsCurvature,
     filamentSecondOpticsPearl,filamentSecondOpticsPhase,
-    firstCore,firstCarrier,firstNeural,firstLuma,
-    secondCore,secondCarrier,secondNeural,secondLuma);
+    firstCore,firstCarrier,firstNeural,firstLuma,firstPigment,
+    secondCore,secondCarrier,secondNeural,secondLuma,secondPigment);
   // True under/over crossings: only where two threads overlap. Different
   // paths remain distinct rather than dissolving into a flat opacity mix.
   float contact=clamp(firstCore*secondCore,0.0,1.0);

@@ -4162,8 +4162,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float arAA=clamp(aa/max(width,.003)*arScale*.32,.025,.22);
   float arLine=mix(.105,.025,filamentArchitectureOpenwork);
   float arBlend=0.;
-  vec3 arPrimary=architectureField(filamentArchitecture,arP,arAlong,arClock,arRand,arLife,arAA);
-  vec3 arForm=arPrimary;
+  vec3 arForm;
 #ifdef FILAMENT_ARCH_DIMENSION
   float dmClock=time*filamentDimSpeed*1.2+filamentDimProgress*6.2831853;
   float dmWave=.5-.5*cos(dmClock);
@@ -4199,12 +4198,21 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     dmP.x+=cos(arP.y*7.-dmClock)*dmWarp*.09;
     dmAlong+=cos(arP.y*7.-dmClock)*dmWarp*.09;
   }
-  if(dmMid>.0001)arPrimary=architectureField(filamentArchitecture,dmP,dmAlong,arClock,arRand,arLife,arAA);
-  vec3 arTarget=architectureField(filamentDimTarget,dmP,dmAlong,arClock,arRand,arLife,arAA);
-  arForm=mix(arPrimary,arTarget,arBlend);
-  // Optional union bridge prevents thin unsigned fields vanishing at midpoint.
-  float dmNear=min(arPrimary.x,arTarget.x);
-  arForm.x=mix(arForm.x,dmNear,filamentDimFusion*dmMid);
+  // Skip the inactive field entirely at exact endpoints.
+  if(arBlend<=.00001){
+    arForm=architectureField(filamentArchitecture,arP,arAlong,arClock,arRand,arLife,arAA);
+  }else if(arBlend>=.99999){
+    arForm=architectureField(filamentDimTarget,arP,arAlong,arClock,arRand,arLife,arAA);
+  }else{
+    vec3 arPrimary=architectureField(filamentArchitecture,dmP,dmAlong,arClock,arRand,arLife,arAA);
+    vec3 arTarget=architectureField(filamentDimTarget,dmP,dmAlong,arClock,arRand,arLife,arAA);
+    arForm=mix(arPrimary,arTarget,arBlend);
+    // Optional union bridge prevents thin unsigned fields vanishing at midpoint.
+    float dmNear=min(arPrimary.x,arTarget.x);
+    arForm.x=mix(arForm.x,dmNear,filamentDimFusion*dmMid);
+  }
+#else
+  arForm=architectureField(filamentArchitecture,arP,arAlong,arClock,arRand,arLife,arAA);
 #endif
   float arD=arForm.x,arFill=arForm.y,arShine=arForm.z;
   float arSupport=(1.-smoothstep(arExtent*.87,arExtent,arAcross))*mask;

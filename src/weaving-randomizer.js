@@ -13,6 +13,7 @@ const visible=s=>({...s,filamentAmount:Math.max(65,s.filamentAmount||0)});
 export const weavingRemixGroups=[
  {id:"weave",label:"Weave geometry & scale",note:"Pattern, thickness, density and geometry-specific controls; keeps the thread wardrobe."},
  {id:"dress",label:"Dress the threads",note:"Fiber materials, beads, nap, sheen and thread jewelry together."},
+ {id:"architecture",label:"Parasitic architecture only",note:"Change projected mineral and microbial structures around the threads."},
  {id:"surface-ecology",label:"Textile surface ecology only",note:"Change the microscopic organisms and deposits attached to the fabric."},
  {id:"chroma",label:"Chromatic weaving only",note:"Change traveling color bands and pigment behavior without replacing the palette."},
  {id:"physics",label:"Impossible textile physics only",note:"Animate splitting, fraying, unzipping and rejoining the thread carrier."},
@@ -53,6 +54,7 @@ export function remixWeavingSystem(state,id,rng=Math.random){
  switch(id){
  case "weave":return weave(state,rng);
  case "dress":return {...F.remixJewelryInterior(F.remixJewelryFinish(F.remixThreadCouture(state,rng),rng),rng),filamentBeadSize:range(15,95,rng),filamentSecondHue:range(0,100,rng)};
+ case "architecture":return F.remixTextileArchitecture(state,rng);
  case "surface-ecology":return F.remixTextileEcology(state,rng);
  case "chroma":return F.remixTextileChroma(state,rng);
  case "physics":return F.remixTextilePhysics(state,rng);
@@ -87,6 +89,8 @@ export function shuffleWeavingWorld(state,rng=Math.random,{intensity="Wild",allo
  if(s.filamentSecondSpecies==="Feral Jacquard"&&s.filamentCrossbreed>0){const a=s.filamentSpecies;s={...F.remixFeralJacquard(s,rng),filamentSpecies:a};}
  if(s.filamentSecondSpecies==="Quasicrystal Brocade"&&s.filamentCrossbreed>0){const a=s.filamentSpecies;s={...F.remixQuasicrystalBrocade(s,rng),filamentSpecies:a};}
  s=remixWeavingSystem(s,"dress",rng);
+ if(roll(p*.48,rng))s=F.remixTextileArchitecture(s,rng);
+ else s={...s,filamentArchitecture:"Bare architecture"};
  if(roll(p*.62,rng))s=F.remixTextileEcology(s,rng);
  else s={...s,filamentEcology:"Clean fibers"};
  if(roll(p*.75,rng))s=F.remixTextileChroma(s,rng);

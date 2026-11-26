@@ -14,7 +14,7 @@ test("parasitic architecture is opt-in, separately lockable and recipe-safe",()=
   assert.equal(s.filamentArchitecture,textileArchitectureModes[i]);
   assert.doesNotThrow(()=>validateRecipe(s));
   assert.deepEqual(parseDocument(recipeDocument(s,"architecture",{time:0,colorTime:0})).state,s);
-  assert.ok(filamentGLSL.includes("filamentArchitecture=="+i+"){"));
+  assert.ok(filamentGLSL.includes("arMode=="+i+"){"));
   for(const k of Object.keys(initial).filter(k=>!textileArchitectureControls.includes(k)))assert.deepEqual(s[k],initial[k],k);
   assert.deepEqual(protectWeaving(initial,s,["architecture"]),initial);
  }
@@ -33,7 +33,7 @@ test("architecture shader has independent specialization, carrier support and un
 
 test("topology shaders retain bounded support and WebGL1-compatible projected edges",()=>{
  assert.match(filamentGLSL,/sin\(v\.x\)\*cos\(v\.y\)\+sin\(v\.y\)\*cos\(v\.z\)\+sin\(v\.z\)\*cos\(v\.x\)/);
- const edge=filamentGLSL.split("else if(filamentArchitecture==15){")[1].split("else if(filamentArchitecture==16){")[0];
+ const edge=filamentGLSL.split("else if(arMode==15){")[1].split("else if(arMode==16){")[0];
  assert.match(edge,/ei<4/);
  assert.match(edge,/vi<8/);
  assert.doesNotMatch(edge,/>>|<</);

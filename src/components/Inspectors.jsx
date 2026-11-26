@@ -68,7 +68,7 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   xenoVascularSpecies, filamentPresets, applyFilamentPreset, nextFilamentSpecies, remixFreshFilaments,
   filamentHybridPresets, applyFilamentHybrid, breedFilaments,
   filamentMaterials,filamentMaterialPresets,applyFilamentMaterialPreset,remixUnusualFilamentMaterials,
-  filamentAdornmentModes,filamentAdornmentFamilies,filamentAdornmentDescriptions,jewelryPlacementModes,jewelryKineticModes,remixJewelryChoreography,jewelryFinishModes,remixJewelryFinish,jewelryInteriorModes,remixJewelryInterior,
+  filamentAdornmentModes,filamentAdornmentFamilies,filamentAdornmentDescriptions,jewelryPlacementModes,jewelryKineticModes,remixJewelryChoreography,jewelryFinishModes,remixJewelryFinish,jewelryInteriorModes,remixJewelryInterior,jewelryColonyModes,remixJewelryColony,
   filamentAdornmentPresets,applyFilamentAdornmentPreset,remixFilamentAdornments,remixThreadCouture,
   filamentMorphModes,filamentMorphFamilies,filamentMorphDescriptions,
   filamentMorphPresets,applyFilamentMorphPreset,remixFilamentMorph,
@@ -2722,6 +2722,15 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
         <Parameter label="Jewelry size / fringe reach" name="filamentAdornmentSize" history={history}/>
         <Parameter label="Living ornaments / movement" name="filamentAdornmentMotion" history={history}/>
         <Parameter label="Jewel shine / phosphor" name="filamentAdornmentGlow" history={history}/>
+        <details><summary>Mixed jewelry populations · microscopic charm colonies</summary>
+          <p className="control-note">Mix three additional species with the selected ornament on each decorated parent. Deterministic station identities vary shape, size, finish and interior along the carrier. Uniform jewelry restores the original collection. Bare parents remain bare.</p>
+          <Select label="Jewelry population" value={s.filamentAdornmentColony} onChange={v=>history.change(x=>({...x,filamentAdornmentColony:v}))}>{jewelryColonyModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <Parameter label="Species diversity" name="filamentAdornmentDiversity" history={history}/>
+          <Parameter label="Individual size variation" name="filamentAdornmentSizeVariance" history={history}/>
+          <Parameter label="Individual finish variation" name="filamentAdornmentFinishVariance" history={history}/>
+          <Parameter label="Individual anatomy variation" name="filamentAdornmentAnatomyVariance" history={history}/>
+          <button type="button" className="button secondary" disabled={!s.filamentAmount||!s.filamentAdornmentAmount} onClick={()=>history.change(x=>remixJewelryColony(x))}><Dices size={13}/> Shuffle charm population only</button>
+        </details>
         <details><summary>Ornament microarchitecture · engraving & openwork</summary>
           <p className="control-note">Add microscopic patterns inside the current ornaments. Openwork reveals the underlying yarn/art through the ornament layer; it does not erase the yarn or canvas. Both parents share this interior law.</p>
           <Select label="Ornament interior" value={s.filamentAdornmentInterior} onChange={v=>history.change(x=>({...x,filamentAdornmentInterior:v}))}>{jewelryInteriorModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>

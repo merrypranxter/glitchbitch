@@ -302,7 +302,7 @@ export const sections = [
       "filamentRegenMode","filamentRegenAmount","filamentRegenBranches",
       "filamentRegenSpeed","filamentRegenHealing","filamentRegenGlow",
       "filamentAdornmentAmount","filamentAdornmentSpacing","filamentAdornmentSize",
-      "filamentAdornmentMotion","filamentAdornmentGlow","filamentAdornmentPlacement","filamentAdornmentKinetics","filamentAdornmentPopulation","filamentAdornmentRhythm","filamentAdornmentFinish","filamentAdornmentFinishAmount","filamentAdornmentFilm","filamentAdornmentFacet","filamentAdornmentPolish","filamentAdornmentInterior","filamentAdornmentInteriorAmount","filamentAdornmentInteriorDensity","filamentAdornmentInteriorOpenwork","filamentAdornmentInteriorDrift",
+      "filamentAdornmentMotion","filamentAdornmentGlow","filamentAdornmentPlacement","filamentAdornmentKinetics","filamentAdornmentPopulation","filamentAdornmentRhythm","filamentAdornmentFinish","filamentAdornmentFinishAmount","filamentAdornmentFilm","filamentAdornmentFacet","filamentAdornmentPolish","filamentAdornmentInterior","filamentAdornmentInteriorAmount","filamentAdornmentInteriorDensity","filamentAdornmentInteriorOpenwork","filamentAdornmentInteriorDrift","filamentAdornmentColony","filamentAdornmentDiversity","filamentAdornmentSizeVariance","filamentAdornmentFinishVariance","filamentAdornmentAnatomyVariance",
       "filamentStitchMode","filamentStitchAmount","filamentStitchSpeed",
       "filamentStitchLength","filamentStitchGlow",
       "filamentChladniOrder","filamentChladniResonance","filamentChladniDensity",

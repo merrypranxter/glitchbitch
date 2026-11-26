@@ -157,6 +157,17 @@ export function remixUnusualFilamentMaterials(state,rng=Math.random){
 }
 
 
+// Projected thread-local construction; not a literal 3D yarn mesh.
+export const fiberConstructionModes=["Original strand","Double helix cable","Three-ply braid","Nested helical bundle","Hollow tubular yarn","Wire-wrapped core","Ribbed ribbon","Microfilament rope","Cellular optical cable"];
+export const fiberConstructionControls=["filamentConstruction","filamentConstructionAmount","filamentConstructionPitch","filamentConstructionGap","filamentConstructionMotion","filamentConstructionRelief"];
+export function remixFiberConstruction(state,rng=Math.random){
+ const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
+ const pool=fiberConstructionModes.slice(1).filter(x=>x!==state.filamentConstruction);
+ return {...state,filamentConstruction:pool[Math.floor(unit()*pool.length)],
+ filamentConstructionAmount:65+35*unit(),filamentConstructionPitch:20+80*unit(),
+ filamentConstructionGap:20+75*unit(),filamentConstructionMotion:20+80*unit(),
+ filamentConstructionRelief:45+55*unit()};
+}
 export const filamentMaterialControls=[
   "filamentNap","filamentLuster","filamentBeads","filamentBeadSize",
   "filamentSecondHue"
@@ -2098,6 +2109,10 @@ uniform float filamentChladniPhase,filamentChladniDetune;
 uniform float filamentRetroLead,filamentRetroEcho,filamentRetroParadox;
 uniform float filamentRetroKnots,filamentRetroReversal,filamentRetroCoherence;
 uniform float filamentNap,filamentLuster,filamentBeads,filamentBeadSize,filamentSecondHue;
+#ifdef FILAMENT_CONSTRUCTION
+uniform int filamentConstruction;
+uniform float filamentConstructionAmount,filamentConstructionPitch,filamentConstructionGap,filamentConstructionMotion,filamentConstructionRelief;
+#endif
 uniform float filamentCrossbreed,filamentInterlace,filamentTwist,filamentPhase;
 uniform float filamentAmount,filamentScale,filamentDensity,filamentMotion;
 uniform float filamentWidth,filamentRelief,filamentHue,filamentVariation;
@@ -2531,6 +2546,60 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float aa=max(.005,1.2*freq/min(res.x,res.y));
   float width=.009+filamentWidth*.070;
   float core=(1.0-smoothstep(width,width+aa,threadD))*mask;
+#ifdef FILAMENT_CONSTRUCTION
+  // Unsigned carrier distance: mirrored projected fiber lanes, not 3D paths.
+  float yr=threadD/max(width,.003);
+  float ya=clamp(aa/max(width,.003),.025,.38);
+  float yp=phase*mix(5.,29.,filamentConstructionPitch)+(q.x+q.y*.63)*.55+
+    time*filamentConstructionMotion*1.8+seedPhase*.13;
+  float yg=filamentConstructionGap;
+  float yl=mix(.35,.075,yg);
+  float yarnCoverage=1.,yarnShine=.5,yarnShade=0.;
+  if(filamentConstruction==1){
+    float a=sin(yp),b=cos(yp);
+    float sa=1.-smoothstep(yl,yl+ya,abs(yr-(.19+.58*abs(a))));
+    float sb=1.-smoothstep(yl,yl+ya,abs(yr-(.19+.58*abs(b))));
+    yarnCoverage=max(sa,sb);
+    yarnShine=max(sa*(.45+.55*a*a),sb*(.45+.55*b*b));yarnShade=min(sa,sb)*.6;
+  }else if(filamentConstruction==2){
+    yarnCoverage=0.;yarnShine=0.;
+    for(int ply=0;ply<3;ply++){
+      float a=yp+float(ply)*2.0943951;
+      float body=1.-smoothstep(yl*.82,yl*.82+ya,abs(yr-(.16+.66*abs(sin(a)))));
+      yarnShade=max(yarnShade,min(yarnCoverage,body)*.52);
+      yarnCoverage=max(yarnCoverage,body);yarnShine=max(yarnShine,body*(.5+.5*cos(a)));
+    }
+  }else if(filamentConstruction==3){
+    float lane=.24+.48*abs(sin(yp))+.11*sin(yp*3.+yr*4.);
+    float body=1.-smoothstep(yl*.85,yl*.85+ya,abs(yr-lane));
+    float fine=.5+.5*cos(yp*4.+yr*12.);
+    yarnCoverage=body*(.55+.45*fine);yarnShine=body*pow(fine,3.);yarnShade=body*(1.-fine)*.4;
+  }else if(filamentConstruction==4){
+    float hole=mix(.19,.66,yg);yarnCoverage=smoothstep(hole-ya,hole+ya,yr);
+    yarnShine=yarnCoverage*(1.-smoothstep(.04,.28,abs(yr-hole-.15)))*(.65+.35*cos(yp*.45));
+    yarnShade=yarnCoverage*(1.-yarnShine)*.32;
+  }else if(filamentConstruction==5){
+    float wrap=pow(.5+.5*cos(yp*1.5+yr*5.5),mix(2.,12.,yg));
+    float rail=smoothstep(.22,.78,yr);
+    yarnCoverage=mix(.64,1.,max(wrap,1.-rail));yarnShine=wrap*(.5+.5*rail);yarnShade=(1.-wrap)*rail*.38;
+  }else if(filamentConstruction==6){
+    float rib=pow(.5+.5*cos(yr*mix(8.,24.,filamentConstructionPitch)),mix(2.,8.,yg));
+    yarnCoverage=mix(.33,1.,rib);yarnShine=rib*(.72+.28*cos(yp*.35));yarnShade=(1.-rib)*.43;
+  }else if(filamentConstruction==7){
+    float micro=abs(fract(yr*mix(3.,7.,filamentConstructionPitch)+.25*sin(yp))-.5);
+    float ridge=1.-smoothstep(yl*.5,yl*.5+max(.05,ya*.55),micro);
+    yarnCoverage=mix(.22,1.,ridge);yarnShine=ridge*(.65+.35*cos(yp+yr*8.));yarnShade=(1.-ridge)*.43;
+  }else if(filamentConstruction==8){
+    vec2 grid=vec2(yp*.32,yr*mix(2.,5.,filamentConstructionPitch));
+    grid.x+=.5*mod(floor(grid.y),2.);
+    float pr=length((fract(grid)-.5)*vec2(.85,1.2));
+    float radius=mix(.12,.37,yg);
+    yarnCoverage=smoothstep(radius-.06,radius+.06,pr);
+    yarnShine=1.-smoothstep(.035,.13,abs(pr-radius-.07));yarnShade=(1.-yarnShine)*.24;
+  }
+  float yarnMix=filamentConstructionAmount;
+  core*=mix(1.,clamp(yarnCoverage,0.,1.),yarnMix);
+#endif
   maskCore=core;
 #ifdef FILAMENT_SCULPT
   float sculptReveal=1.0;
@@ -3544,6 +3613,11 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     thread=mix(thread,dressed,opticalMix);
     thread+=spectral*grazing*opticalAmount*opticalDispersion*.13;
   }
+#endif
+#ifdef FILAMENT_CONSTRUCTION
+  float yarnLight=filamentConstructionRelief*yarnMix;
+  thread*=1.-clamp(yarnShade*yarnLight*.48,0.,.55);
+  thread+=mix(glimmer,vec3(.92,.97,1.),.42)*clamp(yarnShine,0.,1.)*yarnLight*.43;
 #endif
   float amount=filamentAmount;
   vec3 result=mix(background,background*.48+thread*1.06,core*amount*.91);

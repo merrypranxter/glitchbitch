@@ -44,6 +44,9 @@ export const effectDetails = [
   lab("filament-retrocausal", "Retrocausal embroidery",
     ["retrocausal embroidery", "future seams", "needle future lookahead", "pre-echo ghost stitches", "paradox seam crossings", "reverse-time stitch wave"],
     (s) => stitch(s) && s.filamentStitchMode === "Retrocausal Embroidery"),
+  lab("filament-construction", "Fiber construction",
+    ["braid","cable","hollow yarn","microfilament","wire wrapping","fiber construction"],
+    s=>filament(s)&&s.filamentConstruction!=="Original strand"&&s.filamentConstructionAmount>0,["filamentConstructionAmount"]),
   lab("filament-materials", "Thread alchemy",
     ["thread alchemy", "fiber material", "materials beads", "fuzzy fiber nap", "specular luster", "seed bead presence", "second parent color offset", "cotton", "chenille"],
     (s) => filament(s) && (morph(s) || s.filamentMaterial !== "Original thread" ||

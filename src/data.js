@@ -13,7 +13,7 @@ export { injuryModes };
 export { alchemyModes };
 import { backdropModes } from "./backdrops.js";
 export { backdropModes };
-import { filamentSpecies, filamentMaterials, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, jewelryPlacementModes, jewelryKineticModes, remixJewelryChoreography, jewelryFinishModes, jewelryFinishControls, remixJewelryFinish, jewelryInteriorModes, jewelryInteriorControls, remixJewelryInterior, jewelryColonyModes, jewelryColonyControls, remixJewelryColony, filamentMorphModes, filamentContagionModes, filamentNeuralModes, filamentPlasticModes, filamentScarModes, filamentRegenModes } from "./filament-forge.js";
+import { filamentSpecies, filamentMaterials, fiberConstructionModes, fiberConstructionControls, remixFiberConstruction, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, jewelryPlacementModes, jewelryKineticModes, remixJewelryChoreography, jewelryFinishModes, jewelryFinishControls, remixJewelryFinish, jewelryInteriorModes, jewelryInteriorControls, remixJewelryInterior, jewelryColonyModes, jewelryColonyControls, remixJewelryColony, filamentMorphModes, filamentContagionModes, filamentNeuralModes, filamentPlasticModes, filamentScarModes, filamentRegenModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
 import {semanticGravityModes,hasSemanticLettering} from "./semantic-gravity.js";
 import {structuralOpticsModes} from "./structural-thread-optics.js";
@@ -490,6 +490,11 @@ export const numericRanges = {
   filamentLuster: [0, 100],
   filamentBeads: [0, 100],
   filamentBeadSize: [0, 100],
+  filamentConstructionAmount: [0, 100],
+  filamentConstructionPitch: [0, 100],
+  filamentConstructionGap: [0, 100],
+  filamentConstructionMotion: [0, 100],
+  filamentConstructionRelief: [0, 100],
   filamentSecondHue: [0, 100],
   // Independent thin-film/polarization-inspired fiber optical coats.
   filamentOpticsAmount: [0, 100],
@@ -1043,6 +1048,12 @@ export const initial = {
   filamentLuster: 55,
   filamentBeads: 0,
   filamentBeadSize: 45,
+  filamentConstruction: "Original strand",
+  filamentConstructionAmount: 80,
+  filamentConstructionPitch: 55,
+  filamentConstructionGap: 60,
+  filamentConstructionMotion: 50,
+  filamentConstructionRelief: 75,
   filamentSecondHue: 0,
   filamentOpticsMode: "Off",
   filamentOpticsAmount: 0,
@@ -1410,6 +1421,7 @@ export function validateRecipe(input) {
     semanticGravityMode: semanticGravityModes,
     filamentSecondSpecies: filamentSpecies,
     filamentMaterial: filamentMaterials,
+    filamentConstruction: fiberConstructionModes,
     filamentSecondMaterial: filamentMaterials,
     filamentOpticsMode: structuralOpticsModes,
     filamentSecondOpticsMode: structuralOpticsModes,
@@ -1863,7 +1875,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "semanticGravityAmount","semanticGravityRadius","semanticGravityFalloff",
       "semanticGravitySwirl","semanticGravityPulse","semanticGravityVariation",
       "filamentCrossbreed","filamentInterlace","filamentTwist","filamentPhase",
-      "filamentNap","filamentLuster","filamentBeads","filamentBeadSize",
+      "filamentNap","filamentLuster","filamentBeads","filamentBeadSize","filamentConstructionAmount","filamentConstructionPitch","filamentConstructionGap","filamentConstructionMotion","filamentConstructionRelief",
       "filamentSecondHue",
       "filamentOpticsAmount","filamentOpticsThickness","filamentOpticsDispersion",
       "filamentOpticsAnisotropy","filamentOpticsCurvature","filamentOpticsPearl","filamentOpticsPhase",
@@ -2203,6 +2215,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.filamentLuster=25+random()*74;
   s.filamentBeads=random()<.6 ? 21+random()*78 : 0;
   s.filamentBeadSize=14+random()*83;
+  s.filamentConstruction="Original strand";
+  if(s.filamentAmount>0&&random()<.48){const construction=remixFiberConstruction(s,random);for(const key of fiberConstructionControls)s[key]=construction[key];}
   s.filamentSecondHue=random()*100;
   // Selectively awaken new optical fiber coats in full Surprise, only if
   // the corresponding actual geometry is present. Keep both parents independent.

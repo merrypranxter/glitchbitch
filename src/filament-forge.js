@@ -158,6 +158,17 @@ export function remixUnusualFilamentMaterials(state,rng=Math.random){
 
 
 // Projected thread-local construction; not a literal 3D yarn mesh.
+// Analytic time-dependent deformation of projected carrier distances.
+export const textilePhysicsModes=["Stable threads","Unzipping seams","Fission & fusion","Fraying wavefront","Unravel & rewind","Living splice","Braided convergence","Tension rupture","Crossbreed grafts"];
+export const textilePhysicsControls=["filamentPhysics","filamentPhysicsAmount","filamentPhysicsScale","filamentPhysicsReach","filamentPhysicsSpeed","filamentPhysicsRepair","filamentPhysicsGlow"];
+export function remixTextilePhysics(state,rng=Math.random){
+ const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
+ const pool=textilePhysicsModes.slice(1).filter(x=>x!==state.filamentPhysics&&(x!=="Crossbreed grafts"||state.filamentCrossbreed>0));
+ return {...state,filamentPhysics:pool[Math.floor(unit()*pool.length)],
+ filamentPhysicsAmount:55+45*unit(),filamentPhysicsScale:20+75*unit(),
+ filamentPhysicsReach:30+70*unit(),filamentPhysicsSpeed:20+80*unit(),
+ filamentPhysicsRepair:30+70*unit(),filamentPhysicsGlow:20+80*unit()};
+}
 export const microloomModes=["Plain strand interior","Nested basket weave","Microscopic herringbone","Recursive Truchet lace","Quasiperiodic brocade","Fractal crochet seams","Interlocking diamond mesh","Nested cellular gauze","Counterwoven helices"];
 export const microloomControls=["filamentMicroloom","filamentMicroloomAmount","filamentMicroloomScale","filamentMicroloomDepth","filamentMicroloomOpenwork","filamentMicroloomMotion","filamentMicroloomColor"];
 export function remixMicroloom(state,rng=Math.random){
@@ -2119,6 +2130,10 @@ uniform float filamentChladniPhase,filamentChladniDetune;
 uniform float filamentRetroLead,filamentRetroEcho,filamentRetroParadox;
 uniform float filamentRetroKnots,filamentRetroReversal,filamentRetroCoherence;
 uniform float filamentNap,filamentLuster,filamentBeads,filamentBeadSize,filamentSecondHue;
+#ifdef FILAMENT_PHYSICS
+uniform int filamentPhysics;
+uniform float filamentPhysicsAmount,filamentPhysicsScale,filamentPhysicsReach,filamentPhysicsSpeed,filamentPhysicsRepair,filamentPhysicsGlow;
+#endif
 #ifdef FILAMENT_MICROLOOM
 uniform int filamentMicroloom;
 uniform float filamentMicroloomAmount,filamentMicroloomScale,filamentMicroloomDepth,filamentMicroloomOpenwork,filamentMicroloomMotion,filamentMicroloomColor;
@@ -2622,6 +2637,71 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   // halo and directional raised relief. The majority of pixels stay untouched.
   float aa=max(.005,1.2*freq/min(res.x,res.y));
   float width=.009+filamentWidth*.070;
+#ifdef FILAMENT_PHYSICS
+  // The unsigned distance is a projected carrier coordinate, not a signed
+  // 3D centerline. Re-map it before core, construction, microloom and stitch
+  // coverage are computed so they all follow the deformed yarn.
+  float fpOriginal=threadD/max(width,.003);
+  float fpClock=time*filamentPhysicsSpeed*1.5;
+  float fpRate=mix(2.0,12.0,filamentPhysicsScale);
+  float fpPhase=(phase+(q.x*.13+q.y*.09))*fpRate+seedPhase*.19;
+  float fpReach=filamentPhysicsReach*2.2;
+  float fpRepair=filamentPhysicsRepair;
+  float fpWave=.5+.5*sin(fpPhase-fpClock);
+  float fpGate=smoothstep(.23,.72,fpWave);
+  float fpTarget=fpOriginal;
+  float fpFlash=0.;
+  if(filamentPhysics==1){ // Moving zipper opening and closing.
+    float zip=fpReach*smoothstep(.30,.78,fpWave);
+    fpTarget=abs(fpOriginal-zip)*(1.+zip*.6);
+    fpFlash=1.-smoothstep(.02,.18,abs(fpWave-.53));
+  }else if(filamentPhysics==2){ // Parent lane splits into nested daughter lanes.
+    float split=fpReach*fpGate;
+    float daughter=abs(fpOriginal-split)*1.65;
+    float inner=abs(fpOriginal-split*.44)*1.9;
+    fpTarget=mix(fpOriginal,min(daughter,inner),fpGate);
+    fpFlash=4.*fpGate*(1.-fpGate);
+  }else if(filamentPhysics==3){ // Thin, tapering hairs peel from the carrier.
+    float fray=fpReach*fpGate;
+    float fine=.5+.5*sin(fpPhase*3.3-fpClock*1.9);
+    float hair=abs(fpOriginal-fray*(.45+.55*fine))*3.2;
+    fpTarget=min(fpOriginal,hair+(1.-fpGate)*2.);
+    fpFlash=fpGate*fine*.7;
+  }else if(filamentPhysics==4){ // Sequential loose loops rejoin the core.
+    float unwind=.5+.5*cos(fpPhase-fpClock);
+    float loop=fpReach*unwind*(.6+.4*sin(fpPhase*2.+fpClock));
+    float loose=abs(fpOriginal-loop)*1.6;
+    fpTarget=mix(fpOriginal,loose,smoothstep(.2,.85,unwind));
+    fpFlash=4.*unwind*(1.-unwind);
+  }else if(filamentPhysics==5){ // Traveling splice joining alternate seam ends.
+    float splice=sin(fpPhase*.7-fpClock);
+    float gate=abs(splice);
+    float lane=fpReach*gate*.72;
+    fpTarget=mix(abs(fpOriginal-lane)*1.55,fpOriginal,1.-smoothstep(.08,.62,gate));
+    fpFlash=1.-smoothstep(.04,.28,gate);
+  }else if(filamentPhysics==6){ // Two opposing fiber fronts converge.
+    float a=fpReach*(.5+.5*sin(fpPhase-fpClock));
+    float b=fpReach*(.5+.5*sin(fpPhase+fpClock+1.57));
+    fpTarget=min(abs(fpOriginal-a),abs(fpOriginal-b))*1.8;
+    fpFlash=1.-smoothstep(.06,.48,abs(a-b));
+  }else if(filamentPhysics==7){ // Rupture gaps travel through tension nodes.
+    float stress=pow(.5+.5*sin(fpPhase-fpClock),5.);
+    float rupture=smoothstep(.56,.88,stress);
+    fpTarget=fpOriginal+rupture*(1.+fpReach)*(1.-fpRepair*.62);
+    fpFlash=1.-smoothstep(.06,.20,abs(stress-.57));
+  }else if(filamentPhysics==8){ // Second parent reacts to actual incoming core.
+    float contact=clamp(incomingCore,0.,1.);
+    float bridge=fpGate*contact;
+    float lane=fpReach*bridge;
+    fpTarget=min(fpOriginal,abs(fpOriginal-lane)*1.6+(1.-bridge)*2.);
+    fpFlash=bridge;
+  }
+  // Repair closes portions of the opening over a bounded periodic cycle.
+  float fpHeal=fpRepair*smoothstep(.50,.95,.5+.5*cos(fpPhase*.63-fpClock*.81));
+  float fpBlend=filamentPhysicsAmount*(1.-fpHeal);
+  threadD=max(0.,mix(fpOriginal,fpTarget,fpBlend))*width;
+  fpFlash*=fpBlend;
+#endif
   float core=(1.0-smoothstep(width,width+aa,threadD))*mask;
 #ifdef FILAMENT_CONSTRUCTION
   // Unsigned carrier distance: mirrored projected fiber lanes, not 3D paths.
@@ -3723,6 +3803,9 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   vec3 mlTint=palette(fract(pigmentPhase+mlPigment*.36+.12));
   thread*=1.-mlStrength*(1.-mlLight)*.32;
   thread+=mix(glimmer,mlTint,filamentMicroloomColor)*mlLight*mlStrength*.44;
+#endif
+#ifdef FILAMENT_PHYSICS
+  thread+=mix(glimmer,vec3(.93,.98,1.),.55)*fpFlash*filamentPhysicsGlow*.64;
 #endif
   float amount=filamentAmount;
   vec3 result=mix(background,background*.48+thread*1.06,core*amount*.91);

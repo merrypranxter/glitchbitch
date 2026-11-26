@@ -13,6 +13,7 @@ const visible=s=>({...s,filamentAmount:Math.max(65,s.filamentAmount||0)});
 export const weavingRemixGroups=[
  {id:"weave",label:"Weave geometry & scale",note:"Pattern, thickness, density and geometry-specific controls; keeps the thread wardrobe."},
  {id:"dress",label:"Dress the threads",note:"Fiber materials, beads, nap, sheen and thread jewelry together."},
+ {id:"physics",label:"Impossible textile physics only",note:"Animate splitting, fraying, unzipping and rejoining the thread carrier."},
  {id:"microloom",label:"Recursive microloom only",note:"Weave smaller fabric patterns inside existing strands, without changing their outline or wardrobe."},
  {id:"construction",label:"Fiber construction only",note:"Change the projected internal braid, cable or strand cross-section."},
  {id:"fiber",label:"Fiber materials only",note:"Change the yarn without changing its jewelry or stitch motion."},
@@ -50,6 +51,7 @@ export function remixWeavingSystem(state,id,rng=Math.random){
  switch(id){
  case "weave":return weave(state,rng);
  case "dress":return {...F.remixJewelryInterior(F.remixJewelryFinish(F.remixThreadCouture(state,rng),rng),rng),filamentBeadSize:range(15,95,rng),filamentSecondHue:range(0,100,rng)};
+ case "physics":return F.remixTextilePhysics(state,rng);
  case "microloom":return F.remixMicroloom(state,rng);
  case "construction":return F.remixFiberConstruction(state,rng);
  case "fiber":return {...F.remixFilamentMaterials(state,rng),filamentBeadSize:range(15,95,rng),filamentSecondHue:range(0,100,rng)};
@@ -81,6 +83,8 @@ export function shuffleWeavingWorld(state,rng=Math.random,{intensity="Wild",allo
  if(s.filamentSecondSpecies==="Feral Jacquard"&&s.filamentCrossbreed>0){const a=s.filamentSpecies;s={...F.remixFeralJacquard(s,rng),filamentSpecies:a};}
  if(s.filamentSecondSpecies==="Quasicrystal Brocade"&&s.filamentCrossbreed>0){const a=s.filamentSpecies;s={...F.remixQuasicrystalBrocade(s,rng),filamentSpecies:a};}
  s=remixWeavingSystem(s,"dress",rng);
+ if(roll(p*.55,rng))s=F.remixTextilePhysics(s,rng);
+ else s={...s,filamentPhysics:"Stable threads"};
  if(roll(p*.6,rng))s=F.remixMicroloom(s,rng);
  else s={...s,filamentMicroloom:"Plain strand interior"};
  if(roll(p*.7,rng))s=F.remixFiberConstruction(s,rng);

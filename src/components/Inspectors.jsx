@@ -82,7 +82,7 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentScarPresets,applyFilamentScarPreset,remixFilamentScars,
   filamentRegenModes,filamentRegenFamilies,filamentRegenDescriptions,
   filamentRegenPresets,applyFilamentRegenPreset,remixFilamentRegeneration,
-  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,microloomModes,remixMicroloom,filamentStitchModes,filamentStitchFamilies,
+  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,microloomModes,remixMicroloom,textilePhysicsModes,remixTextilePhysics,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
   feralJacquardPresets,applyFeralJacquardPreset,remixFeralJacquard,
@@ -2285,6 +2285,18 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
           onChange={value=>history.change(x=>({...x,filamentSecondMaterial:value}))}>
           {filamentMaterials.map(name=><option key={name} value={name}>{name}</option>)}
         </Select>
+        <details data-effect-detail="filament-physics"><summary>Impossible textile physics · split, fray & rejoin</summary>
+          <p className="control-note">Animate the projected carrier distance before fiber construction, microloom and stitch reveal. These are reversible procedural deformations, not persistent simulated breaks. Crossbreed grafts require a second woven parent.</p>
+          <Select label="Textile physics law" value={s.filamentPhysics} onChange={v=>history.change(x=>({...x,filamentPhysics:v}))}>{textilePhysicsModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <Parameter label="Deformation influence" name="filamentPhysicsAmount" history={history}/>
+          <Parameter label="Rupture / split frequency" name="filamentPhysicsScale" history={history}/>
+          <Parameter label="Branch reach" name="filamentPhysicsReach" history={history}/>
+          <Parameter label="Deformation speed" name="filamentPhysicsSpeed" history={history}/>
+          <Parameter label="Rejoining / repair" name="filamentPhysicsRepair" history={history}/>
+          <Parameter label="Active seam glow" name="filamentPhysicsGlow" history={history}/>
+          {s.filamentPhysics==="Crossbreed grafts"&&!s.filamentCrossbreed&&<p className="control-note" role="status">Enable a second woven parent to see grafts.</p>}
+          <button type="button" className="button secondary" disabled={!s.filamentAmount} onClick={()=>history.change(x=>remixTextilePhysics(x))}><Dices size={13}/> Shuffle textile physics only</button>
+        </details>
         <details data-effect-detail="filament-microloom"><summary>Recursive microloom · fabric inside fabric</summary>
           <p className="control-note">Two nested scales of miniature weave, projected into the real thread core. Combines independently with fiber construction, material and jewelry. Fine patterns fade below the pixel footprint.</p>
           <Select label="Microloom pattern" value={s.filamentMicroloom} onChange={v=>history.change(x=>({...x,filamentMicroloom:v}))}>{microloomModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>

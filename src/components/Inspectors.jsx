@@ -82,7 +82,7 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentScarPresets,applyFilamentScarPreset,remixFilamentScars,
   filamentRegenModes,filamentRegenFamilies,filamentRegenDescriptions,
   filamentRegenPresets,applyFilamentRegenPreset,remixFilamentRegeneration,
-  remixFilamentMaterials,filamentStitchModes,filamentStitchFamilies,
+  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
   feralJacquardPresets,applyFeralJacquardPreset,remixFeralJacquard,
@@ -2285,6 +2285,16 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
           onChange={value=>history.change(x=>({...x,filamentSecondMaterial:value}))}>
           {filamentMaterials.map(name=><option key={name} value={name}>{name}</option>)}
         </Select>
+        <details data-effect-detail="filament-construction"><summary>Fiber construction · braids & cable anatomy</summary>
+          <p className="control-note">Split the existing strand core into projected subfibers, gaps and winding highlights. Shared construction for both parents; material and jewelry remain independent.</p>
+          <Select label="Fiber construction" value={s.filamentConstruction} onChange={v=>history.change(x=>({...x,filamentConstruction:v}))}>{fiberConstructionModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <Parameter label="Construction influence" name="filamentConstructionAmount" history={history}/>
+          <Parameter label="Twist pitch / packing" name="filamentConstructionPitch" history={history}/>
+          <Parameter label="Fiber separation / openings" name="filamentConstructionGap" history={history}/>
+          <Parameter label="Internal winding speed" name="filamentConstructionMotion" history={history}/>
+          <Parameter label="Subfiber relief" name="filamentConstructionRelief" history={history}/>
+          <button type="button" className="button secondary" disabled={!s.filamentAmount} onClick={()=>history.change(x=>remixFiberConstruction(x))}><Dices size={13}/> Shuffle fiber construction only</button>
+        </details>
         <Parameter label="Fuzzy fiber nap" name="filamentNap" history={history}/>
         <Parameter label="Specular luster / shine" name="filamentLuster" history={history}/>
         <Parameter label="Seed bead presence" name="filamentBeads" history={history}/>

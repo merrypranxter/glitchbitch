@@ -280,7 +280,7 @@ export const sections = [
       "semanticGravityVariation",
       "filamentSecondSpecies","filamentCrossbreed","filamentInterlace","filamentTwist","filamentPhase",
       "filamentMaterial","filamentSecondMaterial","filamentNap","filamentLuster",
-      "filamentBeads","filamentBeadSize","filamentSecondHue",
+      "filamentBeads","filamentBeadSize","filamentSecondHue","filamentConstruction","filamentConstructionAmount","filamentConstructionPitch","filamentConstructionGap","filamentConstructionMotion","filamentConstructionRelief",
       "filamentOpticsMode","filamentOpticsAmount","filamentOpticsThickness",
       "filamentOpticsDispersion","filamentOpticsAnisotropy","filamentOpticsCurvature",
       "filamentOpticsPearl","filamentOpticsPhase",

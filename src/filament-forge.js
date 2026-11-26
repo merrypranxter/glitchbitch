@@ -158,6 +158,16 @@ export function remixUnusualFilamentMaterials(state,rng=Math.random){
 
 
 // Projected thread-local construction; not a literal 3D yarn mesh.
+export const microloomModes=["Plain strand interior","Nested basket weave","Microscopic herringbone","Recursive Truchet lace","Quasiperiodic brocade","Fractal crochet seams","Interlocking diamond mesh","Nested cellular gauze","Counterwoven helices"];
+export const microloomControls=["filamentMicroloom","filamentMicroloomAmount","filamentMicroloomScale","filamentMicroloomDepth","filamentMicroloomOpenwork","filamentMicroloomMotion","filamentMicroloomColor"];
+export function remixMicroloom(state,rng=Math.random){
+ const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
+ const pool=microloomModes.slice(1).filter(x=>x!==state.filamentMicroloom);
+ return {...state,filamentMicroloom:pool[Math.floor(unit()*pool.length)],
+ filamentMicroloomAmount:65+35*unit(),filamentMicroloomScale:15+70*unit(),
+ filamentMicroloomDepth:25+75*unit(),filamentMicroloomOpenwork:15+65*unit(),
+ filamentMicroloomMotion:25+75*unit(),filamentMicroloomColor:25+75*unit()};
+}
 export const fiberConstructionModes=["Original strand","Double helix cable","Three-ply braid","Nested helical bundle","Hollow tubular yarn","Wire-wrapped core","Ribbed ribbon","Microfilament rope","Cellular optical cable"];
 export const fiberConstructionControls=["filamentConstruction","filamentConstructionAmount","filamentConstructionPitch","filamentConstructionGap","filamentConstructionMotion","filamentConstructionRelief"];
 export function remixFiberConstruction(state,rng=Math.random){
@@ -2109,6 +2119,73 @@ uniform float filamentChladniPhase,filamentChladniDetune;
 uniform float filamentRetroLead,filamentRetroEcho,filamentRetroParadox;
 uniform float filamentRetroKnots,filamentRetroReversal,filamentRetroCoherence;
 uniform float filamentNap,filamentLuster,filamentBeads,filamentBeadSize,filamentSecondHue;
+#ifdef FILAMENT_MICROLOOM
+uniform int filamentMicroloom;
+uniform float filamentMicroloomAmount,filamentMicroloomScale,filamentMicroloomDepth,filamentMicroloomOpenwork,filamentMicroloomMotion,filamentMicroloomColor;
+// Each family returns a yarn coverage, raised crossing highlight and weave phase.
+// All coordinates are local projections, not signed arclength or 3D topology.
+vec3 microloomField(vec2 v,float clock){
+  vec2 cell=floor(v),f=fract(v)-.5;
+  float a=abs(f.x),b=abs(f.y);
+  float warp=.0,weft=.0,top=.5;
+  if(filamentMicroloom==1){
+    warp=1.-smoothstep(.10,.22,a);
+    weft=1.-smoothstep(.10,.22,b);
+    top=mod(cell.x+cell.y,2.);
+  }else if(filamentMicroloom==2){
+    float flip=2.*mod(floor(v.y*.5),2.)-1.;
+    warp=1.-smoothstep(.07,.19,abs(fract(v.x+flip*v.y*.68)-.5));
+    weft=1.-smoothstep(.08,.20,b);
+    top=mod(cell.x+2.*cell.y,3.)*.5;
+  }else if(filamentMicroloom==3){
+    float flip=step(.5,fract(sin(dot(cell,vec2(13.7,79.3)))*43758.5453));
+    vec2 c=mix(vec2(0.),vec2(1.,0.),flip);
+    vec2 p=fract(v);
+    warp=1.-smoothstep(.045,.15,abs(length(p-c)-.5));
+    weft=1.-smoothstep(.045,.15,abs(length(p-(1.-c))-.5));
+    top=flip;
+  }else if(filamentMicroloom==4){
+    float m=1.,n=1.;
+    for(int j=0;j<5;j++){
+      float angle=float(j)*1.25663706;
+      vec2 axis=vec2(cos(angle),sin(angle));
+      float v0=dot(v,axis)*3.7+sin(clock*.35+float(j)*1.7)*.24;
+      m=min(m,abs(sin(v0)));
+      n=min(n,abs(cos(v0*1.618034+.6)));
+    }
+    warp=1.-smoothstep(.08,.30,m);weft=1.-smoothstep(.07,.25,n);
+    top=.5+.5*cos(v.x*2.3-v.y*1.7);
+  }else if(filamentMicroloom==5){
+    float r=length(f);
+    float angle=atan(f.y,f.x+.00001);
+    warp=1.-smoothstep(.06,.17,abs(r-.26-.045*cos(angle*5.+clock)));
+    weft=1.-smoothstep(.08,.24,abs(sin(angle*5.+r*13.))*r);
+    top=.5+.5*cos(angle*5.);
+  }else if(filamentMicroloom==6){
+    warp=1.-smoothstep(.06,.19,abs(a+b-.34));
+    weft=1.-smoothstep(.055,.17,min(abs(f.x+f.y),abs(f.x-f.y)));
+    top=mod(cell.x+cell.y,2.);
+  }else if(filamentMicroloom==7){
+    vec2 basis=vec2(1.,1.7320508);
+    vec2 h1=mod(v+basis*.5,basis)-basis*.5;
+    vec2 h2=mod(v,basis)-basis*.5;
+    vec2 h=abs(dot(h1,h1)<dot(h2,h2)?h1:h2);
+    float hex=max(h.x,dot(h,vec2(.5,.8660254)));
+    warp=1.-smoothstep(.035,.11,abs(hex-.42));
+    weft=1.-smoothstep(.025,.09,abs(hex-.23));
+    top=.5+.5*cos(v.y*2.1);
+  }else if(filamentMicroloom==8){
+    float a0=abs(fract(v.y+.23*sin(v.x*4.-clock))-.5);
+    float b0=abs(fract(v.y-.23*sin(v.x*4.+clock)+.5)-.5);
+    warp=1.-smoothstep(.07,.19,a0);weft=1.-smoothstep(.07,.19,b0);
+    top=.5+.5*cos(v.x*4.);
+  }
+  float cover=max(warp,weft);
+  float crossing=mix(weft,warp,top);
+  float glint=clamp(crossing*.75+min(warp,weft)*.25,0.,1.);
+  return vec3(cover,glint,top);
+}
+#endif
 #ifdef FILAMENT_CONSTRUCTION
 uniform int filamentConstruction;
 uniform float filamentConstructionAmount,filamentConstructionPitch,filamentConstructionGap,filamentConstructionMotion,filamentConstructionRelief;
@@ -2599,6 +2676,28 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   }
   float yarnMix=filamentConstructionAmount;
   core*=mix(1.,clamp(yarnCoverage,0.,1.),yarnMix);
+#endif
+#ifdef FILAMENT_MICROLOOM
+  // Two bounded nested scales; no recursive shader calls or extra passes.
+  // Fade detail below pixel footprint to reduce shimmer in phone previews.
+  float mlAcross=threadD/max(width,.003);
+  float mlClock=time*filamentMicroloomMotion*.85;
+  float mlScale=mix(1.2,4.5,filamentMicroloomScale);
+  vec2 mlCoord=vec2(phase*3.1+(q.x+q.y*.71)*.65,mlAcross)*mlScale;
+  mlCoord+=vec2(mlClock*.42,.14*sin(mlClock));
+  vec3 mlCoarse=microloomField(mlCoord,mlClock);
+  float mlRatio=mix(1.8,3.5,filamentMicroloomDepth);
+  vec2 mlFineCoord=mlCoord*mlRatio+vec2(.17*sin(mlClock*.7),-.23*mlClock);
+  vec3 mlFine=microloomField(mlFineCoord,-mlClock*.72);
+  float mlFoot=aa/max(width,.003)*mlScale;
+  float mlCoarseVisible=1.-smoothstep(.22,.85,mlFoot);
+  float mlFineVisible=1.-smoothstep(.18,.75,mlFoot*mlRatio);
+  float mlDepth=filamentMicroloomDepth*mlFineVisible;
+  float mlStrength=filamentMicroloomAmount*mlCoarseVisible;
+  float mlCover=mix(mlCoarse.x,mlCoarse.x*mlFine.x,mlDepth);
+  float mlLight=mix(mlCoarse.y,mlCoarse.y*(.35+.65*mlFine.y),mlDepth);
+  float mlPigment=mix(mlCoarse.z,mlFine.z,mlDepth*.7);
+  core*=mix(1.,clamp(mlCover,0.,1.),mlStrength*filamentMicroloomOpenwork);
 #endif
   maskCore=core;
 #ifdef FILAMENT_SCULPT
@@ -3618,6 +3717,12 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float yarnLight=filamentConstructionRelief*yarnMix;
   thread*=1.-clamp(yarnShade*yarnLight*.48,0.,.55);
   thread+=mix(glimmer,vec3(.92,.97,1.),.42)*clamp(yarnShine,0.,1.)*yarnLight*.43;
+#endif
+#ifdef FILAMENT_MICROLOOM
+  // Preserve the existing material and tint the woven ribs with the palette.
+  vec3 mlTint=palette(fract(pigmentPhase+mlPigment*.36+.12));
+  thread*=1.-mlStrength*(1.-mlLight)*.32;
+  thread+=mix(glimmer,mlTint,filamentMicroloomColor)*mlLight*mlStrength*.44;
 #endif
   float amount=filamentAmount;
   vec3 result=mix(background,background*.48+thread*1.06,core*amount*.91);

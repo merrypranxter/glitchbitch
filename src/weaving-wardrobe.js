@@ -6,6 +6,7 @@ export const weavingLocks=[
  ["hybrid","Second weave & interlacing"],
  ["fiber","Fiber materials & color"],
  ["construction","Fiber construction"],
+ ["microloom","Recursive microloom"],
  ["jewelry","Jewelry & ornaments"],
  ["optics","Structural-color coats"],
  ["motion","Stitch animation & needle laws"],
@@ -20,6 +21,7 @@ export const weavingLocks=[
 export function textileGroup(key){
  if(key==="filamentAmount")return "presence";
  if(key.startsWith("filamentConstruction"))return "construction";
+ if(key.startsWith("filamentMicroloom"))return "microloom";
  if(key.startsWith("semanticGravity"))return "semantic";
  if(key.startsWith("underlay"))return "ground";
  if(key==="velvetMode"||key.startsWith("vld"))return "velvet";

@@ -82,7 +82,7 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentScarPresets,applyFilamentScarPreset,remixFilamentScars,
   filamentRegenModes,filamentRegenFamilies,filamentRegenDescriptions,
   filamentRegenPresets,applyFilamentRegenPreset,remixFilamentRegeneration,
-  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,filamentStitchModes,filamentStitchFamilies,
+  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,microloomModes,remixMicroloom,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
   feralJacquardPresets,applyFeralJacquardPreset,remixFeralJacquard,
@@ -2285,6 +2285,17 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
           onChange={value=>history.change(x=>({...x,filamentSecondMaterial:value}))}>
           {filamentMaterials.map(name=><option key={name} value={name}>{name}</option>)}
         </Select>
+        <details data-effect-detail="filament-microloom"><summary>Recursive microloom · fabric inside fabric</summary>
+          <p className="control-note">Two nested scales of miniature weave, projected into the real thread core. Combines independently with fiber construction, material and jewelry. Fine patterns fade below the pixel footprint.</p>
+          <Select label="Microloom pattern" value={s.filamentMicroloom} onChange={v=>history.change(x=>({...x,filamentMicroloom:v}))}>{microloomModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <Parameter label="Microloom influence" name="filamentMicroloomAmount" history={history}/>
+          <Parameter label="Internal weave scale" name="filamentMicroloomScale" history={history}/>
+          <Parameter label="Nested scale depth" name="filamentMicroloomDepth" history={history}/>
+          <Parameter label="Micro-openwork" name="filamentMicroloomOpenwork" history={history}/>
+          <Parameter label="Internal weave motion" name="filamentMicroloomMotion" history={history}/>
+          <Parameter label="Microloom palette contrast" name="filamentMicroloomColor" history={history}/>
+          <button type="button" className="button secondary" disabled={!s.filamentAmount} onClick={()=>history.change(x=>remixMicroloom(x))}><Dices size={13}/> Shuffle microloom only</button>
+        </details>
         <details data-effect-detail="filament-construction"><summary>Fiber construction · braids & cable anatomy</summary>
           <p className="control-note">Split the existing strand core into projected subfibers, gaps and winding highlights. Shared construction for both parents; material and jewelry remain independent.</p>
           <Select label="Fiber construction" value={s.filamentConstruction} onChange={v=>history.change(x=>({...x,filamentConstruction:v}))}>{fiberConstructionModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>

@@ -82,7 +82,7 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentScarPresets,applyFilamentScarPreset,remixFilamentScars,
   filamentRegenModes,filamentRegenFamilies,filamentRegenDescriptions,
   filamentRegenPresets,applyFilamentRegenPreset,remixFilamentRegeneration,
-  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,microloomModes,remixMicroloom,textilePhysicsModes,remixTextilePhysics,textileChromaModes,remixTextileChroma,textileEcologyModes,remixTextileEcology,textileArchitectureModes,remixTextileArchitecture,textileMetaModes,remixTextileMeta,filamentStitchModes,filamentStitchFamilies,
+  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,microloomModes,remixMicroloom,textilePhysicsModes,remixTextilePhysics,textileChromaModes,remixTextileChroma,textileEcologyModes,remixTextileEcology,textileArchitectureModes,remixTextileArchitecture,textileDimensionModes,textileDimensionTargets,remixTextileDimension,textileMetaModes,remixTextileMeta,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
   feralJacquardPresets,applyFeralJacquardPreset,remixFeralJacquard,
@@ -2295,6 +2295,18 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
           <Parameter label="Growth cycle speed" name="filamentArchitectureSpeed" history={history}/>
           <Parameter label="Architecture palette offset" name="filamentArchitectureHue" history={history}/>
           <button type="button" className="button secondary" disabled={!s.filamentAmount} onClick={()=>history.change(x=>remixTextileArchitecture(x))}><Dices size={13}/> Shuffle architecture only</button>
+        </details>
+        <details data-effect-detail="filament-dimension"><summary>Dimensional metamorphosis · impossible transitions</summary>
+          <p className="control-note">Morph projected scaffold distance fields into a second architecture. Existing structure controls and optical materials are preserved.</p>
+          <Select label="Transition law" value={s.filamentDimMode} onChange={v=>history.change(x=>({...x,filamentDimMode:v}))}>{textileDimensionModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <Select label="Destination structure" value={s.filamentDimTarget} onChange={v=>history.change(x=>({...x,filamentDimTarget:v}))}><optgroup label="Living scaffolds">{textileDimensionTargets.slice(0,8).map(v=><option key={v} value={v}>{v}</option>)}</optgroup><optgroup label="Impossible topology">{textileDimensionTargets.slice(8).map(v=><option key={v} value={v}>{v}</option>)}</optgroup></Select>
+          <Parameter label="Transition influence" name="filamentDimAmount" history={history}/>
+          <Parameter label="Manual progress / phase offset" name="filamentDimProgress" history={history}/>
+          <Parameter label="Transition speed" name="filamentDimSpeed" history={history}/>
+          <Parameter label="Midpoint deformation" name="filamentDimWarp" history={history}/>
+          <Parameter label="Hybrid connectivity / fusion" name="filamentDimFusion" history={history}/>
+          {(s.filamentArchitecture==="Bare architecture"||s.filamentArchitecture===s.filamentDimTarget)&&<p className="control-note" role="status">Choose a visible source architecture different from the destination.</p>}
+          <button type="button" className="button secondary" disabled={!s.filamentAmount} onClick={()=>history.change(x=>remixTextileDimension(x))}><Dices size={13}/> Shuffle metamorphosis only</button>
         </details>
         <details data-effect-detail="filament-meta"><summary>Optical metamaterials · structural light</summary>
           <p className="control-note">Wavelength-inspired color and reflection on Parasitic Architecture. Requires a visible scaffold. Projected optical approximation, not ray tracing.</p>

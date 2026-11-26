@@ -82,7 +82,7 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentScarPresets,applyFilamentScarPreset,remixFilamentScars,
   filamentRegenModes,filamentRegenFamilies,filamentRegenDescriptions,
   filamentRegenPresets,applyFilamentRegenPreset,remixFilamentRegeneration,
-  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,microloomModes,remixMicroloom,textilePhysicsModes,remixTextilePhysics,textileChromaModes,remixTextileChroma,textileEcologyModes,remixTextileEcology,filamentStitchModes,filamentStitchFamilies,
+  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,microloomModes,remixMicroloom,textilePhysicsModes,remixTextilePhysics,textileChromaModes,remixTextileChroma,textileEcologyModes,remixTextileEcology,textileArchitectureModes,remixTextileArchitecture,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
   feralJacquardPresets,applyFeralJacquardPreset,remixFeralJacquard,
@@ -2285,6 +2285,17 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
           onChange={value=>history.change(x=>({...x,filamentSecondMaterial:value}))}>
           {filamentMaterials.map(name=><option key={name} value={name}>{name}</option>)}
         </Select>
+        <details data-effect-detail="filament-architecture"><summary>Parasitic architecture · living scaffolds</summary>
+          <p className="control-note">Projected openwork structures grow out from the fiber envelope. Independent of jewelry and surface organisms; not persistent 3D geometry.</p>
+          <Select label="Architecture law" value={s.filamentArchitecture} onChange={v=>history.change(x=>({...x,filamentArchitecture:v}))}>{textileArchitectureModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <Parameter label="Architecture influence" name="filamentArchitectureAmount" history={history}/>
+          <Parameter label="Structure frequency" name="filamentArchitectureScale" history={history}/>
+          <Parameter label="Growth reach" name="filamentArchitectureReach" history={history}/>
+          <Parameter label="Openwork / porosity" name="filamentArchitectureOpenwork" history={history}/>
+          <Parameter label="Growth cycle speed" name="filamentArchitectureSpeed" history={history}/>
+          <Parameter label="Architecture palette offset" name="filamentArchitectureHue" history={history}/>
+          <button type="button" className="button secondary" disabled={!s.filamentAmount} onClick={()=>history.change(x=>remixTextileArchitecture(x))}><Dices size={13}/> Shuffle architecture only</button>
+        </details>
         <details data-effect-detail="filament-ecology"><summary>Textile surface ecology · living fiber deposits</summary>
           <p className="control-note">Microscopic organisms and minerals grow and recede along the local thread surface. Separate from jewelry and the painted ecosystem. Growth is procedural and reversible, not a persistent biological simulation.</p>
           <Select label="Fiber colonizer" value={s.filamentEcology} onChange={v=>history.change(x=>({...x,filamentEcology:v}))}>{textileEcologyModes.slice(0,1).map(v=><option key={v} value={v}>{v}</option>)}<optgroup label="Individual organisms">{textileEcologyModes.slice(1,17).map(v=><option key={v} value={v}>{v}</option>)}</optgroup><optgroup label="Mixed cultures · Symbiogenesis">{textileEcologyModes.slice(17).map(v=><option key={v} value={v}>{v}</option>)}</optgroup></Select>

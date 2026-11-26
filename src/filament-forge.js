@@ -159,6 +159,17 @@ export function remixUnusualFilamentMaterials(state,rng=Math.random){
 
 // Projected thread-local construction; not a literal 3D yarn mesh.
 // Analytic time-dependent deformation of projected carrier distances.
+// Procedural surface colonization, independent of the painted ecosystem.
+export const textileEcologyModes=["Clean fibers","Diatom biofilm","Budding yeast","Mycelial tendrils","Lichen crust","Crystal accretion","Bacterial chains","Iridescent slime film","Radiolarian colonies"];
+export const textileEcologyControls=["filamentEcology","filamentEcologyAmount","filamentEcologyScale","filamentEcologyCoverage","filamentEcologySpeed","filamentEcologyRelief","filamentEcologyHue"];
+export function remixTextileEcology(state,rng=Math.random){
+ const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
+ const pool=textileEcologyModes.slice(1).filter(x=>x!==state.filamentEcology);
+ return {...state,filamentEcology:pool[Math.floor(unit()*pool.length)],
+ filamentEcologyAmount:65+35*unit(),filamentEcologyScale:15+75*unit(),
+ filamentEcologyCoverage:30+65*unit(),filamentEcologySpeed:25+75*unit(),
+ filamentEcologyRelief:35+65*unit(),filamentEcologyHue:100*unit()};
+}
 export const textileChromaModes=["Original pigment","Spectral braid","Traveling dye fronts","Chromatic counterflow","Quasiperiodic dye work","Pigment standing waves","Chromosomal banding","Interference brocade","Crossing pigment exchange"];
 export const textileChromaControls=["filamentChroma","filamentChromaAmount","filamentChromaScale","filamentChromaSpread","filamentChromaSpeed","filamentChromaContrast","filamentChromaExchange"];
 export function remixTextileChroma(state,rng=Math.random){
@@ -2140,6 +2151,10 @@ uniform float filamentChladniPhase,filamentChladniDetune;
 uniform float filamentRetroLead,filamentRetroEcho,filamentRetroParadox;
 uniform float filamentRetroKnots,filamentRetroReversal,filamentRetroCoherence;
 uniform float filamentNap,filamentLuster,filamentBeads,filamentBeadSize,filamentSecondHue;
+#ifdef FILAMENT_SURFACE_ECOLOGY
+uniform int filamentEcology;
+uniform float filamentEcologyAmount,filamentEcologyScale,filamentEcologyCoverage,filamentEcologySpeed,filamentEcologyRelief,filamentEcologyHue;
+#endif
 #ifdef FILAMENT_CHROMA
 uniform int filamentChroma;
 uniform float filamentChromaAmount,filamentChromaScale,filamentChromaSpread,filamentChromaSpeed,filamentChromaContrast,filamentChromaExchange;
@@ -3902,6 +3917,110 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     result=mix(result,pearlColor*.68,bead*.65);
     result+=vec3(1.0,.98,.92)*bead*(.3+.7*luster)*glisten;
   }
+#endif
+
+#ifdef FILAMENT_SURFACE_ECOLOGY
+  // Stable local cells on the projected yarn. Growth is analytic and
+  // reversible, not a stateful population simulation. The underlying
+  // core remains intact; this is a separate attached surface deposit.
+  float ecoAcross=threadD/max(width,.003);
+  float ecoClock=time*filamentEcologySpeed*.85;
+  float ecoScale=mix(1.2,4.4,filamentEcologyScale);
+  vec2 ecoCoord=vec2(phase*3.2+q.x*.22+q.y*.17,ecoAcross)*ecoScale;
+  ecoCoord.y+=.18*sin(ecoCoord.x*.8+seedPhase);
+  vec2 ecoId=floor(ecoCoord);
+  vec2 ep=fract(ecoCoord)-.5;
+  float eh=hash(ecoId+vec2(seedPhase*.31,phaseOffset*.19));
+  float eh2=hash(ecoId+vec2(7.31,seedPhase*.27));
+  float ecoLife=.5+.5*sin(ecoClock+eh*6.2831853);
+  float ecoGate=smoothstep(1.-filamentEcologyCoverage-.15,1.-filamentEcologyCoverage+.15,eh);
+  float ecoGrowth=mix(.24,1.,smoothstep(.12,.84,ecoLife));
+  float ecoAA=clamp(aa/max(width,.003)*ecoScale*.35,.025,.20);
+  float ecBody=0.,ecRib=0.,ecShadow=0.;
+  float er=length(ep);
+  if(filamentEcology==1){ // Diatom valves, dotted silica ribs.
+    vec2 v=ep*vec2(.95,1.8);
+    float d=length(v);
+    float radius=.44*ecoGrowth;
+    ecBody=1.-smoothstep(radius,radius+ecoAA,d);
+    float puncta=length(fract(v*9.)-.5);
+    ecRib=ecBody*max(1.-smoothstep(.03,.13,abs(d-radius*.80)),
+      .75*(1.-smoothstep(.13,.28,puncta)));
+    ecShadow=ecBody*(1.-ecRib)*.5;
+  }else if(filamentEcology==2){ // Budding yeast, mother and daughter cells.
+    float mother=length(ep+vec2(.11,.0))-.30*ecoGrowth;
+    vec2 budPos=vec2(.22,.12*sin(eh2*6.28));
+    float bud=length(ep-budPos)-.21*ecoGrowth*ecoLife;
+    float d=min(mother,bud);
+    ecBody=1.-smoothstep(-ecoAA,ecoAA,d);
+    ecRib=ecBody*(1.-smoothstep(.06,.22,length(ep+vec2(.18,.10))));
+    ecShadow=ecBody*smoothstep(.04,.30,er);
+  }else if(filamentEcology==3){ // Branching mycelial threads, tapered tips.
+    float trunk=abs(ep.x-.12*sin(ep.y*9.+eh*6.28));
+    float branch=abs(abs(ep.x)-abs(ep.y)*.72-.04*sin(ep.y*18.));
+    float fine=abs(abs(ep.x)*.63-abs(ep.y+.16)*.93);
+    float d=min(trunk,min(branch+.018,fine+.035));
+    float extent=1.-smoothstep(.30*ecoGrowth,.49*ecoGrowth,er);
+    ecBody=(1.-smoothstep(.025,.025+ecoAA,d))*extent;
+    ecRib=ecBody*pow(.5+.5*cos(ep.y*14.-ecoClock),4.);
+    ecShadow=ecBody*.3;
+  }else if(filamentEcology==4){ // Ruffled lichen crust and tiny granular lobes.
+    float angle=atan(ep.y,ep.x+.00001);
+    float radius=ecoGrowth*(.31+.07*sin(angle*7.+eh*6.28)+.025*cos(angle*13.));
+    ecBody=1.-smoothstep(radius,radius+ecoAA,er);
+    float gran=length(fract(ep*11.+eh)-.5);
+    ecRib=ecBody*max(1.-smoothstep(.035,.12,abs(er-radius*.82)),
+      .65*(1.-smoothstep(.12,.29,gran)));
+    ecShadow=ecBody*(1.-ecRib)*.6;
+  }else if(filamentEcology==5){ // Faceted mineral growth.
+    vec2 h=abs(ep);
+    float facet=max(h.x,dot(h,vec2(.5,.8660254)));
+    float radius=.37*ecoGrowth;
+    ecBody=1.-smoothstep(radius,radius+ecoAA,facet);
+    ecRib=ecBody*max(1.-smoothstep(.02,.09,abs(facet-radius*.68)),
+      .7*(1.-smoothstep(.02,.12,abs(ep.x+ep.y*.4))));
+    ecShadow=ecBody*(.25+.55*step(0.,ep.x-ep.y));
+  }else if(filamentEcology==6){ // Small aligned bacterial capsules.
+    float angle=eh*6.2831853;
+    vec2 b=mat2(cos(angle),-sin(angle),sin(angle),cos(angle))*ep;
+    b.x=fract(b.x*2.1+.5)-.5;
+    float d=length(vec2(max(abs(b.x)-.12,0.),b.y));
+    ecBody=1.-smoothstep(.13*ecoGrowth,.13*ecoGrowth+ecoAA,d);
+    ecRib=ecBody*(1.-smoothstep(.025,.11,abs(b.y+.035)));
+    ecShadow=ecBody*smoothstep(.03,.12,d);
+  }else if(filamentEcology==7){ // Interfering mucilage films.
+    float wave=.5+.5*sin(ep.x*10.+sin(ep.y*8.+ecoClock)*2.+eh*6.28);
+    float membrane=.5+.5*cos(ep.y*13.-ep.x*5.-ecoClock*.7);
+    ecBody=smoothstep(.18,.62,wave*membrane)*ecoGrowth;
+    ecRib=ecBody*pow(membrane,6.);
+    ecShadow=ecBody*(1.-wave)*.28;
+  }else if(filamentEcology==8){ // Radiolarian shell, rings and spokes.
+    float angle=atan(ep.y,ep.x+.00001);
+    float radius=.43*ecoGrowth;
+    float shell=1.-smoothstep(.025,.025+ecoAA,abs(er-radius));
+    float ribs=pow(abs(cos(angle*7.+eh*6.28)),10.);
+    float inner=1.-smoothstep(.025,.025+ecoAA,abs(er-radius*.54));
+    ecBody=max(shell,max(inner,ribs*(1.-smoothstep(radius,radius+ecoAA,er))));
+    ecRib=max(shell,inner);
+    ecShadow=ecBody*(1.-ecRib)*.48;
+  }
+  // Colonies may spread a little beyond the core, but remain attached to
+  // the same carrier envelope and respect stitch reveal and geometry mask.
+  float ecAttach=max(core,.78*(1.-smoothstep(width*.70,width*1.85+aa,threadD))*mask);
+#ifdef FILAMENT_STITCHING
+  ecAttach*=reveal;
+#endif
+  float ecVisible=1.-smoothstep(.28,.95,aa/max(width,.003)*ecoScale);
+  float ecAmount=filamentEcologyAmount*ecoGate*ecAttach*ecVisible*amount;
+  vec3 ecInk=palette(fract(pigmentPhase+filamentEcologyHue*.88+eh2*.24+ecoLife*.12));
+  vec3 ecLight=mix(ecInk,vec3(.96,.98,1.),.46);
+  if(filamentEcology==7){
+    ecInk=mix(ecInk,.5+.5*cos(vec3(0.,2.094,4.188)+er*18.+ecoClock+eh*6.28),.56);
+    ecLight=mix(ecInk,vec3(1.),.35);
+  }
+  result=mix(result,result*.52+ecInk*(.78+.24*ecoGrowth),clamp(ecBody*ecAmount*.86,0.,.9));
+  result*=1.-clamp(ecShadow*ecAmount*filamentEcologyRelief*.35,0.,.35);
+  result+=ecLight*ecRib*ecAmount*filamentEcologyRelief*.55;
 #endif
 
 #ifdef FILAMENT_ADORNMENT

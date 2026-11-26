@@ -82,7 +82,7 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentScarPresets,applyFilamentScarPreset,remixFilamentScars,
   filamentRegenModes,filamentRegenFamilies,filamentRegenDescriptions,
   filamentRegenPresets,applyFilamentRegenPreset,remixFilamentRegeneration,
-  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,microloomModes,remixMicroloom,textilePhysicsModes,remixTextilePhysics,textileChromaModes,remixTextileChroma,filamentStitchModes,filamentStitchFamilies,
+  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,microloomModes,remixMicroloom,textilePhysicsModes,remixTextilePhysics,textileChromaModes,remixTextileChroma,textileEcologyModes,remixTextileEcology,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
   feralJacquardPresets,applyFeralJacquardPreset,remixFeralJacquard,
@@ -2285,6 +2285,17 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
           onChange={value=>history.change(x=>({...x,filamentSecondMaterial:value}))}>
           {filamentMaterials.map(name=><option key={name} value={name}>{name}</option>)}
         </Select>
+        <details data-effect-detail="filament-ecology"><summary>Textile surface ecology · living fiber deposits</summary>
+          <p className="control-note">Microscopic organisms and minerals grow and recede along the local thread surface. Separate from jewelry and the painted ecosystem. Growth is procedural and reversible, not a persistent biological simulation.</p>
+          <Select label="Fiber colonizer" value={s.filamentEcology} onChange={v=>history.change(x=>({...x,filamentEcology:v}))}>{textileEcologyModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <Parameter label="Colonization influence" name="filamentEcologyAmount" history={history}/>
+          <Parameter label="Colony scale / density" name="filamentEcologyScale" history={history}/>
+          <Parameter label="Surface population" name="filamentEcologyCoverage" history={history}/>
+          <Parameter label="Growth cycle speed" name="filamentEcologySpeed" history={history}/>
+          <Parameter label="Microscopic relief" name="filamentEcologyRelief" history={history}/>
+          <Parameter label="Colony palette offset" name="filamentEcologyHue" history={history}/>
+          <button type="button" className="button secondary" disabled={!s.filamentAmount} onClick={()=>history.change(x=>remixTextileEcology(x))}><Dices size={13}/> Shuffle fiber ecology only</button>
+        </details>
         <details data-effect-detail="filament-chroma"><summary>Chromatic weaving · moving pigment mathematics</summary>
           <p className="control-note">Redistribute the current palette inside individual threads. Both parents keep their materials and hue offsets. Crossing pigment exchange uses the first parent's actual pigment coordinate only at overlapping thread cores.</p>
           <Select label="Chromatic weaving law" value={s.filamentChroma} onChange={v=>history.change(x=>({...x,filamentChroma:v}))}>{textileChromaModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>

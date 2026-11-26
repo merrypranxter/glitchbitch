@@ -13,7 +13,7 @@ export { injuryModes };
 export { alchemyModes };
 import { backdropModes } from "./backdrops.js";
 export { backdropModes };
-import { filamentSpecies, filamentMaterials, fiberConstructionModes, fiberConstructionControls, remixFiberConstruction, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, jewelryPlacementModes, jewelryKineticModes, remixJewelryChoreography, jewelryFinishModes, jewelryFinishControls, remixJewelryFinish, jewelryInteriorModes, jewelryInteriorControls, remixJewelryInterior, jewelryColonyModes, jewelryColonyControls, remixJewelryColony, filamentMorphModes, filamentContagionModes, filamentNeuralModes, filamentPlasticModes, filamentScarModes, filamentRegenModes } from "./filament-forge.js";
+import { filamentSpecies, filamentMaterials, fiberConstructionModes, fiberConstructionControls, remixFiberConstruction, microloomModes, microloomControls, remixMicroloom, filamentStitchModes, filamentSculptModes, filamentAdornmentModes, jewelryPlacementModes, jewelryKineticModes, remixJewelryChoreography, jewelryFinishModes, jewelryFinishControls, remixJewelryFinish, jewelryInteriorModes, jewelryInteriorControls, remixJewelryInterior, jewelryColonyModes, jewelryColonyControls, remixJewelryColony, filamentMorphModes, filamentContagionModes, filamentNeuralModes, filamentPlasticModes, filamentScarModes, filamentRegenModes } from "./filament-forge.js";
 import { underlayModes } from "./living-underlay.js";
 import {semanticGravityModes,hasSemanticLettering} from "./semantic-gravity.js";
 import {structuralOpticsModes} from "./structural-thread-optics.js";
@@ -495,6 +495,12 @@ export const numericRanges = {
   filamentConstructionGap: [0, 100],
   filamentConstructionMotion: [0, 100],
   filamentConstructionRelief: [0, 100],
+  filamentMicroloomAmount: [0, 100],
+  filamentMicroloomScale: [0, 100],
+  filamentMicroloomDepth: [0, 100],
+  filamentMicroloomOpenwork: [0, 100],
+  filamentMicroloomMotion: [0, 100],
+  filamentMicroloomColor: [0, 100],
   filamentSecondHue: [0, 100],
   // Independent thin-film/polarization-inspired fiber optical coats.
   filamentOpticsAmount: [0, 100],
@@ -1054,6 +1060,13 @@ export const initial = {
   filamentConstructionGap: 60,
   filamentConstructionMotion: 50,
   filamentConstructionRelief: 75,
+  filamentMicroloom: "Plain strand interior",
+  filamentMicroloomAmount: 80,
+  filamentMicroloomScale: 50,
+  filamentMicroloomDepth: 55,
+  filamentMicroloomOpenwork: 48,
+  filamentMicroloomMotion: 55,
+  filamentMicroloomColor: 65,
   filamentSecondHue: 0,
   filamentOpticsMode: "Off",
   filamentOpticsAmount: 0,
@@ -1422,6 +1435,7 @@ export function validateRecipe(input) {
     filamentSecondSpecies: filamentSpecies,
     filamentMaterial: filamentMaterials,
     filamentConstruction: fiberConstructionModes,
+    filamentMicroloom: microloomModes,
     filamentSecondMaterial: filamentMaterials,
     filamentOpticsMode: structuralOpticsModes,
     filamentSecondOpticsMode: structuralOpticsModes,
@@ -1875,7 +1889,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       "semanticGravityAmount","semanticGravityRadius","semanticGravityFalloff",
       "semanticGravitySwirl","semanticGravityPulse","semanticGravityVariation",
       "filamentCrossbreed","filamentInterlace","filamentTwist","filamentPhase",
-      "filamentNap","filamentLuster","filamentBeads","filamentBeadSize","filamentConstructionAmount","filamentConstructionPitch","filamentConstructionGap","filamentConstructionMotion","filamentConstructionRelief",
+      "filamentNap","filamentLuster","filamentBeads","filamentBeadSize","filamentConstructionAmount","filamentConstructionPitch","filamentConstructionGap","filamentConstructionMotion","filamentConstructionRelief","filamentMicroloomAmount","filamentMicroloomScale","filamentMicroloomDepth","filamentMicroloomOpenwork","filamentMicroloomMotion","filamentMicroloomColor",
       "filamentSecondHue",
       "filamentOpticsAmount","filamentOpticsThickness","filamentOpticsDispersion",
       "filamentOpticsAnisotropy","filamentOpticsCurvature","filamentOpticsPearl","filamentOpticsPhase",
@@ -2215,6 +2229,8 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.filamentLuster=25+random()*74;
   s.filamentBeads=random()<.6 ? 21+random()*78 : 0;
   s.filamentBeadSize=14+random()*83;
+  s.filamentMicroloom="Plain strand interior";
+  if(s.filamentAmount>0&&random()<.40){const micro=remixMicroloom(s,random);for(const key of microloomControls)s[key]=micro[key];}
   s.filamentConstruction="Original strand";
   if(s.filamentAmount>0&&random()<.48){const construction=remixFiberConstruction(s,random);for(const key of fiberConstructionControls)s[key]=construction[key];}
   s.filamentSecondHue=random()*100;

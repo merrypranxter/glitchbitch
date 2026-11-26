@@ -179,7 +179,7 @@ export function remixTextileMeta(state,rng=Math.random){
  filamentMetaFrequency:15+70*unit(),filamentMetaThickness:15+80*unit(),
  filamentMetaDispersion:45+55*unit(),filamentMetaMotion:15+75*unit(),filamentMetaPolish:35+65*unit()};
 }
-export const textileArchitectureModes=["Bare architecture","Dendritic crystal scaffolds","Microbial lace","Perforated silica tubes","Hyperbolic membranes","Mineral crust terraces","Iridescent cellular bridges","Radiolarian vaults","Quasicrystal exoskeleton"];
+export const textileArchitectureModes=["Bare architecture","Dendritic crystal scaffolds","Microbial lace","Perforated silica tubes","Hyperbolic membranes","Mineral crust terraces","Iridescent cellular bridges","Radiolarian vaults","Quasicrystal exoskeleton","Mobius membrane","Klein bottle labyrinth","Gyroid labyrinth","Riemann branched sheets","Hopf fiber bundle","Hyperbolic skeletal net","Rotating tesseract lattice","Torus knot cathedral"];
 export const textileArchitectureControls=["filamentArchitecture","filamentArchitectureAmount","filamentArchitectureScale","filamentArchitectureReach","filamentArchitectureOpenwork","filamentArchitectureSpeed","filamentArchitectureHue"];
 export function remixTextileArchitecture(state,rng=Math.random){
  const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
@@ -4023,6 +4023,112 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     }
     arD=abs(lattice)*.13;
     arShine=.3+.7*clamp(abs(lattice)*.4,0.,1.);
+  }else if(filamentArchitecture==9){
+    // Mobius strip: the transverse parameter reverses after one circuit.
+    // Orthographic cross-section curves, not a 3D surface mesh.
+    float u=6.2831853*arAlong+arClock*.45;
+    float twist=cos(u*.5);
+    float y=arP.y-.5-.14*sin(u);
+    float a=.30*twist;
+    float rail=min(abs(y-a),abs(y+a));
+    float ribs=abs(fract(arAlong*8.)-.5)*.16;
+    float interior=1.-smoothstep(abs(a),abs(a)+arAA,abs(y));
+    arD=min(rail,ribs+(1.-interior)*2.);
+    arFill=interior*.48;
+    arShine=.3+.7*abs(sin(u*.5));
+  }else if(filamentArchitecture==10){
+    // Immersed Klein bottle figure-eight section:
+    // (r+cos(u/2)sin(v)-sin(u/2)sin(2v), sin(u/2)sin(v)+cos(u/2)sin(2v)).
+    float u=6.2831853*arAlong+arClock*.35;
+    float ct=cos(u*.5),st=sin(u*.5);
+    float y=arP.y-.5;
+    arD=3.;
+    for(int ki=0;ki<8;ki++){
+      float v=float(ki)*.78539816;
+      float a=sin(v),b=sin(2.*v);
+      float h=.25*(st*a+ct*b);
+      float depth=ct*a-st*b;
+      arD=min(arD,abs(y-h)*(.75+.25*abs(depth)));
+    }
+    arShine=.3+.7*abs(cos(u*.5+arP.y*5.));
+  }else if(filamentArchitecture==11){
+    // Standard gyroid implicit nodal surface, animated 2D slice.
+    vec3 v=vec3(arAlong*6.2831853,arP.y*12.5663706,arClock*.55+arRand*.8);
+    float g=sin(v.x)*cos(v.y)+sin(v.y)*cos(v.z)+sin(v.z)*cos(v.x);
+    arD=abs(g)*.16;
+    arFill=smoothstep(.05,.6,g)*.34;
+    arShine=.25+.75*abs(cos(v.x)*cos(v.y)-sin(v.z)*sin(v.x));
+  }else if(filamentArchitecture==12){
+    // Both sheets of sqrt(z), with a branch point at the station center.
+    vec2 v=vec2(arP.x,arP.y-.5);
+    float r=sqrt(length(v));
+    float theta=.5*atan(v.y,v.x+.00001)+arClock*.25;
+    vec2 root=r*vec2(cos(theta),sin(theta));
+    float sheets=min(abs(fract(root.y*7.+.5)-.5),abs(fract(-root.y*7.+.25)-.5));
+    float rings=abs(fract(r*6.+.5)-.5);
+    arD=min(sheets,rings*.7)*.27;
+    arShine=.28+.72*abs(cos(theta));
+  }else if(filamentArchitecture==13){
+    // Hopf fibers on S3: (cos(eta)e^it,sin(eta)e^i(t+phi)).
+    // The sampled height is a stereographic projection, bounded away from pole.
+    float t=6.2831853*arAlong+arClock*.36;
+    float y=arP.y-.5;
+    arD=3.;
+    for(int hi=0;hi<7;hi++){
+      float phi=float(hi)*.8975979;
+      float eta=.43+.035*float(hi);
+      float w=sin(eta)*sin(t+phi);
+      float height=.21*cos(eta)*sin(t)/max(.25,1.-w);
+      height+=.12*sin(eta)*cos(t+phi);
+      arD=min(arD,abs(y-height));
+    }
+    arShine=.35+.65*abs(cos(t+arP.y*5.));
+  }else if(filamentArchitecture==14){
+    // Poincare disk metric: radial geodesics plus orthogonal boundary arcs.
+    vec2 v=vec2(arP.x*1.75,(arP.y-.5)*1.75);
+    float r=min(length(v),.985);
+    float angle=atan(v.y,v.x+.00001)+arClock*.12;
+    float spokes=abs(sin(angle*6.))*r;
+    float hyper=.5*log((1.+r)/max(.015,1.-r));
+    float rings=abs(fract(hyper*2.6)-.5)*(1.-r*r);
+    arD=min(spokes*.40,rings*.30);
+    arD+=smoothstep(.94,.99,length(v));
+    arShine=.3+.7*(1.-r);
+  }else if(filamentArchitecture==15){
+    // All 32 edges of a 4D hypercube, projected by a rotating 4D basis.
+    float t=arClock*.35;
+    float c=cos(t),si=sin(t),c2=cos(t*.71),s2=sin(t*.71);
+    vec2 basis[4];
+    basis[0]=vec2(.15,.03)*c+vec2(.07,-.10)*si;
+    basis[3]=-vec2(.15,.03)*si+vec2(.07,-.10)*c;
+    basis[1]=vec2(-.04,.15)*c2+vec2(.10,.07)*s2;
+    basis[2]=-vec2(-.04,.15)*s2+vec2(.10,.07)*c2;
+    vec2 p=vec2(arP.x,arP.y-.5);
+    arD=3.;
+    for(int vi=0;vi<16;vi++){
+      vec2 vertex=vec2(0.);
+      for(int bi=0;bi<4;bi++){
+        int bit=(vi>>bi)&1;
+        vertex+=basis[bi]*(float(bit)*2.-1.);
+      }
+      for(int ei=0;ei<4;ei++){
+        if(((vi>>ei)&1)==0){
+          vec2 e=2.*basis[ei],d=p-vertex;
+          float along=clamp(dot(d,e)/max(dot(e,e),.00001),0.,1.);
+          arD=min(arD,length(d-e*along));
+        }
+      }
+    }
+    arShine=.35+.65*abs(cos(t+arP.y*9.));
+  }else if(filamentArchitecture==16){
+    // (3,2) and (5,3) torus-knot projections share an axial carrier.
+    float t=6.2831853*arAlong+arClock*.35;
+    float y=arP.y-.5;
+    float r=.22+.10*cos(3.*t);
+    float a=r*sin(2.*t)+.06*sin(3.*t);
+    float b=(.22+.08*cos(5.*t))*sin(3.*t+.9)+.05*sin(5.*t);
+    arD=min(abs(y-a),abs(y-b));
+    arShine=.3+.7*abs(cos(3.*t));
   }
   float arSupport=(1.-smoothstep(arExtent*.87,arExtent,arAcross))*mask;
 #ifdef FILAMENT_STITCHING

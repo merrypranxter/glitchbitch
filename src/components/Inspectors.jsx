@@ -82,7 +82,7 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentScarPresets,applyFilamentScarPreset,remixFilamentScars,
   filamentRegenModes,filamentRegenFamilies,filamentRegenDescriptions,
   filamentRegenPresets,applyFilamentRegenPreset,remixFilamentRegeneration,
-  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,microloomModes,remixMicroloom,textilePhysicsModes,remixTextilePhysics,filamentStitchModes,filamentStitchFamilies,
+  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,microloomModes,remixMicroloom,textilePhysicsModes,remixTextilePhysics,textileChromaModes,remixTextileChroma,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
   feralJacquardPresets,applyFeralJacquardPreset,remixFeralJacquard,
@@ -2285,6 +2285,18 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
           onChange={value=>history.change(x=>({...x,filamentSecondMaterial:value}))}>
           {filamentMaterials.map(name=><option key={name} value={name}>{name}</option>)}
         </Select>
+        <details data-effect-detail="filament-chroma"><summary>Chromatic weaving · moving pigment mathematics</summary>
+          <p className="control-note">Redistribute the current palette inside individual threads. Both parents keep their materials and hue offsets. Crossing pigment exchange uses the first parent's actual pigment coordinate only at overlapping thread cores.</p>
+          <Select label="Chromatic weaving law" value={s.filamentChroma} onChange={v=>history.change(x=>({...x,filamentChroma:v}))}>{textileChromaModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <Parameter label="Pigment influence" name="filamentChromaAmount" history={history}/>
+          <Parameter label="Color band frequency" name="filamentChromaScale" history={history}/>
+          <Parameter label="Palette travel range" name="filamentChromaSpread" history={history}/>
+          <Parameter label="Pigment motion speed" name="filamentChromaSpeed" history={history}/>
+          <Parameter label="Band sharpness" name="filamentChromaContrast" history={history}/>
+          <Parameter label="Crossing color exchange" name="filamentChromaExchange" history={history}/>
+          {s.filamentChroma==="Crossing pigment exchange"&&!s.filamentCrossbreed&&<p className="control-note" role="status">Enable a second woven parent for pigment exchange.</p>}
+          <button type="button" className="button secondary" disabled={!s.filamentAmount} onClick={()=>history.change(x=>remixTextileChroma(x))}><Dices size={13}/> Shuffle chromatic weaving only</button>
+        </details>
         <details data-effect-detail="filament-physics"><summary>Impossible textile physics · split, fray & rejoin</summary>
           <p className="control-note">Animate the projected carrier distance before fiber construction, microloom and stitch reveal. These are reversible procedural deformations, not persistent simulated breaks. Crossbreed grafts require a second woven parent.</p>
           <Select label="Textile physics law" value={s.filamentPhysics} onChange={v=>history.change(x=>({...x,filamentPhysics:v}))}>{textilePhysicsModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>

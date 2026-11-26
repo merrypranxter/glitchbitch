@@ -8,6 +8,7 @@ export const weavingLocks=[
  ["construction","Fiber construction"],
  ["microloom","Recursive microloom"],
  ["physics","Impossible textile physics"],
+ ["chroma","Chromatic weaving"],
  ["jewelry","Jewelry & ornaments"],
  ["optics","Structural-color coats"],
  ["motion","Stitch animation & needle laws"],
@@ -24,6 +25,7 @@ export function textileGroup(key){
  if(key.startsWith("filamentConstruction"))return "construction";
  if(key.startsWith("filamentMicroloom"))return "microloom";
  if(key.startsWith("filamentPhysics"))return "physics";
+ if(key.startsWith("filamentChroma"))return "chroma";
  if(key.startsWith("semanticGravity"))return "semantic";
  if(key.startsWith("underlay"))return "ground";
  if(key==="velvetMode"||key.startsWith("vld"))return "velvet";

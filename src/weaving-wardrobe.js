@@ -11,6 +11,7 @@ export const weavingLocks=[
  ["chroma","Chromatic weaving"],
  ["surface-ecology","Textile surface ecology"],
  ["architecture","Parasitic architecture"],
+ ["dimension","Dimensional metamorphosis"],
  ["metamaterials","Optical metamaterials"],
  ["jewelry","Jewelry & ornaments"],
  ["optics","Structural-color coats"],
@@ -30,6 +31,7 @@ export function textileGroup(key){
  if(key.startsWith("filamentPhysics"))return "physics";
  if(key.startsWith("filamentChroma"))return "chroma";
  if(key.startsWith("filamentMeta"))return "metamaterials";
+ if(key.startsWith("filamentDim"))return "dimension";
  if(key.startsWith("filamentArchitecture"))return "architecture";
  if(key.startsWith("filamentEcology"))return "surface-ecology";
  if(key.startsWith("semanticGravity"))return "semantic";

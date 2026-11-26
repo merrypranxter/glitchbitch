@@ -10,7 +10,7 @@ test("all jewelry finishes round trip with original legacy default",()=>{
   assert.deepEqual(parseDocument(recipeDocument(s,"jewel finish",{time:0,colorTime:0})).state,s);
  }
  for(const k of jewelryFinishControls)assert.equal(textileGroup(k),"jewelry");
- assert.match(filamentGLSL,/if\(filamentAdornmentFinish>0 && filamentAdornmentFinishAmount/);
+ assert.match(filamentGLSL,/if\(stationFinish>0 && filamentAdornmentFinishAmount/);
  assert.match(filamentGLSL,/float jewelry=collar\*filamentAdornmentAmount\*occupancy/);
 });
 test("finish-only shuffle preserves thread material, geometry, shape, choreography and all other art",()=>{

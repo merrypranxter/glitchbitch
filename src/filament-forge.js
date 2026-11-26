@@ -1349,6 +1349,18 @@ export const filamentAdornmentModes=[
   "Diffraction sequins",
   "Fractal branch charms"
 ];
+// Fixed, deliberately small species pools preserve mobile shader pruning.
+// IDs are stable indices in filamentAdornmentModes.
+export const jewelryColonyModes=["Uniform jewelry","Silica aquarium","Crystal carnival","Alien microbiome","Mathematical reliquary","Haunted haberdashery","Mixed optical zoo"];
+export const jewelryColonyPools=[[],[13,14,20],[15,16,21],[7,10,22],[17,18,19],[3,4,9],[13,16,22]];
+export const jewelryColonyControls=["filamentAdornmentColony","filamentAdornmentDiversity","filamentAdornmentSizeVariance","filamentAdornmentFinishVariance","filamentAdornmentAnatomyVariance"];
+export function remixJewelryColony(state,rng=Math.random){
+ const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
+ const pool=jewelryColonyModes.slice(1).filter(x=>x!==state.filamentAdornmentColony);
+ return {...state,filamentAdornmentColony:pool[Math.floor(unit()*pool.length)],
+   filamentAdornmentDiversity:55+unit()*45,filamentAdornmentSizeVariance:25+unit()*75,
+   filamentAdornmentFinishVariance:25+unit()*75,filamentAdornmentAnatomyVariance:25+unit()*75};
+}
 export const jewelryInteriorModes=["Native ornament","Diatom puncta","Hexagonal fenestrae","Radiolarian ribs","Nested crystal chambers","Gyroid windows","Quasicrystal tracery","Moiré engraving","Fractal vein inlay","Fresnel microgrooves"];
 export const jewelryInteriorControls=["filamentAdornmentInterior","filamentAdornmentInteriorAmount","filamentAdornmentInteriorDensity","filamentAdornmentInteriorOpenwork","filamentAdornmentInteriorDrift"];
 export function remixJewelryInterior(state,rng=Math.random){
@@ -1478,7 +1490,7 @@ export function applyFilamentAdornmentPreset(state,name){
   const preset=filamentAdornmentPresets.find(x=>x.name===name);
   if(!preset)return state;
   const {name:label,...adornment}=preset;
-  return {...state,filamentAdornmentPlacement:"Original stations",filamentAdornmentKinetics:"Original movement",filamentAdornmentFinish:"Original jewelry",filamentAdornmentInterior:"Native ornament",...adornment,filamentAmount:Math.max(60,state.filamentAmount||0)};
+  return {...state,filamentAdornmentPlacement:"Original stations",filamentAdornmentKinetics:"Original movement",filamentAdornmentFinish:"Original jewelry",filamentAdornmentInterior:"Native ornament",filamentAdornmentColony:"Uniform jewelry",...adornment,filamentAmount:Math.max(60,state.filamentAmount||0)};
 }
 export function remixFilamentAdornments(state,rng=Math.random,onlyWeird=false){
   const unit=()=>{const n=Number(rng());return Number.isFinite(n)?
@@ -1503,7 +1515,7 @@ export function remixThreadCouture(state,rng=Math.random,onlyWeird=false){
   return remixFilamentAdornments(fibers,rng,onlyWeird);
 }
 
-export function specializeFilamentAdornments(source,first,second=null){
+export function specializeFilamentAdornments(source,first,second=null,colony=0){
   if(first==null||!Number.isInteger(first)||first<0||
     first>=filamentAdornmentModes.length)return source;
   const ids=[first,...(second==null?[]:[second])];
@@ -1517,7 +1529,7 @@ export function specializeFilamentAdornments(source,first,second=null){
   const fallback=source.indexOf("  }else{ // Unsupported adornment mode",starts.at(-1));
   const end=source.indexOf("  // Paint trinkets on real filament geometry",fallback);
   if(fallback<0||end<=fallback)return source;
-  const chosen=[...new Set(ids.filter(n=>n>0))].sort((a,b)=>a-b);
+  const chosen=[...new Set([...ids.filter(n=>n>0),...(ids.some(n=>n>0)?jewelryColonyPools[colony]||[]:[])])].sort((a,b)=>a-b);
   if(!chosen.length)return source.slice(0,starts[0])+
     "  trinket=0.0;\n  sparkle=0.0;\n"+source.slice(end);
   const branches=chosen.map((n,k)=>{
@@ -2050,6 +2062,8 @@ uniform int filamentAdornmentFinish;
 uniform float filamentAdornmentFinishAmount,filamentAdornmentFilm,filamentAdornmentFacet,filamentAdornmentPolish;
 uniform int filamentAdornmentInterior;
 uniform float filamentAdornmentInteriorAmount,filamentAdornmentInteriorDensity,filamentAdornmentInteriorOpenwork,filamentAdornmentInteriorDrift;
+uniform int filamentAdornmentColony;
+uniform float filamentAdornmentDiversity,filamentAdornmentSizeVariance,filamentAdornmentFinishVariance,filamentAdornmentAnatomyVariance;
 uniform int filamentMorphMode;
 uniform int filamentContagionMode;
 uniform int filamentNeuralMode;
@@ -3605,11 +3619,41 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     occupancy=pow(.5+.5*cos(stationId*1.618+sin(phaseOffset)*2.),mix(8.,1.,population));
   }
   if(filamentAdornmentPlacement>0)occupancy=mix(occupancy,1.,population*.22);
+  // Deterministic station identity follows the moving carrier phase, not
+  // frame number. Bare parents stay bare. The selected species is retained
+  // at stations outside the diversity threshold.
+  int stationFinish=filamentAdornmentFinish;
+  int stationInterior=filamentAdornmentInterior;
+  float stationSize=filamentAdornmentSize;
+  if(filamentAdornmentColony>0 && adornmentMode>0){
+    float stationKey=stationId+seedPhase*3.17+phaseOffset*5.31;
+    float hShape=fract(sin(stationKey*12.9898+1.71)*43758.5453);
+    float hKind=fract(sin(stationKey*23.417+4.13)*15731.743);
+    float hSize=fract(sin(stationKey*8.731+7.9)*23147.321);
+    float hFinish=fract(sin(stationKey*17.137+3.2)*19341.123);
+    float hAnatomy=fract(sin(stationKey*31.817+8.2)*29131.421);
+    if(hShape<filamentAdornmentDiversity){
+      int variant=int(floor(hKind*3.0));
+      if(filamentAdornmentColony==1)adornmentMode=variant==0?13:(variant==1?14:20);
+      else if(filamentAdornmentColony==2)adornmentMode=variant==0?15:(variant==1?16:21);
+      else if(filamentAdornmentColony==3)adornmentMode=variant==0?7:(variant==1?10:22);
+      else if(filamentAdornmentColony==4)adornmentMode=variant==0?17:(variant==1?18:19);
+      else if(filamentAdornmentColony==5)adornmentMode=variant==0?3:(variant==1?4:9);
+      else if(filamentAdornmentColony==6)adornmentMode=variant==0?13:(variant==1?16:22);
+    }
+    stationSize=clamp(stationSize+(hSize-.5)*filamentAdornmentSizeVariance*.85,.02,1.);
+    if(hFinish<filamentAdornmentFinishVariance)
+      stationFinish=1+int(floor(fract(hKind*.71+hSize*.83+.19)*8.));
+    if(hAnatomy<filamentAdornmentAnatomyVariance)
+      stationInterior=1+int(floor(fract(hSize*.67+hShape*.91+.31)*9.));
+  }
   float beadBeat=.5+.5*cos(adornPhase);
-  float beadStation=pow(beadBeat,mix(18.0,6.0,filamentAdornmentSize));
+  float beadStation=pow(beadBeat,mix(18.0,6.0,stationSize));
   float fiberRadial=threadD/max(width,.003);
+  if(filamentAdornmentColony>0 && adornmentMode>0)
+    fiberRadial*=mix(1.,(1.0+filamentAdornmentSize)/(1.0+stationSize),filamentAdornmentSizeVariance);
   float collar=(1.0-smoothstep(width*.55,
-    width*(1.9+filamentAdornmentSize*3.0)+aa,threadD))*mask;
+    width*(1.9+stationSize*3.0)+aa,threadD))*mask;
 #ifdef FILAMENT_STITCHING
   // An unwoven portion cannot grow charms before its stitch exists.
   collar*=reveal;
@@ -3833,7 +3877,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float jewelShade=shadow;
   // Independent finish in the local carrier coordinates. No texture taps
   // or changes to the underlying yarn, station distribution or ornament mask.
-  if(filamentAdornmentFinish>0 && filamentAdornmentFinishAmount>.001){
+  if(stationFinish>0 && filamentAdornmentFinishAmount>.001){
     float jStrength=filamentAdornmentFinishAmount;
     float jStation=fract(adornPhase/6.2831853+.5)-.5;
     vec2 jUV=vec2(jStation*2.0,fiberRadial*.55);
@@ -3849,37 +3893,37 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     vec3 jLight=jewelLight;
     float jSpark=sparkle;
     float jShade=shadow;
-    if(filamentAdornmentFinish==1){ // Dichroic enamel
+    if(stationFinish==1){ // Dichroic enamel
       jBody=accent*(.34+.74*jSpectrum)+jSpectrum*.28;
       jLight=mix(jSpectrum,vec3(1.0),.28+.38*jFlash);
       jSpark*=.62+.72*jFlash;
-    }else if(filamentAdornmentFinish==2){ // Opal cabochon
+    }else if(stationFinish==2){ // Opal cabochon
       float jCloud=.5+.5*sin(jUV.x*jDetail*.65+sin(jUV.y*jDetail)*1.3);
       jBody=mix(accent,vec3(.84,.9,.96),.48)+jSpectrum*jCloud*.24;
       jLight=mix(jSpectrum,vec3(.98,1.,1.),.58);
       jSpark*=.65+.55*jFlash;
-    }else if(filamentAdornmentFinish==3){ // Faceted zircon
+    }else if(stationFinish==3){ // Faceted zircon
       float jFacet=abs(fract(jUV.x*jDetail*.4+jUV.y*jDetail*.31)-.5);
       float jRidge=1.-smoothstep(.04,.16,jFacet);
       jBody=accent*(.4+.6*jSlope)+jSpectrum*jRidge*.24;
       jLight=mix(jSpectrum,vec3(1.),.6);
       jSpark=clamp(sparkle*(.4+.7*jFlash)+trinket*jRidge*.46,0.,1.);
-    }else if(filamentAdornmentFinish==4){ // Brushed mercury
+    }else if(stationFinish==4){ // Brushed mercury
       float jBrush=pow(.5+.5*cos(jUV.y*jDetail*.8+adornClock*.35),5.);
       jBody=mix(accent,vec3(.64,.72,.83),.74)*(.5+.5*jSlope);
       jLight=vec3(.88,.96,1.);
       jSpark=clamp(sparkle*(.3+.9*jFlash)+trinket*jBrush*.23,0.,1.);
-    }else if(filamentAdornmentFinish==5){ // Frosted silica
+    }else if(stationFinish==5){ // Frosted silica
       jBody=mix(accent,vec3(.78,.85,.9),.50)*(.78+.22*jGrain);
       jLight=mix(accent,vec3(.94,.97,1.),.8);
       jSpark*=.32+.38*(1.-filamentAdornmentPolish)+.25*jGrain;
       jShade*=.45;
-    }else if(filamentAdornmentFinish==6){ // Nacre scales
+    }else if(stationFinish==6){ // Nacre scales
       float jLayer=.5+.5*cos(jUV.y*jDetail*.9+sin(jUV.x*8.)+adornClock*.4);
       jBody=mix(accent,vec3(.92,.88,.96),.46)+jSpectrum*jLayer*.23;
       jLight=mix(jSpectrum,vec3(1.,.96,.98),.55);
       jSpark=clamp(sparkle*.68+trinket*jLayer*jFlash*.46,0.,1.);
-    }else if(filamentAdornmentFinish==7){ // Diffraction foil
+    }else if(stationFinish==7){ // Diffraction foil
       float jComb=pow(.5+.5*cos(jUV.x*jDetail*1.7+jUV.y*jDetail*.8-adornClock*.5),7.);
       jBody=accent*.46+jSpectrum*(.35+.4*jComb);
       jLight=mix(jSpectrum,vec3(1.),.15);
@@ -3899,7 +3943,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   // removes ornament shading, revealing the already rendered yarn/art,
   // never cutting holes in the entire image or creating a new screen layer.
   float ornamentWindow=1.0;
-  if(filamentAdornmentInterior>0 && filamentAdornmentInteriorAmount>.001){
+  if(stationInterior>0 && filamentAdornmentInteriorAmount>.001){
     float imix=filamentAdornmentInteriorAmount;
     float density=mix(1.4,5.8,filamentAdornmentInteriorDensity);
     float drift=time*filamentAdornmentInteriorDrift*filamentAdornmentMotion*.55;
@@ -3909,14 +3953,14 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     float openwork=filamentAdornmentInteriorOpenwork;
     float rim=0.0;
     float pore=0.0;
-    if(filamentAdornmentInterior==1){ // Ribbed diatom perforations.
+    if(stationInterior==1){ // Ribbed diatom perforations.
       lattice.x+=.23*floor(lattice.y*2.0);
       vec2 cell=fract(lattice*vec2(1.0,1.8)+vec2(.12*sin(drift),.0))-.5;
       float pr=length(cell*vec2(1.0,1.3));
       pore=1.-smoothstep(.18,.27,pr);
       rim=1.-smoothstep(.035,.11,abs(pr-.28));
       rim=max(rim,.6*pow(.5+.5*cos(lattice.x*6.2831853),10.));
-    }else if(filamentAdornmentInterior==2){ // Hexagonal window cells.
+    }else if(stationInterior==2){ // Hexagonal window cells.
       vec2 basis=vec2(1.0,1.7320508);
       vec2 a=mod(lattice+basis*.5,basis)-basis*.5;
       vec2 b=mod(lattice,basis)-basis*.5;
@@ -3925,26 +3969,26 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
       float edge=.41+.035*sin(drift);
       pore=1.-smoothstep(edge-.12,edge-.04,h);
       rim=1.-smoothstep(.035,.11,abs(h-edge));
-    }else if(filamentAdornmentInterior==3){ // Radial skeleton with cross ribs.
+    }else if(stationInterior==3){ // Radial skeleton with cross ribs.
       float rad=length(local);
       float angle=atan(local.y,local.x+.00001)+drift*.18;
       float spokes=pow(abs(cos(angle*mix(3.0,9.0,filamentAdornmentInteriorDensity))),14.);
       float rings=pow(.5+.5*cos(rad*density*7.0+sin(drift)),8.);
       rim=max(spokes,rings);
       pore=1.-smoothstep(.15,.55,rim);
-    }else if(filamentAdornmentInterior==4){ // Polygon chamber walls.
+    }else if(stationInterior==4){ // Polygon chamber walls.
       vec2 a=abs(local);
       float h=max(a.x,dot(a,vec2(.5,.8660254)));
       float contour=abs(fract(h*density+.13*sin(drift))-.5);
       rim=1.-smoothstep(.055,.17,contour);
       pore=smoothstep(.17,.32,contour);
-    }else if(filamentAdornmentInterior==5){ // Moving 2D slice of gyroid field.
+    }else if(stationInterior==5){ // Moving 2D slice of gyroid field.
       vec2 a=lattice*2.3;
       float z=1.2+sin(drift*.7)*1.1;
       float f=sin(a.x)*cos(a.y)+sin(a.y)*cos(z)+sin(z)*cos(a.x);
       rim=1.-smoothstep(.09,.32,abs(f));
       pore=smoothstep(.35,.85,abs(f));
-    }else if(filamentAdornmentInterior==6){ // Five-direction wave interference.
+    }else if(stationInterior==6){ // Five-direction wave interference.
       float sum=0.;
       for(int axis=0;axis<5;axis++){
         float angle=float(axis)*1.25663706;
@@ -3952,12 +3996,12 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
       }
       rim=pow(.5+.5*cos(sum*2.1),7.);
       pore=1.-smoothstep(.10,.65,rim);
-    }else if(filamentAdornmentInterior==7){ // Two gently shearing gratings.
+    }else if(stationInterior==7){ // Two gently shearing gratings.
       float a=cos(lattice.x*8.0+lattice.y*.9);
       float b=cos(lattice.x*8.4-lattice.y*(1.1+.35*sin(drift)));
       rim=pow(clamp(.5+.25*(a+b),0.,1.),6.);
       pore=1.-smoothstep(.12,.55,rim);
-    }else if(filamentAdornmentInterior==8){ // Bounded multiscale branching inlay.
+    }else if(stationInterior==8){ // Bounded multiscale branching inlay.
       float a=abs(fract(lattice.x+.65*abs(fract(lattice.y)-.5))-.5);
       float b=abs(fract(lattice.x*2.0-.8*abs(fract(lattice.y*2.0)-.5))-.5);
       float c=abs(fract(lattice.x*4.0+.7*abs(fract(lattice.y*4.0)-.5)+.12*sin(drift))-.5);

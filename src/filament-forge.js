@@ -160,7 +160,7 @@ export function remixUnusualFilamentMaterials(state,rng=Math.random){
 // Projected thread-local construction; not a literal 3D yarn mesh.
 // Analytic time-dependent deformation of projected carrier distances.
 // Procedural surface colonization, independent of the painted ecosystem.
-export const textileEcologyModes=["Clean fibers","Diatom biofilm","Budding yeast","Mycelial tendrils","Lichen crust","Crystal accretion","Bacterial chains","Iridescent slime film","Radiolarian colonies"];
+export const textileEcologyModes=["Clean fibers","Diatom biofilm","Budding yeast","Mycelial tendrils","Lichen crust","Crystal accretion","Bacterial chains","Iridescent slime film","Radiolarian colonies","Pennate diatom frustules","Desmid mirror cells","Coccolith rosettes","Armored dinoflagellates","Spirillum ribbons","Vorticella bells","Foraminifer chambers","Silica spicule stars"];
 export const textileEcologyControls=["filamentEcology","filamentEcologyAmount","filamentEcologyScale","filamentEcologyCoverage","filamentEcologySpeed","filamentEcologyRelief","filamentEcologyHue"];
 export function remixTextileEcology(state,rng=Math.random){
  const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
@@ -4003,6 +4003,88 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     ecBody=max(shell,max(inner,ribs*(1.-smoothstep(radius,radius+ecoAA,er))));
     ecRib=max(shell,inner);
     ecShadow=ecBody*(1.-ecRib)*.48;
+  }else if(filamentEcology==9){ // Pennate silica valve, axial raphe and transverse striae.
+    vec2 v=ep*vec2(1.,1.85);
+    float r=.45*ecoGrowth;
+    float d=length(v);
+    ecBody=1.-smoothstep(r,r+ecoAA,d);
+    float raphe=1.-smoothstep(.012,.012+ecoAA,abs(v.y));
+    float striae=1.-smoothstep(.11,.11+ecoAA*4.,abs(fract(v.x*14.+.5)-.5));
+    float rim=1.-smoothstep(.02,.02+ecoAA,abs(d-r*.86));
+    ecRib=ecBody*max(rim,max(raphe,.75*striae));
+    ecShadow=ecBody*(1.-ecRib)*.52;
+  }else if(filamentEcology==10){ // Desmid: mirrored scalloped semicells with central isthmus.
+    vec2 v=vec2(abs(ep.x)-.19,ep.y*1.12);
+    float a=atan(v.y,v.x+.00001);
+    float r=ecoGrowth*(.22+.045*cos(a*5.));
+    float d=length(v);
+    float lobes=1.-smoothstep(r,r+ecoAA,d);
+    float bridge=(1.-smoothstep(.07,.07+ecoAA,abs(ep.y)))*(1.-smoothstep(.19,.19+ecoAA,abs(ep.x)));
+    ecBody=max(lobes,bridge);
+    ecRib=lobes*max(1.-smoothstep(.018,.018+ecoAA,abs(d-r*.75)),.6*pow(abs(cos(a*5.)),8.));
+    ecShadow=ecBody*(1.-ecRib)*.48;
+  }else if(filamentEcology==11){ // Coccolith: a calcite rosette of radial overlapping plates.
+    float a=atan(ep.y,ep.x+.00001)+ecoClock*.14;
+    float petal=abs(fract(a*1.9098593+.5)-.5)*2.;
+    float r=ecoGrowth*(.33+.07*cos(a*12.));
+    float ann=(1.-smoothstep(r,r+ecoAA,er))*smoothstep(r*.36,r*.36+ecoAA,er);
+    ecBody=ann;
+    ecRib=ann*max(1.-smoothstep(.09,.09+ecoAA*3.,petal),1.-smoothstep(.018,.018+ecoAA,abs(er-r*.83)));
+    ecShadow=ann*(.25+.5*petal);
+  }else if(filamentEcology==12){ // Dinoflagellate armor, girdle and paired horns.
+    vec2 v=ep*vec2(1.,1.24);
+    float r=.32*ecoGrowth;
+    float body=1.-smoothstep(r,r+ecoAA,length(v));
+    float hornDist=abs(abs(ep.x)-.19*ecoGrowth-.22*abs(ep.y));
+    float horns=(1.-smoothstep(.028,.028+ecoAA,hornDist))*smoothstep(.15,.22,abs(ep.y))*(1.-smoothstep(.34*ecoGrowth,.43*ecoGrowth,abs(ep.y)));
+    ecBody=max(body,horns);
+    float girdle=1.-smoothstep(.025,.025+ecoAA,abs(v.y+.08*sin(v.x*12.)));
+    float plates=1.-smoothstep(.035,.035+ecoAA,abs(sin(v.x*17.)+sin(v.y*16.)));
+    ecRib=max(horns*.7,body*max(girdle,plates*.7));
+    ecShadow=body*(1.-ecRib)*.55;
+  }else if(filamentEcology==13){ // Spirillum: traveling corkscrew ribbon with raised ridge.
+    float theta=ep.x*25.-ecoClock*1.8+eh*6.2831853;
+    float center=.17*ecoGrowth*sin(theta);
+    float d=abs(ep.y-center);
+    float endMask=1.-smoothstep(.34*ecoGrowth,.48*ecoGrowth,abs(ep.x));
+    ecBody=(1.-smoothstep(.042,.042+ecoAA,d))*endMask;
+    ecRib=ecBody*(.25+.75*pow(.5+.5*cos(theta),3.));
+    ecShadow=ecBody*(.25+.55*(.5-.5*cos(theta)));
+  }else if(filamentEcology==14){ // Vorticella: contractile stalk and ciliated bell.
+    float sway=.055*sin(ecoClock+eh*6.28);
+    float y=ep.y+.05;
+    float h=.22*ecoGrowth;
+    float bellWidth=.065+.16*smoothstep(0.,max(h,.01),y);
+    float bell=(1.-smoothstep(bellWidth,bellWidth+ecoAA,abs(ep.x-sway)))*smoothstep(-ecoAA,0.,y)*(1.-smoothstep(h,h+ecoAA,y));
+    float stalk=(1.-smoothstep(.016,.016+ecoAA,abs(ep.x-.045*sin(y*24.+ecoClock))))*(1.-smoothstep(0.,ecoAA,y))*smoothstep(-.42*ecoGrowth,-.28*ecoGrowth,y);
+    float lip=bell*(1.-smoothstep(.02,.02+ecoAA,abs(y-h*.86)));
+    float cilia=bell*pow(abs(sin(ep.x*55.+ecoClock*2.)),6.)*smoothstep(h*.55,max(h*.9,.01),y);
+    ecBody=max(bell,stalk);
+    ecRib=max(stalk*.7,max(lip,cilia));
+    ecShadow=bell*(1.-ecRib)*.52;
+  }else if(filamentEcology==15){ // Foraminifer: logarithmic spiral of individual chambers.
+    float d=10.;
+    float rim=0.;
+    for(int fi=0;fi<7;fi++){
+      float j=float(fi);
+      float a=j*1.36+eh*6.2831853;
+      float arm=.032*exp(j*.30)*ecoGrowth;
+      float radius=.049*exp(j*.19)*ecoGrowth;
+      float chamber=length(ep-vec2(cos(a),sin(a))*arm);
+      d=min(d,chamber-radius);
+      rim=max(rim,1.-smoothstep(.014,.014+ecoAA,abs(chamber-radius*.82)));
+    }
+    ecBody=1.-smoothstep(-ecoAA,ecoAA,d);
+    ecRib=ecBody*rim;
+    ecShadow=ecBody*(1.-ecRib)*.57;
+  }else if(filamentEcology==16){ // Siliceous sponge spicules: angular, pointed mineral needles.
+    float a=atan(ep.y,ep.x+.00001)+eh*6.2831853+ecoClock*.09;
+    float spokes=abs(sin(a*3.))*er;
+    float radius=.43*ecoGrowth;
+    float taper=.012+.04*(1.-clamp(er/max(radius,.01),0.,1.));
+    ecBody=(1.-smoothstep(taper,taper+ecoAA,spokes))*(1.-smoothstep(radius,radius+ecoAA,er));
+    ecRib=ecBody*max(.45,1.-smoothstep(.012,.012+ecoAA,spokes));
+    ecShadow=ecBody*.25;
   }
   // Colonies may spread a little beyond the core, but remain attached to
   // the same carrier envelope and respect stitch reveal and geometry mask.

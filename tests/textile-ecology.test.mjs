@@ -16,3 +16,18 @@ test("fiber ecology settings round trip and remain independent",()=>{
  assert.match(filamentGLSL,/ecAttach\*=reveal/);
  assert.match(filamentGLSL,/ecAmount=filamentEcologyAmount\*ecoGate\*ecAttach/);
 });
+
+
+test("microbial couture appends eight compatible morphologies and samples each",()=>{
+ const names=["Pennate diatom frustules","Desmid mirror cells","Coccolith rosettes","Armored dinoflagellates","Spirillum ribbons","Vorticella bells","Foraminifer chambers","Silica spicule stars"];
+ assert.deepEqual(textileEcologyModes.slice(9),names);
+ assert.equal(textileEcologyModes[8],"Radiolarian colonies");
+ for(let i=0;i<names.length;i++){
+  const mode=names[i];
+  const next=remixTextileEcology(initial,()=>((i+8+.5)/16));
+  assert.equal(next.filamentEcology,mode);
+  assert.doesNotThrow(()=>validateRecipe(next));
+  assert.ok(filamentGLSL.includes("filamentEcology=="+(i+9)+"){"));
+  for(const k of Object.keys(initial).filter(k=>!textileEcologyControls.includes(k)))assert.deepEqual(next[k],initial[k],k);
+ }
+});

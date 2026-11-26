@@ -179,7 +179,7 @@ export function remixTextileMeta(state,rng=Math.random){
  filamentMetaFrequency:15+70*unit(),filamentMetaThickness:15+80*unit(),
  filamentMetaDispersion:45+55*unit(),filamentMetaMotion:15+75*unit(),filamentMetaPolish:35+65*unit()};
 }
-export const textileArchitectureModes=["Bare architecture","Dendritic crystal scaffolds","Microbial lace","Perforated silica tubes","Hyperbolic membranes","Mineral crust terraces","Iridescent cellular bridges","Radiolarian vaults","Quasicrystal exoskeleton","Mobius membrane","Klein bottle labyrinth","Gyroid labyrinth","Riemann branched sheets","Hopf fiber bundle","Hyperbolic skeletal net","Rotating tesseract lattice","Torus knot cathedral"];
+export const textileArchitectureModes=["Bare architecture","Dendritic crystal scaffolds","Microbial lace","Perforated silica tubes","Hyperbolic membranes","Mineral crust terraces","Iridescent cellular bridges","Radiolarian vaults","Quasicrystal exoskeleton","Möbius membrane","Klein bottle labyrinth","Gyroid labyrinth","Riemann branched sheets","Hopf fiber bundle","Hyperbolic skeletal net","Rotating tesseract lattice","Torus knot cathedral"];
 export const textileArchitectureControls=["filamentArchitecture","filamentArchitectureAmount","filamentArchitectureScale","filamentArchitectureReach","filamentArchitectureOpenwork","filamentArchitectureSpeed","filamentArchitectureHue"];
 export function remixTextileArchitecture(state,rng=Math.random){
  const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
@@ -4091,32 +4091,39 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     float spokes=abs(sin(angle*6.))*r;
     float hyper=.5*log((1.+r)/max(.015,1.-r));
     float rings=abs(fract(hyper*2.6)-.5)*(1.-r*r);
-    arD=min(spokes*.40,rings*.30);
+    float arcs=3.;
+    for(int gi=0;gi<6;gi++){
+      float a=float(gi)*1.04719755+arClock*.12;
+      vec2 center=1.35*vec2(cos(a),sin(a));
+      arcs=min(arcs,abs(length(v-center)-sqrt(1.35*1.35-1.)));
+    }
+    arD=min(min(spokes*.40,rings*.30),arcs*.50);
     arD+=smoothstep(.94,.99,length(v));
     arShine=.3+.7*(1.-r);
   }else if(filamentArchitecture==15){
     // All 32 edges of a 4D hypercube, projected by a rotating 4D basis.
     float t=arClock*.35;
     float c=cos(t),si=sin(t),c2=cos(t*.71),s2=sin(t*.71);
-    vec2 basis[4];
-    basis[0]=vec2(.15,.03)*c+vec2(.07,-.10)*si;
-    basis[3]=-vec2(.15,.03)*si+vec2(.07,-.10)*c;
-    basis[1]=vec2(-.04,.15)*c2+vec2(.10,.07)*s2;
-    basis[2]=-vec2(-.04,.15)*s2+vec2(.10,.07)*c2;
+    vec2 b0=vec2(.15,.03)*c+vec2(.07,-.10)*si;
+    vec2 b3=-vec2(.15,.03)*si+vec2(.07,-.10)*c;
+    vec2 b1=vec2(-.04,.15)*c2+vec2(.10,.07)*s2;
+    vec2 b2=-vec2(-.04,.15)*s2+vec2(.10,.07)*c2;
     vec2 p=vec2(arP.x,arP.y-.5);
     arD=3.;
-    for(int vi=0;vi<16;vi++){
-      vec2 vertex=vec2(0.);
-      for(int bi=0;bi<4;bi++){
-        int bit=(vi>>bi)&1;
-        vertex+=basis[bi]*(float(bit)*2.-1.);
-      }
-      for(int ei=0;ei<4;ei++){
-        if(((vi>>ei)&1)==0){
-          vec2 e=2.*basis[ei],d=p-vertex;
-          float along=clamp(dot(d,e)/max(dot(e,e),.00001),0.,1.);
-          arD=min(arD,length(d-e*along));
-        }
+    // Each of four directions has eight edges. No GLSL ES 3-only bit ops.
+    for(int ei=0;ei<4;ei++){
+      vec2 e=2.*(ei==0?b0:ei==1?b1:ei==2?b2:b3);
+      vec2 a=ei==0?b1:ei==1?b2:ei==2?b3:b0;
+      vec2 b=ei==0?b2:ei==1?b3:ei==2?b0:b1;
+      vec2 c3=ei==0?b3:ei==1?b0:ei==2?b1:b2;
+      for(int vi=0;vi<8;vi++){
+        float bits=float(vi);
+        vec2 vertex=-.5*e+a*(2.*mod(bits,2.)-1.)+
+          b*(2.*mod(floor(bits*.5),2.)-1.)+
+          c3*(2.*floor(bits*.25)-1.);
+        vec2 d=p-vertex;
+        float along=clamp(dot(d,e)/max(dot(e,e),.00001),0.,1.);
+        arD=min(arD,length(d-e*along));
       }
     }
     arShine=.35+.65*abs(cos(t+arP.y*9.));

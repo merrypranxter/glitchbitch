@@ -13,6 +13,7 @@ const visible=s=>({...s,filamentAmount:Math.max(65,s.filamentAmount||0)});
 export const weavingRemixGroups=[
  {id:"weave",label:"Weave geometry & scale",note:"Pattern, thickness, density and geometry-specific controls; keeps the thread wardrobe."},
  {id:"dress",label:"Dress the threads",note:"Fiber materials, beads, nap, sheen and thread jewelry together."},
+ {id:"metamaterials",label:"Optical metamaterials only",note:"Change light behavior on the architecture; requires a visible scaffold."},
  {id:"architecture",label:"Parasitic architecture only",note:"Change projected mineral and microbial structures around the threads."},
  {id:"surface-ecology",label:"Textile surface ecology only",note:"Change the microscopic organisms and deposits attached to the fabric."},
  {id:"chroma",label:"Chromatic weaving only",note:"Change traveling color bands and pigment behavior without replacing the palette."},
@@ -54,6 +55,7 @@ export function remixWeavingSystem(state,id,rng=Math.random){
  switch(id){
  case "weave":return weave(state,rng);
  case "dress":return {...F.remixJewelryInterior(F.remixJewelryFinish(F.remixThreadCouture(state,rng),rng),rng),filamentBeadSize:range(15,95,rng),filamentSecondHue:range(0,100,rng)};
+ case "metamaterials":return F.remixTextileMeta(state,rng);
  case "architecture":return F.remixTextileArchitecture(state,rng);
  case "surface-ecology":return F.remixTextileEcology(state,rng);
  case "chroma":return F.remixTextileChroma(state,rng);
@@ -91,6 +93,8 @@ export function shuffleWeavingWorld(state,rng=Math.random,{intensity="Wild",allo
  s=remixWeavingSystem(s,"dress",rng);
  if(roll(p*.48,rng))s=F.remixTextileArchitecture(s,rng);
  else s={...s,filamentArchitecture:"Bare architecture"};
+ if(s.filamentArchitecture!=="Bare architecture"&&roll(p*.85,rng))s=F.remixTextileMeta(s,rng);
+ else s={...s,filamentMeta:"Natural scaffold"};
  if(roll(p*.62,rng))s=F.remixTextileEcology(s,rng);
  else s={...s,filamentEcology:"Clean fibers"};
  if(roll(p*.75,rng))s=F.remixTextileChroma(s,rng);

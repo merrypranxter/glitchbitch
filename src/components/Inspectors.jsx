@@ -82,7 +82,7 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentScarPresets,applyFilamentScarPreset,remixFilamentScars,
   filamentRegenModes,filamentRegenFamilies,filamentRegenDescriptions,
   filamentRegenPresets,applyFilamentRegenPreset,remixFilamentRegeneration,
-  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,microloomModes,remixMicroloom,textilePhysicsModes,remixTextilePhysics,textileChromaModes,remixTextileChroma,textileEcologyModes,remixTextileEcology,textileArchitectureModes,remixTextileArchitecture,filamentStitchModes,filamentStitchFamilies,
+  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,microloomModes,remixMicroloom,textilePhysicsModes,remixTextilePhysics,textileChromaModes,remixTextileChroma,textileEcologyModes,remixTextileEcology,textileArchitectureModes,remixTextileArchitecture,textileMetaModes,remixTextileMeta,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
   feralJacquardPresets,applyFeralJacquardPreset,remixFeralJacquard,
@@ -2295,6 +2295,18 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
           <Parameter label="Growth cycle speed" name="filamentArchitectureSpeed" history={history}/>
           <Parameter label="Architecture palette offset" name="filamentArchitectureHue" history={history}/>
           <button type="button" className="button secondary" disabled={!s.filamentAmount} onClick={()=>history.change(x=>remixTextileArchitecture(x))}><Dices size={13}/> Shuffle architecture only</button>
+        </details>
+        <details data-effect-detail="filament-meta"><summary>Optical metamaterials · structural light</summary>
+          <p className="control-note">Wavelength-inspired color and reflection on Parasitic Architecture. Requires a visible scaffold. Projected optical approximation, not ray tracing.</p>
+          <Select label="Optical material" value={s.filamentMeta} onChange={v=>history.change(x=>({...x,filamentMeta:v}))}>{textileMetaModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <Parameter label="Optical influence" name="filamentMetaAmount" history={history}/>
+          <Parameter label="Microstructure frequency" name="filamentMetaFrequency" history={history}/>
+          <Parameter label="Optical thickness" name="filamentMetaThickness" history={history}/>
+          <Parameter label="Spectral / palette mix" name="filamentMetaDispersion" history={history}/>
+          <Parameter label="Optical motion" name="filamentMetaMotion" history={history}/>
+          <Parameter label="Polish / spectral sharpness" name="filamentMetaPolish" history={history}/>
+          {s.filamentArchitecture==="Bare architecture"&&<p className="control-note" role="status">Choose a Parasitic Architecture law to see optical metamaterials.</p>}
+          <button type="button" className="button secondary" disabled={!s.filamentAmount} onClick={()=>history.change(x=>remixTextileMeta(x))}><Dices size={13}/> Shuffle metamaterials only</button>
         </details>
         <details data-effect-detail="filament-ecology"><summary>Textile surface ecology · living fiber deposits</summary>
           <p className="control-note">Microscopic organisms and minerals grow and recede along the local thread surface. Separate from jewelry and the painted ecosystem. Growth is procedural and reversible, not a persistent biological simulation.</p>

@@ -160,7 +160,7 @@ export function remixUnusualFilamentMaterials(state,rng=Math.random){
 // Projected thread-local construction; not a literal 3D yarn mesh.
 // Analytic time-dependent deformation of projected carrier distances.
 // Procedural surface colonization, independent of the painted ecosystem.
-export const textileEcologyModes=["Clean fibers","Diatom biofilm","Budding yeast","Mycelial tendrils","Lichen crust","Crystal accretion","Bacterial chains","Iridescent slime film","Radiolarian colonies","Pennate diatom frustules","Desmid mirror cells","Coccolith rosettes","Armored dinoflagellates","Spirillum ribbons","Vorticella bells","Foraminifer chambers","Silica spicule stars"];
+export const textileEcologyModes=["Clean fibers","Diatom biofilm","Budding yeast","Mycelial tendrils","Lichen crust","Crystal accretion","Bacterial chains","Iridescent slime film","Radiolarian colonies","Pennate diatom frustules","Desmid mirror cells","Coccolith rosettes","Armored dinoflagellates","Spirillum ribbons","Vorticella bells","Foraminifer chambers","Silica spicule stars","Silica consortium","Bacterial fungal mutualism","Patchwork microbiome","Tidal succession","Core and fringe symbiosis","Complete microbial carnival"];
 export const textileEcologyControls=["filamentEcology","filamentEcologyAmount","filamentEcologyScale","filamentEcologyCoverage","filamentEcologySpeed","filamentEcologyRelief","filamentEcologyHue"];
 export function remixTextileEcology(state,rng=Math.random){
  const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
@@ -3935,10 +3935,49 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float ecoLife=.5+.5*sin(ecoClock+eh*6.2831853);
   float ecoGate=smoothstep(1.-filamentEcologyCoverage-.15,1.-filamentEcologyCoverage+.15,eh);
   float ecoGrowth=mix(.24,1.,smoothstep(.12,.84,ecoLife));
+  // Mixed cultures assign one stable morphology per local cell.
+  // Time modulates growth and visibility, never the station's identity.
+  int ecoSpecies=filamentEcology;
+  float ecoSpeciesHue=0.;
+  if(filamentEcology>=17){
+    float mixHash=hash(ecoId+vec2(31.7+seedPhase*.29,12.3+phaseOffset*.31));
+    float patchHash=hash(floor(ecoId/vec2(4.,2.))+vec2(8.4,seedPhase*.23));
+    float ecoZone=ecoId.y+.5;
+    if(filamentEcology==17){
+      // Silica consortium: complementary mineral forms.
+      int slot=int(floor(min(mixHash,.999999)*6.));
+      ecoSpecies=slot==0?1:slot==1?8:slot==2?9:slot==3?11:slot==4?15:16;
+    }else if(filamentEcology==18){
+      // Stable fungal territories with bacteria and yeast at their margins.
+      ecoSpecies=patchHash<.32?(mixHash<.72?3:6):
+        patchHash<.65?(mixHash<.60?6:2):(mixHash<.62?7:13);
+      float sharedPulse=.5+.5*sin(ecoClock+patchHash*6.2831853);
+      ecoGrowth=mix(ecoGrowth,mix(.24,1.,sharedPulse),.65);
+    }else if(filamentEcology==19){
+      // Patchy colonies with a seeded dominant species and rarer neighbors.
+      int dominant=1+int(floor(min(patchHash,.999999)*16.));
+      ecoSpecies=mixHash<.76?dominant:1+int(floor(min(eh2,.999999)*16.));
+    }else if(filamentEcology==20){
+      // Alternating growth windows; residents fade in and out rather than morph.
+      int cohort=int(mod(ecoId.x+2.*ecoId.y,4.));
+      ecoSpecies=cohort==0?10:cohort==1?14:cohort==2?12:15;
+      float tide=.5+.5*cos(ecoClock+float(cohort)*1.5707963);
+      ecoGate*=mix(.12,1.,smoothstep(.15,.85,tide));
+      ecoGrowth=mix(.24,1.,tide);
+    }else if(filamentEcology==21){
+      // Distinct bands measured from the carrier, not screen height.
+      ecoSpecies=ecoZone<ecoScale*.55?(mixHash<.5?9:10):
+        ecoZone<ecoScale*1.1?(mixHash<.5?11:12):(mixHash<.5?14:3);
+    }else if(filamentEcology==22){
+      ecoSpecies=1+int(floor(min(mixHash,.999999)*16.));
+    }
+    // Golden-ratio palette offsets give species recognizable pigments.
+    ecoSpeciesHue=fract(float(ecoSpecies)*.61803398875)*.44;
+  }
   float ecoAA=clamp(aa/max(width,.003)*ecoScale*.35,.025,.20);
   float ecBody=0.,ecRib=0.,ecShadow=0.;
   float er=length(ep);
-  if(filamentEcology==1){ // Diatom valves, dotted silica ribs.
+  if(ecoSpecies==1){ // Diatom valves, dotted silica ribs.
     vec2 v=ep*vec2(.95,1.8);
     float d=length(v);
     float radius=.44*ecoGrowth;
@@ -3947,7 +3986,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     ecRib=ecBody*max(1.-smoothstep(.03,.13,abs(d-radius*.80)),
       .75*(1.-smoothstep(.13,.28,puncta)));
     ecShadow=ecBody*(1.-ecRib)*.5;
-  }else if(filamentEcology==2){ // Budding yeast, mother and daughter cells.
+  }else if(ecoSpecies==2){ // Budding yeast, mother and daughter cells.
     float mother=length(ep+vec2(.11,.0))-.30*ecoGrowth;
     vec2 budPos=vec2(.22,.12*sin(eh2*6.28));
     float bud=length(ep-budPos)-.21*ecoGrowth*ecoLife;
@@ -3955,7 +3994,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     ecBody=1.-smoothstep(-ecoAA,ecoAA,d);
     ecRib=ecBody*(1.-smoothstep(.06,.22,length(ep+vec2(.18,.10))));
     ecShadow=ecBody*smoothstep(.04,.30,er);
-  }else if(filamentEcology==3){ // Branching mycelial threads, tapered tips.
+  }else if(ecoSpecies==3){ // Branching mycelial threads, tapered tips.
     float trunk=abs(ep.x-.12*sin(ep.y*9.+eh*6.28));
     float branch=abs(abs(ep.x)-abs(ep.y)*.72-.04*sin(ep.y*18.));
     float fine=abs(abs(ep.x)*.63-abs(ep.y+.16)*.93);
@@ -3964,7 +4003,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     ecBody=(1.-smoothstep(.025,.025+ecoAA,d))*extent;
     ecRib=ecBody*pow(.5+.5*cos(ep.y*14.-ecoClock),4.);
     ecShadow=ecBody*.3;
-  }else if(filamentEcology==4){ // Ruffled lichen crust and tiny granular lobes.
+  }else if(ecoSpecies==4){ // Ruffled lichen crust and tiny granular lobes.
     float angle=atan(ep.y,ep.x+.00001);
     float radius=ecoGrowth*(.31+.07*sin(angle*7.+eh*6.28)+.025*cos(angle*13.));
     ecBody=1.-smoothstep(radius,radius+ecoAA,er);
@@ -3972,7 +4011,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     ecRib=ecBody*max(1.-smoothstep(.035,.12,abs(er-radius*.82)),
       .65*(1.-smoothstep(.12,.29,gran)));
     ecShadow=ecBody*(1.-ecRib)*.6;
-  }else if(filamentEcology==5){ // Faceted mineral growth.
+  }else if(ecoSpecies==5){ // Faceted mineral growth.
     vec2 h=abs(ep);
     float facet=max(h.x,dot(h,vec2(.5,.8660254)));
     float radius=.37*ecoGrowth;
@@ -3980,7 +4019,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     ecRib=ecBody*max(1.-smoothstep(.02,.09,abs(facet-radius*.68)),
       .7*(1.-smoothstep(.02,.12,abs(ep.x+ep.y*.4))));
     ecShadow=ecBody*(.25+.55*step(0.,ep.x-ep.y));
-  }else if(filamentEcology==6){ // Small aligned bacterial capsules.
+  }else if(ecoSpecies==6){ // Small aligned bacterial capsules.
     float angle=eh*6.2831853;
     vec2 b=mat2(cos(angle),-sin(angle),sin(angle),cos(angle))*ep;
     b.x=fract(b.x*2.1+.5)-.5;
@@ -3988,13 +4027,13 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     ecBody=1.-smoothstep(.13*ecoGrowth,.13*ecoGrowth+ecoAA,d);
     ecRib=ecBody*(1.-smoothstep(.025,.11,abs(b.y+.035)));
     ecShadow=ecBody*smoothstep(.03,.12,d);
-  }else if(filamentEcology==7){ // Interfering mucilage films.
+  }else if(ecoSpecies==7){ // Interfering mucilage films.
     float wave=.5+.5*sin(ep.x*10.+sin(ep.y*8.+ecoClock)*2.+eh*6.28);
     float membrane=.5+.5*cos(ep.y*13.-ep.x*5.-ecoClock*.7);
     ecBody=smoothstep(.18,.62,wave*membrane)*ecoGrowth;
     ecRib=ecBody*pow(membrane,6.);
     ecShadow=ecBody*(1.-wave)*.28;
-  }else if(filamentEcology==8){ // Radiolarian shell, rings and spokes.
+  }else if(ecoSpecies==8){ // Radiolarian shell, rings and spokes.
     float angle=atan(ep.y,ep.x+.00001);
     float radius=.43*ecoGrowth;
     float shell=1.-smoothstep(.025,.025+ecoAA,abs(er-radius));
@@ -4003,7 +4042,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     ecBody=max(shell,max(inner,ribs*(1.-smoothstep(radius,radius+ecoAA,er))));
     ecRib=max(shell,inner);
     ecShadow=ecBody*(1.-ecRib)*.48;
-  }else if(filamentEcology==9){ // Pennate silica valve, axial raphe and transverse striae.
+  }else if(ecoSpecies==9){ // Pennate silica valve, axial raphe and transverse striae.
     vec2 v=ep*vec2(1.,1.85);
     float r=.45*ecoGrowth;
     float d=length(v);
@@ -4013,7 +4052,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     float rim=1.-smoothstep(.02,.02+ecoAA,abs(d-r*.86));
     ecRib=ecBody*max(rim,max(raphe,.75*striae));
     ecShadow=ecBody*(1.-ecRib)*.52;
-  }else if(filamentEcology==10){ // Desmid: mirrored scalloped semicells with central isthmus.
+  }else if(ecoSpecies==10){ // Desmid: mirrored scalloped semicells with central isthmus.
     vec2 v=vec2(abs(ep.x)-.19,ep.y*1.12);
     float a=atan(v.y,v.x+.00001);
     float r=ecoGrowth*(.22+.045*cos(a*5.));
@@ -4023,7 +4062,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     ecBody=max(lobes,bridge);
     ecRib=lobes*max(1.-smoothstep(.018,.018+ecoAA,abs(d-r*.75)),.6*pow(abs(cos(a*5.)),8.));
     ecShadow=ecBody*(1.-ecRib)*.48;
-  }else if(filamentEcology==11){ // Coccolith: a calcite rosette of radial overlapping plates.
+  }else if(ecoSpecies==11){ // Coccolith: a calcite rosette of radial overlapping plates.
     float a=atan(ep.y,ep.x+.00001)+ecoClock*.14;
     float petal=abs(fract(a*1.9098593+.5)-.5)*2.;
     float r=ecoGrowth*(.33+.07*cos(a*12.));
@@ -4031,7 +4070,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     ecBody=ann;
     ecRib=ann*max(1.-smoothstep(.09,.09+ecoAA*3.,petal),1.-smoothstep(.018,.018+ecoAA,abs(er-r*.83)));
     ecShadow=ann*(.25+.5*petal);
-  }else if(filamentEcology==12){ // Dinoflagellate armor, girdle and paired horns.
+  }else if(ecoSpecies==12){ // Dinoflagellate armor, girdle and paired horns.
     vec2 v=ep*vec2(1.,1.24);
     float r=.32*ecoGrowth;
     float body=1.-smoothstep(r,r+ecoAA,length(v));
@@ -4042,7 +4081,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     float plates=1.-smoothstep(.035,.035+ecoAA,abs(sin(v.x*17.)+sin(v.y*16.)));
     ecRib=max(horns*.7,body*max(girdle,plates*.7));
     ecShadow=body*(1.-ecRib)*.55;
-  }else if(filamentEcology==13){ // Spirillum: traveling corkscrew ribbon with raised ridge.
+  }else if(ecoSpecies==13){ // Spirillum: traveling corkscrew ribbon with raised ridge.
     float theta=ep.x*25.-ecoClock*1.8+eh*6.2831853;
     float center=.17*ecoGrowth*sin(theta);
     float d=abs(ep.y-center);
@@ -4050,7 +4089,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     ecBody=(1.-smoothstep(.042,.042+ecoAA,d))*endMask;
     ecRib=ecBody*(.25+.75*pow(.5+.5*cos(theta),3.));
     ecShadow=ecBody*(.25+.55*(.5-.5*cos(theta)));
-  }else if(filamentEcology==14){ // Vorticella: contractile stalk and ciliated bell.
+  }else if(ecoSpecies==14){ // Vorticella: contractile stalk and ciliated bell.
     float sway=.055*sin(ecoClock+eh*6.28);
     float y=ep.y+.05;
     float h=.22*ecoGrowth;
@@ -4062,7 +4101,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     ecBody=max(bell,stalk);
     ecRib=max(stalk*.7,max(lip,cilia));
     ecShadow=bell*(1.-ecRib)*.52;
-  }else if(filamentEcology==15){ // Foraminifer: logarithmic spiral of individual chambers.
+  }else if(ecoSpecies==15){ // Foraminifer: logarithmic spiral of individual chambers.
     float d=10.;
     float rim=0.;
     for(int fi=0;fi<7;fi++){
@@ -4077,7 +4116,7 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     ecBody=1.-smoothstep(-ecoAA,ecoAA,d);
     ecRib=ecBody*rim;
     ecShadow=ecBody*(1.-ecRib)*.57;
-  }else if(filamentEcology==16){ // Siliceous sponge spicules: angular, pointed mineral needles.
+  }else if(ecoSpecies==16){ // Siliceous sponge spicules: angular, pointed mineral needles.
     float a=atan(ep.y,ep.x+.00001)+eh*6.2831853+ecoClock*.09;
     float spokes=abs(sin(a*3.))*er;
     float radius=.43*ecoGrowth;
@@ -4094,9 +4133,9 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
 #endif
   float ecVisible=1.-smoothstep(.28,.95,aa/max(width,.003)*ecoScale);
   float ecAmount=filamentEcologyAmount*ecoGate*ecAttach*ecVisible*amount;
-  vec3 ecInk=palette(fract(pigmentPhase+filamentEcologyHue*.88+eh2*.24+ecoLife*.12));
+  vec3 ecInk=palette(fract(pigmentPhase+filamentEcologyHue*.88+eh2*.24+ecoLife*.12+ecoSpeciesHue));
   vec3 ecLight=mix(ecInk,vec3(.96,.98,1.),.46);
-  if(filamentEcology==7){
+  if(ecoSpecies==7){
     ecInk=mix(ecInk,.5+.5*cos(vec3(0.,2.094,4.188)+er*18.+ecoClock+eh*6.28),.56);
     ecLight=mix(ecInk,vec3(1.),.35);
   }

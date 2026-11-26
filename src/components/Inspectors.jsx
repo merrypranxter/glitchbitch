@@ -2287,7 +2287,7 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
         </Select>
         <details data-effect-detail="filament-ecology"><summary>Textile surface ecology · living fiber deposits</summary>
           <p className="control-note">Microscopic organisms and minerals grow and recede along the local thread surface. Separate from jewelry and the painted ecosystem. Growth is procedural and reversible, not a persistent biological simulation.</p>
-          <Select label="Fiber colonizer" value={s.filamentEcology} onChange={v=>history.change(x=>({...x,filamentEcology:v}))}>{textileEcologyModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <Select label="Fiber colonizer" value={s.filamentEcology} onChange={v=>history.change(x=>({...x,filamentEcology:v}))}>{textileEcologyModes.slice(0,1).map(v=><option key={v} value={v}>{v}</option>)}<optgroup label="Individual organisms">{textileEcologyModes.slice(1,17).map(v=><option key={v} value={v}>{v}</option>)}</optgroup><optgroup label="Mixed cultures · Symbiogenesis">{textileEcologyModes.slice(17).map(v=><option key={v} value={v}>{v}</option>)}</optgroup></Select>
           <Parameter label="Colonization influence" name="filamentEcologyAmount" history={history}/>
           <Parameter label="Colony scale / density" name="filamentEcologyScale" history={history}/>
           <Parameter label="Surface population" name="filamentEcologyCoverage" history={history}/>

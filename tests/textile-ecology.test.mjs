@@ -20,14 +20,30 @@ test("fiber ecology settings round trip and remain independent",()=>{
 
 test("microbial couture appends eight compatible morphologies and samples each",()=>{
  const names=["Pennate diatom frustules","Desmid mirror cells","Coccolith rosettes","Armored dinoflagellates","Spirillum ribbons","Vorticella bells","Foraminifer chambers","Silica spicule stars"];
- assert.deepEqual(textileEcologyModes.slice(9),names);
+ assert.deepEqual(textileEcologyModes.slice(9,17),names);
  assert.equal(textileEcologyModes[8],"Radiolarian colonies");
  for(let i=0;i<names.length;i++){
   const mode=names[i];
-  const next=remixTextileEcology(initial,()=>((i+8+.5)/16));
+  const next=remixTextileEcology(initial,()=>((i+8+.5)/(textileEcologyModes.length-1)));
   assert.equal(next.filamentEcology,mode);
   assert.doesNotThrow(()=>validateRecipe(next));
-  assert.ok(filamentGLSL.includes("filamentEcology=="+(i+9)+"){"));
+  assert.ok(filamentGLSL.includes("ecoSpecies=="+(i+9)+"){"));
   for(const k of Object.keys(initial).filter(k=>!textileEcologyControls.includes(k)))assert.deepEqual(next[k],initial[k],k);
  }
+});
+
+test("mixed cultures keep existing indices and are individually reachable",()=>{
+ const names=["Silica consortium","Bacterial fungal mutualism","Patchwork microbiome","Tidal succession","Core and fringe symbiosis","Complete microbial carnival"];
+ assert.deepEqual(textileEcologyModes.slice(17),names);
+ for(let i=0;i<names.length;i++){
+  const next=remixTextileEcology(initial,()=>((i+16+.5)/(textileEcologyModes.length-1)));
+  assert.equal(next.filamentEcology,names[i]);
+  assert.doesNotThrow(()=>validateRecipe(next));
+  assert.ok(filamentGLSL.includes("filamentEcology=="+(i+17)+"){"));
+  for(const k of Object.keys(initial).filter(k=>!textileEcologyControls.includes(k)))assert.deepEqual(next[k],initial[k],k);
+ }
+ assert.match(filamentGLSL,/int ecoSpecies=filamentEcology;/);
+ assert.match(filamentGLSL,/hash\(floor\(ecoId\/vec2\(4\.,2\.\)\)/);
+ assert.match(filamentGLSL,/ecoGate\*=mix\(\.12,1\.,smoothstep/);
+ assert.match(filamentGLSL,/ecoSpeciesHue=fract\(float\(ecoSpecies\)/);
 });

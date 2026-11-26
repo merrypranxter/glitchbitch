@@ -48,7 +48,7 @@ export const effectDetails = [
     ["diffraction grating","photonic crystal","dichroic membrane","thin film","prismatic chambers","birefringence","bragg domains"],
     s=>filament(s)&&s.filamentArchitecture!=="Bare architecture"&&s.filamentArchitectureAmount>0&&s.filamentMeta!=="Natural scaffold"&&s.filamentMetaAmount>0,["filamentMetaAmount"]),
   lab("filament-architecture", "Parasitic architecture",
-    ["silica tunnels","microbial lace","crystal scaffolds","hyperbolic membranes","cellular bridges","radiolarian vaults"],
+    ["silica tunnels","microbial lace","crystal scaffolds","hyperbolic membranes","cellular bridges","radiolarian vaults","impossible topology","möbius membrane","klein bottle","gyroid","riemann","hopf","tesseract","torus knot"],
     s=>filament(s)&&s.filamentArchitecture!=="Bare architecture"&&s.filamentArchitectureAmount>0,["filamentArchitectureAmount"]),
   lab("filament-ecology", "Textile surface ecology",
     ["fiber microbiome","diatoms","lichen crust","yeast","mycelium","mineral deposits","surface ecology"],

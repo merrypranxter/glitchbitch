@@ -2287,7 +2287,7 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
         </Select>
         <details data-effect-detail="filament-architecture"><summary>Parasitic architecture · living scaffolds</summary>
           <p className="control-note">Projected openwork structures grow out from the fiber envelope. Independent of jewelry and surface organisms; not persistent 3D geometry.</p>
-          <Select label="Architecture law" value={s.filamentArchitecture} onChange={v=>history.change(x=>({...x,filamentArchitecture:v}))}>{textileArchitectureModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <Select label="Architecture law" value={s.filamentArchitecture} onChange={v=>history.change(x=>({...x,filamentArchitecture:v}))}>{textileArchitectureModes.slice(0,1).map(v=><option key={v} value={v}>{v}</option>)}<optgroup label="Living scaffolds">{textileArchitectureModes.slice(1,9).map(v=><option key={v} value={v}>{v}</option>)}</optgroup><optgroup label="Impossible topology">{textileArchitectureModes.slice(9).map(v=><option key={v} value={v}>{v}</option>)}</optgroup></Select>
           <Parameter label="Architecture influence" name="filamentArchitectureAmount" history={history}/>
           <Parameter label="Structure frequency" name="filamentArchitectureScale" history={history}/>
           <Parameter label="Growth reach" name="filamentArchitectureReach" history={history}/>

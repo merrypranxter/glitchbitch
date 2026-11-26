@@ -170,6 +170,15 @@ export function remixTextileEcology(state,rng=Math.random){
  filamentEcologyCoverage:30+65*unit(),filamentEcologySpeed:25+75*unit(),
  filamentEcologyRelief:35+65*unit(),filamentEcologyHue:100*unit()};
 }
+export const textileMetaModes=["Natural scaffold","Diffraction grating","Photonic crystal","Dichroic membrane","Spectral thin film","Prismatic chambers","Iridescent mineral skeleton","Birefringent lattice","Opal Bragg domains"];
+export const textileMetaControls=["filamentMeta","filamentMetaAmount","filamentMetaFrequency","filamentMetaThickness","filamentMetaDispersion","filamentMetaMotion","filamentMetaPolish"];
+export function remixTextileMeta(state,rng=Math.random){
+ const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
+ const pool=textileMetaModes.slice(1).filter(x=>x!==state.filamentMeta);
+ return {...state,filamentMeta:pool[Math.floor(unit()*pool.length)],filamentMetaAmount:65+35*unit(),
+ filamentMetaFrequency:15+70*unit(),filamentMetaThickness:15+80*unit(),
+ filamentMetaDispersion:45+55*unit(),filamentMetaMotion:15+75*unit(),filamentMetaPolish:35+65*unit()};
+}
 export const textileArchitectureModes=["Bare architecture","Dendritic crystal scaffolds","Microbial lace","Perforated silica tubes","Hyperbolic membranes","Mineral crust terraces","Iridescent cellular bridges","Radiolarian vaults","Quasicrystal exoskeleton"];
 export const textileArchitectureControls=["filamentArchitecture","filamentArchitectureAmount","filamentArchitectureScale","filamentArchitectureReach","filamentArchitectureOpenwork","filamentArchitectureSpeed","filamentArchitectureHue"];
 export function remixTextileArchitecture(state,rng=Math.random){
@@ -2161,6 +2170,10 @@ uniform float filamentChladniPhase,filamentChladniDetune;
 uniform float filamentRetroLead,filamentRetroEcho,filamentRetroParadox;
 uniform float filamentRetroKnots,filamentRetroReversal,filamentRetroCoherence;
 uniform float filamentNap,filamentLuster,filamentBeads,filamentBeadSize,filamentSecondHue;
+#ifdef FILAMENT_ARCH_META
+uniform int filamentMeta;
+uniform float filamentMetaAmount,filamentMetaFrequency,filamentMetaThickness,filamentMetaDispersion,filamentMetaMotion,filamentMetaPolish;
+#endif
 #ifdef FILAMENT_ARCHITECTURE
 uniform int filamentArchitecture;
 uniform float filamentArchitectureAmount,filamentArchitectureScale,filamentArchitectureReach,filamentArchitectureOpenwork,filamentArchitectureSpeed,filamentArchitectureHue;
@@ -4020,6 +4033,77 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float arMesh=max(1.-smoothstep(arLine,arLine+arAA,arD),arFill*(1.-filamentArchitectureOpenwork));
   vec3 arInk=palette(fract(pigmentPhase+filamentArchitectureHue*.85+arRand*.18+arP.y*.22));
   if(filamentArchitecture==6)arInk=mix(arInk,.5+.5*cos(vec3(0.,2.094,4.188)+arP.y*18.+arClock),.45);
+#ifdef FILAMENT_ARCH_META
+  // Local optical approximations in scaffold coordinates. Three sampled
+  // wavelengths, no secondary screen pass or literal optical ray tracing.
+  float mtClock=time*filamentMetaMotion*.55;
+  float mtFreq=mix(2.,18.,filamentMetaFrequency);
+  float mtFoot=aa/max(width,.003)*arScale*mtFreq*.38;
+  float mtVisible=1.-smoothstep(.45,1.45,mtFoot);
+  float mtAngle=atan(arP.y-.35,arP.x+.00001);
+  float mtFacing=clamp(.22+.78*abs(cos(mtAngle+arClock*.23)),0.,1.);
+  float mtThickness=mix(.30,3.8,filamentMetaThickness);
+  float mtPhase=mtClock+arRand*6.2831853;
+  vec3 mtLambda=vec3(.650,.530,.460);
+  vec3 mtBands=vec3(.5);
+  float mtFlash=0.;
+  if(filamentMeta==1){
+    // Grating orders with local orientation and wavelength-dependent phase.
+    float groove=arP.x*mtFreq+arP.y*mtFreq*.37+mtPhase*.2;
+    vec3 orderPhase=(groove+mtThickness*mtFacing)/mtLambda;
+    mtBands=pow(.5+.5*cos(orderPhase*6.2831853),vec3(3.));
+    mtFlash=max(mtBands.r,max(mtBands.g,mtBands.b));
+  }else if(filamentMeta==2){
+    // Three directional lattice planes approximate a photonic stop band.
+    vec2 v=arP*mtFreq;
+    float lattice=(cos(v.x*6.2831853)+cos(dot(v,vec2(.5,.8660254))*6.2831853)+cos(dot(v,vec2(-.5,.8660254))*6.2831853))/3.;
+    float center=.47+.14*mtFacing+.055*lattice+.025*sin(mtPhase);
+    vec3 delta=(mtLambda-vec3(center))/mix(.095,.035,filamentMetaPolish);
+    mtBands=exp(-delta*delta);mtFlash=abs(lattice);
+  }else if(filamentMeta==3){
+    // Opposed reflected/transmitted bands, using a projected facing proxy.
+    float path=mtThickness*(.45+.55*mtFacing)+.16*sin(arP.y*mtFreq+mtPhase);
+    vec3 reflected=.5+.5*cos(12.5663706*path/mtLambda);
+    mtBands=mix(1.-reflected,reflected,smoothstep(.28,.76,mtFacing));
+    mtFlash=pow(1.-mtFacing,2.);
+  }else if(filamentMeta==4){
+    // Thin-film phase delay varies with projected thickness and incidence.
+    float path=mtThickness*(.65+.35*cos(arP.x*mtFreq+mtPhase))*(.5+.5*mtFacing);
+    mtBands=.5+.5*cos(12.5663706*path/mtLambda);
+    mtFlash=pow(mtFacing,5.);
+  }else if(filamentMeta==5){
+    // Faceted microscopic chambers with wavelength-sheared highlights.
+    vec2 v=fract(arP*mtFreq*.42)-.5;
+    float facet=atan(v.y,v.x+.00001);
+    float plane=floor((facet+3.14159265)*.95492966);
+    float split=plane*.39+mtPhase*.2+length(v)*mtThickness;
+    mtBands=pow(.5+.5*cos(6.2831853*(split/mtLambda+vec3(0.,.16,.32))),vec3(2.));
+    mtFlash=1.-smoothstep(.025,.13,abs(abs(v.x)-abs(v.y)));
+  }else if(filamentMeta==6){
+    // Nacre-like terrace thickness with bright mineral ridge reflections.
+    float ridge=fract((arP.y+abs(arP.x)*.42)*mtFreq);
+    float path=mtThickness*(.55+.45*ridge)*mtFacing;
+    mtBands=.5+.5*cos(12.5663706*path/mtLambda+mtPhase*.30);
+    mtFlash=1.-smoothstep(.06,.24,ridge);
+  }else if(filamentMeta==7){
+    // Retardation between two projected polarization axes.
+    float axis=mtAngle+arP.y*mtFreq*.4+mtPhase*.2;
+    float polar=pow(sin(2.*axis),2.);
+    vec3 retard=sin(3.14159265*mtThickness*(.5+.5*mtFacing)/mtLambda);
+    mtBands=polar*retard*retard;mtFlash=polar;
+  }else if(filamentMeta==8){
+    // Bragg-like reflection shifts across stable microcrystalline domains.
+    vec2 domain=floor(vec2(arAlong,arP.y*4.)*mtFreq*.22);
+    float dh=hash(domain+vec2(seedPhase*.17,17.2));
+    float center=.43+.22*mtFacing+.055*sin(dh*6.2831853+mtPhase*.35);
+    vec3 delta=(mtLambda-vec3(center))/mix(.085,.028,filamentMetaPolish);
+    mtBands=exp(-delta*delta);mtFlash=pow(mtFacing,4.);
+  }
+  float mtMix=filamentMetaAmount*mtVisible;
+  vec3 mtColor=mix(arInk,mtBands,filamentMetaDispersion);
+  arInk=mix(arInk,mtColor,mtMix);
+  arShine=mix(arShine,clamp(mtFlash,0.,1.),mtMix*filamentMetaPolish);
+#endif
   result=mix(result,result*.55+arInk*(.7+.3*arShine),clamp(arMesh*arWeight*.78,0.,.85));
   result+=mix(arInk,vec3(.92,.97,1.),.50)*arMesh*arWeight*clamp(arShine,0.,1.)*.32;
 #endif

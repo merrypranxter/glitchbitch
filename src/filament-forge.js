@@ -4088,7 +4088,8 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   }else if(filamentMeta==7){
     // Retardation between two projected polarization axes.
     float axis=mtAngle+arP.y*mtFreq*.4+mtPhase*.2;
-    float polar=pow(sin(2.*axis),2.);
+    float polarAxis=sin(2.*axis);
+    float polar=polarAxis*polarAxis;
     vec3 retard=sin(3.14159265*mtThickness*(.5+.5*mtFacing)/mtLambda);
     mtBands=polar*retard*retard;mtFlash=polar;
   }else if(filamentMeta==8){

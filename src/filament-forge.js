@@ -170,6 +170,16 @@ export function remixTextileEcology(state,rng=Math.random){
  filamentEcologyCoverage:30+65*unit(),filamentEcologySpeed:25+75*unit(),
  filamentEcologyRelief:35+65*unit(),filamentEcologyHue:100*unit()};
 }
+export const textileArchitectureModes=["Bare architecture","Dendritic crystal scaffolds","Microbial lace","Perforated silica tubes","Hyperbolic membranes","Mineral crust terraces","Iridescent cellular bridges","Radiolarian vaults","Quasicrystal exoskeleton"];
+export const textileArchitectureControls=["filamentArchitecture","filamentArchitectureAmount","filamentArchitectureScale","filamentArchitectureReach","filamentArchitectureOpenwork","filamentArchitectureSpeed","filamentArchitectureHue"];
+export function remixTextileArchitecture(state,rng=Math.random){
+ const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
+ const pool=textileArchitectureModes.slice(1).filter(x=>x!==state.filamentArchitecture);
+ return {...state,filamentArchitecture:pool[Math.floor(unit()*pool.length)],
+ filamentArchitectureAmount:60+40*unit(),filamentArchitectureScale:15+75*unit(),
+ filamentArchitectureReach:35+65*unit(),filamentArchitectureOpenwork:20+75*unit(),
+ filamentArchitectureSpeed:15+75*unit(),filamentArchitectureHue:100*unit()};
+}
 export const textileChromaModes=["Original pigment","Spectral braid","Traveling dye fronts","Chromatic counterflow","Quasiperiodic dye work","Pigment standing waves","Chromosomal banding","Interference brocade","Crossing pigment exchange"];
 export const textileChromaControls=["filamentChroma","filamentChromaAmount","filamentChromaScale","filamentChromaSpread","filamentChromaSpeed","filamentChromaContrast","filamentChromaExchange"];
 export function remixTextileChroma(state,rng=Math.random){
@@ -2151,6 +2161,10 @@ uniform float filamentChladniPhase,filamentChladniDetune;
 uniform float filamentRetroLead,filamentRetroEcho,filamentRetroParadox;
 uniform float filamentRetroKnots,filamentRetroReversal,filamentRetroCoherence;
 uniform float filamentNap,filamentLuster,filamentBeads,filamentBeadSize,filamentSecondHue;
+#ifdef FILAMENT_ARCHITECTURE
+uniform int filamentArchitecture;
+uniform float filamentArchitectureAmount,filamentArchitectureScale,filamentArchitectureReach,filamentArchitectureOpenwork,filamentArchitectureSpeed,filamentArchitectureHue;
+#endif
 #ifdef FILAMENT_SURFACE_ECOLOGY
 uniform int filamentEcology;
 uniform float filamentEcologyAmount,filamentEcologyScale,filamentEcologyCoverage,filamentEcologySpeed,filamentEcologyRelief,filamentEcologyHue;
@@ -3917,6 +3931,97 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     result=mix(result,pearlColor*.68,bead*.65);
     result+=vec3(1.0,.98,.92)*bead*(.3+.7*luster)*glisten;
   }
+#endif
+
+#ifdef FILAMENT_ARCHITECTURE
+  // Projected carrier-local overgrowth; independent of microbial deposits.
+  // Stable station identities, bounded support and reversible growth.
+  float arReach=mix(1.20,3.75,filamentArchitectureReach);
+  float arAcross=threadD/max(width,.003);
+  float arScale=mix(2.,7.,filamentArchitectureScale);
+  float arClock=time*filamentArchitectureSpeed*.8;
+  float arAlong=phase*arScale+q.x*.22+q.y*.17;
+  float arStation=floor(arAlong);
+  float arRand=hash(vec2(arStation,seedPhase*.37+phaseOffset*.13));
+  float arLife=.5+.5*cos(arClock+arRand*6.2831853);
+  float arGrow=mix(.36,1.,arLife);
+  float arExtent=mix(1.05,arReach,arGrow);
+  vec2 arP=vec2(fract(arAlong)-.5,arAcross/max(arExtent,.01));
+  float arAA=clamp(aa/max(width,.003)*arScale*.32,.025,.22);
+  float arLine=mix(.105,.025,filamentArchitectureOpenwork);
+  float arD=4.,arFill=0.,arShine=0.;
+  if(filamentArchitecture==1){
+    // Dendritic scaffold: a central trunk and paired branching veins.
+    float trunk=abs(arP.x)*.8;
+    float branch=abs(abs(arP.x)-.48*fract(arP.y*3.));
+    float twigs=abs(abs(fract(arP.x*2.5+.5)-.5)-.65*fract(arP.y*6.));
+    arD=min(trunk,min(branch,twigs+.018));
+    arShine=.4+.6*cos(arP.y*13.)*.5+.3;
+  }else if(filamentArchitecture==2){
+    // Interconnected diamond and trefoil open lace.
+    vec2 v=vec2(arP.x*2.,arP.y*3.);
+    float loops=abs(length(fract(v)-.5)-.36);
+    float diamonds=abs(abs(fract(v.x+.5)-.5)+abs(fract(v.y+.5)-.5)-.50);
+    arD=min(loops,diamonds*.72);
+    arShine=.45+.55*pow(abs(cos(v.y*6.2831853)),3.);
+  }else if(filamentArchitecture==3){
+    // Porous projected silica tube ribs with elliptical windows.
+    vec2 v=vec2(arP.x*3.,arP.y*4.);
+    float holes=length((fract(v)-.5)*vec2(.94,1.35));
+    arD=abs(holes-.35);
+    arFill=smoothstep(.34,.44,holes)*.48;
+    arShine=1.-smoothstep(.025,.13,abs(holes-.37));
+  }else if(filamentArchitecture==4){
+    // Rapidly multiplying, fluted membrane folds toward the edge.
+    float fold=sin(arP.x*12.56637+sin(arP.y*8.+arClock)*.65);
+    float flutes=sin(arP.y*(7.+10.*arP.y)+fold*2.);
+    arD=abs(flutes)*.20;
+    arFill=smoothstep(-.2,.8,fold*flutes)*.42;
+    arShine=pow(abs(fold),4.);
+  }else if(filamentArchitecture==5){
+    // Mineral accretion terraces, angular nested crystalline contours.
+    vec2 v=abs(vec2(arP.x,arP.y-.33));
+    float facet=max(v.x,dot(v,vec2(.5,.8660254)));
+    arD=abs(fract(facet*7.+arLife*.35)-.5)*.24;
+    arFill=(1.-smoothstep(.27,.50,facet))*.64;
+    arShine=.35+.65*step(v.x,v.y);
+  }else if(filamentArchitecture==6){
+    // Cellular bridges from repeating arched ribs and linked elliptical nodes.
+    float arch=.25+.65*sqrt(max(0.,1.-4.*arP.x*arP.x));
+    float rib=abs(arP.y-arch);
+    float tie=abs(arP.x)*.6;
+    float nodes=abs(length(vec2(arP.x*2.,(arP.y-.35)*1.4))-.26);
+    arD=min(rib,min(tie,nodes));
+    arShine=.5+.5*cos(arP.y*19.+arClock);
+  }else if(filamentArchitecture==7){
+    // Radial silica vaults with spokes and concentric ribs.
+    vec2 v=vec2(arP.x*1.8,arP.y-.42);
+    float r=length(v);
+    float a=atan(v.y,v.x+.00001);
+    arD=min(abs(fract(r*4.)-.5)*.22,abs(sin(a*6.))*r*.35);
+    arShine=.35+.65*pow(abs(cos(a*6.)),6.);
+  }else if(filamentArchitecture==8){
+    // Five directional quasiperiodic scaffold without screen-space stamping.
+    vec2 v=vec2(arAlong*.45,arP.y)*9.;
+    float lattice=0.;
+    for(int ai=0;ai<5;ai++){
+      float a=float(ai)*1.2566371;
+      lattice+=cos(dot(v,vec2(cos(a),sin(a)))+arClock*.25);
+    }
+    arD=abs(lattice)*.13;
+    arShine=.3+.7*clamp(abs(lattice)*.4,0.,1.);
+  }
+  float arSupport=(1.-smoothstep(arExtent*.87,arExtent,arAcross))*mask;
+#ifdef FILAMENT_STITCHING
+  arSupport*=reveal;
+#endif
+  float arVisible=1.-smoothstep(.35,1.1,aa/max(width,.003)*arScale);
+  float arWeight=arSupport*arVisible*filamentArchitectureAmount*amount;
+  float arMesh=max(1.-smoothstep(arLine,arLine+arAA,arD),arFill*(1.-filamentArchitectureOpenwork));
+  vec3 arInk=palette(fract(pigmentPhase+filamentArchitectureHue*.85+arRand*.18+arP.y*.22));
+  if(filamentArchitecture==6)arInk=mix(arInk,.5+.5*cos(vec3(0.,2.094,4.188)+arP.y*18.+arClock),.45);
+  result=mix(result,result*.55+arInk*(.7+.3*arShine),clamp(arMesh*arWeight*.78,0.,.85));
+  result+=mix(arInk,vec3(.92,.97,1.),.50)*arMesh*arWeight*clamp(arShine,0.,1.)*.32;
 #endif
 
 #ifdef FILAMENT_SURFACE_ECOLOGY

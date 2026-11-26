@@ -1047,6 +1047,8 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
           .replace("uniform int filamentAdornmentMode,filamentSecondAdornmentMode;",
             "#define filamentAdornmentMode "+Math.max(0,filamentAdornmentModes.indexOf(s.filamentAdornmentMode))+"\n"+
             "#define filamentSecondAdornmentMode "+Math.max(0,filamentAdornmentModes.indexOf(s.filamentSecondAdornmentMode)))
+          .replace("uniform int filamentAdornmentColony;",
+            "#define filamentAdornmentColony "+Math.max(0,jewelryColonyModes.indexOf(s.filamentAdornmentColony)))
           .replace("uniform int filamentContagionMode;",
             "#define filamentContagionMode "+Math.max(0,filamentContagionModes.indexOf(s.filamentContagionMode)))
           .replace("uniform int filamentNeuralMode;",

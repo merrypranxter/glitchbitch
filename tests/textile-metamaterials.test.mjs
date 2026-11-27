@@ -7,10 +7,11 @@ import {remixWeavingSystem} from "../src/weaving-randomizer.js";
 import {readFileSync} from "node:fs";
 test("metamaterials preserve architecture and recipe compatibility",()=>{
  assert.equal(initial.filamentMeta,"Natural scaffold");
- assert.equal(textileMetaModes.length,9);
+ assert.equal(textileMetaModes.length,17);
+ assert.deepEqual(textileMetaModes.slice(9),["Liquid crystal membrane","Translucent aerogel","Ferrofluid embroidery","Fractal dichroic glass","Anisotropic liquid metal","Bioluminescent gelatin","Opalescent cellular foam","Iridescent crystalline velvet"]);
  const base={...initial,filamentArchitecture:"Microbial lace"};
  for(let i=1;i<textileMetaModes.length;i++){
-  const s=remixTextileMeta(base,()=>((i-.5)/8));
+  const s=remixTextileMeta(base,()=>((i-.5)/(textileMetaModes.length-1)));
   assert.equal(s.filamentMeta,textileMetaModes[i]);
   assert.doesNotThrow(()=>validateRecipe(s));
   assert.deepEqual(parseDocument(recipeDocument(s,"meta",{time:0,colorTime:0})).state,s);
@@ -30,4 +31,11 @@ test("optical materials are specialized only for visible architecture",()=>{
  assert.match(filamentGLSL,/mtMix=filamentMetaAmount\*mtVisible/);
  assert.match(filamentGLSL,/arInk=mix\(arInk,mtColor,mtMix\)/);
  for(const k of textileMetaControls.slice(1))assert.ok(renderer.includes('"'+k+'"'),k);
+});
+
+test("new material effects are scaffold-local and preserve neutral defaults",()=>{
+ assert.match(filamentGLSL,/mtOpacity=1\.,mtSpecular=0\.,mtEmission=0\./);
+ assert.match(filamentGLSL,/arWeight\*=mix\(1\.,clamp\(mtOpacity,0\.,1\.\),mtMix\)/);
+ assert.match(filamentGLSL,/arMesh\*arWeight\*mtSpecular\*mtMix/);
+ assert.match(filamentGLSL,/arMesh\*arWeight\*mtEmission\*mtMix/);
 });

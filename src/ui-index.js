@@ -114,8 +114,8 @@ export const sections = [
 
   // ---- Color --------------------------------------------------------------
   { id: "chromatic-engine", tab: "Color", title: "Chromatic engine",
-    on: ["chromaticSpace"], reset: ["chromaticSpace","chromaticHuePath","chromaticTurns","chromaticSatCap","chromaticGamut","chromaticAmbient","chromaticBackground","chromaticSurround","chromaticAdapt","chromaticPigmentAmount","chromaticPigmentWeight"],
-    keywords: ["color space","chromatic engine","palette interpolation","CAM16","HCT","spectral pigment","spectral glaze","Kubelka-Munk","gamut mapping","hue route","tint weighting","spectral influence"] },
+    on: ["chromaticSpace"], reset: ["chromaticSpace","chromaticHuePath","chromaticTurns","chromaticSatCap","chromaticGamut","chromaticAmbient","chromaticBackground","chromaticSurround","chromaticAdapt","chromaticPigmentAmount","chromaticPigmentWeight","chromaticIlluminant","chromaticMetaAmount","chromaticMetaBands","chromaticMetaPhase","chromaticMetaAdapt"],
+    keywords: ["color space","chromatic engine","palette interpolation","CAM16","HCT","spectral pigment","spectral glaze","Kubelka-Munk","gamut mapping","hue route","tint weighting","spectral influence","metameric witchcraft","metamerism","spectral illuminant","hidden spectral contrast","metamer bands","spectral phase","white balance","shuffle hidden spectra"] },
   { id: "chromatic-split", tab: "Color", group: "Signal", title: "Chromatic split",
     on: ["split"], reset: ["split"], keywords: ["chromatic split","rgb split","chromatic aberration","split"] },
   { id: "palettes", tab: "Color", title: "Palettes",

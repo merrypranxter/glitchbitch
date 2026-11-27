@@ -8,7 +8,9 @@ import { sections } from "../src/ui-index.js";
 const source = readFileSync(new URL("../src/components/Inspectors.jsx", import.meta.url), "utf8");
 const inspector = source.slice(source.indexOf("export function EffectsInspector"));
 const bodyStart = inspector.indexOf("  const body = {");
-const body = inspector.slice(bodyStart, inspector.indexOf("\n  };", bodyStart));
+const color = readFileSync(new URL("../src/components/ColorLab.jsx", import.meta.url), "utf8");
+const colorStart = color.indexOf("  const body = {");
+const body = inspector.slice(bodyStart, inspector.indexOf("\n  };", bodyStart)) + "\n" + color.slice(colorStart, color.indexOf("\n  };",colorStart));
 const vocabulary = new Set(Object.values(effectSearchTerms).flat());
 
 test("every Effects label and original bound field is included in global search vocabulary", () => {
@@ -23,7 +25,7 @@ test("every Effects label and original bound field is included in global search 
 });
 
 test("search terms have real destinations and every Effects section is represented", () => {
-  const effectSections = sections.filter((section) => section.tab === "Effects");
+  const effectSections = sections.filter((section) => section.tab === "Effects" || (section.tab === "Color" && section.group));
   const destinations = new Set([...effectSections, ...effectDetails].map((entry) => entry.id));
   for (const [id, terms] of Object.entries(effectSearchTerms)) {
     assert.ok(destinations.has(id), `Unknown destination: ${id}`);

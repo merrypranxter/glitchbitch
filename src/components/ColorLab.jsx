@@ -88,8 +88,13 @@ export default function ColorLab({
     <>
       <details open className="effect-explanation"><summary>Chromatic engine</summary>
         <p className="control-note">Change the interpolation mathematics without changing your palette stops.</p>
-        <Select label="Color space" value={String(Math.round(state.chromaticSpace??0))} onChange={v=>history.change(s=>({...s,chromaticSpace:Number(v)}))}>{["Original sRGB","Linear light","Oklab"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
-        <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticSpace:(Math.round(s.chromaticSpace??0)+1+Math.floor(Math.random()*2))%3}))}>Shuffle color space</button>
+        <Select label="Color space" value={String(Math.round(state.chromaticSpace??0))} onChange={v=>history.change(s=>({...s,chromaticSpace:Number(v)}))}>{["Original sRGB","Linear light","Oklab","OkLCh"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
+        <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticSpace:(Math.round(s.chromaticSpace??0)+1+Math.floor(Math.random()*3))%4}))}>Shuffle color space</button>
+        {Math.round(state.chromaticSpace??0)===3&&<>
+          <Select label="Hue route" value={String(Math.round(state.chromaticHuePath??0))} onChange={v=>history.change(s=>({...s,chromaticHuePath:Number(v)}))}>{["Shortest arc","Longest arc","Increasing hue","Decreasing hue"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
+          <Select label="Extra hue revolutions per stop" value={String(Math.round(state.chromaticTurns??0))} onChange={v=>history.change(s=>({...s,chromaticTurns:Number(v)}))}>{[0,1,2,3].map(n=><option key={n} value={String(n)}>{n}</option>)}</Select>
+          <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticHuePath:Math.floor(Math.random()*4),chromaticTurns:Math.floor(Math.random()*4)}))}>Shuffle hue route</button>
+        </>}
       </details>
       <Section
         id="palettes"

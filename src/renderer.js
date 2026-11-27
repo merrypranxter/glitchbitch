@@ -67,7 +67,7 @@ float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7))+seed+seedHigh*7.83)
 float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+1.),f.x),f.y);}
 float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*noise(p);p=mat2(.8,-.6,.6,.8)*p*2.03+3.4;a*=.5;}return v;}
 mat2 rotate(float a){return mat2(cos(a),-sin(a),sin(a),cos(a));}
-uniform int chromaticSpace;
+uniform int chromaticSpace,chromaticHuePath,chromaticTurns;
 vec3 chromaticDecode(vec3 c){return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c));}
 vec3 chromaticEncode(vec3 c){c=clamp(c,0.,1.);return mix(c*12.92,1.055*pow(c,vec3(1./2.4))-.055,step(vec3(.0031308),c));}
 vec3 chromaticLab(vec3 c){
@@ -83,7 +83,22 @@ vec3 chromaticMix(vec3 a,vec3 b,float t){
  if(t<=0.)return a;if(t>=1.)return b;
  vec3 x=chromaticDecode(a),y=chromaticDecode(b);
  if(chromaticSpace==1)return chromaticEncode(mix(x,y,t));
- vec3 c=mix(chromaticLab(x),chromaticLab(y),t),rgb=chromaticLinear(c);
+ vec3 lx=chromaticLab(x),ly=chromaticLab(y);
+ vec3 c=mix(lx,ly,t);
+ if(chromaticSpace==3){
+  float ca=length(lx.yz),cb=length(ly.yz);
+  float ha=atan(lx.z,lx.y),hb=atan(ly.z,ly.y);
+  if(ca<.0001)ha=hb;if(cb<.0001)hb=ha;
+  float delta=mod(hb-ha+PI,TAU)-PI;
+  if(chromaticHuePath==1)delta=delta>=0.?delta-TAU:delta+TAU;
+  if(chromaticHuePath==2)delta=mod(hb-ha,TAU);
+  if(chromaticHuePath==3)delta=-mod(ha-hb,TAU);
+  if(ca<.0001&&cb<.0001)delta=0.;
+  else delta+=(delta<0.?-1.:1.)*TAU*float(chromaticTurns);
+  float hue=ha+t*delta;
+  c=vec3(mix(lx.x,ly.x,t),mix(ca,cb,t)*vec2(cos(hue),sin(hue)));
+ }
+ vec3 rgb=chromaticLinear(c);
  if(min(min(rgb.r,rgb.g),rgb.b)<0.||max(max(rgb.r,rgb.g),rgb.b)>1.){
  float lo=0.,hi=1.;
  for(int i=0;i<10;i++){float m=(lo+hi)*.5;vec3 q=chromaticLinear(vec3(c.x,c.yz*m));if(min(min(q.r,q.g),q.b)>=0.&&max(max(q.r,q.g),q.b)<=1.)lo=m;else hi=m;}
@@ -2626,6 +2641,8 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       );
       gl.uniform1i(loc("colorCount"), s.colors.length);
       gl.uniform1i(loc("chromaticSpace"), Math.round(s.chromaticSpace??0));
+      gl.uniform1i(loc("chromaticHuePath"), Math.round(s.chromaticHuePath??0));
+      gl.uniform1i(loc("chromaticTurns"), Math.round(s.chromaticTurns??0));
       // No framebuffer readbacks and no per-frame allocations. The same
       // normalized stamp geometry is used by preview and export renders.
       const geneMarkersEnabled=geneEnabled(compiledState);

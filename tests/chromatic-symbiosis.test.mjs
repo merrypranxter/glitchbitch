@@ -27,3 +27,13 @@ test("Structural rules respond to field values, gradients, orientation and geome
 test("Structural settings do not invalidate the spectral atlas",()=>{
  assert.deepEqual(metamerAtlasKey(symbiosisAtlasState(s)),metamerAtlasKey(symbiosisAtlasState({...s,chromaticSymMode:5,chromaticSymFrequency:11,chromaticSymDrift:3})));
 });
+
+test("Partial-strength orbit has no artificial shortest-arc seam",()=>{
+ const a={...s,chromaticMetaMotion:2,chromaticSymAmount:40,chromaticSymDrift:0};
+ const circ=(x,y)=>Math.min(Math.abs(x-y),1-Math.abs(x-y));
+ for(let i=0;i<1000;i++){
+  const x=structuralRow(a,0,.95,i/1000,[.1,.2],[.2,.3]);
+  const y=structuralRow(a,0,.95,(i+1)/1000,[.1,.2],[.2,.3]);
+  assert.ok(circ(x,y)<.05);
+ }
+});

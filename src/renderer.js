@@ -442,6 +442,30 @@ uniform float lifeShell,lifePores,lifeSpecies;
 uniform float lifeAppendage,lifeAppendageLength,lifeAppendageMotion,lifeAppendageDetail,lifeMembrane;
 uniform float lifeEvolution;
 uniform vec4 lifeBodies[24];
+uniform vec4 lifeTrails[64];
+uniform float lifeTrail,lifeTrailLength,lifeTrailWidth,lifeTrailStyle,lifeTrailCount;
+vec3 lifeThreads(vec3 col,vec2 uv){
+ if(lifeTrail<.001||lifeAmount<.001)return col;
+ vec2 p=uv*vec2(max(res.x/res.y,.1),1.);
+ float mode=floor(min(lifeTrailStyle,.999)*5.);
+ for(int i=0;i<64;i++){
+  float age=lifeTrailCount-1.-floor(float(i)/8.);
+  if(age<0.||age>=ceil(lifeTrailLength*8.))continue;
+  vec4 seg=lifeTrails[i];vec2 a=seg.xy,b=seg.zw,v=b-a;
+  float vv=dot(v,v);if(vv<.00000001)continue;
+  float t=clamp(dot(p-a,v)/vv,0.,1.);
+  float dist=length(p-a-v*t),width=mix(.0008,.009,lifeTrailWidth);
+  float along=t*sqrt(vv);
+  float mask=1.-smoothstep(width*.55,width,dist);
+  if(mode>.5&&mode<1.5)mask*=.3+.7*step(.35,fract(along*90.));
+  if(mode>1.5&&mode<2.5)mask=1.-smoothstep(width*.3,width*.65,abs(dist-width));
+  if(mode>2.5&&mode<3.5)mask*=1.-smoothstep(.15,.45,abs(fract(along*65.)-.5));
+  if(mode>3.5)mask=max(mask*.6,(1.-smoothstep(width,width*3.,dist))*.35);
+  vec3 ink=palette(fract(float(i)*.137+lifeHue+along*4.));
+  col=mix(col,ink,mask*lifeTrail*lifeAmount*(1.-age/9.));
+ }
+ return col;
+}
 uniform float lifeOptics,lifeOpticMode,lifeOpticPower,lifeOpticDispersion;
 float composed(vec2 p);
 float phaseOf(float v,vec2 uv,float source);
@@ -714,6 +738,7 @@ col=kagomeConfetti(col,uv);
 col=quasiConfetti(col,uv);
 col=truchetConfetti(col,uv);
 col=polygonDebris(col,uv);
+col=lifeThreads(col,uv);
 col=lifeforms(col,uv,p,source);
 col=spectralTape(col,uv);
 col=phospheneJewels(col,uv);
@@ -2296,7 +2321,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         Math.max(0,polesModes.indexOf(compiledState.polesMode)));
       gl.uniform1i(loc("semanticGravityMode"),
         Math.max(0,semanticGravityModes.indexOf(compiledState.semanticGravityMode)));
-      if(s.lifeAmount>0)gl.uniform4fv(loc("lifeBodies[0]"),lifePositions(s,timeline.time,width,height));
+      if(s.lifeAmount>0){const bodies=lifePositions(s,timeline.time,width,height);gl.uniform4fv(loc("lifeBodies[0]"),bodies);if(s.lifeTrail>0){gl.uniform4fv(loc("lifeTrails[0]"),bodies.trails);gl.uniform1f(loc("lifeTrailCount"),bodies.trailCount);}}
       gl.uniform1f(loc("time"), timeline.time);
       gl.uniform1f(loc("colorTime"), timeline.colorTime);
       gl.uniform1f(loc("seed"), s.seed % 1000000);
@@ -2337,6 +2362,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane",
         "lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion",
         "lifeEvolution",
+        "lifeTrail","lifeTrailLength","lifeTrailWidth","lifeTrailStyle",
         "lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",

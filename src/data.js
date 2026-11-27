@@ -306,6 +306,17 @@ export const numericRanges = {
   topperTriBlend: [0, 100],
   topperTriPulse: [0, 100],
   topperTriTwinkle: [0, 100],
+  topperKagome: [0, 100],
+  topperKagomeDensity: [0, 100],
+  topperKagomeScale: [0, 100],
+  topperKagomeMotion: [0, 100],
+  topperKagomeGap: [0, 100],
+  topperKagomeTexture: [0, 100],
+  topperKagomeHue: [0, 100],
+  topperKagomeBlend: [0, 100],
+  topperKagomePulse: [0, 100],
+  topperKagomeTwinkle: [0, 100],
+  topperKagomeBalance: [0, 100],
   topperJewel: [0, 100],
   topperJewelDensity: [0, 100],
   topperJewelScale: [0, 100],
@@ -964,6 +975,17 @@ export const initial = {
   topperTriBlend: 25,
   topperTriPulse: 0,
   topperTriTwinkle: 0,
+  topperKagome: 0,
+  topperKagomeDensity: 30,
+  topperKagomeScale: 45,
+  topperKagomeMotion: 35,
+  topperKagomeGap: 25,
+  topperKagomeTexture: 20,
+  topperKagomeHue: 50,
+  topperKagomeBlend: 25,
+  topperKagomePulse: 0,
+  topperKagomeTwinkle: 0,
+  topperKagomeBalance: 50,
   topperJewel: 0,
   topperJewelDensity: 25,
   topperJewelScale: 40,
@@ -2374,7 +2396,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.block=random()<.42?random()*65:0;
   s.pixel=random()<.3?random()*58:0;
   s.vignette=random()<.5?random()*32:0;
-  const ornaments=["phosphor","dither","riso","windowCascade","glitter","broadcast","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal","topperTime","topperHex","topperTri"];
+  const ornaments=["phosphor","dither","riso","windowCascade","glitter","broadcast","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal","topperTime","topperHex","topperTri","topperKagome"];
   for(const key of ornaments)s[key]=0;
   const available=ornaments.filter(k=>k!=="topperPortal"&&k!=="topperTime");
   const count=1+Math.floor(random()*3);

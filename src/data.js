@@ -1,3 +1,4 @@
+import {shuffleLife} from "./life-recipes.js";
 import {protectCategorySettings} from "./category-locks.js";
 import { PALETTE_VAULT } from "./palette-vault.js";
 import { generateRandomPalette, shuffleColorStops } from "./palette-actions.js";
@@ -2543,7 +2544,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.pixel=random()<.3?random()*58:0;
   s.vignette=random()<.5?random()*32:0;
   s.lifeAmount=random()<.35?25+random()*65:0;
-  if(s.lifeAmount>0)for(const k of ["lifeTrail","lifeTrailLength","lifeTrailWidth","lifeTrailStyle","lifeEvolution","lifeBirthRate","lifeMutation","lifeMortality","lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion","lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane","lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"])s[k]=10+random()*80;
+  if(s.lifeAmount>0)Object.assign(s,shuffleLife(random));
   const ornaments=["phosphor","dither","riso","windowCascade","glitter","broadcast","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal","topperTime","topperHex","topperTri","topperKagome","topperQuasi","topperTruchet","topperPoly"];
   for(const key of ornaments)s[key]=0;
   const available=ornaments.filter(k=>k!=="topperPortal"&&k!=="topperTime");

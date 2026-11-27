@@ -278,6 +278,33 @@ phase+=source;if(posterize)phase=floor(phase*7.)/7.;return phase;}
 /* ALCHEMY_MODULE */
 /* INJURY_MODULE */
 ${appearanceGLSL}
+uniform float topperPortal,topperPortalDensity,topperPortalScale,topperPortalMotion,topperPortalZoom,topperPortalForm,topperPortalWarp,topperPortalHue;
+vec3 realityCutouts(vec3 col,vec2 uv,vec2 p,float source){
+ if(topperPortal<.001)return col;
+ float grid=mix(3.,11.,topperPortalScale);
+ vec2 asp=vec2(res.x/res.y,1.);
+ vec2 q=uv*grid*asp, cell=floor(q), z=fract(q)-.5;
+ float h=hash(cell+vec2(211.,73.));
+ if(h>mix(.025,.32,topperPortalDensity))return col;
+ float t=time*topperPortalMotion*.3;
+ float form=floor(min(topperPortalForm,.999)*4.);
+ float dist=length(z);
+ if(form>.5)dist=max(abs(z.x),abs(z.y));
+ if(form>1.5)dist=abs(z.x)+abs(z.y);
+ if(form>2.5)dist=length(z)*(1.+.18*cos(atan(z.y,z.x+.00001)*6.));
+ float mask=1.-smoothstep(.29,.32,dist);
+ if(mask<.001)return col;
+ vec2 local=z/grid*(2.+scale*5.);
+ vec2 altered=rotate((h-.5)*TAU*topperPortalWarp+.4*sin(t+h*TAU))*local*mix(.25,3.,topperPortalZoom);
+ altered+=topperPortalWarp*.12*sin(local.yx*12.+t);
+ vec2 sampleP=p-local+altered+topperPortalWarp*.2*vec2(sin(t+h*TAU),cos(t+h*TAU));
+ float v=composed(sampleP);
+ vec3 ink=palette(phaseOf(v,uv,source)+topperPortalHue);
+ float rim=1.-smoothstep(.006,.025,abs(dist-.30));
+ ink=mix(ink,palette(h+topperPortalHue+.5),rim*.45);
+ return mix(col,ink,mask*topperPortal);
+}
+
 void main(){vec2 uv=gl_FragCoord.xy/res;vec2 aspect=vec2(res.x/res.y,1.);vec2 sampleUV=uv;
 if(pixel>.001){float cells=mix(600.,24.,pow(pixel,.65));sampleUV=(floor(uv*vec2(cells*aspect.x,cells))+.5)/vec2(cells*aspect.x,cells);}
 vec2 p=(sampleUV-.5)*aspect*(2.+scale*5.);p=rotate(rotation)*p;
@@ -344,6 +371,7 @@ float luma=dot(col,vec3(.2126,.7152,.0722));col=mix(vec3(luma),col,saturation*2.
 /* INJURY_POST */
 /* SPX_POST */
 col=applyAppearance(col,uv);
+col=realityCutouts(col,uv,p,source);
 col=transmissionShrapnel(col,uv);
 col=falseColorIslands(col,uv);
 col=voronoiConfetti(col,uv);
@@ -1953,6 +1981,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "topperIsland","topperIslandDensity","topperIslandScale","topperIslandMotion","topperIslandForm","topperIslandMapping","topperIslandHue","topperIslandFeather",
         "topperVoronoi","topperVoronoiDensity","topperVoronoiScale","topperVoronoiMotion","topperVoronoiGap","topperVoronoiTexture","topperVoronoiHue","topperVoronoiBlend",
         "topperTape","topperTapeDensity","topperTapeScale","topperTapeMotion","topperTapeWidth","topperTapeDispersion","topperTapeHue","topperTapePalette",
+        "topperPortal","topperPortalDensity","topperPortalScale","topperPortalMotion","topperPortalZoom","topperPortalForm","topperPortalWarp","topperPortalHue",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",
         "misregister",

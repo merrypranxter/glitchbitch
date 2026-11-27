@@ -58,7 +58,7 @@ function advance(sim,w,collision,e,mode,strength,speed,evolution,birth,mutation,
    if(birth>0 && p.age>period && b.length<24){
     const angle=rng()*Math.PI*2,nx=Math.cos(angle),ny=Math.sin(angle);
     const base=clamp(p.base*.82*(1+(rng()-.5)*mutation*.5),.004,.12*Math.min(w,1));
-    p.age=0;p.base*=.82;p.r=p.base*.65;
+    p.age=0;p.base=Math.max(.004,p.base*.82);p.r=p.base*.65;
     const child={...p,base,r:base*.65,age:0,cycle:2+rng()*5,gene:(p.gene+(rng()-.5)*mutation+1)%1};
     child.x=clamp(p.x+nx*(p.r+child.r),child.r,w-child.r);child.y=clamp(p.y+ny*(p.r+child.r),child.r,1-child.r);
     child.vx+=nx*.2*speed;child.vy+=ny*.2*speed;p.vx-=nx*.2*speed;p.vy-=ny*.2*speed;

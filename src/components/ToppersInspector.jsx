@@ -63,6 +63,16 @@ export default function ToppersInspector({history}){
    <Select label="Color mapping" value={String(Math.floor(Math.min(99.9,history.state.topperIslandMapping)*5/100))} onChange={v=>history.change(s=>({...s,topperIslandMapping:(Number(v)+.5)*100/5}))}>{["Luminance","Spectral cosine","Opponent","Quantized","Complement"].map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
    <Parameter label="Color phase" name="topperIslandHue" history={history}/>
    <Parameter label="Edge feather" name="topperIslandFeather" history={history}/>
+   <details className="effect-explanation"><summary>Independent island animation</summary>
+   <Parameter label="Size breathing" name="topperIslandPulse" history={history}/>
+   <Parameter label="Breathing speed" name="topperIslandPulseRate" history={history}/>
+   <Parameter label="Twinkle / vanish" name="topperIslandTwinkle" history={history}/>
+   <Parameter label="Twinkle speed" name="topperIslandTwinkleRate" history={history}/>
+   <Parameter label="Spin amount" name="topperIslandSpin" history={history}/>
+   <Parameter label="Spin speed" name="topperIslandSpinRate" history={history}/>
+   <Select label="Spin direction" value={String(Math.floor(Math.min(99.9,history.state.topperIslandSpinDirection)*3/100))} onChange={v=>history.change(s=>({...s,topperIslandSpinDirection:(Number(v)+.5)*100/3}))}>{["Clockwise","Counterclockwise","Mixed directions"].map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
+   <Parameter label="Individual timing variation" name="topperIslandIndependence" history={history}/>
+   </details>
    <p className="control-note">Mapping: palette luminance, spectral-style cosine, opponent channels, quantized palette, complement/channel rotation.</p>
   </details>
   <details className="effect-explanation"><summary>Voronoi confetti</summary>

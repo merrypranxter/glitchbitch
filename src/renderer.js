@@ -469,6 +469,37 @@ vec3 lifeThreads(vec3 col,vec2 uv){
 uniform float lifeOptics,lifeOpticMode,lifeOpticPower,lifeOpticDispersion;
 float composed(vec2 p);
 float phaseOf(float v,vec2 uv,float source);
+uniform float lifeImpact,lifeImpactMode,lifeImpactReach,lifeImpactPower;
+vec3 lifeImpactField(vec3 col,vec2 uv,vec2 fieldP,float source){
+ if(lifeImpact<.001||lifeAmount<.001)return col;
+ vec2 p=uv*vec2(max(res.x/res.y,.1),1.);
+ float mode=floor(min(lifeImpactMode,.999)*5.);
+ for(int i=0;i<24;i++){
+  vec4 body=lifeBodies[i];if(body.w<.5)break;
+  vec2 delta=p-body.xy;
+  float reach=body.z*mix(1.2,4.,lifeImpactReach);
+  float rr=length(delta)/max(reach,.001);
+  if(rr>=1.)continue;
+  float envelope=(1.-smoothstep(.15,1.,rr))*lifeImpact*lifeAmount;
+  float phase=body.w+time*.35;
+  vec3 ink=col;
+  if(mode<.5)ink=mix(col,palette(phase+rr*3.),lifeImpactPower);
+  else if(mode<1.5)ink=mix(col,abs(col-palette(phase+rr)),lifeImpactPower);
+  else if(mode<2.5){
+   float ring=pow(.5+.5*cos(rr*25.-time*5.+body.w*TAU),5.);
+   ink=mix(col,palette(phase+rr),ring*lifeImpactPower);
+  }else if(mode<3.5){
+   vec2 offset=rotate(rotation)*delta*(2.+scale*5.)*lifeImpactPower*(1.-rr);
+   ink=palette(phaseOf(composed(fieldP-offset),uv,source));
+  }else{
+   vec2 cell=floor(delta/max(body.z*.12,.001));
+   float speck=step(.45,hash(cell+floor(time*2.)));
+   ink=mix(col,palette(phase+hash(cell)),speck*lifeImpactPower);
+  }
+  col=mix(col,ink,envelope);
+ }
+ return col;
+}
 vec3 lifeforms(vec3 col,vec2 uv,vec2 fieldP,float source){
  if(lifeAmount<.001)return col;
  vec2 aspect=vec2(max(res.x/res.y,.1),1.);
@@ -738,6 +769,7 @@ col=kagomeConfetti(col,uv);
 col=quasiConfetti(col,uv);
 col=truchetConfetti(col,uv);
 col=polygonDebris(col,uv);
+col=lifeImpactField(col,uv,p,source);
 col=lifeThreads(col,uv);
 col=lifeforms(col,uv,p,source);
 col=spectralTape(col,uv);
@@ -2363,6 +2395,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion",
         "lifeEvolution",
         "lifeTrail","lifeTrailLength","lifeTrailWidth","lifeTrailStyle",
+        "lifeImpact","lifeImpactMode","lifeImpactReach","lifeImpactPower",
         "lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",

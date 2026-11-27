@@ -3,7 +3,7 @@ import {lifeGroups,shuffleLife,lifeRecipes} from "../life-recipes.js";
 import {Parameter,Select} from "./Controls";
 import {initial} from "../data.js";
 import {readCategoryLocks,writeCategoryLocks,protectCategorySettings} from "../category-locks.js";
-const keys=["lifeTrail","lifeTrailLength","lifeTrailWidth","lifeTrailStyle","lifeEvolution","lifeBirthRate","lifeMutation","lifeMortality","lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion","lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane","lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"];
+const keys=["lifeImpact","lifeImpactMode","lifeImpactReach","lifeImpactPower","lifeTrail","lifeTrailLength","lifeTrailWidth","lifeTrailStyle","lifeEvolution","lifeBirthRate","lifeMutation","lifeMortality","lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion","lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane","lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"];
 export default function LifeformsInspector({history}){
  const [locks,setLocks]=React.useState(readCategoryLocks);
  const locked=!!locks.Lifeforms;
@@ -66,5 +66,11 @@ export default function LifeformsInspector({history}){
 <Parameter label="Thread presence" name="lifeTrail" history={history}/>
 <Parameter label="Trail length" name="lifeTrailLength" history={history}/>
 <Parameter label="Thread thickness" name="lifeTrailWidth" history={history}/>
+ </details><details className="effect-explanation"><summary>Ecological vandalism</summary>
+ {groupButton("impact")}
+ <Select label="Environmental effect" value={String(Math.floor(Math.min(99.9,history.state.lifeImpactMode??0)*5/100))} onChange={v=>history.change(s=>({...s,lifeImpactMode:(Number(v)+.5)*20}))}>{["Chromatic aura","Pigment disturbance","Pulsating shockwaves","Gravity lens","Texture infection"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
+ <Parameter label="Environmental presence" name="lifeImpact" history={history}/>
+ <Parameter label="Influence radius" name="lifeImpactReach" history={history}/>
+ <Parameter label="Disturbance strength" name="lifeImpactPower" history={history}/>
  </details></section>
 }

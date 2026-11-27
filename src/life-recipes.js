@@ -1,9 +1,9 @@
-export const lifeGroups={"motion":["lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation"],"appearance":["lifeShell","lifePores","lifeSpecies","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"],"appendages":["lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane"],"optics":["lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion"],"evolution":["lifeEvolution","lifeBirthRate","lifeMutation","lifeMortality"],"threads":["lifeTrail","lifeTrailLength","lifeTrailWidth","lifeTrailStyle"]};
-const modes={lifeBehavior:9,lifeForm:12,lifeAppendageDetail:4,lifeOpticMode:7,lifeTrailStyle:5};
+export const lifeGroups={"impact":["lifeImpact","lifeImpactMode","lifeImpactReach","lifeImpactPower"],"motion":["lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation"],"appearance":["lifeShell","lifePores","lifeSpecies","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"],"appendages":["lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane"],"optics":["lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion"],"evolution":["lifeEvolution","lifeBirthRate","lifeMutation","lifeMortality"],"threads":["lifeTrail","lifeTrailLength","lifeTrailWidth","lifeTrailStyle"]};
+const modes={lifeImpactMode:5,lifeBehavior:9,lifeForm:12,lifeAppendageDetail:4,lifeOpticMode:7,lifeTrailStyle:5};
 export function shuffleLife(random=Math.random,group){
  const out={};
  for(const k of group?lifeGroups[group]:Object.values(lifeGroups).flat())out[k]=modes[k]?(Math.floor(random()*modes[k])+.5)*100/modes[k]:10+random()*80;
- if(!group){for(const k of ["lifeAppendage","lifeOptics","lifeEvolution","lifeTrail"])if(random()<.5)out[k]=0;out.lifePopulation=8+random()*45;out.lifeAmount=40+random()*55;}
+ if(!group){for(const k of ["lifeAppendage","lifeOptics","lifeEvolution","lifeTrail","lifeImpact"])if(random()<.5)out[k]=0;out.lifePopulation=8+random()*45;out.lifeAmount=40+random()*55;}
  return out;
 }
 export const lifeRecipes={

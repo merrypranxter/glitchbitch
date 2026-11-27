@@ -142,10 +142,10 @@ test("Wave 11: main exact renderer inserts optional moire after color grade and 
 });
 
 test("Wave 11: searchable Controls Room has full sliders, Active, Favorites and Signal grouping",()=>{
-  const ui=read("components/Inspectors.jsx");
+  const ui=read("components/ColorLab.jsx");
   const meta=sectionMeta("subpixel-moire");
   assert.ok(meta);
-  assert.equal(meta.tab,"Effects");
+  assert.equal(meta.tab,"Color");
   assert.equal(meta.group,"Signal");
   assert.deepEqual(meta.on,["spxAmount"]);
   assert.deepEqual(meta.reset.slice(1),spxControls);

@@ -2,16 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { initial } from '../src/data.js';
 import { effectCategories } from '../src/ui-index.js';
-import { effectEntries, effectSections, effectEntry, parentSection, entryActive,
+import { effectEntries, effectSections, colorEffectSections, effectEntry, parentSection, entryActive,
   directoryEntries, readFavorites, validCategory, FAVORITES_KEY } from '../src/effects-navigation.js';
 
 const browse = (category, extra = {}) => directoryEntries({view:'browse',category,query:'',favorites:[],state:initial,...extra});
 
 test('families cover every original Effects section once and every nested lab has a parent', () => {
-  assert.equal(effectSections.length, 36);
   const all = effectCategories.flatMap(category => browse(category.id));
-  assert.equal(all.length, effectSections.length);
-  assert.equal(new Set(all.map(entry => entry.id)).size, effectSections.length);
+  const count=effectSections.length+colorEffectSections.length;
+  assert.equal(all.length, count);
+  assert.equal(new Set(all.map(entry => entry.id)).size, count);
   assert.equal(new Set(effectEntries.map(entry => entry.id)).size, effectEntries.length);
   for (const entry of effectEntries) {
     assert.ok(effectCategories.some(category => category.id === entry.group), entry.id);

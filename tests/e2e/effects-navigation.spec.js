@@ -71,7 +71,7 @@ test('controls, preset, reset, undo/redo and Active use original state', async (
   await start(page,isMobile);
   await search(page,'Signal break');
   await room(page).locator('.effect-card-open').click();
-  const slider=page.getByRole('slider',{name:'Chromatic split',exact:true});
+  const slider=page.getByRole('slider',{name:'Signal drift',exact:true});
   await slider.fill('70');await slider.blur();
   await expect(slider).toHaveValue('70');
   await room(page).locator('.effect-editor-nav button').first().click();
@@ -121,4 +121,18 @@ test('blocked browser storage keeps navigation and session favorites usable',asy
   await room(page).getByRole('button',{name:/^Favorites ·/}).click();
   await expect(room(page).locator('.effect-card')).toHaveCount(1);
   expect(errors).toEqual([]);
+});
+
+
+test('Find opens relocated color and print controls in Color',async({page,isMobile})=>{
+ await start(page,isMobile);
+ for(const [query,id] of [['Chromatic Alchemy','alchemy'],['Print & Spectrum Injury','print-injury'],['CMY risograph','print'],['Chromatic split','chromatic-split']]){
+  await page.getByTitle('Find a control (Ctrl/Cmd+K or /)').click();
+  await page.getByRole('combobox',{name:'Find a control'}).fill(query);
+  await page.locator('.find-results button').first().click();
+  const target=page.locator('.left-panel [data-section="'+id+'"]');
+  await expect(target).toBeVisible();
+  await expect(target.locator('.section-disclosure')).toHaveAttribute('aria-expanded','true');
+  await expect(target.locator('.section-body')).toBeVisible();
+ }
 });

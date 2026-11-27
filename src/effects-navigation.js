@@ -4,8 +4,10 @@ import { effectDetails } from './effect-details.js';
 
 export const FAVORITES_KEY = 'glitch-effect-favorites-v1';
 export const effectSections = sections.filter(s => s.tab === 'Effects');
+export const colorEffectSections = sections.filter(s => s.tab === 'Color' && s.group);
 export const effectEntries = [
   ...effectSections,
+  ...colorEffectSections,
   ...effectDetails.map(d => ({ ...d, group: effectSections.find(s => s.id === d.sectionId)?.group })),
 ];
 export const effectEntry = id => effectEntries.find(e => e.id === id);
@@ -45,4 +47,4 @@ export const isWeavingEntry=id=>{
   return Boolean(entry&&weavingIds.has(parentSection(entry)));
 };
 export const entriesForScope=scope=>effectEntries.filter(e=>
-  scope==="ecosystem"?isEcosystemEntry(e.id):scope==="weaving"?isWeavingEntry(e.id):!isEcosystemEntry(e.id)&&!isWeavingEntry(e.id));
+  scope==="color"?e.tab==="Color":scope==="ecosystem"?isEcosystemEntry(e.id):scope==="weaving"?isWeavingEntry(e.id):e.tab!=="Color"&&!isEcosystemEntry(e.id)&&!isWeavingEntry(e.id));

@@ -29,7 +29,7 @@ export default function EffectsWorkbench({ history, body, quickToggles, scope = 
   const selectedEntry = effectEntry(selected);
   const meta = selectedEntry && effectEntry(parentSection(selectedEntry));
   const activeCount = scoped.filter(e => entryActive(e, history.state)).length;
-  const entries = directoryEntries({view, category, query, favorites, state: history.state}).filter(e=>scope==="effects"&&query.trim()?true:inScope(e));
+  const entries = directoryEntries({view, category, query, favorites, state: history.state}).filter(e=>scope==="effects"&&query.trim()?e.tab!=="Color":inScope(e));
   const family = effectCategories.find(c => c.id === (meta?.group || category));
   const scrollTop = () => root.current?.closest('.inspector-scroll')?.scrollTo({top: 0});
   function chooseFamily(value) {
@@ -109,8 +109,8 @@ export default function EffectsWorkbench({ history, body, quickToggles, scope = 
         </div>)}
       </div>
       {!entries.length && <p className="effect-empty">{query ? 'No effects found. Try a material, behavior or control name.' : view === 'favorites' ? 'Tap a star beside an effect or laboratory to keep it here.' : 'No effects enabled yet. Explore a family and turn something up.'}</p>}
-      {scope === "effects" && <div className="effect-quick-strip"><span>Quick switches</span>{quickToggles}</div>}
-      <p className="effect-directory-foot">{scope==="weaving"?"Velvet and fractal crochet controls are also below.":"Math engines & Shader Vault live in Math."} Artwork stays unchanged while you explore.</p>
+      {scope === "effects" && quickToggles && <div className="effect-quick-strip"><span>Quick switches</span>{quickToggles}</div>}
+      <p className="effect-directory-foot">{scope==="weaving"?"Velvet and fractal crochet controls are also below.":"Math engines & Shader Vault live in Math. Chromatic Alchemy, print sorcery and color effects live in Color."} Artwork stays unchanged while you explore.</p>
     </>}
   </div>;
 }

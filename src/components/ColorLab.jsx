@@ -10,11 +10,22 @@ import {
   Save,
   Palette,
   Trash2,
+  EyeOff,
+  Star,
 } from "lucide-react";
 import { palettes, parsePalette, paletteName } from "../data";
 import { pickDifferentPalette, generateRandomPalette, shuffleColorStops, reverseColorStops } from "../palette-actions";
 import { parsePaletteLibrary, paletteLibraryDocument } from "../palette-io";
-import { Parameter, Section, Segmented, Switch, Select } from "./Controls";
+import { Parameter, Section, Segmented, Switch, Select, Pill } from "./Controls";
+import {alchemyModes,alchemyFamilies,alchemyDescriptions,alchemyPresets,
+  applyAlchemyPreset,shuffleAlchemy,hideAlchemy} from "../chromatic-alchemy.js";
+import {injuryModes,injuryFamilies,injuryDescriptions,injuryPresets,
+  applyInjuryPreset,shuffleInjury,hideInjury} from "../print-spectrum-injury.js";
+import {spxModes,spxPresets,applySpxPreset,shuffleSpx,hideSpx}
+  from "../subpixel-moire-wave11.js";
+import { readFavorites, FAVORITES_KEY } from "../effects-navigation.js";
+import { sectionMeta } from "../ui-index.js";
+
 export function Swatches({ colors }) {
   return (
     <span className="swatches">
@@ -84,9 +95,191 @@ export default function ColorLab({
     document.body.append(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),10000);
   }
+  const s=state;
+  const [alchemyPreset,setAlchemyPreset]=useState(alchemyPresets[0].name);
+  const [injuryPreset,setInjuryPreset]=useState(injuryPresets[0].name);
+  const [spxPreset,setSpxPreset]=useState(spxPresets[0].name);
+  const [favorites,setFavorites]=useState(()=>{try{return readFavorites(localStorage)}catch{return []}});
+  function toggleFavorite(id){
+    const selected=favorites.includes(id);
+    let previous=favorites;
+    try{previous=readFavorites(localStorage)}catch{}
+    const next=selected?previous.filter(x=>x!==id):[...new Set([...previous,id])];
+    setFavorites(next);
+    try{localStorage.setItem(FAVORITES_KEY,JSON.stringify(next))}catch{}
+  }
+  const body = {
+    alchemy: <>
+      <p className="control-note">Four animated color engines from your shader vault. They change the light and pigment on your existing art—not your geometry, palettes or separately composited words.</p>
+      <Select label="Color sorcery" value={s.alchemyMode}
+        onChange={v=>history.change(x=>({...x,alchemyMode:v,
+          alchemyAmount:Math.max(65,x.alchemyAmount)}))}>
+        {alchemyFamilies.map(family=><optgroup key={family.name}
+          label={family.name}>
+          {family.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </optgroup>)}
+      </Select>
+      {alchemyDescriptions[s.alchemyMode] ? (
+        <p className="control-note">{alchemyDescriptions[s.alchemyMode]}</p>
+      ) : null}
+      <Parameter label="Presence" name="alchemyAmount" history={history}/>
+      <Parameter label="Field scale" name="alchemyScale" history={history}/>
+      <Parameter label="Color motion" name="alchemyMotion" history={history}/>
+      <Parameter label="Spectral separation" name="alchemySeparation" history={history}/>
+      <Parameter label="Softness" name="alchemySoftness" history={history}/>
+      <Parameter label="White crown" name="alchemyWhite" history={history}/>
+      <Parameter label="Variation" name="alchemyVariation" history={history}/>
+      <Switch label="Use my current palette" name="alchemyPalette" history={history}/>
+      <div className="preset-row">
+        <Select label="Instant color sorcery" value={alchemyPreset}
+          onChange={setAlchemyPreset}>
+          {alchemyPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applyAlchemyPreset(x,alchemyPreset))}>
+          Summon this color
+        </button>
+      </div>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleAlchemy(x))}>
+          <Shuffle size={13}/> Shuffle color sorcery
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleAlchemy(x,Math.random,"funky"))}>
+          <Dices size={13}/> Shuffle funky colors
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.alchemyAmount<=0}
+          onClick={()=>history.change(hideAlchemy)}>
+          <EyeOff size={13}/> Hide color sorcery
+        </button>
+      </div>
+      <p className="control-note">All four modes use the normal animation clock and PNG/GIF/MP4 renderer. Presence at 0 is identical to old art. Undo restores the previous effect.</p>
+    </>,
+    foil: <>
+      <Parameter label="Thin-film rainbow" name="filmAmount" history={history} />
+      <Parameter label="Film thickness" name="filmThickness" history={history} />
+      <Parameter label="Opal flashes" name="opalAmount" history={history} />
+      <Parameter label="Dichroic prism" name="prismAmount" history={history} />
+      <Parameter label="Relief highlights" name="foilRelief" history={history} />
+      <Parameter label="Animation" name="foilMotion" history={history} />
+    </>,
+    "chromatic-split": <>
+      <Parameter label="Chromatic split" name="split" history={history} />
+    </>,
+    "subpixel-moire": <>
+      <p className="control-note">
+        Original Shader Vault: two rotating RGB shadowmasks interfere.
+        Cross-channel collisions form secondary-color beats rather than
+        another screen-grain overlay. From silky CRT to retinal warfare.
+      </p>
+      <Select label="Subpixel interference species" value={s.spxMode}
+        onChange={mode=>history.change(x=>({...x,spxMode:mode,
+          spxAmount:Math.max(x.spxAmount,60)}))}>
+        {spxModes.map(mode=><option value={mode} key={mode}>{mode}</option>)}
+      </Select>
+      <div className="preset-row">
+        <Select label="Subpixel recipe" value={spxPreset}
+          onChange={setSpxPreset}>
+          {spxPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applySpxPreset(x,spxPreset))}>
+          Apply interference recipe
+        </button>
+      </div>
+      <Parameter label="Subpixel interference presence" name="spxAmount" history={history}/>
+      {s.spxAmount>0&&<>
+        <Parameter label="Triad grid density" name="spxDensity" history={history}/>
+        <Parameter label="Grid frequency mismatch" name="spxMismatch" history={history}/>
+        <Parameter label="Cross-grid tilt" name="spxAngle" history={history}/>
+        <Parameter label="Slow subpixel drift" name="spxDrift" history={history}/>
+        <Parameter label="Geometric screen curvature" name="spxCurvature" history={history}/>
+        <Parameter label="Retinal flicker strength" name="spxFlicker" history={history}/>
+        <Parameter label="Chromatic cross-product strength" name="spxCross" history={history}/>
+        <Parameter label="Screen material relief" name="spxRelief" history={history}/>
+        <Parameter label="Palette interference hue" name="spxHue" history={history}/>
+        <Parameter label="Color bleed / opacity" name="spxBleed" history={history}/>
+        <Parameter label="Pattern variation" name="spxVariation" history={history}/>
+      </>}
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleSpx(x))}>
+          <Shuffle size={13}/> Shuffle subpixels
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.spxAmount<=0} onClick={()=>history.change(hideSpx)}>
+          <EyeOff size={13}/> Hide interference
+        </button>
+      </div>
+      <p className="control-note">
+        Off on old artwork. PNG/GIF/MP4 and preview use the same material,
+        and unsupported GPUs get a visible warning, not a silent export downgrade.
+      </p>
+    </>,
+    "print-injury": <>
+      <p className="control-note">Print and spectrum mutations: animated XOR pixel decisions, living caustic print plates, reactive hypercolor injury and spectral frequency combs. Your actual art stays underneath.</p>
+      <Select label="Print mutation" value={s.injuryMode}
+        onChange={v=>history.change(x=>({...x,injuryMode:v,
+          injuryAmount:Math.max(x.injuryAmount,63)}))}>
+        {injuryFamilies.map(family=><optgroup key={family.name} label={family.name}>
+          {family.modes.map(mode=><option key={mode} value={mode}>{mode}</option>)}
+        </optgroup>)}
+      </Select>
+      {injuryDescriptions[s.injuryMode] ? (
+        <p className="control-note">{injuryDescriptions[s.injuryMode]}</p>
+      ) : null}
+      <Parameter label="Presence" name="injuryAmount" history={history}/>
+      <Parameter label="Spatial frequency" name="injuryScale" history={history}/>
+      <Parameter label="Motion" name="injuryMotion" history={history}/>
+      <Parameter label="Color separation" name="injurySeparation" history={history}/>
+      <Parameter label="Dot grain / damage" name="injuryGrain" history={history}/>
+      <Parameter label="Neon / white glow" name="injuryGlow" history={history}/>
+      <Parameter label="Variation" name="injuryVariation" history={history}/>
+      <Switch label="Use my current palette" name="injuryPalette" history={history}/>
+      <div className="preset-row">
+        <Select label="Instant print mutation" value={injuryPreset}
+          onChange={setInjuryPreset}>
+          {injuryPresets.map(p=><option key={p.name} value={p.name}>{p.name}</option>)}
+        </Select>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>applyInjuryPreset(x,injuryPreset))}>
+          Summon print mutation
+        </button>
+      </div>
+      <div className="pane-actions">
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleInjury(x))}>
+          <Shuffle size={13}/> Shuffle print injury
+        </button>
+        <button type="button" className="button secondary"
+          onClick={()=>history.change(x=>shuffleInjury(x,Math.random,"funky"))}>
+          <Dices size={13}/> Shuffle extreme damage
+        </button>
+        <button type="button" className="button secondary"
+          disabled={s.injuryAmount<=0}
+          onClick={()=>history.change(hideInjury)}>
+          <EyeOff size={13}/> Hide print injury
+        </button>
+      </div>
+      <p className="control-note">Works alongside Color Sorcery with the normal PNG/GIF/MP4 clock. Undo restores previous settings. Presence 0 means untouched old art.</p>
+    </>,
+    print: <>
+      <Parameter label="Bayer dither" name="dither" history={history} />
+      <Parameter label="CMY risograph" name="riso" history={history} />
+      <Parameter label="Ink misregistration" name="misregister" history={history} />
+    </>,
+  };
+  body["fx-toggles"] = <div className="fx-pills" role="group" aria-label="Quick effect toggles">
+    {[["bloom","Bloom"],["posterize","Posterize"],["invert","Invert"]].map(([k,label])=>
+      <Pill key={k} label={label} checked={s[k]}
+        onChange={()=>history.change(x=>({...x,[k]:!x[k]}))}/>)}
+  </div>;
+
   return (
     <>
-      <details open className="effect-explanation"><summary>Chromatic engine</summary>
+      <Section id="chromatic-engine" history={history} defaultOpen>
         <p className="control-note">Change the interpolation mathematics without changing your palette stops.</p>
         <Select label="Color space" value={String(Math.round(state.chromaticSpace??0))} onChange={v=>history.change(s=>({...s,chromaticSpace:Number(v)}))}>{["Original sRGB","Linear light","Oklab","OkLCh","CIELAB (D65)","CIELUV (D65)","LCh(ab)","LCh(uv)","Okhsl","Okhsv","HSLuv","HPLuv","IPT","DIN99","JzAzBz","JzCzhz","ICtCp","CAM16","CAM16-UCS","HCT (Hue Chroma Tone)","Spectral Pigment (Kubelka–Munk)","Spectral Glaze (Optical Density)"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
         <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticSpace:(Math.round(s.chromaticSpace??0)+1+Math.floor(Math.random()*21))%22}))}>Shuffle color space</button>
@@ -114,7 +307,13 @@ export default function ColorLab({
         </>}
         {Math.round(state.chromaticSpace??0)===19&&<p className="control-note">HCT follows CAM16 hue and chroma while preserving interpolated CIELAB tone. It uses its own sRGB chroma-reduction solver.</p>}
         {(state.chromaticSpace??0)>=8&&(state.chromaticSpace??0)<=11&&<Parameter label="Saturation ceiling" name="chromaticSatCap" history={history}/>}
-      </details>
+      </Section>
+      <p className="control-note">Color effects &amp; print sorcery · all in one place. Open a panel to edit, shuffle or reset it.</p>
+      {["alchemy","foil","chromatic-split","fx-toggles","subpixel-moire","print-injury","print"].map(id=><Section key={id} id={id} history={history}
+        aside={<button type="button" className="effect-star" aria-label={(favorites.includes(id)?"Unfavorite ":"Favorite ")+sectionMeta(id).title}
+          aria-pressed={favorites.includes(id)} onClick={()=>toggleFavorite(id)}><Star size={15} fill={favorites.includes(id)?"currentColor":"none"}/></button>}>
+        {body[id]}
+      </Section>)}
       <Section
         id="palettes"
         defaultOpen

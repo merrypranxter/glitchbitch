@@ -1,5 +1,6 @@
-export const topperKeys=["broadcast","windowCascade","glitter","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal","topperTime","topperHex"];
+export const topperKeys=["broadcast","windowCascade","glitter","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal","topperTime","topperHex","topperTri"];
 export const topperParameters={
+ "topperTri":["topperTriDensity","topperTriScale","topperTriMotion","topperTriGap","topperTriTexture","topperTriHue","topperTriBlend","topperTriPulse","topperTriTwinkle"],
  "topperHex":["topperHexDensity","topperHexScale","topperHexMotion","topperHexGap","topperHexTexture","topperHexHue","topperHexBlend"],
   "topperShrapnel": [
     "topperDensity",

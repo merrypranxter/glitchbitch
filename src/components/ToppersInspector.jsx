@@ -25,5 +25,14 @@ export default function ToppersInspector({history}){
    <Parameter label="Error windows" name="windowCascade" history={history}/>
    <Parameter label="Glitter" name="glitter" history={history}/>
   </details>
+  <details open className="effect-explanation"><summary>Transmission shrapnel</summary>
+   <Parameter label="Shrapnel presence" name="topperShrapnel" history={history}/>
+   <Parameter label="Fragment density" name="topperDensity" history={history}/>
+   <Parameter label="Fragment scale" name="topperScale" history={history}/>
+   <Parameter label="Drift motion" name="topperMotion" history={history}/>
+   <Parameter label="Palette phase" name="topperHue" history={history}/>
+   <Parameter label="Fragment geometry" name="topperShape" history={history}/>
+   <Parameter label="Color interaction" name="topperBlend" history={history}/>
+  </details>
  </section>;
 }

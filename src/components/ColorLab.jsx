@@ -28,6 +28,7 @@ import { sectionMeta } from "../ui-index.js";
 import { illuminantNames } from "../spectral-metamer.js";
 import { metamerMotionNames } from "../chromatic-time.js";
 import { chromaticGeographyNames } from "../chromatic-geography.js";
+import { chromaticSymbiosisNames } from "../chromatic-symbiosis.js";
 
 export function Swatches({ colors }) {
   return (
@@ -317,7 +318,7 @@ export default function ColorLab({
           <Parameter label="White balance" name="chromaticMetaAdapt" history={history}/>
           <details className="effect-explanation"><summary>Chromatic Time Travel · animated illumination</summary>
             <Select label="Illumination motion" value={String(Math.round(state.chromaticMetaMotion??0))} onChange={v=>history.change(s=>({...s,chromaticMetaMotion:Number(v)}))}>{metamerMotionNames.map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
-            {(Math.round(state.chromaticMetaMotion??0)>0||Math.round(state.chromaticGeoMode??0)>0)&&<>
+            {(Math.round(state.chromaticMetaMotion??0)>0||Math.round(state.chromaticGeoMode??0)>0||Math.round(state.chromaticSymMode??0)>0)&&<>
               {Math.round(state.chromaticMetaMotion??0)!==2&&<Select label="Second sun" value={String(Math.round(state.chromaticMetaTarget??5))} onChange={v=>history.change(s=>({...s,chromaticMetaTarget:Number(v)}))}>{illuminantNames.map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>}
               <Parameter label="Illumination cycle (color-clock seconds)" name="chromaticMetaPeriod" history={history}/>
               <Parameter label="Illumination time phase" name="chromaticMetaTimePhase" history={history}/>
@@ -337,6 +338,18 @@ export default function ColorLab({
               <p className="control-note">The suns and front drift use the cycle and phase in Chromatic Time Travel. Freeze color pauses the fronts.</p>
             </>}
             <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticGeoMode:1+Math.floor(Math.random()*5),chromaticGeoAmount:65+Math.random()*35,chromaticGeoScale:1+Math.floor(Math.random()*12),chromaticGeoAngle:Math.random()*360,chromaticGeoSoftness:12+Math.random()*88,chromaticGeoDrift:1+Math.floor(Math.random()*3)}))}>Shuffle chromatic geography</button>
+          </details>
+          <details className="effect-explanation"><summary>Chromatic Symbiosis · structural pigment</summary>
+            <p className="control-note">The primary mathematical field assigns local spectral lighting before other color effects. Works with geography or alone. Gradient modes use hardware derivatives where available; otherwise they use contour coloring.</p>
+            <Select label="Structural illumination" value={String(Math.round(state.chromaticSymMode??0))} onChange={v=>history.change(s=>({...s,chromaticSymMode:Number(v),chromaticSymAmount:Number(v)>0?Math.max(50,s.chromaticSymAmount??80):s.chromaticSymAmount}))}>{chromaticSymbiosisNames.map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
+            {Math.round(state.chromaticSymMode??0)>0&&<>
+              <Parameter label="Structural pigment influence" name="chromaticSymAmount" history={history}/>
+              <Parameter label="Structural frequency" name="chromaticSymFrequency" history={history}/>
+              <Parameter label="Gradient sensitivity" name="chromaticSymSensitivity" history={history}/>
+              <Parameter label="Structural boundary softness" name="chromaticSymSoftness" history={history}/>
+              <Select label="Structural drift cycles" value={String(Math.round(state.chromaticSymDrift??1))} onChange={v=>history.change(s=>({...s,chromaticSymDrift:Number(v)}))}>{[0,1,2,3].map(n=><option key={n} value={String(n)}>{n===0?"Stationary":n+" cycles"}</option>)}</Select>
+            </>}
+            <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticSymMode:1+Math.floor(Math.random()*5),chromaticSymAmount:65+Math.random()*35,chromaticSymFrequency:1+Math.floor(Math.random()*16),chromaticSymSensitivity:15+Math.random()*85,chromaticSymSoftness:10+Math.random()*90,chromaticSymDrift:Math.floor(Math.random()*4)}))}>Shuffle chromatic symbiosis</button>
           </details>
           <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticIlluminant:1+Math.floor(Math.random()*5),chromaticMetaAmount:65+Math.random()*35,chromaticMetaBands:1+Math.floor(Math.random()*8),chromaticMetaPhase:Math.random()*100,chromaticMetaAdapt:35+Math.random()*65}))}>Shuffle hidden spectra</button>
         </>}

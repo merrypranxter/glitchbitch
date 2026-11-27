@@ -2,7 +2,7 @@ import React from "react";
 import {Parameter,Select} from "./Controls";
 import {initial} from "../data.js";
 import {readCategoryLocks,writeCategoryLocks,protectCategorySettings} from "../category-locks.js";
-const keys=["lifeEvolution","lifeBirthRate","lifeMutation","lifeMortality","lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion","lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane","lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"];
+const keys=["lifeTrail","lifeTrailLength","lifeTrailWidth","lifeTrailStyle","lifeEvolution","lifeBirthRate","lifeMutation","lifeMortality","lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion","lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane","lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"];
 export default function LifeformsInspector({history}){
  const [locks,setLocks]=React.useState(readCategoryLocks);
  const locked=!!locks.Lifeforms;
@@ -50,5 +50,11 @@ export default function LifeformsInspector({history}){
 <Parameter label="Division rate" name="lifeBirthRate" history={history}/>
 <Parameter label="Mutation" name="lifeMutation" history={history}/>
 <Parameter label="Mortality" name="lifeMortality" history={history}/>
+ </details><details className="effect-explanation"><summary>Thread secretion</summary>
+ <p className="control-note">Recent movement trails from up to eight organisms.</p>
+ <Select label="Thread style" value={String(Math.floor(Math.min(99.9,history.state.lifeTrailStyle??0)*5/100))} onChange={v=>history.change(s=>({...s,lifeTrailStyle:(Number(v)+.5)*20}))}>{["Silk filament","Running stitch","Double ribbon","Beaded thread","Luminous filament"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
+<Parameter label="Thread presence" name="lifeTrail" history={history}/>
+<Parameter label="Trail length" name="lifeTrailLength" history={history}/>
+<Parameter label="Thread thickness" name="lifeTrailWidth" history={history}/>
  </details></section>
 }

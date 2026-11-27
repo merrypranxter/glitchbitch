@@ -1,3 +1,4 @@
+import {categoryOwns,readCategoryLocks,writeCategoryLocks,protectCategorySettings} from "../category-locks.js";
 import React from "react";
 import {
   Waves,
@@ -718,32 +719,8 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
   const [preserveCore,setPreserveCore]=React.useState(false);
   const [allowDual,setAllowDual]=React.useState(true);
   const [allowHeavy,setAllowHeavy]=React.useState(false);
-  const [categoryLocks,setCategoryLocks]=React.useState({});
-  const categoryPrefixes={
-    "Digital corruption":["split","glitch","block","pixel"],
-    "Analog & CRT":["scan","grain","vignette","phosphor","broadcast"],
-    "Temporal feedback":["afterimage","datamosh","memoryDrift","memoryDecay"],
-    "MySpace nostalgia":["windowCascade","glitter"],
-    "Spectral foil":["filmAmount","filmThickness","opalAmount","prismAmount","foilRelief","foilMotion"],
-    "Print textures":["dither","riso","misregister"],
-    "View motion & depth":["wiggle","stereo"],
-    "Microscopic shapes":["micro","qd"],
-    "Glass & refraction":["schlieren"],
-    "Materials & textures":["substance","vld","velvet","hcr","crochet"],
-    "Light & optical ornaments":["photon","alchemy"],
-    "Chromatic alchemy":["alchemy","spx"],
-    "Print & signal damage":["injury","ps","kd"],
-    "Biological growth":["bio","micro"],
-    "Backgrounds & atmosphere":["backdrop","underlay"]
-  };
-  const categoryOwns=(name,key)=>categoryPrefixes[name].some(p=>key.startsWith(p));
-  const protectCategories=(original,next)=> {
-    const result={...next};
-    for(const key of Object.keys(original))
-      if(Object.keys(categoryLocks).some(name=>categoryLocks[name]&&categoryOwns(name,key)))
-        result[key]=original[key];
-    return result;
-  };
+  const [categoryLocks,setCategoryLocks]=React.useState(readCategoryLocks);
+  const protectCategories=(original,next)=>protectCategorySettings(original,next,categoryLocks);
   const resetCategory=(original,name)=>{
     const next={...original};
     for(const key of Object.keys(initial))if(categoryOwns(name,key))next[key]=initial[key];
@@ -814,13 +791,13 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
             <Shuffle size={13}/> {name}
           </button>
           <button type="button" className="button secondary" aria-pressed={!!categoryLocks[name]}
-            onClick={()=>setCategoryLocks(old=>({...old,[name]:!old[name]}))}>
+            onClick={()=>{const next={...categoryLocks,[name]:!categoryLocks[name]};writeCategoryLocks(next);setCategoryLocks(next);}}>
             {categoryLocks[name]?"Unlock":"Lock"}
           </button>
           <button type="button" className="button secondary" disabled={!!categoryLocks[name]}
             onClick={()=>history.change(x=>resetCategory(x,name))}>Reset</button>
         </div>)}
-        <p className="control-note">Locks protect shared category settings during category spins and Full weird shuffle. Reset restores unlocked category defaults. Main Surprise Me is not affected yet.</p>
+        <p className="control-note">Locks protect shared category settings during category spins and Full weird shuffle. Reset restores unlocked category defaults. Locks also protect main Surprise Me and persist on this device.</p>
       </div>
       <p className="control-note">
         THE BEAUTIFUL RANDOMIZER PROBLEM IS SOLVED. Spin living colonies,

@@ -88,9 +88,9 @@ export default function ColorLab({
     <>
       <details open className="effect-explanation"><summary>Chromatic engine</summary>
         <p className="control-note">Change the interpolation mathematics without changing your palette stops.</p>
-        <Select label="Color space" value={String(Math.round(state.chromaticSpace??0))} onChange={v=>history.change(s=>({...s,chromaticSpace:Number(v)}))}>{["Original sRGB","Linear light","Oklab","OkLCh","CIELAB (D65)","CIELUV (D65)","LCh(ab)","LCh(uv)","Okhsl","Okhsv","HSLuv","HPLuv","IPT","DIN99","JzAzBz","JzCzhz","ICtCp"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
-        <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticSpace:(Math.round(s.chromaticSpace??0)+1+Math.floor(Math.random()*16))%17}))}>Shuffle color space</button>
-        {[3,6,7,8,9,10,11,15].includes(Math.round(state.chromaticSpace??0))&&<>
+        <Select label="Color space" value={String(Math.round(state.chromaticSpace??0))} onChange={v=>history.change(s=>({...s,chromaticSpace:Number(v)}))}>{["Original sRGB","Linear light","Oklab","OkLCh","CIELAB (D65)","CIELUV (D65)","LCh(ab)","LCh(uv)","Okhsl","Okhsv","HSLuv","HPLuv","IPT","DIN99","JzAzBz","JzCzhz","ICtCp","CAM16","CAM16-UCS"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
+        <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticSpace:(Math.round(s.chromaticSpace??0)+1+Math.floor(Math.random()*18))%19}))}>Shuffle color space</button>
+        {[3,6,7,8,9,10,11,15,17].includes(Math.round(state.chromaticSpace??0))&&<>
           <Select label="Hue route" value={String(Math.round(state.chromaticHuePath??0))} onChange={v=>history.change(s=>({...s,chromaticHuePath:Number(v)}))}>{["Shortest arc","Longest arc","Increasing hue","Decreasing hue"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
           <Select label="Extra hue revolutions per stop" value={String(Math.round(state.chromaticTurns??0))} onChange={v=>history.change(s=>({...s,chromaticTurns:Number(v)}))}>{[0,1,2,3].map(n=><option key={n} value={String(n)}>{n}</option>)}</Select>
           <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticHuePath:Math.floor(Math.random()*4),chromaticTurns:Math.floor(Math.random()*4)}))}>Shuffle hue route</button>
@@ -98,6 +98,13 @@ export default function ColorLab({
         {(state.chromaticSpace??0)>=2&&<>
           <Select label="Gamut mapping" value={String(Math.round(state.chromaticGamut??0))} onChange={v=>history.change(s=>({...s,chromaticGamut:Number(v)}))}>{["Perceptual reduction (default)","Hard RGB clipping","RGB range compression","Reflective gamut folding"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
           <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticGamut:(Math.round(s.chromaticGamut??0)+1+Math.floor(Math.random()*3))%4}))}>Shuffle gamut mapping</button>
+        </>}
+        {(state.chromaticSpace??0)>=17&&<>
+          <Parameter label="Adapting luminance (log scale)" name="chromaticAmbient" history={history}/>
+          <Parameter label="Background luminance" name="chromaticBackground" history={history}/>
+          <Select label="Surround" value={String(Math.round(state.chromaticSurround??0))} onChange={v=>history.change(s=>({...s,chromaticSurround:Number(v)}))}>{["Average","Dim","Dark"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
+          <Select label="Illuminant adaptation" value={String(Math.round(state.chromaticAdapt??0))} onChange={v=>history.change(s=>({...s,chromaticAdapt:Number(v)}))}><option value="0">Modeled adaptation</option><option value="1">Full adaptation</option></Select>
+          <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticAmbient:Math.random()*100,chromaticBackground:Math.random()*100,chromaticSurround:Math.floor(Math.random()*3),chromaticAdapt:Number(Math.random()<.5)}))}>Shuffle viewing conditions</button>
         </>}
         {(state.chromaticSpace??0)>=8&&(state.chromaticSpace??0)<=11&&<Parameter label="Saturation ceiling" name="chromaticSatCap" history={history}/>}
       </details>

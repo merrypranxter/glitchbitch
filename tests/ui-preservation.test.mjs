@@ -45,7 +45,7 @@ test("Claude UI preserves every old numeric art/text parameter",()=>{
  }
  for(const k of ["bloom","posterize","invert"]){
   assert.ok(Object.hasOwn(initial,k));
-  assert.match(inspector,new RegExp('\\["'+k+'","', "i"),k+" pill still exists");
+  assert.match(colors,new RegExp('\\["'+k+'","', "i"),k+" pill still exists");
  }
 });
 test("Optical Zoo stays alive, opt-in and manually hideable",()=>{

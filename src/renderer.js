@@ -331,6 +331,40 @@ vec3 kagomeConfetti(vec3 col,vec2 uv){
  ink=mix(ink,abs(clamp(col,0.,1.)-ink),topperKagomeBlend);
  return mix(col,ink,mask*pat*topperKagome);
 }
+uniform float topperQuasi,topperQuasiDensity,topperQuasiScale,topperQuasiMotion,topperQuasiGap,topperQuasiTexture,topperQuasiHue,topperQuasiBlend,topperQuasiPulse,topperQuasiTwinkle;
+vec3 quasiConfetti(vec3 col,vec2 uv){
+ if(topperQuasi<.001)return col;
+ vec2 q=(uv-.5)*mix(6.,38.,topperQuasiScale)*vec2(max(res.x/res.y,.4),1.);
+ float nearest=1.,second=1.,code=0.;
+ vec2 axes=vec2(0.),other=vec2(0.);
+ for(int i=0;i<5;i++){
+   float a=float(i)*TAU/5.;
+   vec2 n=vec2(cos(a),sin(a));
+   float v=dot(q,n)+float(i)*.61803398875;
+   float f=fract(v)-.5;
+   code+=floor(v)*float(i+1)*.173;
+   if(abs(f)<nearest){second=nearest;other=axes;nearest=abs(f);axes=n;}
+   else if(abs(f)<second){second=abs(f);other=n;}
+ }
+ float h=fract(sin(code*127.1)*43758.5453);
+ if(h>mix(.025,.65,topperQuasiDensity))return col;
+ float t=time*topperQuasiMotion*.5;
+ float phase=h*TAU+t*mix(.4,1.8,h);
+ float size=mix(1.,.2+.8*(.5+.5*sin(phase)),topperQuasiPulse);
+ float life=mix(1.,smoothstep(-.6,.5,sin(phase+2.)),topperQuasiTwinkle);
+ float dist=max(nearest,second)*2.;
+ float radius=size*(1.-mix(.05,.55,topperQuasiGap));
+ float mask=(1.-smoothstep(max(0.,radius-.04),radius,dist))*life;
+ float mode=floor(min(topperQuasiTexture,.999)*5.);
+ float pat=1.;
+ if(mode>.5)pat=smoothstep(.1,.65,sin(dist*38.-t));
+ if(mode>1.5)pat=smoothstep(.1,.65,sin(dot(q,axes+other)*28.+t));
+ if(mode>2.5)pat=step(.5,hash(floor(q*24.)));
+ if(mode>3.5)pat=smoothstep(.55,.85,dist/max(radius,.001));
+ vec3 ink=palette(h+topperQuasiHue+dist*.35+.12*sin(phase));
+ ink=mix(ink,abs(clamp(col,0.,1.)-ink),topperQuasiBlend);
+ return mix(col,ink,mask*pat*topperQuasi);
+}
 ${geometryGLSL}
 ${motionGLSL}
 ${bioGLSL}
@@ -498,6 +532,7 @@ col=voronoiConfetti(col,uv);
 col=hexConfetti(col,uv);
 col=triangleConfetti(col,uv);
 col=kagomeConfetti(col,uv);
+col=quasiConfetti(col,uv);
 col=spectralTape(col,uv);
 col=phospheneJewels(col,uv);
 gl_FragColor=vec4(clamp(col,0.,1.),1.);}`;
@@ -2110,6 +2145,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "topperJewelOutline","topperHex","topperHexDensity","topperHexScale","topperHexMotion","topperHexGap","topperHexTexture","topperHexHue","topperHexBlend",
         "topperTri","topperTriDensity","topperTriScale","topperTriMotion","topperTriGap","topperTriTexture","topperTriHue","topperTriBlend","topperTriPulse","topperTriTwinkle",
         "topperKagome","topperKagomeDensity","topperKagomeScale","topperKagomeMotion","topperKagomeGap","topperKagomeTexture","topperKagomeHue","topperKagomeBlend","topperKagomePulse","topperKagomeTwinkle","topperKagomeBalance",
+        "topperQuasi","topperQuasiDensity","topperQuasiScale","topperQuasiMotion","topperQuasiGap","topperQuasiTexture","topperQuasiHue","topperQuasiBlend","topperQuasiPulse","topperQuasiTwinkle",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",
         "misregister",

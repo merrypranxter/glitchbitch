@@ -93,6 +93,7 @@ vec3 transmissionShrapnel(vec3 col,vec2 uv){
 
 uniform float topperJewel,topperJewelDensity,topperJewelScale,topperJewelMotion,topperJewelDetail,topperJewelHue,topperJewelForm,topperJewelBlend;
 uniform float topperJewelPulse,topperJewelPulseRate,topperJewelTwinkle,topperJewelTwinkleRate,topperJewelSpin,topperJewelSpinRate,topperJewelDirection,topperJewelIndependence;
+uniform float topperJewelOutline;
 vec3 phospheneJewels(vec3 col,vec2 uv){
  if(topperJewel<.001)return col;
  vec2 q=uv*mix(4.,18.,topperJewelScale)*vec2(max(res.x/res.y,.4),1.);
@@ -108,7 +109,16 @@ vec3 phospheneJewels(vec3 col,vec2 uv){
  float direction=topperJewelDirection<.333?1.:topperJewelDirection<.666?-1.:(hash(cell+vec2(17.,63.))<.5?-1.:1.);
  z=rotate(time*topperJewelSpin*mix(.1,3.,topperJewelSpinRate)*rate*direction)*z;
  if(pulse<.005||life<.002)return col;
- float rad=length(z)/(mix(.18,.34,hash(cell+72.))*pulse);
+ float outline=floor(min(topperJewelOutline,.999)*5.);
+ if(outline>3.5)outline=floor(hash(cell+vec2(47.,93.))*4.);
+ float sides=outline<1.5?3.:outline<2.5?6.:4.;
+ float radius=mix(.18,.34,hash(cell+72.))*pulse;
+ float rad=length(z)/radius;
+ if(outline>.5){
+   float sector=TAU/sides;
+   float angle=atan(z.y,z.x+.00001);
+   rad*=cos(mod(angle+sector*.5,sector)-sector*.5)/cos(PI/sides);
+ }
  if(rad>1.05)return col;
  float a=atan(z.y,z.x+.00001), rho=log(max(rad,.035));
  float n=mix(5.,18.,topperJewelDetail);
@@ -230,6 +240,31 @@ vec3 spectralTape(vec3 col,vec2 uv){
  return mix(col,mix(col*ink*1.4,ink,.65),mask*topperTape);
 }
 
+uniform float topperHex,topperHexDensity,topperHexScale,topperHexMotion,topperHexGap,topperHexTexture,topperHexHue,topperHexBlend;
+vec3 hexConfetti(vec3 col,vec2 uv){
+ if(topperHex<.001)return col;
+ vec2 q=uv*mix(5.,30.,topperHexScale)*vec2(max(res.x/res.y,.4),1.);
+ vec2 spacing=vec2(1.,1.7320508);
+ vec2 a=mod(q,spacing)-spacing*.5;
+ vec2 b=mod(q-spacing*.5,spacing)-spacing*.5;
+ vec2 p=dot(a,a)<dot(b,b)?a:b;
+ vec2 id=q-p;
+ float h=hash(floor(id*100.+.5)+vec2(173.,29.));
+ if(h>mix(.025,.65,topperHexDensity))return col;
+ float dist=max(abs(p.x),dot(abs(p),vec2(.5,.8660254)))*2.;
+ float t=time*topperHexMotion*.5;
+ float edge=mix(.04,.4,topperHexGap);
+ float mask=1.-smoothstep(1.-edge-.035,1.-edge,dist);
+ float mode=floor(min(topperHexTexture,.999)*5.);
+ float pat=1.;
+ if(mode>.5)pat=smoothstep(.2,.65,sin(dist*32.-t+h*TAU));
+ if(mode>1.5)pat=smoothstep(.15,.65,sin((p.x+p.y)*50.+t));
+ if(mode>2.5)pat=step(.5,hash(floor(p*25.)+id));
+ if(mode>3.5)pat=smoothstep(.2,.75,dist);
+ vec3 ink=palette(h+topperHexHue+.15*sin(t+h*TAU)+dist*.3);
+ ink=mix(ink,abs(clamp(col,0.,1.)-ink),topperHexBlend);
+ return mix(col,ink,mask*pat*topperHex);
+}
 ${geometryGLSL}
 ${motionGLSL}
 ${bioGLSL}
@@ -394,6 +429,7 @@ col=realityCutouts(col,uv,p,source);
 col=transmissionShrapnel(col,uv);
 col=falseColorIslands(col,uv);
 col=voronoiConfetti(col,uv);
+col=hexConfetti(col,uv);
 col=spectralTape(col,uv);
 col=phospheneJewels(col,uv);
 gl_FragColor=vec4(clamp(col,0.,1.),1.);}`;
@@ -2003,6 +2039,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "topperPortal","topperPortalDensity","topperPortalScale","topperPortalMotion","topperPortalZoom","topperPortalForm","topperPortalWarp","topperPortalHue",
         "topperIslandPulse","topperIslandPulseRate","topperIslandTwinkle","topperIslandTwinkleRate","topperIslandSpin","topperIslandSpinRate","topperIslandSpinDirection","topperIslandIndependence",
         "topperJewelPulse","topperJewelPulseRate","topperJewelTwinkle","topperJewelTwinkleRate","topperJewelSpin","topperJewelSpinRate","topperJewelDirection","topperJewelIndependence",
+        "topperJewelOutline","topperHex","topperHexDensity","topperHexScale","topperHexMotion","topperHexGap","topperHexTexture","topperHexHue","topperHexBlend",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",
         "misregister",

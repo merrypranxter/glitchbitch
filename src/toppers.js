@@ -1,4 +1,4 @@
-export const topperKeys=["broadcast","windowCascade","glitter","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal"];
+export const topperKeys=["broadcast","windowCascade","glitter","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal","topperTime"];
 export function shuffleToppers(state,rng=Math.random,density="Balanced"){
  const next={...state};
  const count=density==="Sparse"?1:density==="Maximalist"?3:2;
@@ -14,6 +14,7 @@ export function shuffleToppers(state,rng=Math.random,density="Balanced"){
  if(next.topperVoronoi>0){for(const key of ["topperVoronoiDensity","topperVoronoiScale","topperVoronoiMotion","topperVoronoiGap","topperVoronoiTexture","topperVoronoiHue","topperVoronoiBlend"])next[key]=rng()*100;}
  if(next.topperTape>0){for(const key of ["topperTapeDensity","topperTapeScale","topperTapeMotion","topperTapeWidth","topperTapeDispersion","topperTapeHue","topperTapePalette"])next[key]=rng()*100;}
  if(next.topperPortal>0){for(const key of ["topperPortalDensity","topperPortalScale","topperPortalMotion","topperPortalZoom","topperPortalForm","topperPortalWarp","topperPortalHue"])next[key]=rng()*100;}
+ if(next.topperTime>0){for(const key of ["topperTimeDensity","topperTimeScale","topperTimeMotion","topperTimeHold","topperTimeSlip","topperTimeForm","topperTimeChroma"])next[key]=rng()*100;}
  return next;
 }
 export const clearToppers=state=>({...state,...Object.fromEntries(topperKeys.map(k=>[k,0]))});

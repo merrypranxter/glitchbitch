@@ -24,7 +24,7 @@ export const topperParameters={
     "topperIslandForm",
     "topperIslandMapping",
     "topperIslandHue",
-    "topperIslandFeather"
+    "topperIslandFeather","topperIslandPulse","topperIslandPulseRate","topperIslandTwinkle","topperIslandTwinkleRate","topperIslandSpin","topperIslandSpinRate","topperIslandSpinDirection","topperIslandIndependence"
   ],
   "topperVoronoi": [
     "topperVoronoiDensity",

@@ -121,6 +121,7 @@ vec3 phospheneJewels(vec3 col,vec2 uv){
 }
 
 uniform float topperIsland,topperIslandDensity,topperIslandScale,topperIslandMotion,topperIslandForm,topperIslandMapping,topperIslandHue,topperIslandFeather;
+uniform float topperIslandPulse,topperIslandPulseRate,topperIslandTwinkle,topperIslandTwinkleRate,topperIslandSpin,topperIslandSpinRate,topperIslandSpinDirection,topperIslandIndependence;
 vec3 falseColorIslands(vec3 col,vec2 uv){
  if(topperIsland<.001)return col;
  vec2 q=uv*mix(3.,14.,topperIslandScale)*vec2(max(res.x/res.y,.4),1.);
@@ -129,14 +130,24 @@ vec3 falseColorIslands(vec3 col,vec2 uv){
  if(h>mix(.035,.55,topperIslandDensity))return col;
  float t=time*topperIslandMotion*.28;
  z-=.06*vec2(sin(t+h*TAU),cos(t+h*TAU));
- z=rotate(h*PI)*z;
- float radius=mix(.19,.36,hash(cell+91.));
+ float independence=topperIslandIndependence;
+ float individualPhase=mix(0.,hash(cell+vec2(19.,81.))*TAU,independence);
+ float individualRate=mix(1.,mix(.35,1.8,hash(cell+vec2(71.,23.))),independence);
+ float pulsePhase=time*mix(.15,4.,topperIslandPulseRate)*individualRate+individualPhase;
+ float pulseSize=mix(1.,.5+.5*sin(pulsePhase),topperIslandPulse);
+ float lifePhase=time*mix(.12,3.,topperIslandTwinkleRate)*individualRate+individualPhase;
+ float life=mix(1.,smoothstep(-.55,.55,sin(lifePhase)),topperIslandTwinkle);
+ float direction=topperIslandSpinDirection<.333?1.:topperIslandSpinDirection<.666?-1.: (hash(cell+vec2(53.,17.))<.5?-1.:1.);
+ float spin=time*topperIslandSpin*mix(.1,3.,topperIslandSpinRate)*individualRate*direction;
+ z=rotate(h*PI+spin)*z;
+ float radius=mix(.19,.36,hash(cell+91.))*pulseSize;
+ if(radius<.002||life<.002)return col;
  float form=floor(min(topperIslandForm,.999)*4.);
  float dist=length(z);
  if(form>.5)dist=max(abs(z.x),abs(z.y)*1.5);
  if(form>1.5)dist=abs(z.x)+abs(z.y);
  if(form>2.5)dist=length(z)*(1.+.16*sin(atan(z.y,z.x+.00001)*5.+t));
- float mask=1.-smoothstep(radius-mix(.005,.12,topperIslandFeather),radius,dist);
+ float mask=(1.-smoothstep(max(0.,radius-mix(.005,.12,topperIslandFeather)),radius,dist))*life;
  vec3 base=clamp(col,0.,1.);
  float lum=dot(base,vec3(.2126,.7152,.0722));
  float mode=floor(min(topperIslandMapping,.999)*5.);
@@ -1982,6 +1993,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "topperVoronoi","topperVoronoiDensity","topperVoronoiScale","topperVoronoiMotion","topperVoronoiGap","topperVoronoiTexture","topperVoronoiHue","topperVoronoiBlend",
         "topperTape","topperTapeDensity","topperTapeScale","topperTapeMotion","topperTapeWidth","topperTapeDispersion","topperTapeHue","topperTapePalette",
         "topperPortal","topperPortalDensity","topperPortalScale","topperPortalMotion","topperPortalZoom","topperPortalForm","topperPortalWarp","topperPortalHue",
+        "topperIslandPulse","topperIslandPulseRate","topperIslandTwinkle","topperIslandTwinkleRate","topperIslandSpin","topperIslandSpinRate","topperIslandSpinDirection","topperIslandIndependence",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",
         "misregister",

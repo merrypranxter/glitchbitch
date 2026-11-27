@@ -231,6 +231,14 @@ export const numericRanges = {
   windowCascade: [0, 100],
   glitter: [0, 100],
   broadcast: [0, 100],
+  topperJewel: [0, 100],
+  topperJewelDensity: [0, 100],
+  topperJewelScale: [0, 100],
+  topperJewelMotion: [0, 100],
+  topperJewelDetail: [0, 100],
+  topperJewelHue: [0, 100],
+  topperJewelForm: [0, 100],
+  topperJewelBlend: [0, 100],
   topperShrapnel: [0, 100],
   topperDensity: [0, 100],
   topperScale: [0, 100],
@@ -806,6 +814,14 @@ export const initial = {
   windowCascade: 0,
   glitter: 0,
   broadcast: 0,
+  topperJewel: 0,
+  topperJewelDensity: 25,
+  topperJewelScale: 40,
+  topperJewelMotion: 40,
+  topperJewelDetail: 50,
+  topperJewelHue: 50,
+  topperJewelForm: 25,
+  topperJewelBlend: 20,
   topperShrapnel: 0,
   topperDensity: 35,
   topperScale: 45,
@@ -2208,7 +2224,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.block=random()<.42?random()*65:0;
   s.pixel=random()<.3?random()*58:0;
   s.vignette=random()<.5?random()*32:0;
-  const ornaments=["phosphor","dither","riso","windowCascade","glitter","broadcast","topperShrapnel"];
+  const ornaments=["phosphor","dither","riso","windowCascade","glitter","broadcast","topperShrapnel","topperJewel"];
   for(const key of ornaments)s[key]=0;
   const available=[...ornaments];
   const count=1+Math.floor(random()*3);

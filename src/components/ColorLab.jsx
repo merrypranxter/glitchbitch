@@ -14,7 +14,7 @@ import {
 import { palettes, parsePalette, paletteName } from "../data";
 import { pickDifferentPalette, generateRandomPalette, shuffleColorStops, reverseColorStops } from "../palette-actions";
 import { parsePaletteLibrary, paletteLibraryDocument } from "../palette-io";
-import { Parameter, Section, Segmented, Switch } from "./Controls";
+import { Parameter, Section, Segmented, Switch, Select } from "./Controls";
 export function Swatches({ colors }) {
   return (
     <span className="swatches">
@@ -86,6 +86,11 @@ export default function ColorLab({
   }
   return (
     <>
+      <details open className="effect-explanation"><summary>Chromatic engine</summary>
+        <p className="control-note">Change the interpolation mathematics without changing your palette stops.</p>
+        <Select label="Color space" value={String(Math.round(state.chromaticSpace??0))} onChange={v=>history.change(s=>({...s,chromaticSpace:Number(v)}))}>{["Original sRGB","Linear light","Oklab"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
+        <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticSpace:(Math.round(s.chromaticSpace??0)+1+Math.floor(Math.random()*2))%3}))}>Shuffle color space</button>
+      </details>
       <Section
         id="palettes"
         defaultOpen

@@ -12,9 +12,30 @@ function make(s,w){
  }
  return {bodies,step:0};
 }
-function advance(sim,w,collision,e){
+function advance(sim,w,collision,e,mode,strength,speed){
  const b=sim.bodies;
- for(const p of b){p.x+=p.vx*DT;p.y+=p.vy*DT;}
+ const t=sim.step*DT;
+ const snapshot=b.map(p=>({...p}));
+ for(let i=0;i<b.length;i++){
+  const p=b[i],m=mode===8?i%8:mode;
+  let ax=0,ay=0,dx=w*.5-p.x,dy=.5-p.y;
+  if(m===1){ax=Math.sin(t*3.1+i*7.3)+.5*Math.cos(t*7.7+i);ay=Math.cos(t*2.7+i*3.9);}
+  if(m===2){ax=dx*3.-dy*2.;ay=dy*3.+dx*2.;}
+  if(m===3||m===4||m===7){
+   let n=0;
+   for(let j=0;j<snapshot.length;j++){if(i===j)continue;const q=snapshot[j],x=q.x-p.x,y=q.y-p.y,l=Math.max(.015,Math.hypot(x,y));
+    if(m===3){const f=l<.12?-1.:.35;ax+=x/l*f;ay+=y/l*f;}
+    if(m===4&&l<.3){ax+=(q.vx-p.vx)*2+x;ay+=(q.vy-p.vy)*2+y;n++;}
+    if(m===7&&((i%3===0)!==(j%3===0))){const f=i%3===0?1.:-1.;ax+=f*x/l;ay+=f*y/l;n++;}
+   }
+   if(n>0){ax/=n;ay/=n;}
+   if(m===3){ax/=Math.max(1,b.length-1);ay/=Math.max(1,b.length-1);}
+  }
+  if(m===5){ax=Math.sin(p.y*13.+t)*1.5;ay=-Math.sin(p.x*13.-t)*1.5;}
+  if(m===6){const burst=Math.pow(Math.max(0,Math.sin(t*2.7+i*2.1)),12);ax=Math.cos(i*7.1+t)*burst*5;ay=Math.sin(i*7.1+t)*burst*5;}
+  if(m!==0){p.vx+=ax*strength*speed*DT;p.vy+=ay*strength*speed*DT;const cap=1.8*speed,v=Math.hypot(p.vx,p.vy);if(v>cap&&v>0){p.vx*=cap/v;p.vy*=cap/v;}}
+  p.x+=p.vx*DT;p.y+=p.vy*DT;
+ }
  for(let pass=0;pass<2;pass++){
   if(collision>0)for(let i=0;i<b.length;i++)for(let j=i+1;j<b.length;j++){
    const a=b[i],c=b[j],dx=c.x-a.x,dy=c.y-a.y,d=Math.hypot(dx,dy),over=a.r+c.r-d;
@@ -31,11 +52,12 @@ function advance(sim,w,collision,e){
 }
 export function lifePositions(s,time,width,height){
  const w=Math.max(width/height,.1), collision=clamp((s.lifeCollision??100)/100,0,1),e=clamp((s.lifeElasticity??90)/100,0,1);
- const key=JSON.stringify([s.seed,s.lifePopulation,s.lifeSize,s.lifeSpeed,s.lifeVariation,w,collision,e]);
+ const mode=Math.floor(clamp((s.lifeBehavior??0)/100,0,.99999)*9),strength=clamp((s.lifeForce??50)/100,0,1),speed=clamp(s.lifeSpeed/100,0,1);
+ const key=JSON.stringify([s.seed,s.lifePopulation,s.lifeSize,s.lifeSpeed,s.lifeVariation,w,collision,e,mode,strength]);
  const target=Math.max(0,Math.floor((Number(time)||0)/DT));
  let sim=cache.get(key);
  if(!sim||sim.step>target){sim=make(s,w);cache.set(key,sim);if(cache.size>4)cache.delete(cache.keys().next().value);}
- while(sim.step<target)advance(sim,w,collision,e);
+ while(sim.step<target)advance(sim,w,collision,e,mode,strength,speed);
  const out=new Float32Array(96);
  sim.bodies.forEach((p,i)=>out.set([p.x,p.y,p.r,1],i*4));
  return out;

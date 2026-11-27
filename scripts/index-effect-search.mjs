@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 const source=fs.readFileSync('src/components/Inspectors.jsx','utf8');
-const start=source.indexOf('  const body = {', source.indexOf('export function EffectsInspector'));
-const end=source.indexOf('\n  };', start);
-const body=source.slice(start,end);
+const readBody=(s,anchor=0)=>{const start=s.indexOf('  const body = {',anchor);const end=s.indexOf('\n  };',start);if(start<0||end<0)throw Error('Missing inspector body');return s.slice(start,end);};
+const color=fs.readFileSync('src/components/ColorLab.jsx','utf8');
+const body=readBody(source,source.indexOf('export function EffectsInspector'))+'\n'+readBody(color);
 const boundaries=[...body.matchAll(/^    (?:"([\w-]+)"|([\w-]+)): <>/gm)].map(m=>({id:m[1]||m[2],at:m.index}));
 const terms={};
 const normalize=s=>s.replace(/\s+/g,' ').trim();

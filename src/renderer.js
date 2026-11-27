@@ -436,6 +436,42 @@ vec3 polygonDebris(vec3 col,vec2 uv){
  }
  return col;
 }
+uniform float lifeAmount,lifePopulation,lifeSize,lifeSpeed,lifeVariation,lifeForm,lifeHue,lifeDetail,lifePulse,lifeBlend;
+vec3 lifeforms(vec3 col,vec2 uv){
+ if(lifeAmount<.001)return col;
+ vec2 aspect=vec2(max(res.x/res.y,.1),1.);
+ vec2 p=uv*aspect;
+ float count=1.+floor(lifePopulation*23.);
+ for(int i=0;i<24;i++){
+  if(float(i)>=count)break;
+  vec2 id=vec2(float(i)+317.,83.);
+  float h=hash(id), h2=hash(id+17.);
+  float radius=mix(.008,.085,lifeSize)*mix(1.,mix(.55,1.4,h),lifeVariation)*min(aspect.x,1.);
+  vec2 span=max(aspect-2.*radius,vec2(.001));
+  vec2 velocity=vec2(mix(.13,.65,h),mix(.13,.65,h2))*mix(.0,1.8,lifeSpeed);
+  vec2 start=vec2(hash(id+31.),hash(id+53.))*2.;
+  vec2 center=radius+span*(1.-abs(mod(start+time*velocity/span,2.)-1.));
+  vec2 z=(p-center)/max(radius,.001);
+  float rad=length(z);
+  if(rad>1.05)continue;
+  float pulse=mix(1.,.55+.45*sin(time*2.+h*TAU),lifePulse);
+  z/=max(pulse,.01);rad=length(z);
+  float angle=atan(z.y,z.x+.00001)+time*lifeSpeed*(h-.5)*3.;
+  float form=floor(min(lifeForm,.999)*4.);
+  float detail=mix(3.,18.,lifeDetail);
+  float pattern=.5+.5*cos(rad*detail*PI);
+  if(form>.5)pattern=.5+.5*cos(angle*floor(detail)+rad*12.);
+  if(form>1.5)pattern=.5+.5*cos(rad*detail*PI+sin(angle*6.)*3.);
+  if(form>2.5)pattern=.5+.5*cos(angle*5.+log(max(rad,.025))*detail);
+  float mask=1.-smoothstep(.94,1.,rad);
+  vec3 ink=palette(h+lifeHue+rad*.45+pattern*.2);
+  ink*=.45+.55*sqrt(max(0.,1.-rad*rad));
+  ink=mix(ink,palette(h+lifeHue+.5),smoothstep(.6,.95,pattern)*.55);
+  ink=mix(ink,abs(clamp(col,0.,1.)-ink),lifeBlend);
+  col=mix(col,ink,mask*lifeAmount);
+ }
+ return col;
+}
 ${geometryGLSL}
 ${motionGLSL}
 ${bioGLSL}
@@ -606,6 +642,7 @@ col=kagomeConfetti(col,uv);
 col=quasiConfetti(col,uv);
 col=truchetConfetti(col,uv);
 col=polygonDebris(col,uv);
+col=lifeforms(col,uv);
 col=spectralTape(col,uv);
 col=phospheneJewels(col,uv);
 gl_FragColor=vec4(clamp(col,0.,1.),1.);}`;
@@ -2223,6 +2260,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "topperPoly","topperPolyDensity","topperPolyScale","topperPolyMotion","topperPolySides","topperPolyDepth","topperPolyWidth","topperPolyHue","topperPolyBlend","topperPolyPulse","topperPolyTwinkle","topperPolyTwist",
         "topperJewelOrbit","topperJewelOrbitRate","topperJewelOrbitShape",
         "topperPolyOrbit","topperPolyOrbitRate","topperPolyOrbitShape",
+        "lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",
         "misregister",

@@ -739,12 +739,21 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
   const spinLegacy=(keys)=>(x,r)=>{
     const next={...x};
     for(const key of keys){
-      const [lo,hi]=numericRanges[key];
-      next[key]=lo+(hi-lo)*(.22+.58*r());
+      const range=numericRanges[key];
+      if(!range)continue;
+      const [lo,hi]=range;
+      const band=categoryStrength==="Subtle"?[.08,.30]:categoryStrength==="Wild"?[.22,.80]:[.55,.98];
+      next[key]=lo+(hi-lo)*(band[0]+(band[1]-band[0])*r());
     }
     return next;
   };
   const categorySpins = [
+    ["Living currents",shuffleVc,[shuffleAlchemy]],
+    ["Mathematical membranes",shuffleG2,[remixHexagram,shufflePoles,shuffleQd]],
+    ["Hybrid mathematics",shuffleBreed,[]],
+    ["Prismatic surfaces",shufflePs,[remixSubstance]],
+    ["Screen interference",shuffleSpx,[shuffleKd]],
+    ["Animation & motion",(x,r)=>({...spinLegacy(["motionAmount","motionRate","lightMotion","speed","colorSpeed"])(x,r),motionMode:motionModes[Math.floor(r()*motionModes.length)],freezeGeometry:false,freezeColor:false}),[]],
     ["Digital corruption",spinLegacy(["split","glitch","block","pixel"]),[]],
     ["Analog & CRT",spinLegacy(["scan","grain","vignette","phosphor","broadcast"]),[]],
     ["Temporal feedback",spinLegacy(["afterimage","datamosh","memoryDrift","memoryDecay"]),[]],

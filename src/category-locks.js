@@ -1,4 +1,10 @@
 export const categoryPrefixes={
+    "Living currents":["vc"],
+    "Mathematical membranes":["g2","hexagram","poles","qd"],
+    "Hybrid mathematics":["breed","g2","hexagram","poles","qd","vc","vld","hcr"],
+    "Prismatic surfaces":["ps","substance","filmAmount","filmThickness","opalAmount","prismAmount","foilRelief","foilMotion"],
+    "Screen interference":["spx","kd","phosphor","scan","broadcast"],
+    "Animation & motion":["motion","lightMotion","speed","colorSpeed","freezeGeometry","freezeColor"],
     "Digital corruption":["split","glitch","block","pixel"],
     "Analog & CRT":["scan","grain","vignette","phosphor","broadcast"],
     "Temporal feedback":["afterimage","datamosh","memoryDrift","memoryDecay"],

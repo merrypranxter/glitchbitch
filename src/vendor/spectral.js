@@ -805,4 +805,6 @@
     ],
   });
 
+// D65-weighted matching functions, exposed for illuminant-relative integration.
+export const D65_CMF = Object.freeze(CIE.CMF.map(row=>Object.freeze(row.slice())));
 export { Color };

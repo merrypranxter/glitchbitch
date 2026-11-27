@@ -44,6 +44,7 @@ export default function ToppersInspector({history}){
   </details>
   <details className="effect-explanation"><summary>Phosphene jewels</summary>
    <Parameter label="Jewel presence" name="topperJewel" history={history}/>
+   <Select label="Jewel outline" value={String(Math.floor(Math.min(99.9,history.state.topperJewelOutline)*5/100))} onChange={v=>history.change(s=>({...s,topperJewelOutline:(Number(v)+.5)*100/5}))}>{["Circle","Triangle","Hexagon","Square","Mixed"].map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
    <div className="pane-actions"><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,remixTopper(x,"topperJewel",Math.random,density)))}>Remix</button><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,resetTopper(x,"topperJewel",initial)))}>Reset</button></div>
    <Parameter label="Jewel density" name="topperJewelDensity" history={history}/>
    <Parameter label="Jewel scale" name="topperJewelScale" history={history}/>
@@ -131,6 +132,17 @@ export default function ToppersInspector({history}){
    <Select label="Fragment geometry" value={String(Math.floor(Math.min(99.9,history.state.topperTimeForm)*3/100))} onChange={v=>history.change(s=>({...s,topperTimeForm:(Number(v)+.5)*100/3}))}>{["Bars","Circle","Diamond"].map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
    <Parameter label="Chroma separation" name="topperTimeChroma" history={history}/>
    <p className="control-note">Uses actual previous-frame feedback; history accumulates while playing.</p>
+  </details>
+  <details className="effect-explanation"><summary>Hexagonal confetti</summary>
+   <div className="pane-actions"><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,remixTopper(x,"topperHex",Math.random,density)))}>Remix</button><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,resetTopper(x,"topperHex",initial)))}>Reset</button></div>
+   <Parameter label="Hex presence" name="topperHex" history={history}/>
+   <Parameter label="Cell population" name="topperHexDensity" history={history}/>
+   <Parameter label="Cell scale" name="topperHexScale" history={history}/>
+   <Parameter label="Color motion" name="topperHexMotion" history={history}/>
+   <Parameter label="Cell gaps" name="topperHexGap" history={history}/>
+<Select label="Interior texture" value={String(Math.floor(Math.min(99.9,history.state.topperHexTexture)*5/100))} onChange={v=>history.change(s=>({...s,topperHexTexture:(Number(v)+.5)*100/5}))}>{["Solid","Nested hexagons","Stripes","Stipple","Hollow"].map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
+   <Parameter label="Palette phase" name="topperHexHue" history={history}/>
+   <Parameter label="Difference interaction" name="topperHexBlend" history={history}/>
   </details>
  </section>;
 }

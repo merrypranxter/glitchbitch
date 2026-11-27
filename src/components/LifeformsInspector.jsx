@@ -2,7 +2,7 @@ import React from "react";
 import {Parameter,Select} from "./Controls";
 import {initial} from "../data.js";
 import {readCategoryLocks,writeCategoryLocks,protectCategorySettings} from "../category-locks.js";
-const keys=["lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"];
+const keys=["lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"];
 export default function LifeformsInspector({history}){
  const [locks,setLocks]=React.useState(readCategoryLocks);
  const locked=!!locks.Lifeforms;
@@ -15,6 +15,8 @@ export default function LifeformsInspector({history}){
  <button className="button secondary" disabled={locked} onClick={()=>history.change(s=>({...s,...Object.fromEntries(keys.map(k=>[k,initial[k]]))}))}>Reset</button>
  </div></div>
  <details open className="effect-explanation"><summary>Population and motion</summary>
+<Select label="Behavior" value={String(Math.floor(Math.min(99.9,history.state.lifeBehavior??0)*9/100))} onChange={v=>history.change(s=>({...s,lifeBehavior:(Number(v)+.5)*100/9}))}>{["Billiard","Drunken amoeba","Orbital","Magnetic","Murmuration","Vortex currents","Hyperactive","Predator / prey","Mixed population"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
+<Parameter label="Behavior strength" name="lifeForce" history={history}/>
 <Parameter label="Body collision strength" name="lifeCollision" history={history}/>
 <Parameter label="Elasticity" name="lifeElasticity" history={history}/>
 <Parameter label="Presence" name="lifeAmount" history={history}/>

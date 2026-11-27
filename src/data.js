@@ -2306,7 +2306,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.vignette=random()<.5?random()*32:0;
   const ornaments=["phosphor","dither","riso","windowCascade","glitter","broadcast","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal","topperTime"];
   for(const key of ornaments)s[key]=0;
-  const available=[...ornaments];
+  const available=ornaments.filter(k=>k!=="topperPortal"&&k!=="topperTime");
   const count=1+Math.floor(random()*3);
   for(let i=0;i<count;i++){
     const index=Math.min(available.length-1,Math.floor(random()*available.length));

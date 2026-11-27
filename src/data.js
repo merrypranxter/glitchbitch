@@ -2114,7 +2114,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
       const [lo,hi]=numericRanges[key];
       s[key]=clamp(state[key]+(random()-.5)*(hi-lo)*.22,lo,hi);
     }
-    return s;
+    return protectCategorySettings(state,s);
   }
   // A full Surprise is a replacement, not a mutation. Ratio and the
   // explicitly locked engine/palette are preserved; transport stays separate.

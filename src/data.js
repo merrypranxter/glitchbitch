@@ -372,6 +372,10 @@ export const numericRanges = {
   lifeOpticMode: [0, 100],
   lifeOpticPower: [0, 100],
   lifeOpticDispersion: [0, 100],
+  lifeEvolution: [0, 100],
+  lifeBirthRate: [0, 100],
+  lifeMutation: [0, 100],
+  lifeMortality: [0, 100],
   lifeAmount: [0, 100],
   lifePopulation: [0, 100],
   lifeSize: [0, 100],
@@ -1106,6 +1110,10 @@ export const initial = {
   lifeOpticMode: 0,
   lifeOpticPower: 50,
   lifeOpticDispersion: 50,
+  lifeEvolution: 0,
+  lifeBirthRate: 50,
+  lifeMutation: 30,
+  lifeMortality: 20,
   lifeAmount: 0,
   lifePopulation: 35,
   lifeSize: 35,
@@ -2527,7 +2535,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.pixel=random()<.3?random()*58:0;
   s.vignette=random()<.5?random()*32:0;
   s.lifeAmount=random()<.35?25+random()*65:0;
-  if(s.lifeAmount>0)for(const k of ["lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion","lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane","lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"])s[k]=10+random()*80;
+  if(s.lifeAmount>0)for(const k of ["lifeEvolution","lifeBirthRate","lifeMutation","lifeMortality","lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion","lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane","lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"])s[k]=10+random()*80;
   const ornaments=["phosphor","dither","riso","windowCascade","glitter","broadcast","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal","topperTime","topperHex","topperTri","topperKagome","topperQuasi","topperTruchet","topperPoly"];
   for(const key of ornaments)s[key]=0;
   const available=ornaments.filter(k=>k!=="topperPortal"&&k!=="topperTime");

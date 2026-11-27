@@ -438,6 +438,7 @@ vec3 polygonDebris(vec3 col,vec2 uv){
  return col;
 }
 uniform float lifeAmount,lifePopulation,lifeSize,lifeSpeed,lifeVariation,lifeForm,lifeHue,lifeDetail,lifePulse,lifeBlend;
+uniform float lifeShell,lifePores,lifeSpecies;
 uniform vec4 lifeBodies[24];
 vec3 lifeforms(vec3 col,vec2 uv){
  if(lifeAmount<.001)return col;
@@ -460,16 +461,37 @@ vec3 lifeforms(vec3 col,vec2 uv){
   float pulse=mix(1.,.55+.45*sin(time*2.+h*TAU),lifePulse);
   z/=max(pulse,.01);rad=length(z);
   float angle=atan(z.y,z.x+.00001)+time*lifeSpeed*(h-.5)*3.;
-  float form=floor(min(lifeForm,.999)*4.);
+  float form=floor(min(lifeForm,.999)*12.);
+  if(form>10.5)form=floor(h*11.);
+  if(lifeSpecies>0. && hash(id+71.)<lifeSpecies)form=floor(hash(id+91.)*11.);
+  float physicalRad=rad;
+  if(form>4.5 && form<6.5){
+   float sides=form<5.5?3.:6.;
+   float sector=TAU/sides;
+   rad*=cos(mod(angle+sector*.5,sector)-sector*.5)/cos(PI/sides);
+  }
+  if(form>7.5 && form<9.5)rad/=mix(.65,1.,.5+.5*cos(angle*(form<8.5?7.:11.)));
+  if(form>9.5)rad=max(abs(z.x)*1.05,abs(z.y)*1.65+.15*cos(z.x*24.));
   float detail=mix(3.,18.,lifeDetail);
   float pattern=.5+.5*cos(rad*detail*PI);
   if(form>.5)pattern=.5+.5*cos(angle*floor(detail)+rad*12.);
   if(form>1.5)pattern=.5+.5*cos(rad*detail*PI+sin(angle*6.)*3.);
   if(form>2.5)pattern=.5+.5*cos(angle*5.+log(max(rad,.025))*detail);
+  if(form>3.5)pattern=.5+.5*cos(angle*12.)*cos(rad*detail*PI);
+  if(form>4.5 && form<6.5)pattern=.5+.5*cos(rad*detail*PI+sin(angle*6.)*2.);
+  if(form>6.5 && form<7.5)pattern=.5+.5*cos(rad*detail*PI)*cos(angle*floor(detail));
+  if(form>7.5 && form<8.5)pattern=.5+.5*cos(angle*7.+sin(rad*20.)*2.);
+  if(form>8.5 && form<9.5)pattern=.5+.5*cos(angle*11.)*cos(log(max(rad,.035))*detail);
+  if(form>9.5)pattern=.5+.5*cos(z.x*detail*4.)*cos(z.y*detail*3.);
   float mask=1.-smoothstep(.94,1.,rad);
+  vec2 pores=fract(z*mix(5.,22.,lifeDetail))-.5;
+  float pore=1.-smoothstep(.13,.23,length(pores));
+  mask*=1.-lifePores*pore*.92;
+  float shell=1.-smoothstep(.025,.075,abs(rad-.88));
   vec3 ink=palette(h+lifeHue+rad*.45+pattern*.2);
   ink*=.45+.55*sqrt(max(0.,1.-rad*rad));
   ink=mix(ink,palette(h+lifeHue+.5),smoothstep(.6,.95,pattern)*.55);
+  ink=mix(ink,palette(h+lifeHue+.65),shell*lifeShell);
   ink=mix(ink,abs(clamp(col,0.,1.)-ink),lifeBlend);
   col=mix(col,ink,mask*lifeAmount);
  }
@@ -2264,6 +2286,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "topperPoly","topperPolyDensity","topperPolyScale","topperPolyMotion","topperPolySides","topperPolyDepth","topperPolyWidth","topperPolyHue","topperPolyBlend","topperPolyPulse","topperPolyTwinkle","topperPolyTwist",
         "topperJewelOrbit","topperJewelOrbitRate","topperJewelOrbitShape",
         "topperPolyOrbit","topperPolyOrbitRate","topperPolyOrbitShape",
+        "lifeShell","lifePores","lifeSpecies",
         "lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",

@@ -794,7 +794,26 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
         <Select label="Category shuffle strength" value={categoryStrength} onChange={setCategoryStrength}>
           {["Subtle","Wild","Unhinged"].map(level=><option key={level} value={level}>{level}</option>)}
         </Select>
-        {categorySpins.map(([name,spin,extras])=><div key={name} className="pane-actions">
+        <div style={{width:"100%",display:"grid",gap:8}}>
+          {Object.entries({"Geometry & living forms":["Microscopic shapes","Mathematical membranes","Hybrid mathematics","Biological growth"],"Materials & optics":["Glass & refraction","Materials & textures","Prismatic surfaces","Spectral foil","Light & optical ornaments","Chromatic alchemy"],"Motion & time":["Living currents","Animation & motion","View motion & depth","Temporal feedback"],"Signal, print & retro":["Digital corruption","Analog & CRT","Screen interference","Print textures","Print & signal damage","MySpace nostalgia"],"Atmosphere & composition":["Backgrounds & atmosphere"]}).map(([family,names])=>{
+            const members=categorySpins.filter(([name])=>names.includes(name));
+            const locked=members.filter(([name])=>categoryLocks[name]).length;
+            return <details key={family} className="effect-explanation">
+              <summary>{family} · {members.length} groups{locked?" · "+locked+" locked":""}</summary>
+              <div className="pane-actions">
+                <button type="button" className="button secondary" disabled={locked===members.length}
+                  onClick={()=>history.change(x=>{
+                    const available=members.filter(([name])=>!categoryLocks[name]);
+                    const chosen=available[Math.floor(Math.random()*available.length)];
+                    return chosen?spinCategory(x,chosen[1],chosen[2]):x;
+                  })}><Shuffle size={13}/> Shuffle one group</button>
+                <button type="button" className="button secondary" onClick={()=>{
+                  const next={...categoryLocks};
+                  for(const [name] of members)next[name]=locked!==members.length;
+                  writeCategoryLocks(next);setCategoryLocks(next);
+                }}>{locked===members.length?"Unlock family":"Lock family"}</button>
+              </div>
+        {members.map(([name,spin,extras])=><div key={name} className="pane-actions">
           <button type="button" className="button secondary" disabled={!!categoryLocks[name]}
             onClick={()=>history.change(x=>spinCategory(x,spin,extras))}>
             <Shuffle size={13}/> {name}
@@ -806,6 +825,10 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
           <button type="button" className="button secondary" disabled={!!categoryLocks[name]}
             onClick={()=>history.change(x=>resetCategory(x,name))}>Reset</button>
         </div>)}
+
+            </details>;
+          })}
+        </div>
         <p className="control-note">Locks protect shared category settings during category spins and Full weird shuffle. Reset restores unlocked category defaults. Locks also protect main Surprise Me and persist on this device.</p>
       </div>
       <p className="control-note">

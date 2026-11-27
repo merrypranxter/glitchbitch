@@ -140,15 +140,15 @@ test("renderer caches per mode and disables injury before other layers on GPU fa
  assert.ok(surprise.injuryAmount>=0&&surprise.injuryAmount<=100);
 });
 test("the actual Inspector source parses with Vite and exposes searchable controls",async()=>{
- const ui=readFileSync(new URL("../src/components/Inspectors.jsx",import.meta.url),"utf8");
+ const ui=readFileSync(new URL("../src/components/ColorLab.jsx",import.meta.url),"utf8");
  for(const label of ['"print-injury": <>',"injuryFamilies.map(family=>",
    "Use my current palette","Shuffle print injury","Shuffle extreme damage",
    "Summon print mutation","Hide print injury"])
    assert.ok(ui.includes(label),label);
  const transformed=await transformWithEsbuild(ui,
-   "src/components/Inspectors.jsx",{loader:"jsx"});
+   "src/components/ColorLab.jsx",{loader:"jsx"});
  assert.ok(transformed.code.length>1000);
- assert.equal(sectionMeta("print-injury").group,"Signal");
+ assert.equal(sectionMeta("print-injury").tab,"Color");
  assert.equal(sectionActive(sectionMeta("print-injury"),initial),false);
  for(const name of injuryModes)
    assert.ok(findControls(name).some(x=>x.id==="print-injury"),name);

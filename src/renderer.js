@@ -442,6 +442,36 @@ uniform float lifeShell,lifePores,lifeSpecies;
 uniform float lifeAppendage,lifeAppendageLength,lifeAppendageMotion,lifeAppendageDetail,lifeMembrane;
 uniform float lifeEvolution;
 uniform vec4 lifeBodies[24];
+uniform float lifeNetwork,lifeNetworkMode,lifeNetworkReach,lifeNetworkWidth;
+vec3 lifeNetworkArt(vec3 col,vec2 uv){
+ if(lifeNetwork<.001||lifeAmount<.001)return col;
+ vec2 p=uv*vec2(max(res.x/res.y,.1),1.);
+ float reach=mix(.06,.4,lifeNetworkReach),width=mix(.0007,.006,lifeNetworkWidth);
+ float mode=floor(min(lifeNetworkMode,.999)*5.);
+ for(int i=0;i<12;i++){
+  vec4 a=lifeBodies[i];if(a.w<.5)break;
+  for(int j=0;j<12;j++){
+   if(j<=i)continue;
+   vec4 b=lifeBodies[j];if(b.w<.5)break;
+   vec2 v=b.xy-a.xy;float len=length(v);
+   if(len<.0001||len>reach)continue;
+   vec2 axis=v/len,n=vec2(-axis.y,axis.x),q=p-a.xy;
+   float t=dot(q,axis)/len;
+   if(t<0.||t>1.)continue;
+   float y=dot(q,n),env=sin(t*PI);
+   if(abs(y)>width*5.+len*.2)continue;
+   float dist=abs(y);
+   if(mode>1.5&&mode<2.5)dist=abs(y-len*.15*env*sin(t*TAU+time*2.));
+   if(mode>2.5&&mode<3.5)dist=abs(abs(y)-width*2.*env);
+   if(mode>3.5)dist=abs(y-width*2.*sin(t*TAU*5.+time*3.)*env);
+   float mask=1.-smoothstep(width*.5,width,dist);
+   if(mode>.5&&mode<1.5)mask*=step(.45,fract(t*len*70.));
+   float fade=1.-smoothstep(reach*.65,reach,len);
+   col=mix(col,palette(a.w+b.w+t*.5+lifeHue),mask*fade*lifeNetwork*lifeAmount);
+  }
+ }
+ return col;
+}
 uniform vec4 lifeImpacts[8];
 uniform float lifeAlchemy,lifeAlchemyMode,lifeAlchemySize,lifeAlchemyDuration;
 vec3 lifeCollisionArt(vec3 col,vec2 uv){
@@ -792,6 +822,7 @@ col=quasiConfetti(col,uv);
 col=truchetConfetti(col,uv);
 col=polygonDebris(col,uv);
 col=lifeImpactField(col,uv,p,source);
+col=lifeNetworkArt(col,uv);
 col=lifeCollisionArt(col,uv);
 col=lifeThreads(col,uv);
 col=lifeforms(col,uv,p,source);
@@ -2420,6 +2451,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "lifeTrail","lifeTrailLength","lifeTrailWidth","lifeTrailStyle",
         "lifeImpact","lifeImpactMode","lifeImpactReach","lifeImpactPower",
         "lifeAlchemy","lifeAlchemyMode","lifeAlchemySize","lifeAlchemyDuration",
+        "lifeNetwork","lifeNetworkMode","lifeNetworkReach","lifeNetworkWidth",
         "lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",

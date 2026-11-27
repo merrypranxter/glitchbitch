@@ -2309,8 +2309,8 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
           <button type="button" className="button secondary" disabled={!s.filamentAmount} onClick={()=>history.change(x=>remixTextileDimension(x))}><Dices size={13}/> Shuffle metamorphosis only</button>
         </details>
         <details data-effect-detail="filament-meta"><summary>Optical metamaterials · structural light</summary>
-          <p className="control-note">Wavelength-inspired color and reflection on Parasitic Architecture. Requires a visible scaffold. Projected optical approximation, not ray tracing.</p>
-          <Select label="Optical material" value={s.filamentMeta} onChange={v=>history.change(x=>({...x,filamentMeta:v}))}>{textileMetaModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <p className="control-note">Wavelength-inspired color, reflection, apparent translucency and emission on Parasitic Architecture. Requires a visible scaffold. Projected optical approximation, not ray tracing.</p>
+          <Select label="Optical material" value={s.filamentMeta} onChange={v=>history.change(x=>({...x,filamentMeta:v}))}>{textileMetaModes.slice(0,1).map(v=><option key={v} value={v}>{v}</option>)}<optgroup label="Structural optics">{textileMetaModes.slice(1,9).map(v=><option key={v} value={v}>{v}</option>)}</optgroup><optgroup label="Impossible materials">{textileMetaModes.slice(9).map(v=><option key={v} value={v}>{v}</option>)}</optgroup></Select>
           <Parameter label="Optical influence" name="filamentMetaAmount" history={history}/>
           <Parameter label="Microstructure frequency" name="filamentMetaFrequency" history={history}/>
           <Parameter label="Optical thickness" name="filamentMetaThickness" history={history}/>

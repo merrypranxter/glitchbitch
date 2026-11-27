@@ -94,6 +94,7 @@ vec3 transmissionShrapnel(vec3 col,vec2 uv){
 uniform float topperJewel,topperJewelDensity,topperJewelScale,topperJewelMotion,topperJewelDetail,topperJewelHue,topperJewelForm,topperJewelBlend;
 uniform float topperJewelPulse,topperJewelPulseRate,topperJewelTwinkle,topperJewelTwinkleRate,topperJewelSpin,topperJewelSpinRate,topperJewelDirection,topperJewelIndependence;
 uniform float topperJewelOutline;
+uniform float topperJewelOrbit,topperJewelOrbitRate,topperJewelOrbitShape;
 vec3 phospheneJewels(vec3 col,vec2 uv){
  if(topperJewel<.001)return col;
  vec2 q=uv*mix(4.,18.,topperJewelScale)*vec2(max(res.x/res.y,.4),1.);
@@ -102,6 +103,10 @@ vec3 phospheneJewels(vec3 col,vec2 uv){
  if(h>mix(.035,.38,topperJewelDensity))return col;
  float t=time*topperJewelMotion*.35;
  z-=.07*vec2(sin(t+h*TAU),cos(t*.8+h*TAU));
+ float orbitPhase=h*TAU+time*mix(.1,3.,topperJewelOrbitRate)*mix(.4,1.8,hash(cell+vec2(33.,71.)))*(hash(cell+51.)<.5?-1.:1.);
+ vec2 orbit=vec2(cos(orbitPhase),sin(orbitPhase));
+ orbit.y*=mix(1.,.25,topperJewelOrbitShape);
+ z-=orbit*topperJewelOrbit*.075;
  float phase=hash(cell+vec2(31.,87.))*TAU*topperJewelIndependence;
  float rate=mix(1.,mix(.35,1.8,hash(cell+vec2(79.,13.))),topperJewelIndependence);
  float pulse=mix(1.,.5+.5*sin(time*mix(.15,4.,topperJewelPulseRate)*rate+phase),topperJewelPulse);
@@ -395,6 +400,7 @@ vec3 truchetConfetti(vec3 col,vec2 uv){
  return mix(col,ink,mask*line*topperTruchet);
 }
 uniform float topperPoly,topperPolyDensity,topperPolyScale,topperPolyMotion,topperPolySides,topperPolyDepth,topperPolyWidth,topperPolyHue,topperPolyBlend,topperPolyPulse,topperPolyTwinkle,topperPolyTwist;
+uniform float topperPolyOrbit,topperPolyOrbitRate,topperPolyOrbitShape;
 vec3 polygonDebris(vec3 col,vec2 uv){
  if(topperPoly<.001)return col;
  vec2 q=uv*mix(3.,24.,topperPolyScale)*vec2(max(res.x/res.y,.4),1.);
@@ -403,6 +409,10 @@ vec3 polygonDebris(vec3 col,vec2 uv){
  if(h>mix(.025,.65,topperPolyDensity))return col;
  float t=time*topperPolyMotion*.6;
  float phase=h*TAU+t*mix(.35,1.8,hash(cell+91.));
+ float orbitPhase=h*TAU+time*mix(.1,3.,topperPolyOrbitRate)*mix(.4,1.8,hash(cell+vec2(33.,71.)))*(hash(cell+51.)<.5?-1.:1.);
+ vec2 orbit=vec2(cos(orbitPhase),sin(orbitPhase));
+ orbit.y*=mix(1.,.25,topperPolyOrbitShape);
+ p-=orbit*topperPolyOrbit*.075;
  float size=mix(1.,.12+.88*(.5+.5*sin(phase)),topperPolyPulse);
  float life=mix(1.,smoothstep(-.6,.5,sin(phase+2.)),topperPolyTwinkle);
  float radius=.39*size;
@@ -2211,6 +2221,8 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "topperQuasi","topperQuasiDensity","topperQuasiScale","topperQuasiMotion","topperQuasiGap","topperQuasiTexture","topperQuasiHue","topperQuasiBlend","topperQuasiPulse","topperQuasiTwinkle",
         "topperTruchet","topperTruchetDensity","topperTruchetScale","topperTruchetMotion","topperTruchetGap","topperTruchetTexture","topperTruchetHue","topperTruchetBlend","topperTruchetPulse","topperTruchetTwinkle","topperTruchetWidth",
         "topperPoly","topperPolyDensity","topperPolyScale","topperPolyMotion","topperPolySides","topperPolyDepth","topperPolyWidth","topperPolyHue","topperPolyBlend","topperPolyPulse","topperPolyTwinkle","topperPolyTwist",
+        "topperJewelOrbit","topperJewelOrbitRate","topperJewelOrbitShape",
+        "topperPolyOrbit","topperPolyOrbitRate","topperPolyOrbitShape",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",
         "misregister",

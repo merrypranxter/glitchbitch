@@ -1,7 +1,7 @@
 import {bakeChromaticPalette,LUT_WIDTH,mapChromaticGamut} from "./chromatic-lut.js";
 import {bakeMetamerAtlas,metamerAtlasKey,metamerMotionMode} from "./chromatic-time.js";
 import {geographyAtlasState,geographyUniforms,geographyGLSL} from "./chromatic-geography.js";
-import {symbiosisAtlasState,symbiosisUniforms,symbiosisBaseRow,symbiosisGLSL} from "./chromatic-symbiosis.js";
+import {symbiosisAtlasState,symbiosisUniforms,symbiosisBaseRow,symbiosisGLSL as chromaticSymbiosisGLSL} from "./chromatic-symbiosis.js";
 import {lifePositions} from "./life-physics.js";
 import { appearanceGLSL } from "./appearance.js";
 import {structuralOpticsModes} from "./structural-thread-optics.js";
@@ -75,7 +75,7 @@ uniform int chromaticSpace,chromaticHuePath,chromaticTurns;
 uniform sampler2D chromaticLUT;
 uniform float chromaticAtlasY;
 ${geographyGLSL}
-${symbiosisGLSL}
+${chromaticSymbiosisGLSL}
 uniform int chromaticGamut;
 vec3 chromaticDecode(vec3 c){return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c));}
 vec3 chromaticEncode(vec3 c){c=clamp(c,0.,1.);return mix(c*12.92,1.055*pow(c,vec3(1./2.4))-.055,step(vec3(.0031308),c));}

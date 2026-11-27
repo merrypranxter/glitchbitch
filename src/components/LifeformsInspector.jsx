@@ -3,7 +3,7 @@ import {lifeGroups,shuffleLife,lifeRecipes} from "../life-recipes.js";
 import {Parameter,Select} from "./Controls";
 import {initial} from "../data.js";
 import {readCategoryLocks,writeCategoryLocks,protectCategorySettings} from "../category-locks.js";
-const keys=["lifeAlchemy","lifeAlchemyMode","lifeAlchemySize","lifeAlchemyDuration","lifeImpact","lifeImpactMode","lifeImpactReach","lifeImpactPower","lifeTrail","lifeTrailLength","lifeTrailWidth","lifeTrailStyle","lifeEvolution","lifeBirthRate","lifeMutation","lifeMortality","lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion","lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane","lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"];
+const keys=["lifeNetwork","lifeNetworkMode","lifeNetworkReach","lifeNetworkWidth","lifeAlchemy","lifeAlchemyMode","lifeAlchemySize","lifeAlchemyDuration","lifeImpact","lifeImpactMode","lifeImpactReach","lifeImpactPower","lifeTrail","lifeTrailLength","lifeTrailWidth","lifeTrailStyle","lifeEvolution","lifeBirthRate","lifeMutation","lifeMortality","lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion","lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane","lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"];
 export default function LifeformsInspector({history}){
  const [locks,setLocks]=React.useState(readCategoryLocks);
  const locked=!!locks.Lifeforms;
@@ -78,5 +78,11 @@ export default function LifeformsInspector({history}){
  <Parameter label="Impact presence" name="lifeAlchemy" history={history}/>
  <Parameter label="Impact size" name="lifeAlchemySize" history={history}/>
  <Parameter label="Impact lifetime" name="lifeAlchemyDuration" history={history}/>
+ </details><details className="effect-explanation"><summary>Symbiotic networks</summary>
+ {groupButton("network")}
+ <Select label="Connection style" value={String(Math.floor(Math.min(99.9,history.state.lifeNetworkMode??0)*5/100))} onChange={v=>history.change(s=>({...s,lifeNetworkMode:(Number(v)+.5)*20}))}>{["Constellation","Stitched bonds","Curved field lines","Double silk","Oscillating nerve fibers"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
+ <Parameter label="Network presence" name="lifeNetwork" history={history}/>
+ <Parameter label="Connection distance" name="lifeNetworkReach" history={history}/>
+ <Parameter label="Fiber thickness" name="lifeNetworkWidth" history={history}/>
  </details></section>
 }

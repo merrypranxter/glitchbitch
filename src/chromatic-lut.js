@@ -1,5 +1,6 @@
 import {Okhsl,Okhsv,HSLuv,HPLuv,IPT,DIN99,Jzazbz,JzCzhz,ICtCp,CAM16,CAM16UCS,HCT,viewingConditions,srgbToLin,linToSrgb,gamutMap} from "./colorspaces.js";
 import {pigmentStop,mixPigment} from "./spectral-pigment.js";
+import {bakeMetamerPalette} from "./spectral-metamer.js";
 export const LUT_WIDTH=2048;
 export function mapChromaticGamut(rgb,mode=0){
  if(mode===1)return rgb.map(x=>Math.max(0,Math.min(1,x)));
@@ -61,6 +62,7 @@ function bakeSpectralPalette(s){
  return out;
 }
 export function bakeChromaticPalette(s){
+ if(Math.round(s.chromaticSpace)===22)return bakeMetamerPalette(s,LUT_WIDTH,rgb=>mapChromaticGamut(rgb,s.chromaticGamut));
  if([20,21].includes(Math.round(s.chromaticSpace)))return bakeSpectralPalette(s);
  if(Math.round(s.chromaticSpace)===19)return bakeHctPalette(s);
  const space=[Okhsl,Okhsv,HSLuv,HPLuv,IPT,DIN99,Jzazbz,JzCzhz,ICtCp,CAM16,CAM16UCS][Math.round(s.chromaticSpace)-8];

@@ -2849,7 +2849,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       gl.activeTexture(gl.TEXTURE0);
       gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,chromaticTexture);gl.uniform1i(loc("chromaticLUT"),7);
       if(s.chromaticSpace>=8){
-       const ck=JSON.stringify([s.colors,s.chromaticSpace,s.chromaticHuePath,s.chromaticTurns,s.chromaticSatCap,s.chromaticGamut,s.chromaticAmbient,s.chromaticBackground,s.chromaticSurround,s.chromaticAdapt,s.chromaticPigmentAmount,s.chromaticPigmentWeight]);
+       const ck=JSON.stringify([s.colors,s.chromaticSpace,s.chromaticHuePath,s.chromaticTurns,s.chromaticSatCap,s.chromaticGamut,s.chromaticAmbient,s.chromaticBackground,s.chromaticSurround,s.chromaticAdapt,s.chromaticPigmentAmount,s.chromaticPigmentWeight,s.chromaticIlluminant,s.chromaticMetaAmount,s.chromaticMetaBands,s.chromaticMetaPhase,s.chromaticMetaAdapt]);
        if(ck!==chromaticKey){gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,LUT_WIDTH,1,0,gl.RGBA,gl.UNSIGNED_BYTE,bakeChromaticPalette(s));chromaticKey=ck;}
       }
       gl.activeTexture(gl.TEXTURE0);

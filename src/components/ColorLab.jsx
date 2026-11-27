@@ -25,6 +25,7 @@ import {spxModes,spxPresets,applySpxPreset,shuffleSpx,hideSpx}
   from "../subpixel-moire-wave11.js";
 import { readFavorites, FAVORITES_KEY } from "../effects-navigation.js";
 import { sectionMeta } from "../ui-index.js";
+import { illuminantNames } from "../spectral-metamer.js";
 
 export function Swatches({ colors }) {
   return (
@@ -281,8 +282,8 @@ export default function ColorLab({
     <>
       <Section id="chromatic-engine" history={history} defaultOpen>
         <p className="control-note">Change the interpolation mathematics without changing your palette stops.</p>
-        <Select label="Color space" value={String(Math.round(state.chromaticSpace??0))} onChange={v=>history.change(s=>({...s,chromaticSpace:Number(v)}))}>{["Original sRGB","Linear light","Oklab","OkLCh","CIELAB (D65)","CIELUV (D65)","LCh(ab)","LCh(uv)","Okhsl","Okhsv","HSLuv","HPLuv","IPT","DIN99","JzAzBz","JzCzhz","ICtCp","CAM16","CAM16-UCS","HCT (Hue Chroma Tone)","Spectral Pigment (Kubelka–Munk)","Spectral Glaze (Optical Density)"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
-        <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticSpace:(Math.round(s.chromaticSpace??0)+1+Math.floor(Math.random()*21))%22}))}>Shuffle color space</button>
+        <Select label="Color space" value={String(Math.round(state.chromaticSpace??0))} onChange={v=>history.change(s=>({...s,chromaticSpace:Number(v)}))}>{["Original sRGB","Linear light","Oklab","OkLCh","CIELAB (D65)","CIELUV (D65)","LCh(ab)","LCh(uv)","Okhsl","Okhsv","HSLuv","HPLuv","IPT","DIN99","JzAzBz","JzCzhz","ICtCp","CAM16","CAM16-UCS","HCT (Hue Chroma Tone)","Spectral Pigment (Kubelka–Munk)","Spectral Glaze (Optical Density)","Metameric Witchcraft"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
+        <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticSpace:(Math.round(s.chromaticSpace??0)+1+Math.floor(Math.random()*22))%23}))}>Shuffle color space</button>
         {[3,6,7,8,9,10,11,15,17,19].includes(Math.round(state.chromaticSpace??0))&&<>
           <Select label="Hue route" value={String(Math.round(state.chromaticHuePath??0))} onChange={v=>history.change(s=>({...s,chromaticHuePath:Number(v)}))}>{["Shortest arc","Longest arc","Increasing hue","Decreasing hue"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
           <Select label="Extra hue revolutions per stop" value={String(Math.round(state.chromaticTurns??0))} onChange={v=>history.change(s=>({...s,chromaticTurns:Number(v)}))}>{[0,1,2,3].map(n=><option key={n} value={String(n)}>{n}</option>)}</Select>
@@ -304,6 +305,15 @@ export default function ColorLab({
           <Parameter label="Spectral influence" name="chromaticPigmentAmount" history={history}/>
           {Math.round(state.chromaticSpace??0)===20&&<Parameter label="Tint weighting" name="chromaticPigmentWeight" history={history}/>}
           <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticSpace:Math.round(s.chromaticSpace??0)===20?21:20,chromaticPigmentAmount:35+Math.random()*65,chromaticPigmentWeight:Math.random()*100}))}>Shuffle pigment chemistry</button>
+        </>}
+        {Math.round(state.chromaticSpace??0)===22&&<>
+          <p className="control-note">Hidden spectral variants match under reference daylight but diverge under other light. Choose a lamp to reveal them. Lamps other than daylight are artistic spectral profiles; white balance uses approximate XYZ adaptation.</p>
+          <Select label="Spectral illuminant" value={String(Math.round(state.chromaticIlluminant??0))} onChange={v=>history.change(s=>({...s,chromaticIlluminant:Number(v)}))}>{illuminantNames.map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
+          <Parameter label="Hidden spectral contrast" name="chromaticMetaAmount" history={history}/>
+          <Parameter label="Metamer bands" name="chromaticMetaBands" history={history}/>
+          <Parameter label="Spectral phase" name="chromaticMetaPhase" history={history}/>
+          <Parameter label="White balance" name="chromaticMetaAdapt" history={history}/>
+          <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticIlluminant:1+Math.floor(Math.random()*5),chromaticMetaAmount:65+Math.random()*35,chromaticMetaBands:1+Math.floor(Math.random()*8),chromaticMetaPhase:Math.random()*100,chromaticMetaAdapt:35+Math.random()*65}))}>Shuffle hidden spectra</button>
         </>}
         {Math.round(state.chromaticSpace??0)===19&&<p className="control-note">HCT follows CAM16 hue and chroma while preserving interpolated CIELAB tone. It uses its own sRGB chroma-reduction solver.</p>}
         {(state.chromaticSpace??0)>=8&&(state.chromaticSpace??0)<=11&&<Parameter label="Saturation ceiling" name="chromaticSatCap" history={history}/>}

@@ -24,6 +24,7 @@ import {injuryModes,injuryFamilies,injuryDescriptions,injuryPresets,
 import {spxModes,spxPresets,applySpxPreset,shuffleSpx,hideSpx}
   from "../subpixel-moire-wave11.js";
 import { readFavorites, FAVORITES_KEY } from "../effects-navigation.js";
+import { sectionMeta } from "../ui-index.js";
 
 export function Swatches({ colors }) {
   return (
@@ -309,7 +310,7 @@ export default function ColorLab({
       </Section>
       <p className="control-note">Color effects &amp; print sorcery · all in one place. Open a panel to edit, shuffle or reset it.</p>
       {["alchemy","foil","chromatic-split","fx-toggles","subpixel-moire","print-injury","print"].map(id=><Section key={id} id={id} history={history}
-        aside={<button type="button" className="effect-star" aria-label={(favorites.includes(id)?"Unfavorite ":"Favorite ")+id}
+        aside={<button type="button" className="effect-star" aria-label={(favorites.includes(id)?"Unfavorite ":"Favorite ")+sectionMeta(id).title}
           aria-pressed={favorites.includes(id)} onClick={()=>toggleFavorite(id)}><Star size={15} fill={favorites.includes(id)?"currentColor":"none"}/></button>}>
         {body[id]}
       </Section>)}

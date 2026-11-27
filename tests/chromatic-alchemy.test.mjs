@@ -136,7 +136,7 @@ test("preview and GIF/MP4 follow the same compiled shader and clocks",()=>{
  assert.ok(surprise.alchemyAmount>=0&&surprise.alchemyAmount<=100);
 });
 test("the full Inspector JSX actually parses using Vite's JSX transformer",async()=>{
- const text=readFileSync(new URL("../src/components/Inspectors.jsx",import.meta.url),"utf8");
+ const text=readFileSync(new URL("../src/components/ColorLab.jsx",import.meta.url),"utf8");
  for(const key of ["alchemy: <>","alchemyFamilies.map(family=>",
    "Use my current palette","Shuffle color sorcery","Shuffle funky colors",
    "Summon this color","Hide color sorcery",
@@ -144,10 +144,10 @@ test("the full Inspector JSX actually parses using Vite's JSX transformer",async
    assert.ok(text.includes(key),key);
  }
  const transformed=await transformWithEsbuild(text,
-   "src/components/Inspectors.jsx",{loader:"jsx"});
+   "src/components/ColorLab.jsx",{loader:"jsx"});
  assert.ok(transformed.code.includes("Shuffle funky colors"));
  assert.ok(transformed.code.length>1000);
- assert.equal(sectionMeta("alchemy").group,"Light");
+ assert.equal(sectionMeta("alchemy").tab,"Color");
  assert.equal(sectionActive(sectionMeta("alchemy"),initial),false);
  for(const name of alchemyModes)
    assert.ok(findControls(name).some(x=>x.id==="alchemy"),name);

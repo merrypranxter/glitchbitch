@@ -1,5 +1,6 @@
-export const topperKeys=["broadcast","windowCascade","glitter","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal","topperTime","topperHex","topperTri","topperKagome","topperQuasi"];
+export const topperKeys=["broadcast","windowCascade","glitter","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal","topperTime","topperHex","topperTri","topperKagome","topperQuasi","topperTruchet"];
 export const topperParameters={
+ "topperTruchet":["topperTruchetDensity","topperTruchetScale","topperTruchetMotion","topperTruchetGap","topperTruchetTexture","topperTruchetHue","topperTruchetBlend","topperTruchetPulse","topperTruchetTwinkle","topperTruchetWidth"],
  "topperQuasi":["topperQuasiDensity","topperQuasiScale","topperQuasiMotion","topperQuasiGap","topperQuasiTexture","topperQuasiHue","topperQuasiBlend","topperQuasiPulse","topperQuasiTwinkle"],
  "topperKagome":["topperKagomeDensity","topperKagomeScale","topperKagomeMotion","topperKagomeGap","topperKagomeTexture","topperKagomeHue","topperKagomeBlend","topperKagomePulse","topperKagomeTwinkle","topperKagomeBalance"],
  "topperTri":["topperTriDensity","topperTriScale","topperTriMotion","topperTriGap","topperTriTexture","topperTriHue","topperTriBlend","topperTriPulse","topperTriTwinkle"],

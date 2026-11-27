@@ -1,4 +1,5 @@
 import {Okhsl,Okhsv,HSLuv,HPLuv,IPT,DIN99,Jzazbz,JzCzhz,ICtCp,CAM16,CAM16UCS,HCT,viewingConditions,srgbToLin,linToSrgb,gamutMap} from "./colorspaces.js";
+import {pigmentStop,mixPigment} from "./spectral-pigment.js";
 export const LUT_WIDTH=2048;
 export function mapChromaticGamut(rgb,mode=0){
  if(mode===1)return rgb.map(x=>Math.max(0,Math.min(1,x)));
@@ -48,7 +49,19 @@ function bakeHctPalette(s){
  return out;
 }
 
+function bakeSpectralPalette(s){
+ const stops=s.colors.map(pigmentStop),out=new Uint8Array(LUT_WIDTH*4);
+ const options={mode:Math.round(s.chromaticSpace),amount:s.chromaticPigmentAmount??100,weight:s.chromaticPigmentWeight??100,mapGamut:rgb=>mapChromaticGamut(rgb,s.chromaticGamut)};
+ for(let i=0;i<LUT_WIDTH;i++){
+  const q=i/LUT_WIDTH*stops.length,j=Math.floor(q),f=q-j,t=f*f*(3-2*f);
+  const rgb=mixPigment(stops[j],stops[(j+1)%stops.length],t,options);
+  for(let n=0;n<3;n++)out[i*4+n]=Math.round(255*rgb[n]);
+  out[i*4+3]=255;
+ }
+ return out;
+}
 export function bakeChromaticPalette(s){
+ if([20,21].includes(Math.round(s.chromaticSpace)))return bakeSpectralPalette(s);
  if(Math.round(s.chromaticSpace)===19)return bakeHctPalette(s);
  const space=[Okhsl,Okhsv,HSLuv,HPLuv,IPT,DIN99,Jzazbz,JzCzhz,ICtCp,CAM16,CAM16UCS][Math.round(s.chromaticSpace)-8];
  const colors=s.colors.map(h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255));

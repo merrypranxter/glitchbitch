@@ -1448,7 +1448,13 @@ export const filamentAdornmentModes=[
   "Articulated linklets",
   "Silica honeycomb",
   "Diffraction sequins",
-  "Fractal branch charms"
+  "Fractal branch charms",
+  "Klein bottle charms",
+  "Hopf-linked rings",
+  "Trefoil knot pendants",
+  "Gyroid beads",
+  "Borromean cages",
+  "Torus knot filigree"
 ];
 // Fixed, deliberately small species pools preserve mobile shader pruning.
 // IDs are stable indices in filamentAdornmentModes.
@@ -1527,7 +1533,13 @@ export const filamentAdornmentDescriptions={
   "Articulated linklets":"Linked angular collars that bend with a traveling phase.",
   "Silica honeycomb":"Tiny hexagonal window lattices on the thread.",
   "Diffraction sequins":"Fine crossed gratings with changing colored flashes.",
-  "Fractal branch charms":"Nested branching filigree with pulsing junctions."
+  "Fractal branch charms":"Nested branching filigree with pulsing junctions.",
+  "Klein bottle charms":"Projected self-intersecting bottle silhouettes with a moving neck.",
+  "Hopf-linked rings":"Two projected interlinked elliptical collars.",
+  "Trefoil knot pendants":"Three-lobed projected knot ribbons with traveling highlights.",
+  "Gyroid beads":"Triply periodic field-inspired openwork beads.",
+  "Borromean cages":"Three overlapping projected rings with alternating depth cues.",
+  "Torus knot filigree":"Projected multi-lobed toroidal ribbons."
 };
 export const filamentAdornmentControls=[
   "filamentAdornmentAmount","filamentAdornmentSpacing",
@@ -5075,6 +5087,67 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
     sparkle=trinket*pow(.5+.5*cos(v.y*16.0-adornClock),4.0);
     shadow=env*(1.0-trinket)*.25;
     colorShift=.8+.08*sin(adornClock*.5+v.y*6.0);
+  }else if(adornmentMode==23){ // Klein bottle charms
+    vec2 v=vec2((fract(adornPhase/6.2831853+.5)-.5)*2.8,fiberRadial*.58);
+    float d=abs(length(v*vec2(1.,.85))-.58);
+    float neck=abs(v.x-.25*sin(v.y*4.+adornClock*.3));
+    d=min(d,max(neck,abs(v.y-.38)-.43));
+    float env=1.-smoothstep(.76,.98,length(v));
+    trinket=env*(1.-smoothstep(.045,.115,d));
+    sparkle=trinket*pow(.5+.5*cos(v.x*13.+v.y*9.-adornClock),4.);
+    shadow=env*(1.-trinket)*.24;
+    colorShift=.63+.18*sin(v.x*5.+v.y*3.+adornClock*.35);
+  }else if(adornmentMode==24){ // Hopf-linked rings
+    vec2 v=vec2((fract(adornPhase/6.2831853+.5)-.5)*2.8,fiberRadial*.58);
+    float a=adornClock*.25;
+    vec2 p=vec2(cos(a)*v.x-sin(a)*v.y,sin(a)*v.x+cos(a)*v.y);
+    float d=min(abs(length((p-vec2(.24,0.))*vec2(1.,1.8))-.52),abs(length((p+vec2(.24,0.))*vec2(1.8,1.))-.52));
+    float env=1.-smoothstep(.76,.98,length(v));
+    trinket=env*(1.-smoothstep(.045,.115,d));
+    sparkle=trinket*pow(.5+.5*cos(v.x*13.+v.y*9.-adornClock),4.);
+    shadow=env*(1.-trinket)*.24;
+    colorShift=.63+.18*sin(v.x*5.+v.y*3.+adornClock*.35);
+  }else if(adornmentMode==25){ // Trefoil knot pendants
+    vec2 v=vec2((fract(adornPhase/6.2831853+.5)-.5)*2.8,fiberRadial*.58);
+    float a=atan(v.y,v.x+.00001),rr=length(v);
+    float d=abs(rr-(.48+.22*cos(3.*a+adornClock*.4)));
+    d=min(d,abs(rr-(.48+.22*cos(3.*a+adornClock*.4+2.094))));
+    float env=1.-smoothstep(.76,.98,length(v));
+    trinket=env*(1.-smoothstep(.045,.115,d));
+    sparkle=trinket*pow(.5+.5*cos(v.x*13.+v.y*9.-adornClock),4.);
+    shadow=env*(1.-trinket)*.24;
+    colorShift=.63+.18*sin(v.x*5.+v.y*3.+adornClock*.35);
+  }else if(adornmentMode==26){ // Gyroid beads
+    vec2 v=vec2((fract(adornPhase/6.2831853+.5)-.5)*2.8,fiberRadial*.58);
+    float x=v.x*7.,y=v.y*7.,z=adornClock*.45;
+    float d=abs(sin(x)*cos(y)+sin(y)*cos(z)+sin(z)*cos(x))*.35;
+    d=max(d,length(v)-.68);
+    float env=1.-smoothstep(.76,.98,length(v));
+    trinket=env*(1.-smoothstep(.045,.115,d));
+    sparkle=trinket*pow(.5+.5*cos(v.x*13.+v.y*9.-adornClock),4.);
+    shadow=env*(1.-trinket)*.24;
+    colorShift=.63+.18*sin(v.x*5.+v.y*3.+adornClock*.35);
+  }else if(adornmentMode==27){ // Borromean cages
+    vec2 v=vec2((fract(adornPhase/6.2831853+.5)-.5)*2.8,fiberRadial*.58);
+    float d=10.;
+    for(int k=0;k<3;k++){float a=float(k)*2.0943951+adornClock*.2;
+      vec2 p=v-.24*vec2(cos(a),sin(a));
+      d=min(d,abs(length(p)-.43));}
+    float env=1.-smoothstep(.76,.98,length(v));
+    trinket=env*(1.-smoothstep(.045,.115,d));
+    sparkle=trinket*pow(.5+.5*cos(v.x*13.+v.y*9.-adornClock),4.);
+    shadow=env*(1.-trinket)*.24;
+    colorShift=.63+.18*sin(v.x*5.+v.y*3.+adornClock*.35);
+  }else if(adornmentMode==28){ // Torus knot filigree
+    vec2 v=vec2((fract(adornPhase/6.2831853+.5)-.5)*2.8,fiberRadial*.58);
+    float a=atan(v.y,v.x+.00001),rr=length(v);
+    float d=abs(rr-(.48+.19*cos(5.*a+adornClock*.35)));
+    d=min(d,abs(rr-(.48+.19*cos(5.*a+adornClock*.35+3.14159))));
+    float env=1.-smoothstep(.76,.98,length(v));
+    trinket=env*(1.-smoothstep(.045,.115,d));
+    sparkle=trinket*pow(.5+.5*cos(v.x*13.+v.y*9.-adornClock),4.);
+    shadow=env*(1.-trinket)*.24;
+    colorShift=.63+.18*sin(v.x*5.+v.y*3.+adornClock*.35);
   }else{ // Unsupported adornment mode: no accessory rendered.
     trinket=0.0;
     sparkle=0.0;

@@ -70,6 +70,7 @@ float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*noise(p);p=mat2(.8,-
 mat2 rotate(float a){return mat2(cos(a),-sin(a),sin(a),cos(a));}
 uniform int chromaticSpace,chromaticHuePath,chromaticTurns;
 uniform sampler2D chromaticLUT;
+uniform int chromaticGamut;
 vec3 chromaticDecode(vec3 c){return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c));}
 vec3 chromaticEncode(vec3 c){c=clamp(c,0.,1.);return mix(c*12.92,1.055*pow(c,vec3(1./2.4))-.055,step(vec3(.0031308),c));}
 vec3 chromaticLab(vec3 c){
@@ -125,6 +126,9 @@ vec3 chromaticMix(vec3 a,vec3 b,float t){
  // All spaces use the same Oklab gamut reduction, preserving the legacy Oklab path.
  if(cie){c=chromaticLab(rgb);c.x=clamp(c.x,0.,1.);}
  if(min(min(rgb.r,rgb.g),rgb.b)<0.||max(max(rgb.r,rgb.g),rgb.b)>1.){
+ if(chromaticGamut==1)return chromaticEncode(rgb);
+ if(chromaticGamut==2){float low=min(min(rgb.r,rgb.g),rgb.b),high=max(max(rgb.r,rgb.g),rgb.b);return chromaticEncode((rgb-min(low,0.))/max(1.,high-min(low,0.)));}
+ if(chromaticGamut==3)return chromaticEncode(1.-abs(mod(rgb,2.)-1.));
  float lo=0.,hi=1.;
  for(int i=0;i<10;i++){float m=(lo+hi)*.5;vec3 q=chromaticLinear(vec3(c.x,c.yz*m));if(min(min(q.r,q.g),q.b)>=0.&&max(max(q.r,q.g),q.b)<=1.)lo=m;else hi=m;}
  rgb=chromaticLinear(vec3(c.x,c.yz*lo));
@@ -2673,6 +2677,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       gl.uniform1i(loc("chromaticSpace"), Math.round(s.chromaticSpace??0));
       gl.uniform1i(loc("chromaticHuePath"), Math.round(s.chromaticHuePath??0));
       gl.uniform1i(loc("chromaticTurns"), Math.round(s.chromaticTurns??0));
+      gl.uniform1i(loc("chromaticGamut"), Math.round(s.chromaticGamut??0));
       // No framebuffer readbacks and no per-frame allocations. The same
       // normalized stamp geometry is used by preview and export renders.
       const geneMarkersEnabled=geneEnabled(compiledState);
@@ -2844,7 +2849,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       gl.activeTexture(gl.TEXTURE0);
       gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,chromaticTexture);gl.uniform1i(loc("chromaticLUT"),7);
       if(s.chromaticSpace>=8){
-       const ck=JSON.stringify([s.colors,s.chromaticSpace,s.chromaticHuePath,s.chromaticTurns,s.chromaticSatCap]);
+       const ck=JSON.stringify([s.colors,s.chromaticSpace,s.chromaticHuePath,s.chromaticTurns,s.chromaticSatCap,s.chromaticGamut]);
        if(ck!==chromaticKey){gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,LUT_WIDTH,1,0,gl.RGBA,gl.UNSIGNED_BYTE,bakeChromaticPalette(s));chromaticKey=ck;}
       }
       gl.activeTexture(gl.TEXTURE0);

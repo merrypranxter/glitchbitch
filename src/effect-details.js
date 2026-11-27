@@ -45,7 +45,7 @@ export const effectDetails = [
     ["retrocausal embroidery", "future seams", "needle future lookahead", "pre-echo ghost stitches", "paradox seam crossings", "reverse-time stitch wave"],
     (s) => stitch(s) && s.filamentStitchMode === "Retrocausal Embroidery"),
   lab("filament-meta", "Optical metamaterials",
-    ["diffraction grating","photonic crystal","dichroic membrane","thin film","prismatic chambers","birefringence","bragg domains"],
+    ["diffraction grating","photonic crystal","dichroic membrane","thin film","prismatic chambers","birefringence","bragg domains","impossible materials","aerogel","ferrofluid","liquid crystal","dichroic glass","gelatin","cellular foam","crystalline velvet","liquid metal"],
     s=>filament(s)&&s.filamentArchitecture!=="Bare architecture"&&s.filamentArchitectureAmount>0&&s.filamentMeta!=="Natural scaffold"&&s.filamentMetaAmount>0,["filamentMetaAmount"]),
   lab("filament-dimension", "Dimensional metamorphosis",
     ["topology morph","dimensional collapse","fold and unfold","traveling topology","architecture transition"],

@@ -52,6 +52,16 @@ export default function ToppersInspector({history}){
    <Parameter label="Palette phase" name="topperJewelHue" history={history}/>
    <Select label="Retinal geometry" value={String(Math.floor(Math.min(99.9,history.state.topperJewelForm)*4/100))} onChange={v=>history.change(s=>({...s,topperJewelForm:(Number(v)+.5)*100/4}))}>{["Rings","Spirals","Cobwebs","Rosettes"].map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
    <Parameter label="Complement interaction" name="topperJewelBlend" history={history}/>
+   <details className="effect-explanation"><summary>Independent jewel animation</summary>
+   <Parameter label="Size breathing" name="topperJewelPulse" history={history}/>
+   <Parameter label="Breathing speed" name="topperJewelPulseRate" history={history}/>
+   <Parameter label="Twinkle / vanish" name="topperJewelTwinkle" history={history}/>
+   <Parameter label="Twinkle speed" name="topperJewelTwinkleRate" history={history}/>
+   <Parameter label="Spin amount" name="topperJewelSpin" history={history}/>
+   <Parameter label="Spin speed" name="topperJewelSpinRate" history={history}/>
+   <Select label="Spin direction" value={String(Math.floor(Math.min(99.9,history.state.topperJewelDirection)*3/100))} onChange={v=>history.change(s=>({...s,topperJewelDirection:(Number(v)+.5)*100/3}))}>{["Clockwise","Counterclockwise","Mixed directions"].map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
+   <Parameter label="Individual timing variation" name="topperJewelIndependence" history={history}/>
+   </details>
   </details>
   <details className="effect-explanation"><summary>False-color islands</summary>
    <Parameter label="Island presence" name="topperIsland" history={history}/>

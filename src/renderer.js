@@ -92,6 +92,7 @@ vec3 transmissionShrapnel(vec3 col,vec2 uv){
 }
 
 uniform float topperJewel,topperJewelDensity,topperJewelScale,topperJewelMotion,topperJewelDetail,topperJewelHue,topperJewelForm,topperJewelBlend;
+uniform float topperJewelPulse,topperJewelPulseRate,topperJewelTwinkle,topperJewelTwinkleRate,topperJewelSpin,topperJewelSpinRate,topperJewelDirection,topperJewelIndependence;
 vec3 phospheneJewels(vec3 col,vec2 uv){
  if(topperJewel<.001)return col;
  vec2 q=uv*mix(4.,18.,topperJewelScale)*vec2(max(res.x/res.y,.4),1.);
@@ -100,7 +101,14 @@ vec3 phospheneJewels(vec3 col,vec2 uv){
  if(h>mix(.035,.38,topperJewelDensity))return col;
  float t=time*topperJewelMotion*.35;
  z-=.07*vec2(sin(t+h*TAU),cos(t*.8+h*TAU));
- float rad=length(z)/mix(.18,.34,hash(cell+72.));
+ float phase=hash(cell+vec2(31.,87.))*TAU*topperJewelIndependence;
+ float rate=mix(1.,mix(.35,1.8,hash(cell+vec2(79.,13.))),topperJewelIndependence);
+ float pulse=mix(1.,.5+.5*sin(time*mix(.15,4.,topperJewelPulseRate)*rate+phase),topperJewelPulse);
+ float life=mix(1.,smoothstep(-.55,.55,sin(time*mix(.12,3.,topperJewelTwinkleRate)*rate+phase+1.7)),topperJewelTwinkle);
+ float direction=topperJewelDirection<.333?1.:topperJewelDirection<.666?-1.:(hash(cell+vec2(17.,63.))<.5?-1.:1.);
+ z=rotate(time*topperJewelSpin*mix(.1,3.,topperJewelSpinRate)*rate*direction)*z;
+ if(pulse<.005||life<.002)return col;
+ float rad=length(z)/(mix(.18,.34,hash(cell+72.))*pulse);
  if(rad>1.05)return col;
  float a=atan(z.y,z.x+.00001), rho=log(max(rad,.035));
  float n=mix(5.,18.,topperJewelDetail);
@@ -117,7 +125,7 @@ vec3 phospheneJewels(vec3 col,vec2 uv){
  float mask=(1.-smoothstep(.82,1.,rad))*smoothstep(.025,.12,rad);
  vec3 ink=palette(h+topperJewelHue+rho*.16+a/TAU+.13*f+t*.05);
  ink=mix(ink,1.-clamp(col,0.,1.),topperJewelBlend*.65);
- return mix(col,ink,topperJewel*max(mask*line*.85,rim*.55));
+ return mix(col,ink,topperJewel*life*max(mask*line*.85,rim*.55));
 }
 
 uniform float topperIsland,topperIslandDensity,topperIslandScale,topperIslandMotion,topperIslandForm,topperIslandMapping,topperIslandHue,topperIslandFeather;
@@ -1994,6 +2002,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "topperTape","topperTapeDensity","topperTapeScale","topperTapeMotion","topperTapeWidth","topperTapeDispersion","topperTapeHue","topperTapePalette",
         "topperPortal","topperPortalDensity","topperPortalScale","topperPortalMotion","topperPortalZoom","topperPortalForm","topperPortalWarp","topperPortalHue",
         "topperIslandPulse","topperIslandPulseRate","topperIslandTwinkle","topperIslandTwinkleRate","topperIslandSpin","topperIslandSpinRate","topperIslandSpinDirection","topperIslandIndependence",
+        "topperJewelPulse","topperJewelPulseRate","topperJewelTwinkle","topperJewelTwinkleRate","topperJewelSpin","topperJewelSpinRate","topperJewelDirection","topperJewelIndependence",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",
         "misregister",

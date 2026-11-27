@@ -231,6 +231,13 @@ export const numericRanges = {
   windowCascade: [0, 100],
   glitter: [0, 100],
   broadcast: [0, 100],
+  topperShrapnel: [0, 100],
+  topperDensity: [0, 100],
+  topperScale: [0, 100],
+  topperMotion: [0, 100],
+  topperHue: [0, 100],
+  topperShape: [0, 100],
+  topperBlend: [0, 100],
   misregister: [0, 100],
   afterimage: [0, 100],
   datamosh: [0, 100],
@@ -799,6 +806,13 @@ export const initial = {
   windowCascade: 0,
   glitter: 0,
   broadcast: 0,
+  topperShrapnel: 0,
+  topperDensity: 35,
+  topperScale: 45,
+  topperMotion: 45,
+  topperHue: 50,
+  topperShape: 25,
+  topperBlend: 25,
   misregister: 0,
   afterimage: 0,
   datamosh: 0,
@@ -2194,7 +2208,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.block=random()<.42?random()*65:0;
   s.pixel=random()<.3?random()*58:0;
   s.vignette=random()<.5?random()*32:0;
-  const ornaments=["phosphor","dither","riso","windowCascade","glitter","broadcast"];
+  const ornaments=["phosphor","dither","riso","windowCascade","glitter","broadcast","topperShrapnel"];
   for(const key of ornaments)s[key]=0;
   const available=[...ornaments];
   const count=1+Math.floor(random()*3);

@@ -953,6 +953,12 @@ export const numericRanges = {
   chromaticMetaTarget: [0, 5],
   chromaticMetaPeriod: [2, 30],
   chromaticMetaTimePhase: [0, 100],
+  chromaticGeoMode: [0, 5],
+  chromaticGeoAmount: [0, 100],
+  chromaticGeoScale: [1, 12],
+  chromaticGeoAngle: [0, 360],
+  chromaticGeoSoftness: [0, 100],
+  chromaticGeoDrift: [0, 3],
   chromaticMetaAmount: [0, 100],
   chromaticMetaBands: [1, 8],
   chromaticMetaPhase: [0, 100],
@@ -1832,6 +1838,12 @@ export const initial = {
   chromaticMetaTarget: 5,
   chromaticMetaPeriod: 8,
   chromaticMetaTimePhase: 0,
+  chromaticGeoMode: 0,
+  chromaticGeoAmount: 75,
+  chromaticGeoScale: 4,
+  chromaticGeoAngle: 0,
+  chromaticGeoSoftness: 55,
+  chromaticGeoDrift: 1,
   chromaticMetaAmount: 100,
   chromaticMetaBands: 3,
   chromaticMetaPhase: 0,
@@ -2551,6 +2563,12 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.chromaticMetaTarget=locks.color?(state.chromaticMetaTarget??5):(s.chromaticIlluminant+1+Math.floor(random()*5))%6;
   s.chromaticMetaPeriod=locks.color?(state.chromaticMetaPeriod??8):3+Math.floor(random()*13);
   s.chromaticMetaTimePhase=locks.color?(state.chromaticMetaTimePhase??0):random()*100;
+  s.chromaticGeoMode=locks.color?(state.chromaticGeoMode??0):(random()<.3?0:1+Math.floor(random()*5));
+  s.chromaticGeoAmount=locks.color?(state.chromaticGeoAmount??75):65+random()*35;
+  s.chromaticGeoScale=locks.color?(state.chromaticGeoScale??4):1+Math.floor(random()*12);
+  s.chromaticGeoAngle=locks.color?(state.chromaticGeoAngle??0):random()*360;
+  s.chromaticGeoSoftness=locks.color?(state.chromaticGeoSoftness??55):12+random()*88;
+  s.chromaticGeoDrift=locks.color?(state.chromaticGeoDrift??1):Math.floor(random()*4);
   s.chromaticMetaAmount=locks.color?(state.chromaticMetaAmount??100):60+random()*40;
   s.chromaticMetaBands=locks.color?(state.chromaticMetaBands??3):1+Math.floor(random()*8);
   s.chromaticMetaPhase=locks.color?(state.chromaticMetaPhase??0):random()*100;

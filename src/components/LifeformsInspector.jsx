@@ -2,7 +2,7 @@ import React from "react";
 import {Parameter,Select} from "./Controls";
 import {initial} from "../data.js";
 import {readCategoryLocks,writeCategoryLocks,protectCategorySettings} from "../category-locks.js";
-const keys=["lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion","lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane","lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"];
+const keys=["lifeEvolution","lifeBirthRate","lifeMutation","lifeMortality","lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion","lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane","lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"];
 export default function LifeformsInspector({history}){
  const [locks,setLocks]=React.useState(readCategoryLocks);
  const locked=!!locks.Lifeforms;
@@ -44,5 +44,11 @@ export default function LifeformsInspector({history}){
  <Parameter label="Optical presence" name="lifeOptics" history={history}/>
  <Parameter label="Optical power" name="lifeOpticPower" history={history}/>
  <Parameter label="Spectral separation" name="lifeOpticDispersion" history={history}/>
+ </details><details className="effect-explanation"><summary>Mitosis and evolution</summary>
+ <p className="control-note">Population becomes the starting count; offspring share the 24-body limit.</p>
+<Parameter label="Lifecycle activity" name="lifeEvolution" history={history}/>
+<Parameter label="Division rate" name="lifeBirthRate" history={history}/>
+<Parameter label="Mutation" name="lifeMutation" history={history}/>
+<Parameter label="Mortality" name="lifeMortality" history={history}/>
  </details></section>
 }

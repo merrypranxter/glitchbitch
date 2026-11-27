@@ -1,5 +1,6 @@
 import {breedRequiredParents} from "./crossbreed-lab.js";
 export const categoryPrefixes={
+    "Toppers":["broadcast","windowCascade","glitter","topper"],
     "Living currents":["vc","alchemy"],
     "Mathematical membranes":["g2","hexagram","poles","qd"],
     "Hybrid mathematics":["breed","g2","hexagram","poles","qd","vc","vld","hcr","bio"],

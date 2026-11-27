@@ -1,3 +1,4 @@
+import ToppersInspector from "./components/ToppersInspector";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -793,6 +794,7 @@ function App() {
               ["Effects", Sparkles],
                 ["Ecosystem", Asterisk],
                 ["Weaving", Grid3X3],
+                ["Toppers", Sparkles],
               ["Text", Type],
               ["Touch", Hand],
               ["Layers", Layers],
@@ -811,7 +813,7 @@ function App() {
           <aside
             className={
               "right-panel inspector " +
-              (["Effects", "Ecosystem", "Weaving", "Text", "Touch", "Layers"].includes(mobilePanel)
+              (["Effects", "Ecosystem", "Weaving", "Toppers", "Text", "Touch", "Layers"].includes(mobilePanel)
                 ? "mobile-open"
                 : "")
             }
@@ -821,6 +823,7 @@ function App() {
                 ["Effects", Sparkles],
                 ["Ecosystem", Asterisk],
                 ["Weaving", Grid3X3],
+                ["Toppers", Sparkles],
                 ["Text", Type],
                 ["Touch", Hand],
                 ["Layers", Layers],
@@ -843,6 +846,8 @@ function App() {
                 <EcosystemInspector history={history} onTool={setTool} tool={tool} />
               ) : rightTab === "Weaving" ? (
                 <WeavingInspector history={history} onTool={setTool} tool={tool} />
+              ) : rightTab === "Toppers" ? (
+                <ToppersInspector history={history} />
               ) : rightTab === "Text" ? (
                 <TextInspector history={history} />
               ) : rightTab === "Layers" ? (

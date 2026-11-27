@@ -27,6 +27,7 @@ import { readFavorites, FAVORITES_KEY } from "../effects-navigation.js";
 import { sectionMeta } from "../ui-index.js";
 import { illuminantNames } from "../spectral-metamer.js";
 import { metamerMotionNames } from "../chromatic-time.js";
+import { chromaticGeographyNames } from "../chromatic-geography.js";
 
 export function Swatches({ colors }) {
   return (
@@ -316,13 +317,26 @@ export default function ColorLab({
           <Parameter label="White balance" name="chromaticMetaAdapt" history={history}/>
           <details className="effect-explanation"><summary>Chromatic Time Travel · animated illumination</summary>
             <Select label="Illumination motion" value={String(Math.round(state.chromaticMetaMotion??0))} onChange={v=>history.change(s=>({...s,chromaticMetaMotion:Number(v)}))}>{metamerMotionNames.map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
-            {Math.round(state.chromaticMetaMotion??0)>0&&<>
-              {Math.round(state.chromaticMetaMotion??0)===1&&<Select label="Second sun" value={String(Math.round(state.chromaticMetaTarget??5))} onChange={v=>history.change(s=>({...s,chromaticMetaTarget:Number(v)}))}>{illuminantNames.map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>}
+            {(Math.round(state.chromaticMetaMotion??0)>0||Math.round(state.chromaticGeoMode??0)>0)&&<>
+              {Math.round(state.chromaticMetaMotion??0)!==2&&<Select label="Second sun" value={String(Math.round(state.chromaticMetaTarget??5))} onChange={v=>history.change(s=>({...s,chromaticMetaTarget:Number(v)}))}>{illuminantNames.map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>}
               <Parameter label="Illumination cycle (color-clock seconds)" name="chromaticMetaPeriod" history={history}/>
               <Parameter label="Illumination time phase" name="chromaticMetaTimePhase" history={history}/>
               <p className="control-note">Lighting repeats after this many color-clock seconds. Color tempo changes real-time duration; Freeze color pauses it. Whole-art export looping still depends on other motion.</p>
             </>}
             <button className="button secondary" onClick={()=>history.change(s=>{const from=Math.floor(Math.random()*6);return {...s,chromaticIlluminant:from,chromaticMetaTarget:(from+1+Math.floor(Math.random()*5))%6,chromaticMetaMotion:1+Math.floor(Math.random()*2),chromaticMetaPeriod:3+Math.floor(Math.random()*13),chromaticMetaTimePhase:Math.random()*100};})}>Shuffle time travel</button>
+          </details>
+          <details className="effect-explanation"><summary>Chromatic Geography · local spectral territories</summary>
+            <p className="control-note">Different regions of the same artwork experience different spectral illumination. Works with Still (two local suns) or animated illumination. Does not move the geometry.</p>
+            <Select label="Illumination geography" value={String(Math.round(state.chromaticGeoMode??0))} onChange={v=>history.change(s=>({...s,chromaticGeoMode:Number(v),chromaticGeoAmount:Number(v)>0?Math.max(50,s.chromaticGeoAmount??75):s.chromaticGeoAmount}))}>{chromaticGeographyNames.map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
+            {Math.round(state.chromaticGeoMode??0)>0&&<>
+              <Parameter label="Territory contrast" name="chromaticGeoAmount" history={history}/>
+              <Parameter label="Territory frequency" name="chromaticGeoScale" history={history}/>
+              <Parameter label="Territory angle" name="chromaticGeoAngle" history={history}/>
+              <Parameter label="Boundary softness" name="chromaticGeoSoftness" history={history}/>
+              <Select label="Front drift cycles per lighting loop" value={String(Math.round(state.chromaticGeoDrift??1))} onChange={v=>history.change(s=>({...s,chromaticGeoDrift:Number(v)}))}>{[0,1,2,3].map(n=><option key={n} value={String(n)}>{n===0?"Stationary":n+" cycles"}</option>)}</Select>
+              <p className="control-note">The suns and front drift use the cycle and phase in Chromatic Time Travel. Freeze color pauses the fronts.</p>
+            </>}
+            <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticGeoMode:1+Math.floor(Math.random()*5),chromaticGeoAmount:65+Math.random()*35,chromaticGeoScale:1+Math.floor(Math.random()*12),chromaticGeoAngle:Math.random()*360,chromaticGeoSoftness:12+Math.random()*88,chromaticGeoDrift:1+Math.floor(Math.random()*3)}))}>Shuffle chromatic geography</button>
           </details>
           <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticIlluminant:1+Math.floor(Math.random()*5),chromaticMetaAmount:65+Math.random()*35,chromaticMetaBands:1+Math.floor(Math.random()*8),chromaticMetaPhase:Math.random()*100,chromaticMetaAdapt:35+Math.random()*65}))}>Shuffle hidden spectra</button>
         </>}

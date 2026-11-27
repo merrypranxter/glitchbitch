@@ -76,5 +76,16 @@ export default function ToppersInspector({history}){
    <Parameter label="Wavelength phase" name="topperTapeHue" history={history}/>
    <Parameter label="Palette mixing" name="topperTapePalette" history={history}/>
   </details>
+  <details className="effect-explanation"><summary>Reality cutouts</summary>
+   <Parameter label="Portal presence" name="topperPortal" history={history}/>
+   <Parameter label="Portal population" name="topperPortalDensity" history={history}/>
+   <Parameter label="Portal scale" name="topperPortalScale" history={history}/>
+   <Parameter label="Portal motion" name="topperPortalMotion" history={history}/>
+   <Parameter label="Field zoom" name="topperPortalZoom" history={history}/>
+   <Parameter label="Portal geometry" name="topperPortalForm" history={history}/>
+   <Parameter label="Coordinate distortion" name="topperPortalWarp" history={history}/>
+   <Parameter label="Color phase" name="topperPortalHue" history={history}/>
+   <p className="control-note">Resamples the base mathematical field, not the fully composited artwork.</p>
+  </details>
  </section>;
 }

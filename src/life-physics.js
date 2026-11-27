@@ -10,7 +10,7 @@ function make(s,w){
   const angle=rng()*Math.PI*2, speed=(.13+.52*rng())*1.8*s.lifeSpeed/100;
   bodies.push({r,base:r,age:0,gene:rng(),cycle:2+rng()*5,x:r+rng()*(w-2*r),y:r+rng()*(1-2*r),vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed});
  }
- return {bodies,step:0,rng, trails:[]};
+ return {bodies,step:0,rng, trails:[], impacts:[]};
 }
 function advance(sim,w,collision,e,mode,strength,speed,evolution,birth,mutation,mortality){
  const b=sim.bodies;
@@ -44,7 +44,7 @@ function advance(sim,w,collision,e,mode,strength,speed,evolution,birth,mutation,
    const correction=over*collision/sum;
    a.x-=nx*correction*ia;a.y-=ny*correction*ia;c.x+=nx*correction*ib;c.y+=ny*correction*ib;
    const rel=(c.vx-a.vx)*nx+(c.vy-a.vy)*ny;
-   if(rel<0){const impulse=-(1+e)*rel*collision/sum;a.vx-=impulse*ia*nx;a.vy-=impulse*ia*ny;c.vx+=impulse*ib*nx;c.vy+=impulse*ib*ny;}
+   if(rel<0){if(pass===0 && rel<-.04){sim.impacts.push([(a.x+c.x)*.5,(a.y+c.y)*.5,t,Math.min(1,-rel)]);if(sim.impacts.length>8)sim.impacts.shift();}const impulse=-(1+e)*rel*collision/sum;a.vx-=impulse*ia*nx;a.vy-=impulse*ia*ny;c.vx+=impulse*ib*nx;c.vy+=impulse*ib*ny;}
   }
   for(const p of b){if(p.x<p.r){p.x=p.r;p.vx=Math.abs(p.vx)}if(p.x>w-p.r){p.x=w-p.r;p.vx=-Math.abs(p.vx)}if(p.y<p.r){p.y=p.r;p.vy=Math.abs(p.vy)}if(p.y>1-p.r){p.y=1-p.r;p.vy=-Math.abs(p.vy)}}
  }
@@ -83,6 +83,7 @@ export function lifePositions(s,time,width,height){
  const trails=new Float32Array(8*8*4);
  // Match bodies by their stable object identity rather than shifting array indices.
  for(let j=1;j<sim.trails.length;j++)for(let i=0;i<Math.min(sim.trails[j].length,sim.trails[j-1].length);i++){const a=sim.trails[j-1][i],b=sim.trails[j][i];if(a[2]===b[2])trails.set([a[0],a[1],b[0],b[1]],((j-1)*8+i)*4);}
+ const impacts=new Float32Array(32);sim.impacts.forEach((v,i)=>impacts.set([v[0],v[1],Math.max(0,target*DT-v[2]),v[3]],i*4));out.impacts=impacts;
  out.trails=trails;out.trailCount=Math.max(0,sim.trails.length-1);
  return out;
 }

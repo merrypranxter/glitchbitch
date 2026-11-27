@@ -71,21 +71,42 @@ uniform int chromaticSpace,chromaticHuePath,chromaticTurns;
 vec3 chromaticDecode(vec3 c){return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c));}
 vec3 chromaticEncode(vec3 c){c=clamp(c,0.,1.);return mix(c*12.92,1.055*pow(c,vec3(1./2.4))-.055,step(vec3(.0031308),c));}
 vec3 chromaticLab(vec3 c){
- vec3 v=pow(max(vec3(dot(c,vec3(.4122214708,.5363325363,.0514459929)),dot(c,vec3(.2119034982,.6806995451,.1073969566)),dot(c,vec3(.0883024619,.2817188376,.6299787005))),0.),vec3(1./3.));
+ vec3 lms=vec3(dot(c,vec3(.4122214708,.5363325363,.0514459929)),dot(c,vec3(.2119034982,.6806995451,.1073969566)),dot(c,vec3(.0883024619,.2817188376,.6299787005)));vec3 v=sign(lms)*pow(abs(lms),vec3(1./3.));
  return vec3(dot(v,vec3(.2104542553,.7936177850,-.0040720468)),dot(v,vec3(1.9779984951,-2.4285922050,.4505937099)),dot(v,vec3(.0259040371,.7827717662,-.8086757660)));
 }
 vec3 chromaticLinear(vec3 c){
  vec3 v=vec3(dot(c,vec3(1.,.3963377774,.2158037573)),dot(c,vec3(1.,-.1055613458,-.0638541728)),dot(c,vec3(1.,-.0894841775,-1.2914855480)));v=v*v*v;
  return vec3(dot(v,vec3(4.0767416621,-3.3077115913,.2309699292)),dot(v,vec3(-1.2684380046,2.6097574011,-.3413193965)),dot(v,vec3(-.0041960863,-.7034186147,1.7076147010)));
 }
+vec3 cieXYZ(vec3 c){return vec3(dot(c,vec3(.4124564,.3575761,.1804375)),dot(c,vec3(.2126729,.7151522,.0721750)),dot(c,vec3(.0193339,.1191920,.9503041)));}
+vec3 cieRGB(vec3 c){return vec3(dot(c,vec3(3.2404542,-1.5371385,-.4985314)),dot(c,vec3(-.9692660,1.8760108,.0415560)),dot(c,vec3(.0556434,-.2040259,1.0572252)));}
+float cieF(float x){return x>.00885645168?pow(x,1./3.):(903.296296*x+16.)/116.;}
+float cieInv(float x){return x>.206896552?x*x*x:(116.*x-16.)/903.296296;}
+vec2 cieUV(vec3 x){float den=x.x+15.*x.y+3.*x.z;return den>1e-10?vec2(4.*x.x,9.*x.y)/den:vec2(.197839825,.468336303);}
+vec3 cieForward(vec3 rgb,bool luv){
+ vec3 x=cieXYZ(rgb);float fy=cieF(x.y),L=116.*fy-16.;
+ if(luv)return vec3(L,13.*L*(cieUV(x)-cieUV(vec3(.95047,1.,1.08883))))/100.;
+ return vec3(L,500.*(cieF(x.x/.95047)-fy),200.*(fy-cieF(x.z/1.08883)))/100.;
+}
+vec3 cieInverse(vec3 c,bool luv){
+ c*=100.;float fy=(c.x+16.)/116.,Y=cieInv(fy);
+ if(luv){
+  if(c.x<1e-6)return vec3(0.);
+  vec2 uv=c.yz/(13.*c.x)+cieUV(vec3(.95047,1.,1.08883));
+  float v=max(uv.y,1e-6);
+  return cieRGB(vec3(9.*Y*uv.x/(4.*v),Y,Y*(12.-3.*uv.x-20.*v)/(4.*v)));
+ }
+ return cieRGB(vec3(.95047*cieInv(fy+c.y/500.),Y,1.08883*cieInv(fy-c.z/200.)));
+}
 vec3 chromaticMix(vec3 a,vec3 b,float t){
  if(chromaticSpace==0)return mix(a,b,t);
  if(t<=0.)return a;if(t>=1.)return b;
  vec3 x=chromaticDecode(a),y=chromaticDecode(b);
  if(chromaticSpace==1)return chromaticEncode(mix(x,y,t));
- vec3 lx=chromaticLab(x),ly=chromaticLab(y);
+ bool cie=chromaticSpace>=4,luv=chromaticSpace==5||chromaticSpace==7;
+ vec3 lx=cie?cieForward(x,luv):chromaticLab(x),ly=cie?cieForward(y,luv):chromaticLab(y);
  vec3 c=mix(lx,ly,t);
- if(chromaticSpace==3){
+ if(chromaticSpace==3||chromaticSpace==6||chromaticSpace==7){
   float ca=length(lx.yz),cb=length(ly.yz);
   float ha=atan(lx.z,lx.y),hb=atan(ly.z,ly.y);
   if(ca<.0001)ha=hb;if(cb<.0001)hb=ha;
@@ -98,7 +119,9 @@ vec3 chromaticMix(vec3 a,vec3 b,float t){
   float hue=ha+t*delta;
   c=vec3(mix(lx.x,ly.x,t),mix(ca,cb,t)*vec2(cos(hue),sin(hue)));
  }
- vec3 rgb=chromaticLinear(c);
+ vec3 rgb=cie?cieInverse(c,luv):chromaticLinear(c);
+ // All spaces use the same Oklab gamut reduction, preserving the legacy Oklab path.
+ if(cie){c=chromaticLab(rgb);c.x=clamp(c.x,0.,1.);}
  if(min(min(rgb.r,rgb.g),rgb.b)<0.||max(max(rgb.r,rgb.g),rgb.b)>1.){
  float lo=0.,hi=1.;
  for(int i=0;i<10;i++){float m=(lo+hi)*.5;vec3 q=chromaticLinear(vec3(c.x,c.yz*m));if(min(min(q.r,q.g),q.b)>=0.&&max(max(q.r,q.g),q.b)<=1.)lo=m;else hi=m;}

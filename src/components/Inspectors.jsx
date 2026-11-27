@@ -82,7 +82,7 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentScarPresets,applyFilamentScarPreset,remixFilamentScars,
   filamentRegenModes,filamentRegenFamilies,filamentRegenDescriptions,
   filamentRegenPresets,applyFilamentRegenPreset,remixFilamentRegeneration,
-  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,microloomModes,remixMicroloom,textilePhysicsModes,remixTextilePhysics,textileChromaModes,remixTextileChroma,textileEcologyModes,remixTextileEcology,textileArchitectureModes,remixTextileArchitecture,textileDimensionModes,textileDimensionTargets,remixTextileDimension,textileMetaModes,remixTextileMeta,filamentStitchModes,filamentStitchFamilies,
+  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,microloomModes,remixMicroloom,textilePhysicsModes,remixTextilePhysics,textileChromaModes,remixTextileChroma,textileEcologyModes,remixTextileEcology,textileArchitectureModes,remixTextileArchitecture,textileDimensionModes,textileDimensionTargets,remixTextileDimension,textileMetaModes,remixTextileMeta,textileAlchemyModes,textileAlchemyTargets,remixTextileAlchemy,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
   feralJacquardPresets,applyFeralJacquardPreset,remixFeralJacquard,
@@ -2319,6 +2319,18 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
           <Parameter label="Polish / spectral sharpness" name="filamentMetaPolish" history={history}/>
           {s.filamentArchitecture==="Bare architecture"&&<p className="control-note" role="status">Choose a Parasitic Architecture law to see optical metamaterials.</p>}
           <button type="button" className="button secondary" disabled={!s.filamentAmount} onClick={()=>history.change(x=>remixTextileMeta(x))}><Dices size={13}/> Shuffle metamaterials only</button>
+        </details>
+        <details data-effect-detail="filament-material-alchemy"><summary>Material alchemy · phase transitions</summary>
+          <p className="control-note">Blend optical properties, opacity, highlights and emission between two materials without changing scaffold geometry. Requires a visible architecture and optical material.</p>
+          <Select label="Transmutation law" value={s.filamentAlchMode} onChange={v=>history.change(x=>({...x,filamentAlchMode:v}))}>{textileAlchemyModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <Select label="Destination material" value={s.filamentAlchTarget} onChange={v=>history.change(x=>({...x,filamentAlchTarget:v}))}><optgroup label="Structural optics">{textileAlchemyTargets.slice(0,8).map(v=><option key={v} value={v}>{v}</option>)}</optgroup><optgroup label="Impossible materials">{textileAlchemyTargets.slice(8).map(v=><option key={v} value={v}>{v}</option>)}</optgroup></Select>
+          <Parameter label="Transmutation influence" name="filamentAlchAmount" history={history}/>
+          <Parameter label="Manual progress / phase offset" name="filamentAlchProgress" history={history}/>
+          <Parameter label="Transition speed" name="filamentAlchSpeed" history={history}/>
+          <Parameter label="Territory / wave scale" name="filamentAlchScale" history={history}/>
+          <Parameter label="Transition glow" name="filamentAlchGlow" history={history}/>
+          {(s.filamentArchitecture==="Bare architecture"||!s.filamentArchitectureAmount||s.filamentMeta==="Natural scaffold"||!s.filamentMetaAmount||s.filamentMeta===s.filamentAlchTarget)&&<p className="control-note" role="status">Choose a visible scaffold and source material different from the destination.</p>}
+          <button type="button" className="button secondary" disabled={!s.filamentAmount} onClick={()=>history.change(x=>remixTextileAlchemy(x))}><Dices size={13}/> Shuffle material alchemy only</button>
         </details>
         <details data-effect-detail="filament-ecology"><summary>Textile surface ecology · living fiber deposits</summary>
           <p className="control-note">Microscopic organisms and minerals grow and recede along the local thread surface. Separate from jewelry and the painted ecosystem. Growth is procedural and reversible, not a persistent biological simulation.</p>

@@ -171,6 +171,17 @@ export function remixTextileEcology(state,rng=Math.random){
  filamentEcologyRelief:35+65*unit(),filamentEcologyHue:100*unit()};
 }
 export const textileMetaModes=["Natural scaffold","Diffraction grating","Photonic crystal","Dichroic membrane","Spectral thin film","Prismatic chambers","Iridescent mineral skeleton","Birefringent lattice","Opal Bragg domains","Liquid crystal membrane","Translucent aerogel","Ferrofluid embroidery","Fractal dichroic glass","Anisotropic liquid metal","Bioluminescent gelatin","Opalescent cellular foam","Iridescent crystalline velvet"];
+export const textileAlchemyModes=["Stable material","Manual transmutation","Phase breathing","Crystallization front","Material territories","Reaction wavefronts","Molten intermediary","Counterphase domains"];
+export const textileAlchemyTargets=textileMetaModes.slice(1);
+export const textileAlchemyControls=["filamentAlchMode","filamentAlchTarget","filamentAlchAmount","filamentAlchProgress","filamentAlchSpeed","filamentAlchScale","filamentAlchGlow"];
+export function remixTextileAlchemy(state,rng=Math.random){
+ const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
+ const modes=textileAlchemyModes.slice(2).filter(x=>x!==state.filamentAlchMode);
+ const targets=textileAlchemyTargets.filter(x=>x!==state.filamentMeta&&x!==state.filamentAlchTarget);
+ return {...state,filamentAlchMode:modes[Math.floor(unit()*modes.length)],
+ filamentAlchTarget:targets[Math.floor(unit()*targets.length)],filamentAlchAmount:75+25*unit(),
+ filamentAlchProgress:100*unit(),filamentAlchSpeed:20+65*unit(),filamentAlchScale:15+75*unit(),filamentAlchGlow:30+65*unit()};
+}
 export const textileMetaControls=["filamentMeta","filamentMetaAmount","filamentMetaFrequency","filamentMetaThickness","filamentMetaDispersion","filamentMetaMotion","filamentMetaPolish"];
 export function remixTextileMeta(state,rng=Math.random){
  const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
@@ -2181,6 +2192,11 @@ uniform float filamentChladniPhase,filamentChladniDetune;
 uniform float filamentRetroLead,filamentRetroEcho,filamentRetroParadox;
 uniform float filamentRetroKnots,filamentRetroReversal,filamentRetroCoherence;
 uniform float filamentNap,filamentLuster,filamentBeads,filamentBeadSize,filamentSecondHue;
+#ifdef FILAMENT_ARCH_ALCHEMY
+uniform int filamentAlchMode;
+uniform int filamentAlchTarget;
+uniform float filamentAlchAmount,filamentAlchProgress,filamentAlchSpeed,filamentAlchScale,filamentAlchGlow;
+#endif
 #ifdef FILAMENT_ARCH_META
 uniform int filamentMeta;
 uniform float filamentMetaAmount,filamentMetaFrequency,filamentMetaThickness,filamentMetaDispersion,filamentMetaMotion,filamentMetaPolish;
@@ -2461,6 +2477,178 @@ vec3 architectureField(int arMode,vec2 arP,float arAlong,float arClock,float arR
     arShine=.3+.7*abs(cos(3.*t));
   }
   return vec3(arD,arFill,arShine);
+}
+#endif
+
+#ifdef FILAMENT_ARCH_META
+// Returns spectral bands and local finish (flash, opacity, specular, emission).
+// All material laws remain projected optical approximations.
+vec3 scaffoldMaterial(int mtMode,vec2 arP,float arAlong,float arRand,float seedPhase,
+ float mtFreq,float mtPhase,float mtThickness,float mtFacing,float mtAngle,float mtClock,
+ out vec4 mtFinish){
+  vec3 mtLambda=vec3(.650,.530,.460);
+  vec3 mtBands=vec3(.5);
+  float mtFlash=0.;
+  float mtOpacity=1.,mtSpecular=0.,mtEmission=0.;
+  if(mtMode==1){
+    // Grating orders with local orientation and wavelength-dependent phase.
+    float groove=arP.x*mtFreq+arP.y*mtFreq*.37+mtPhase*.2;
+    vec3 orderPhase=(groove+mtThickness*mtFacing)/mtLambda;
+    mtBands=pow(.5+.5*cos(orderPhase*6.2831853),vec3(3.));
+    mtFlash=max(mtBands.r,max(mtBands.g,mtBands.b));
+  }else if(mtMode==2){
+    // Three directional lattice planes approximate a photonic stop band.
+    vec2 v=arP*mtFreq;
+    float lattice=(cos(v.x*6.2831853)+cos(dot(v,vec2(.5,.8660254))*6.2831853)+cos(dot(v,vec2(-.5,.8660254))*6.2831853))/3.;
+    float center=.47+.14*mtFacing+.055*lattice+.025*sin(mtPhase);
+    vec3 delta=(mtLambda-vec3(center))/mix(.095,.035,filamentMetaPolish);
+    mtBands=exp(-delta*delta);mtFlash=abs(lattice);
+  }else if(mtMode==3){
+    // Opposed reflected/transmitted bands, using a projected facing proxy.
+    float path=mtThickness*(.45+.55*mtFacing)+.16*sin(arP.y*mtFreq+mtPhase);
+    vec3 reflected=.5+.5*cos(12.5663706*path/mtLambda);
+    mtBands=mix(1.-reflected,reflected,smoothstep(.28,.76,mtFacing));
+    mtFlash=pow(1.-mtFacing,2.);
+  }else if(mtMode==4){
+    // Thin-film phase delay varies with projected thickness and incidence.
+    float path=mtThickness*(.65+.35*cos(arP.x*mtFreq+mtPhase))*(.5+.5*mtFacing);
+    mtBands=.5+.5*cos(12.5663706*path/mtLambda);
+    mtFlash=pow(mtFacing,5.);
+  }else if(mtMode==5){
+    // Faceted microscopic chambers with wavelength-sheared highlights.
+    vec2 v=fract(arP*mtFreq*.42)-.5;
+    float facet=atan(v.y,v.x+.00001);
+    float plane=floor((facet+3.14159265)*.95492966);
+    float split=plane*.39+mtPhase*.2+length(v)*mtThickness;
+    mtBands=pow(.5+.5*cos(6.2831853*(split/mtLambda+vec3(0.,.16,.32))),vec3(2.));
+    mtFlash=1.-smoothstep(.025,.13,abs(abs(v.x)-abs(v.y)));
+  }else if(mtMode==6){
+    // Nacre-like terrace thickness with bright mineral ridge reflections.
+    float ridge=fract((arP.y+abs(arP.x)*.42)*mtFreq);
+    float path=mtThickness*(.55+.45*ridge)*mtFacing;
+    mtBands=.5+.5*cos(12.5663706*path/mtLambda+mtPhase*.30);
+    mtFlash=1.-smoothstep(.06,.24,ridge);
+  }else if(mtMode==7){
+    // Retardation between two projected polarization axes.
+    float axis=mtAngle+arP.y*mtFreq*.4+mtPhase*.2;
+    float polarAxis=sin(2.*axis);
+    float polar=polarAxis*polarAxis;
+    vec3 retard=sin(3.14159265*mtThickness*(.5+.5*mtFacing)/mtLambda);
+    mtBands=polar*retard*retard;mtFlash=polar;
+  }else if(mtMode==8){
+    // Bragg-like reflection shifts across stable microcrystalline domains.
+    vec2 domain=floor(vec2(arAlong,arP.y*4.)*mtFreq*.22);
+    float dh=hash(domain+vec2(seedPhase*.17,17.2));
+    float center=.43+.22*mtFacing+.055*sin(dh*6.2831853+mtPhase*.35);
+    vec3 delta=(mtLambda-vec3(center))/mix(.085,.028,filamentMetaPolish);
+    mtBands=exp(-delta*delta);mtFlash=pow(mtFacing,4.);
+  }else if(mtMode==9){
+    // Nematic director field with half-angle defects and optical retardance.
+    vec2 v=vec2(arAlong*.42,arP.y)*mtFreq*.55;
+    vec2 cell=floor(v),p=fract(v)-.5;
+    float director=.5*atan(p.y,p.x+.00001)+mtPhase*.28+
+      .40*sin(v.x*2.+v.y*3.);
+    float polar=sin(2.*director);polar*=polar;
+    float path=mtThickness*(.65+.35*mtFacing)*(.75+.25*cos(director*2.));
+    vec3 retard=sin(3.14159265*path/mtLambda);
+    mtBands=mix(vec3(.08),retard*retard,polar);
+    mtFlash=pow(abs(cos(director-mtAngle)),7.);
+    mtOpacity=.50+.42*polar;mtSpecular=.24*mtFlash;
+  }else if(mtMode==10){
+    // Aerogel: nested pores, blue-biased scattering and grazing rim.
+    vec2 v=vec2(arAlong*.36,arP.y)*mtFreq*.72;
+    float grain=0.,rim=0.;
+    for(int ag=0;ag<3;ag++){
+      float scale=pow(2.03,float(ag));
+      vec2 p=fract(v*scale+float(ag)*.37)-.5;
+      float r=length(p);
+      float weight=pow(.55,float(ag));
+      grain+=weight*(1.-smoothstep(.17,.32,r));
+      rim+=weight*(1.-smoothstep(.025,.11,abs(r-.30)));
+    }
+    float scatter=clamp(grain*.65,0.,1.);
+    vec3 haze=mix(vec3(.12,.31,.63),vec3(.80,.91,1.),scatter);
+    mtBands=mix(haze,vec3(.91,.62,.29),pow(mtFacing,4.)*.28);
+    mtFlash=clamp(rim*.55,0.,1.);
+    mtOpacity=.22+.43*scatter+.24*(1.-mtFacing);
+    mtSpecular=.15*mtFlash;
+  }else if(mtMode==11){
+    // Rosensweig-inspired magnetic peaks, radial facets and oily glints.
+    vec2 v=vec2(arAlong*.42,arP.y)*mtFreq*.65;
+    float field=(cos(v.x*6.2831853)+cos(dot(v,vec2(.5,.8660254))*6.2831853+mtPhase)+
+      cos(dot(v,vec2(-.5,.8660254))*6.2831853-mtPhase))/3.;
+    float peak=pow(clamp(.5+.5*field,0.,1.),3.);
+    float ridge=pow(1.-abs(field),5.);
+    vec3 film=.5+.5*cos(12.5663706*(mtThickness*(.45+.55*peak))/mtLambda);
+    mtBands=mix(vec3(.022,.018,.045),film,.22+.55*peak);
+    mtFlash=pow(peak,mix(2.,7.,filamentMetaPolish));
+    mtOpacity=.75+.25*peak;mtSpecular=.55*max(mtFlash,.45*ridge);
+  }else if(mtMode==12){
+    // Three bounded recursive folds model layered dichroic glass facets.
+    vec2 v=fract(vec2(arAlong*.35,arP.y)*mtFreq*.30)-.5;
+    float facet=0.,edge=0.;
+    for(int fg=0;fg<3;fg++){
+      v=abs(v)-vec2(.24,.19);
+      float a=.55+float(fg)*.19+mtClock*.08;
+      v=mat2(cos(a),-sin(a),sin(a),cos(a))*v*1.65;
+      facet+=length(v)*pow(.55,float(fg));
+      edge=max(edge,1.-smoothstep(.025,.10,min(abs(v.x),abs(v.y))));
+    }
+    vec3 bands=.5+.5*cos(12.5663706*(mtThickness*.32+facet*.36+mtFacing*.19)/mtLambda);
+    mtBands=mix(1.-bands,bands,smoothstep(.25,.75,mtFacing));
+    mtFlash=edge;mtOpacity=.37+.48*edge;mtSpecular=.48*edge;
+  }else if(mtMode==13){
+    // Directional reflection lobes across flowing brushed-metal grooves.
+    float v=arP.y*mtFreq*1.8+.40*sin(arAlong*.65-mtClock);
+    float groove=cos(v*6.2831853);
+    float streak=pow(abs(cos(mtAngle+groove*.35+mtPhase*.12)),mix(3.,16.,filamentMetaPolish));
+    vec3 metal=.5+.5*cos(vec3(.2,1.5,3.1)+groove*.65+mtPhase*.18);
+    mtBands=mix(vec3(.09,.12,.18),metal,.24+.62*streak);
+    mtFlash=streak;mtOpacity=.96;mtSpecular=.65*streak;
+  }else if(mtMode==14){
+    // Soft gel body, subsurface-like gradients and rhythmic internal light.
+    vec2 v=vec2(arAlong*.35,arP.y)*mtFreq*.55;
+    vec2 p=fract(v)-.5;
+    float body=exp(-dot(p,p)*7.);
+    float pulse=.5+.5*sin(mtClock+v.x*.63+arRand*6.2831853);
+    vec3 inner=.5+.5*cos(vec3(0.,2.094,4.188)+body*3.+mtThickness+mtPhase*.25);
+    mtBands=mix(inner*.28,inner,body);
+    mtFlash=pow(mtFacing,6.)*.65;
+    mtOpacity=.38+.45*body;mtSpecular=.22*mtFlash;
+    mtEmission=body*(.20+.80*pulse)*.45;
+  }else if(mtMode==15){
+    // Local Voronoi nearest/second nearest distance defines bubble walls.
+    vec2 v=vec2(arAlong*.33,arP.y)*mtFreq*.55;
+    vec2 cell=floor(v),p=fract(v);
+    float d1=10.,d2=10.;
+    for(int fy=-1;fy<=1;fy++){
+      for(int fx=-1;fx<=1;fx++){
+        vec2 offset=vec2(float(fx),float(fy)),id=cell+offset;
+        vec2 jitter=vec2(hash(id+vec2(13.1,seedPhase*.14)),hash(id+vec2(5.3,19.7)));
+        vec2 delta=offset+.20+.60*jitter-p;
+        float d=dot(delta,delta);
+        if(d<d1){d2=d1;d1=d;}else if(d<d2){d2=d;}
+      }
+    }
+    float wall=1.-smoothstep(.035,.18,d2-d1);
+    float path=mtThickness*(.45+.55*clamp(sqrt(d1),0.,1.))+.10*sin(mtPhase);
+    vec3 film=.5+.5*cos(12.5663706*path/mtLambda);
+    mtBands=mix(vec3(.43,.54,.69),film,.35+.65*wall);
+    mtFlash=wall;mtOpacity=.30+.64*wall;mtSpecular=.44*wall;
+  }else if(mtMode==16){
+    // Faceted microfibers with velvet grazing scatter and spectral glitter.
+    vec2 v=vec2(arAlong*.65,arP.y)*mtFreq;
+    vec2 cell=floor(v),p=fract(v)-.5;
+    float grain=hash(cell+vec2(seedPhase*.23,8.1));
+    float tip=1.-smoothstep(.035,.22,length(p*vec2(1.8,.85)));
+    float grazing=pow(1.-mtFacing,.65);
+    vec3 spectral=.5+.5*cos(vec3(0.,2.094,4.188)+grain*6.2831853+mtThickness*mtFacing+mtPhase*.25);
+    mtBands=mix(spectral*.28,spectral,.3+.7*grazing);
+    mtFlash=tip*pow(.5+.5*cos(grain*6.2831853+mtClock),6.);
+    mtOpacity=.70+.22*grazing;mtSpecular=.55*mtFlash;
+  }
+  mtFinish=vec4(mtFlash,mtOpacity,mtSpecular,mtEmission);
+  return mtBands;
 }
 #endif
 
@@ -4239,167 +4427,58 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float mtFacing=clamp(.22+.78*abs(cos(mtAngle+arClock*.23)),0.,1.);
   float mtThickness=mix(.30,3.8,filamentMetaThickness);
   float mtPhase=mtClock+arRand*6.2831853;
-  vec3 mtLambda=vec3(.650,.530,.460);
-  vec3 mtBands=vec3(.5);
-  float mtFlash=0.;
-  float mtOpacity=1.,mtSpecular=0.,mtEmission=0.;
-  if(filamentMeta==1){
-    // Grating orders with local orientation and wavelength-dependent phase.
-    float groove=arP.x*mtFreq+arP.y*mtFreq*.37+mtPhase*.2;
-    vec3 orderPhase=(groove+mtThickness*mtFacing)/mtLambda;
-    mtBands=pow(.5+.5*cos(orderPhase*6.2831853),vec3(3.));
-    mtFlash=max(mtBands.r,max(mtBands.g,mtBands.b));
-  }else if(filamentMeta==2){
-    // Three directional lattice planes approximate a photonic stop band.
-    vec2 v=arP*mtFreq;
-    float lattice=(cos(v.x*6.2831853)+cos(dot(v,vec2(.5,.8660254))*6.2831853)+cos(dot(v,vec2(-.5,.8660254))*6.2831853))/3.;
-    float center=.47+.14*mtFacing+.055*lattice+.025*sin(mtPhase);
-    vec3 delta=(mtLambda-vec3(center))/mix(.095,.035,filamentMetaPolish);
-    mtBands=exp(-delta*delta);mtFlash=abs(lattice);
-  }else if(filamentMeta==3){
-    // Opposed reflected/transmitted bands, using a projected facing proxy.
-    float path=mtThickness*(.45+.55*mtFacing)+.16*sin(arP.y*mtFreq+mtPhase);
-    vec3 reflected=.5+.5*cos(12.5663706*path/mtLambda);
-    mtBands=mix(1.-reflected,reflected,smoothstep(.28,.76,mtFacing));
-    mtFlash=pow(1.-mtFacing,2.);
-  }else if(filamentMeta==4){
-    // Thin-film phase delay varies with projected thickness and incidence.
-    float path=mtThickness*(.65+.35*cos(arP.x*mtFreq+mtPhase))*(.5+.5*mtFacing);
-    mtBands=.5+.5*cos(12.5663706*path/mtLambda);
-    mtFlash=pow(mtFacing,5.);
-  }else if(filamentMeta==5){
-    // Faceted microscopic chambers with wavelength-sheared highlights.
-    vec2 v=fract(arP*mtFreq*.42)-.5;
-    float facet=atan(v.y,v.x+.00001);
-    float plane=floor((facet+3.14159265)*.95492966);
-    float split=plane*.39+mtPhase*.2+length(v)*mtThickness;
-    mtBands=pow(.5+.5*cos(6.2831853*(split/mtLambda+vec3(0.,.16,.32))),vec3(2.));
-    mtFlash=1.-smoothstep(.025,.13,abs(abs(v.x)-abs(v.y)));
-  }else if(filamentMeta==6){
-    // Nacre-like terrace thickness with bright mineral ridge reflections.
-    float ridge=fract((arP.y+abs(arP.x)*.42)*mtFreq);
-    float path=mtThickness*(.55+.45*ridge)*mtFacing;
-    mtBands=.5+.5*cos(12.5663706*path/mtLambda+mtPhase*.30);
-    mtFlash=1.-smoothstep(.06,.24,ridge);
-  }else if(filamentMeta==7){
-    // Retardation between two projected polarization axes.
-    float axis=mtAngle+arP.y*mtFreq*.4+mtPhase*.2;
-    float polarAxis=sin(2.*axis);
-    float polar=polarAxis*polarAxis;
-    vec3 retard=sin(3.14159265*mtThickness*(.5+.5*mtFacing)/mtLambda);
-    mtBands=polar*retard*retard;mtFlash=polar;
-  }else if(filamentMeta==8){
-    // Bragg-like reflection shifts across stable microcrystalline domains.
-    vec2 domain=floor(vec2(arAlong,arP.y*4.)*mtFreq*.22);
-    float dh=hash(domain+vec2(seedPhase*.17,17.2));
-    float center=.43+.22*mtFacing+.055*sin(dh*6.2831853+mtPhase*.35);
-    vec3 delta=(mtLambda-vec3(center))/mix(.085,.028,filamentMetaPolish);
-    mtBands=exp(-delta*delta);mtFlash=pow(mtFacing,4.);
-  }else if(filamentMeta==9){
-    // Nematic director field with half-angle defects and optical retardance.
-    vec2 v=vec2(arAlong*.42,arP.y)*mtFreq*.55;
-    vec2 cell=floor(v),p=fract(v)-.5;
-    float director=.5*atan(p.y,p.x+.00001)+mtPhase*.28+
-      .40*sin(v.x*2.+v.y*3.);
-    float polar=sin(2.*director);polar*=polar;
-    float path=mtThickness*(.65+.35*mtFacing)*(.75+.25*cos(director*2.));
-    vec3 retard=sin(3.14159265*path/mtLambda);
-    mtBands=mix(vec3(.08),retard*retard,polar);
-    mtFlash=pow(abs(cos(director-mtAngle)),7.);
-    mtOpacity=.50+.42*polar;mtSpecular=.24*mtFlash;
-  }else if(filamentMeta==10){
-    // Aerogel: nested pores, blue-biased scattering and grazing rim.
-    vec2 v=vec2(arAlong*.36,arP.y)*mtFreq*.72;
-    float grain=0.,rim=0.;
-    for(int ag=0;ag<3;ag++){
-      float scale=pow(2.03,float(ag));
-      vec2 p=fract(v*scale+float(ag)*.37)-.5;
-      float r=length(p);
-      float weight=pow(.55,float(ag));
-      grain+=weight*(1.-smoothstep(.17,.32,r));
-      rim+=weight*(1.-smoothstep(.025,.11,abs(r-.30)));
-    }
-    float scatter=clamp(grain*.65,0.,1.);
-    vec3 haze=mix(vec3(.12,.31,.63),vec3(.80,.91,1.),scatter);
-    mtBands=mix(haze,vec3(.91,.62,.29),pow(mtFacing,4.)*.28);
-    mtFlash=clamp(rim*.55,0.,1.);
-    mtOpacity=.22+.43*scatter+.24*(1.-mtFacing);
-    mtSpecular=.15*mtFlash;
-  }else if(filamentMeta==11){
-    // Rosensweig-inspired magnetic peaks, radial facets and oily glints.
-    vec2 v=vec2(arAlong*.42,arP.y)*mtFreq*.65;
-    float field=(cos(v.x*6.2831853)+cos(dot(v,vec2(.5,.8660254))*6.2831853+mtPhase)+
-      cos(dot(v,vec2(-.5,.8660254))*6.2831853-mtPhase))/3.;
-    float peak=pow(clamp(.5+.5*field,0.,1.),3.);
-    float ridge=pow(1.-abs(field),5.);
-    vec3 film=.5+.5*cos(12.5663706*(mtThickness*(.45+.55*peak))/mtLambda);
-    mtBands=mix(vec3(.022,.018,.045),film,.22+.55*peak);
-    mtFlash=pow(peak,mix(2.,7.,filamentMetaPolish));
-    mtOpacity=.75+.25*peak;mtSpecular=.55*max(mtFlash,.45*ridge);
-  }else if(filamentMeta==12){
-    // Three bounded recursive folds model layered dichroic glass facets.
-    vec2 v=fract(vec2(arAlong*.35,arP.y)*mtFreq*.30)-.5;
-    float facet=0.,edge=0.;
-    for(int fg=0;fg<3;fg++){
-      v=abs(v)-vec2(.24,.19);
-      float a=.55+float(fg)*.19+mtClock*.08;
-      v=mat2(cos(a),-sin(a),sin(a),cos(a))*v*1.65;
-      facet+=length(v)*pow(.55,float(fg));
-      edge=max(edge,1.-smoothstep(.025,.10,min(abs(v.x),abs(v.y))));
-    }
-    vec3 bands=.5+.5*cos(12.5663706*(mtThickness*.32+facet*.36+mtFacing*.19)/mtLambda);
-    mtBands=mix(1.-bands,bands,smoothstep(.25,.75,mtFacing));
-    mtFlash=edge;mtOpacity=.37+.48*edge;mtSpecular=.48*edge;
-  }else if(filamentMeta==13){
-    // Directional reflection lobes across flowing brushed-metal grooves.
-    float v=arP.y*mtFreq*1.8+.40*sin(arAlong*.65-mtClock);
-    float groove=cos(v*6.2831853);
-    float streak=pow(abs(cos(mtAngle+groove*.35+mtPhase*.12)),mix(3.,16.,filamentMetaPolish));
-    vec3 metal=.5+.5*cos(vec3(.2,1.5,3.1)+groove*.65+mtPhase*.18);
-    mtBands=mix(vec3(.09,.12,.18),metal,.24+.62*streak);
-    mtFlash=streak;mtOpacity=.96;mtSpecular=.65*streak;
-  }else if(filamentMeta==14){
-    // Soft gel body, subsurface-like gradients and rhythmic internal light.
-    vec2 v=vec2(arAlong*.35,arP.y)*mtFreq*.55;
-    vec2 p=fract(v)-.5;
-    float body=exp(-dot(p,p)*7.);
-    float pulse=.5+.5*sin(mtClock+v.x*.63+arRand*6.2831853);
-    vec3 inner=.5+.5*cos(vec3(0.,2.094,4.188)+body*3.+mtThickness+mtPhase*.25);
-    mtBands=mix(inner*.28,inner,body);
-    mtFlash=pow(mtFacing,6.)*.65;
-    mtOpacity=.38+.45*body;mtSpecular=.22*mtFlash;
-    mtEmission=body*(.20+.80*pulse)*.45;
-  }else if(filamentMeta==15){
-    // Local Voronoi nearest/second nearest distance defines bubble walls.
-    vec2 v=vec2(arAlong*.33,arP.y)*mtFreq*.55;
-    vec2 cell=floor(v),p=fract(v);
-    float d1=10.,d2=10.;
-    for(int fy=-1;fy<=1;fy++){
-      for(int fx=-1;fx<=1;fx++){
-        vec2 offset=vec2(float(fx),float(fy)),id=cell+offset;
-        vec2 jitter=vec2(hash(id+vec2(13.1,seedPhase*.14)),hash(id+vec2(5.3,19.7)));
-        vec2 delta=offset+.20+.60*jitter-p;
-        float d=dot(delta,delta);
-        if(d<d1){d2=d1;d1=d;}else if(d<d2){d2=d;}
-      }
-    }
-    float wall=1.-smoothstep(.035,.18,d2-d1);
-    float path=mtThickness*(.45+.55*clamp(sqrt(d1),0.,1.))+.10*sin(mtPhase);
-    vec3 film=.5+.5*cos(12.5663706*path/mtLambda);
-    mtBands=mix(vec3(.43,.54,.69),film,.35+.65*wall);
-    mtFlash=wall;mtOpacity=.30+.64*wall;mtSpecular=.44*wall;
-  }else if(filamentMeta==16){
-    // Faceted microfibers with velvet grazing scatter and spectral glitter.
-    vec2 v=vec2(arAlong*.65,arP.y)*mtFreq;
-    vec2 cell=floor(v),p=fract(v)-.5;
-    float grain=hash(cell+vec2(seedPhase*.23,8.1));
-    float tip=1.-smoothstep(.035,.22,length(p*vec2(1.8,.85)));
-    float grazing=pow(1.-mtFacing,.65);
-    vec3 spectral=.5+.5*cos(vec3(0.,2.094,4.188)+grain*6.2831853+mtThickness*mtFacing+mtPhase*.25);
-    mtBands=mix(spectral*.28,spectral,.3+.7*grazing);
-    mtFlash=tip*pow(.5+.5*cos(grain*6.2831853+mtClock),6.);
-    mtOpacity=.70+.22*grazing;mtSpecular=.55*mtFlash;
+  vec3 mtBands;
+  vec4 mtFinish;
+  float alMix=0.,alBoundary=0.;
+#ifdef FILAMENT_ARCH_ALCHEMY
+  float alClock=time*filamentAlchSpeed*1.1+filamentAlchProgress*6.2831853;
+  float alScale=mix(.45,4.5,filamentAlchScale);
+  float alX=arAlong*alScale;
+  float alY=arP.y*alScale;
+  float alWave=.5-.5*cos(alClock);
+  if(filamentAlchMode==1){
+    alMix=filamentAlchProgress;
+  }else if(filamentAlchMode==2){
+    alMix=alWave;
+  }else if(filamentAlchMode==3){
+    alMix=smoothstep(.25,.75,.5+.5*sin(alX-alClock+.45*sin(alY*2.)));
+  }else if(filamentAlchMode==4){
+    float territory=hash(vec2(floor(alX*.5),floor(alY))+vec2(seedPhase*.13,phaseOffset*.27));
+    alMix=smoothstep(territory-.15,territory+.15,alWave);
+  }else if(filamentAlchMode==5){
+    // Interfering reaction fronts, not a stateful chemical PDE.
+    float field=(sin(alX-alClock)+sin(alY*3.+alClock*.7)+sin(alX*.62+alY*2.-alClock*.4))/3.;
+    alMix=smoothstep(-.42,.42,field);
+  }else if(filamentAlchMode==6){
+    alMix=alWave;
+  }else if(filamentAlchMode==7){
+    alMix=.5-.5*cos(alClock+mod(floor(alX),2.)*3.14159265+alY*.25);
   }
+  alMix=clamp(alMix*filamentAlchAmount,0.,1.);
+  alBoundary=4.*alMix*(1.-alMix);
+  if(alMix<=.00001){
+    mtBands=scaffoldMaterial(filamentMeta,arP,arAlong,arRand,seedPhase,mtFreq,mtPhase,mtThickness,mtFacing,mtAngle,mtClock,mtFinish);
+  }else if(alMix>=.99999){
+    mtBands=scaffoldMaterial(filamentAlchTarget,arP,arAlong,arRand,seedPhase,mtFreq,mtPhase,mtThickness,mtFacing,mtAngle,mtClock,mtFinish);
+  }else{
+    vec4 finishA,finishB;
+    vec3 bandsA=scaffoldMaterial(filamentMeta,arP,arAlong,arRand,seedPhase,mtFreq,mtPhase,mtThickness,mtFacing,mtAngle,mtClock,finishA);
+    vec3 bandsB=scaffoldMaterial(filamentAlchTarget,arP,arAlong,arRand,seedPhase,mtFreq,mtPhase,mtThickness,mtFacing,mtAngle,mtClock,finishB);
+    mtBands=mix(bandsA,bandsB,alMix);
+    mtFinish=mix(finishA,finishB,alMix);
+    if(filamentAlchMode==6){
+      float molten=.5+.5*sin(alX*2.3+alY*3.-alClock);
+      float liquid=alBoundary*.65;
+      vec3 spectral=.5+.5*cos(vec3(0.,2.094,4.188)+molten*4.+mtThickness);
+      mtBands=mix(mtBands,spectral,liquid*.65);
+      mtFinish.y=mix(mtFinish.y,.60,liquid);
+      mtFinish.z=max(mtFinish.z,liquid*pow(molten,5.));
+    }
+  }
+#else
+  mtBands=scaffoldMaterial(filamentMeta,arP,arAlong,arRand,seedPhase,mtFreq,mtPhase,mtThickness,mtFacing,mtAngle,mtClock,mtFinish);
+#endif
+  float mtFlash=mtFinish.x,mtOpacity=mtFinish.y,mtSpecular=mtFinish.z,mtEmission=mtFinish.w;
   float mtMix=filamentMetaAmount*mtVisible;
   vec3 mtColor=mix(arInk,mtBands,filamentMetaDispersion);
   arInk=mix(arInk,mtColor,mtMix);
@@ -4408,6 +4487,9 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   arWeight*=mix(1.,clamp(mtOpacity,0.,1.),mtMix);
   result+=mix(arInk,vec3(.94,.97,1.),.65)*arMesh*arWeight*mtSpecular*mtMix*filamentMetaPolish;
   result+=arInk*arMesh*arWeight*mtEmission*mtMix;
+#ifdef FILAMENT_ARCH_ALCHEMY
+  result+=mix(arInk,vec3(.95,.98,1.),.55)*arMesh*arWeight*alBoundary*filamentAlchGlow*mtMix*.42;
+#endif
 #endif
   result=mix(result,result*.55+arInk*(.7+.3*arShine),clamp(arMesh*arWeight*.78,0.,.85));
   result+=mix(arInk,vec3(.92,.97,1.),.50)*arMesh*arWeight*clamp(arShine,0.,1.)*.32;

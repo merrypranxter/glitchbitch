@@ -15,7 +15,7 @@ test("metamaterials preserve architecture and recipe compatibility",()=>{
   assert.equal(s.filamentMeta,textileMetaModes[i]);
   assert.doesNotThrow(()=>validateRecipe(s));
   assert.deepEqual(parseDocument(recipeDocument(s,"meta",{time:0,colorTime:0})).state,s);
-  assert.ok(filamentGLSL.includes("filamentMeta=="+i+"){"));
+  assert.ok(filamentGLSL.includes("mtMode=="+i+"){"));
   for(const k of Object.keys(base).filter(k=>!textileMetaControls.includes(k)))assert.deepEqual(s[k],base[k],k);
   assert.deepEqual(protectWeaving(base,s,["metamaterials"]),base);
  }

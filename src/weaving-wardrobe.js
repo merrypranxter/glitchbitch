@@ -13,6 +13,7 @@ export const weavingLocks=[
  ["architecture","Parasitic architecture"],
  ["dimension","Dimensional metamorphosis"],
  ["metamaterials","Optical metamaterials"],
+ ["material-alchemy","Material alchemy"],
  ["jewelry","Jewelry & ornaments"],
  ["optics","Structural-color coats"],
  ["motion","Stitch animation & needle laws"],
@@ -30,6 +31,7 @@ export function textileGroup(key){
  if(key.startsWith("filamentMicroloom"))return "microloom";
  if(key.startsWith("filamentPhysics"))return "physics";
  if(key.startsWith("filamentChroma"))return "chroma";
+ if(key.startsWith("filamentAlch"))return "material-alchemy";
  if(key.startsWith("filamentMeta"))return "metamaterials";
  if(key.startsWith("filamentDim"))return "dimension";
  if(key.startsWith("filamentArchitecture"))return "architecture";

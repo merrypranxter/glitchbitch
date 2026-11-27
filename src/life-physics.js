@@ -8,11 +8,11 @@ function make(s,w){
  for(let i=0;i<count;i++){
   const h=rng(),r=(.008+.077*s.lifeSize/100)*(1+(s.lifeVariation/100)*(.55+.85*h-1))*Math.min(w,1);
   const angle=rng()*Math.PI*2, speed=(.13+.52*rng())*1.8*s.lifeSpeed/100;
-  bodies.push({r,x:r+rng()*(w-2*r),y:r+rng()*(1-2*r),vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed});
+  bodies.push({r,base:r,age:0,gene:rng(),cycle:2+rng()*5,x:r+rng()*(w-2*r),y:r+rng()*(1-2*r),vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed});
  }
- return {bodies,step:0};
+ return {bodies,step:0,rng};
 }
-function advance(sim,w,collision,e,mode,strength,speed){
+function advance(sim,w,collision,e,mode,strength,speed,evolution,birth,mutation,mortality){
  const b=sim.bodies;
  const t=sim.step*DT;
  const snapshot=b.map(p=>({...p}));
@@ -48,17 +48,36 @@ function advance(sim,w,collision,e,mode,strength,speed){
   }
   for(const p of b){if(p.x<p.r){p.x=p.r;p.vx=Math.abs(p.vx)}if(p.x>w-p.r){p.x=w-p.r;p.vx=-Math.abs(p.vx)}if(p.y<p.r){p.y=p.r;p.vy=Math.abs(p.vy)}if(p.y>1-p.r){p.y=1-p.r;p.vy=-Math.abs(p.vy)}}
  }
+ if(evolution>0){
+  const rng=sim.rng;
+  for(let i=b.length-1;i>=0;i--){
+   const p=b[i];p.age+=DT*evolution;
+   p.r=p.base*clamp(.65+p.age*.35, .65,1.35);
+   const period=p.cycle/(.15+birth*2);
+   if(mortality>0 && p.age>p.cycle*3/(.1+mortality*2) && b.length>1){b.splice(i,1);continue;}
+   if(birth>0 && p.age>period && b.length<24){
+    const angle=rng()*Math.PI*2,nx=Math.cos(angle),ny=Math.sin(angle);
+    const base=clamp(p.base*.82*(1+(rng()-.5)*mutation*.5),.004,.12*Math.min(w,1));
+    p.age=0;p.base*=.82;p.r=p.base*.65;
+    const child={...p,base,r:base*.65,age:0,cycle:2+rng()*5,gene:(p.gene+(rng()-.5)*mutation+1)%1};
+    child.x=clamp(p.x+nx*(p.r+child.r),child.r,w-child.r);child.y=clamp(p.y+ny*(p.r+child.r),child.r,1-child.r);
+    child.vx+=nx*.2*speed;child.vy+=ny*.2*speed;p.vx-=nx*.2*speed;p.vy-=ny*.2*speed;
+    b.push(child);
+   }
+  }
+ }
  sim.step++;
 }
 export function lifePositions(s,time,width,height){
  const w=Math.max(width/height,.1), collision=clamp((s.lifeCollision??100)/100,0,1),e=clamp((s.lifeElasticity??90)/100,0,1);
  const mode=Math.floor(clamp((s.lifeBehavior??0)/100,0,.99999)*9),strength=clamp((s.lifeForce??50)/100,0,1),speed=clamp(s.lifeSpeed/100,0,1);
- const key=JSON.stringify([s.seed,s.lifePopulation,s.lifeSize,s.lifeSpeed,s.lifeVariation,w,collision,e,mode,strength]);
+ const [evolution,birth,mutation,mortality]=[s.lifeEvolution??0,s.lifeBirthRate??50,s.lifeMutation??30,s.lifeMortality??20].map(v=>clamp(v/100,0,1));
+ const key=JSON.stringify([s.seed,s.lifePopulation,s.lifeSize,s.lifeSpeed,s.lifeVariation,w,collision,e,mode,strength,evolution,birth,mutation,mortality]);
  const target=Math.max(0,Math.floor((Number(time)||0)/DT));
  let sim=cache.get(key);
  if(!sim||sim.step>target){sim=make(s,w);cache.set(key,sim);if(cache.size>4)cache.delete(cache.keys().next().value);}
- while(sim.step<target)advance(sim,w,collision,e,mode,strength,speed);
+ while(sim.step<target)advance(sim,w,collision,e,mode,strength,speed,evolution,birth,mutation,mortality);
  const out=new Float32Array(96);
- sim.bodies.forEach((p,i)=>out.set([p.x,p.y,p.r,1],i*4));
+ sim.bodies.forEach((p,i)=>out.set([p.x,p.y,p.r,1+p.gene],i*4));
  return out;
 }

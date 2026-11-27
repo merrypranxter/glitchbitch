@@ -87,5 +87,16 @@ export default function ToppersInspector({history}){
    <Parameter label="Color phase" name="topperPortalHue" history={history}/>
    <p className="control-note">Resamples the base mathematical field, not the fully composited artwork.</p>
   </details>
+  <details className="effect-explanation"><summary>Temporal shrapnel</summary>
+   <Parameter label="Temporal presence" name="topperTime" history={history}/>
+   <Parameter label="Fragment population" name="topperTimeDensity" history={history}/>
+   <Parameter label="Fragment scale" name="topperTimeScale" history={history}/>
+   <Parameter label="Temporal pulse" name="topperTimeMotion" history={history}/>
+   <Parameter label="Memory persistence" name="topperTimeHold" history={history}/>
+   <Parameter label="History displacement" name="topperTimeSlip" history={history}/>
+   <Parameter label="Fragment geometry" name="topperTimeForm" history={history}/>
+   <Parameter label="Chroma separation" name="topperTimeChroma" history={history}/>
+   <p className="control-note">Uses actual previous-frame feedback; history accumulates while playing.</p>
+  </details>
  </section>;
 }

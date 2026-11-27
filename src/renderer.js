@@ -67,6 +67,30 @@ float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(ha
 float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*noise(p);p=mat2(.8,-.6,.6,.8)*p*2.03+3.4;a*=.5;}return v;}
 mat2 rotate(float a){return mat2(cos(a),-sin(a),sin(a),cos(a));}
 vec3 palette(float t){float q=fract(t)*float(colorCount);int a=int(floor(q));vec3 c=colors[0],d=colors[0];for(int i=0;i<12;i++){if(i==a)c=colors[i];if(i==a+1)d=colors[i];}if(a==colorCount-1)d=colors[0];return mix(c,d,smoothstep(0.,1.,fract(q)));}
+uniform float topperShrapnel,topperDensity,topperScale,topperMotion,topperHue,topperShape,topperBlend;
+vec3 transmissionShrapnel(vec3 col,vec2 uv){
+ if(topperShrapnel<.001)return col;
+ float gridSize=mix(5.,24.,topperScale);
+ vec2 q=uv*gridSize*vec2(max(res.x/res.y,.4),1.);
+ vec2 cell=floor(q), local=fract(q)-.5;
+ float h=hash(cell+vec2(19.,71.));
+ if(h>mix(.035,.48,topperDensity))return col;
+ float t=time*topperMotion*.65;
+ local-=.10*vec2(sin(t+h*TAU),cos(t*.73+h*TAU));
+ float kind=floor(min(topperShape,.999)*4.);
+ vec2 dims=vec2(.12+.22*hash(cell+31.),.025+.065*hash(cell+53.));
+ if(kind>1.5)local=rotate((h-.5)*2.4)*local;
+ if(kind>2.5)dims=vec2(.055,.22);
+ float sd=max(abs(local.x)-dims.x,abs(local.y)-dims.y);
+ float mask=1.-smoothstep(-.012,.012,sd);
+ if(kind>.5&&kind<1.5)mask*=smoothstep(.12,.24,fract(local.x*13.+h+t*.3));
+ float phase=h+topperHue+.14*sin(t+h*TAU)+local.x*1.8;
+ vec3 ink=palette(phase);
+ if(topperBlend>.5)ink=mix(ink,abs(col-ink),smoothstep(.5,1.,topperBlend));
+ else ink=mix(ink,col*ink*1.6,topperBlend*2.);
+ return mix(col,ink,mask*topperShrapnel);
+}
+
 ${geometryGLSL}
 ${motionGLSL}
 ${bioGLSL}
@@ -200,6 +224,7 @@ float luma=dot(col,vec3(.2126,.7152,.0722));col=mix(vec3(luma),col,saturation*2.
 /* INJURY_POST */
 /* SPX_POST */
 col=applyAppearance(col,uv);
+col=transmissionShrapnel(col,uv);
 gl_FragColor=vec4(clamp(col,0.,1.),1.);}`;
 
 export function createRenderer(canvas, {exactEffects=false} = {}) {
@@ -1801,6 +1826,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "windowCascade",
         "glitter",
         "broadcast",
+        "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",
         "misregister",
         "saturation",
         "contrast",

@@ -1,20 +1,95 @@
 export const topperKeys=["broadcast","windowCascade","glitter","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal","topperTime"];
-export function shuffleToppers(state,rng=Math.random,density="Balanced"){
+export const topperParameters={
+  "topperShrapnel": [
+    "topperDensity",
+    "topperScale",
+    "topperMotion",
+    "topperHue",
+    "topperShape",
+    "topperBlend"
+  ],
+  "topperJewel": [
+    "topperJewelDensity",
+    "topperJewelScale",
+    "topperJewelMotion",
+    "topperJewelDetail",
+    "topperJewelHue",
+    "topperJewelForm",
+    "topperJewelBlend"
+  ],
+  "topperIsland": [
+    "topperIslandDensity",
+    "topperIslandScale",
+    "topperIslandMotion",
+    "topperIslandForm",
+    "topperIslandMapping",
+    "topperIslandHue",
+    "topperIslandFeather"
+  ],
+  "topperVoronoi": [
+    "topperVoronoiDensity",
+    "topperVoronoiScale",
+    "topperVoronoiMotion",
+    "topperVoronoiGap",
+    "topperVoronoiTexture",
+    "topperVoronoiHue",
+    "topperVoronoiBlend"
+  ],
+  "topperTape": [
+    "topperTapeDensity",
+    "topperTapeScale",
+    "topperTapeMotion",
+    "topperTapeWidth",
+    "topperTapeDispersion",
+    "topperTapeHue",
+    "topperTapePalette"
+  ],
+  "topperPortal": [
+    "topperPortalDensity",
+    "topperPortalScale",
+    "topperPortalMotion",
+    "topperPortalZoom",
+    "topperPortalForm",
+    "topperPortalWarp",
+    "topperPortalHue"
+  ],
+  "topperTime": [
+    "topperTimeDensity",
+    "topperTimeScale",
+    "topperTimeMotion",
+    "topperTimeHold",
+    "topperTimeSlip",
+    "topperTimeForm",
+    "topperTimeChroma"
+  ]
+};
+export const heavyToppers=["topperPortal","topperTime"];
+export function remixTopper(state,key,rng=Math.random,density="Balanced"){
+ if(!topperKeys.includes(key))return state;
  const next={...state};
- const count=density==="Sparse"?1:density==="Maximalist"?3:2;
- const pool=[...topperKeys];
- for(const key of pool)next[key]=0;
- for(let i=0;i<count;i++){
-  const key=pool.splice(Math.min(pool.length-1,Math.floor(rng()*pool.length)),1)[0];
-  next[key]=density==="Sparse"?15+30*rng():density==="Maximalist"?55+40*rng():30+45*rng();
+ const band=density==="Sparse"?[15,40]:density==="Maximalist"?[50,90]:[30,70];
+ next[key]=band[0]+(band[1]-band[0])*rng();
+ for(const k of topperParameters[key]||[]){
+   const population=k.endsWith("Density");
+   next[k]=population?band[0]+(band[1]-band[0])*rng():10+80*rng();
+   if(population&&heavyToppers.includes(key))next[k]=Math.min(40,next[k]);
  }
- if(next.topperShrapnel>0){for(const key of ["topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend"])next[key]=15+70*rng();}
- if(next.topperJewel>0){for(const key of ["topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend"])next[key]=rng()*100;}
- if(next.topperIsland>0){for(const key of ["topperIslandDensity","topperIslandScale","topperIslandMotion","topperIslandForm","topperIslandMapping","topperIslandHue","topperIslandFeather"])next[key]=rng()*100;}
- if(next.topperVoronoi>0){for(const key of ["topperVoronoiDensity","topperVoronoiScale","topperVoronoiMotion","topperVoronoiGap","topperVoronoiTexture","topperVoronoiHue","topperVoronoiBlend"])next[key]=rng()*100;}
- if(next.topperTape>0){for(const key of ["topperTapeDensity","topperTapeScale","topperTapeMotion","topperTapeWidth","topperTapeDispersion","topperTapeHue","topperTapePalette"])next[key]=rng()*100;}
- if(next.topperPortal>0){for(const key of ["topperPortalDensity","topperPortalScale","topperPortalMotion","topperPortalZoom","topperPortalForm","topperPortalWarp","topperPortalHue"])next[key]=rng()*100;}
- if(next.topperTime>0){for(const key of ["topperTimeDensity","topperTimeScale","topperTimeMotion","topperTimeHold","topperTimeSlip","topperTimeForm","topperTimeChroma"])next[key]=rng()*100;}
+ return next;
+}
+export function shuffleToppers(state,rng=Math.random,density="Balanced",allowHeavy=false){
+ let next=clearToppers(state);
+ const count=density==="Sparse"?1:density==="Maximalist"?4:2;
+ const pool=topperKeys.filter(k=>allowHeavy||!heavyToppers.includes(k));
+ for(let i=0;i<count&&pool.length;i++){
+   const key=pool.splice(Math.min(pool.length-1,Math.floor(rng()*pool.length)),1)[0];
+   next=remixTopper(next,key,rng,density);
+   if(heavyToppers.includes(key))for(const h of heavyToppers){const j=pool.indexOf(h);if(j>=0)pool.splice(j,1);}
+ }
  return next;
 }
 export const clearToppers=state=>({...state,...Object.fromEntries(topperKeys.map(k=>[k,0]))});
+export function resetTopper(state,key,defaults){
+ const next={...state};
+ for(const k of [key,...(topperParameters[key]||[])])next[k]=defaults[k];
+ return next;
+}

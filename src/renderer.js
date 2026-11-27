@@ -394,6 +394,38 @@ vec3 truchetConfetti(vec3 col,vec2 uv){
  ink=mix(ink,abs(clamp(col,0.,1.)-ink),topperTruchetBlend);
  return mix(col,ink,mask*line*topperTruchet);
 }
+uniform float topperPoly,topperPolyDensity,topperPolyScale,topperPolyMotion,topperPolySides,topperPolyDepth,topperPolyWidth,topperPolyHue,topperPolyBlend,topperPolyPulse,topperPolyTwinkle,topperPolyTwist;
+vec3 polygonDebris(vec3 col,vec2 uv){
+ if(topperPoly<.001)return col;
+ vec2 q=uv*mix(3.,24.,topperPolyScale)*vec2(max(res.x/res.y,.4),1.);
+ vec2 cell=floor(q), p=fract(q)-.5;
+ float h=hash(cell+vec2(197.,63.));
+ if(h>mix(.025,.65,topperPolyDensity))return col;
+ float t=time*topperPolyMotion*.6;
+ float phase=h*TAU+t*mix(.35,1.8,hash(cell+91.));
+ float size=mix(1.,.12+.88*(.5+.5*sin(phase)),topperPolyPulse);
+ float life=mix(1.,smoothstep(-.6,.5,sin(phase+2.)),topperPolyTwinkle);
+ float radius=.39*size;
+ if(length(p)>radius+.02||life<.001)return col;
+ float sides=3.+floor(min(topperPolySides,.999)*7.);
+ if(sides>8.5)sides=3.+floor(hash(cell+37.)*6.);
+ float sector=TAU/sides;
+ float depth=2.+floor(topperPolyDepth*8.);
+ float direction=hash(cell+73.)<.5?-1.:1.;
+ float width=mix(.002,.018,topperPolyWidth)*size;
+ for(int i=0;i<10;i++){
+   float j=float(i);
+   if(j>=depth)break;
+   float rr=radius*(1.-j/depth);
+   float a=atan(p.y,p.x+.00001)+h*TAU+direction*t*(mod(j,2.)*2.-1.)*(1.+j*.12)+j*topperPolyTwist*sector;
+   float dist=length(p)*cos(mod(a+sector*.5,sector)-sector*.5)-rr*cos(PI/sides);
+   float mask=1.-smoothstep(width,width+.004,abs(dist));
+   vec3 ink=palette(h+topperPolyHue+j*.137+.12*sin(phase+j));
+   ink=mix(ink,abs(clamp(col,0.,1.)-ink),topperPolyBlend);
+   col=mix(col,ink,mask*life*topperPoly);
+ }
+ return col;
+}
 ${geometryGLSL}
 ${motionGLSL}
 ${bioGLSL}
@@ -563,6 +595,7 @@ col=triangleConfetti(col,uv);
 col=kagomeConfetti(col,uv);
 col=quasiConfetti(col,uv);
 col=truchetConfetti(col,uv);
+col=polygonDebris(col,uv);
 col=spectralTape(col,uv);
 col=phospheneJewels(col,uv);
 gl_FragColor=vec4(clamp(col,0.,1.),1.);}`;
@@ -2177,6 +2210,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "topperKagome","topperKagomeDensity","topperKagomeScale","topperKagomeMotion","topperKagomeGap","topperKagomeTexture","topperKagomeHue","topperKagomeBlend","topperKagomePulse","topperKagomeTwinkle","topperKagomeBalance",
         "topperQuasi","topperQuasiDensity","topperQuasiScale","topperQuasiMotion","topperQuasiGap","topperQuasiTexture","topperQuasiHue","topperQuasiBlend","topperQuasiPulse","topperQuasiTwinkle",
         "topperTruchet","topperTruchetDensity","topperTruchetScale","topperTruchetMotion","topperTruchetGap","topperTruchetTexture","topperTruchetHue","topperTruchetBlend","topperTruchetPulse","topperTruchetTwinkle","topperTruchetWidth",
+        "topperPoly","topperPolyDensity","topperPolyScale","topperPolyMotion","topperPolySides","topperPolyDepth","topperPolyWidth","topperPolyHue","topperPolyBlend","topperPolyPulse","topperPolyTwinkle","topperPolyTwist",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",
         "misregister",

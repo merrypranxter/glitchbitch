@@ -199,5 +199,20 @@ export default function ToppersInspector({history}){
    <Parameter label="Independent twinkle" name="topperTruchetTwinkle" history={history}/>
    <Parameter label="Ribbon width" name="topperTruchetWidth" history={history}/>
   </details>
+  <details className="effect-explanation"><summary>Nested polygon debris</summary>
+   <div className="pane-actions"><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,remixTopper(x,"topperPoly",Math.random,density)))}>Remix</button><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,resetTopper(x,"topperPoly",initial)))}>Reset</button></div>
+   <Parameter label="Polygon presence" name="topperPoly" history={history}/>
+   <Parameter label="Population" name="topperPolyDensity" history={history}/>
+   <Parameter label="Scale" name="topperPolyScale" history={history}/>
+   <Parameter label="Rotation speed" name="topperPolyMotion" history={history}/>
+<Select label="Polygon shape" value={String(Math.floor(Math.min(99.9,history.state.topperPolySides)*7/100))} onChange={v=>history.change(s=>({...s,topperPolySides:(Number(v)+.5)*100/7}))}>{["Triangle","Square","Pentagon","Hexagon","Heptagon","Octagon","Mixed"].map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
+   <Parameter label="Nesting depth" name="topperPolyDepth" history={history}/>
+   <Parameter label="Outline width" name="topperPolyWidth" history={history}/>
+   <Parameter label="Palette phase" name="topperPolyHue" history={history}/>
+   <Parameter label="Difference interaction" name="topperPolyBlend" history={history}/>
+   <Parameter label="Independent breathing" name="topperPolyPulse" history={history}/>
+   <Parameter label="Independent twinkle" name="topperPolyTwinkle" history={history}/>
+   <Parameter label="Layer twist" name="topperPolyTwist" history={history}/>
+  </details>
  </section>;
 }

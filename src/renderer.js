@@ -1,6 +1,7 @@
 import {bakeChromaticPalette,LUT_WIDTH,mapChromaticGamut} from "./chromatic-lut.js";
-import {bakeMetamerAtlas,metamerAtlasY,metamerAtlasKey,metamerMotionMode} from "./chromatic-time.js";
+import {bakeMetamerAtlas,metamerAtlasKey,metamerMotionMode} from "./chromatic-time.js";
 import {geographyAtlasState,geographyUniforms,geographyGLSL} from "./chromatic-geography.js";
+import {symbiosisAtlasState,symbiosisUniforms,symbiosisBaseRow,symbiosisGLSL} from "./chromatic-symbiosis.js";
 import {lifePositions} from "./life-physics.js";
 import { appearanceGLSL } from "./appearance.js";
 import {structuralOpticsModes} from "./structural-thread-optics.js";
@@ -74,6 +75,7 @@ uniform int chromaticSpace,chromaticHuePath,chromaticTurns;
 uniform sampler2D chromaticLUT;
 uniform float chromaticAtlasY;
 ${geographyGLSL}
+${symbiosisGLSL}
 uniform int chromaticGamut;
 vec3 chromaticDecode(vec3 c){return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c));}
 vec3 chromaticEncode(vec3 c){c=clamp(c,0.,1.);return mix(c*12.92,1.055*pow(c,vec3(1./2.4))-.055,step(vec3(.0031308),c));}
@@ -841,7 +843,7 @@ else if(marks[i].w<1.5)p+=vec2(-d.y,d.x)*force*8.;else if(marks[i].w<2.5)p+=d*fo
 /* CROSSBREED_PRE */
 /* G2_PRE */
 /* VC_PRE */
-float v=composed(p);/* HEXAGRAM_VALUE */vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*sin(v*(2.+complexity*5.)*TAU),18.);col*=.72+edge*.5;if(bloom)col+=edge*col*.24;
+float v=composed(p);/* HEXAGRAM_VALUE */chromaticFragmentRow=chromaticStructuralRow(chromaticFragmentRow,v,p);vec3 col=palette(phaseOf(v,uv,source));float edge=pow(.5+.5*sin(v*(2.+complexity*5.)*TAU),18.);col*=.72+edge*.5;if(bloom)col+=edge*col*.24;
 /* BACKDROP_POST */
 /* HEXAGRAM_POST */
 /* COMPOSITION_POST */
@@ -912,6 +914,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
     throw Error(
       "WebGL is unavailable. Enable hardware acceleration to use the studio.",
     );
+  const chromaticDerivatives=!!gl2||!!gl.getExtension("OES_standard_derivatives");
   const programs = new Map();
   let active, fence = null, memory = null, memoryShader = null, memoryDisabled = false;
   let stereoUnavailable = false, materialUnavailable = false,
@@ -2085,6 +2088,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
     source=source.replace("/* LETTERING_MODULE */",withLettering?kineticGLSL:"");
     source=source.replace("/* LETTERING_POST */",withLettering?"col=drawKineticLetters(col,uv);":"");
     if (s.split <= 0.1) source = source.replace("if(split>.001)", "if(false)");
+    if(chromaticDerivatives)source=(gl2?"":"#extension GL_OES_standard_derivatives : enable\n")+"#define CHROMATIC_DERIVATIVES\n"+source;
     const vs = gl2
       ? "#version 300 es\n" + vertex.replace("attribute vec2", "in vec2")
       : vertex;
@@ -2854,8 +2858,13 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,chromaticTexture);gl.uniform1i(loc("chromaticLUT"),7);
       const geo=geographyUniforms(s,timeline.colorTime);
       gl.uniform1i(loc("chromaticGeoMode"),geo.mode);
+      const sym=symbiosisUniforms(s,timeline.colorTime);
+      gl.uniform1i(loc("chromaticSymMode"),sym.mode);
       if(s.chromaticSpace>=8){
-       const atlasState=geographyAtlasState(s);
+       const atlasState=symbiosisAtlasState(geographyAtlasState(s));
+       gl.uniform1i(loc("chromaticSymAtlasMode"),sym.atlasMode);
+       gl.uniform4f(loc("chromaticSymConfig"),...sym.config);
+       gl.uniform2f(loc("chromaticSymClock"),...sym.clock);
        gl.uniform1i(loc("chromaticGeoAtlasMode"),geo.atlasMode);
        gl.uniform4f(loc("chromaticGeoConfig"),...geo.config);
        gl.uniform2f(loc("chromaticGeoClock"),...geo.clock);
@@ -2866,7 +2875,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,LUT_WIDTH,atlas.height,0,gl.RGBA,gl.UNSIGNED_BYTE,atlas.pixels);
         chromaticKey=ck;
        }
-       gl.uniform1f(loc("chromaticAtlasY"),metamerAtlasY(s,timeline.colorTime));
+       gl.uniform1f(loc("chromaticAtlasY"),symbiosisBaseRow(s,timeline.colorTime));
       }
       gl.activeTexture(gl.TEXTURE0);
       const key = s.colors.join("");

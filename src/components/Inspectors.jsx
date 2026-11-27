@@ -727,21 +727,42 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
     baseRandomizer:(original,rng)=>randomize(original,{},false,rng)
   }));
   // Category spins use the same activation-aware recipes as individual panels.
+  const [categoryStrength,setCategoryStrength]=React.useState("Wild");
   const categorySpins = [
-    ["Microscopic shapes", remixMicro],
-    ["Glass & refraction", shuffleMathematicalGlass],
-    ["Materials & textures", remixSubstance],
-    ["Light & optical ornaments", remixPhotonZoo],
-    ["Chromatic alchemy", shuffleAlchemy],
-    ["Print & signal damage", shuffleInjury],
-    ["Biological growth", remixBioRot],
-    ["Backgrounds & atmosphere", remixBackdrop],
+    ["Microscopic shapes", remixMicro, [shuffleQd]],
+    ["Glass & refraction", shuffleMathematicalGlass, [
+      (x,r)=>shuffleMathematicalGlass(x,r,"interior"),
+      (x,r)=>shuffleMathematicalGlass(x,r,"motion"),
+      (x,r)=>shuffleMathematicalGlass(x,r,"material"),
+      (x,r)=>shuffleMathematicalGlass(x,r,"transport"),
+      (x,r)=>shuffleMathematicalGlass(x,r,"coupling")]],
+    ["Materials & textures", remixSubstance, [shuffleVelvet,shuffleCrochet]],
+    ["Light & optical ornaments", remixPhotonZoo, [shuffleAlchemy]],
+    ["Chromatic alchemy", shuffleAlchemy, [shuffleSpx]],
+    ["Print & signal damage", shuffleInjury, [shufflePs,shuffleKd]],
+    ["Biological growth", remixBioRot, [remixMicro]],
+    ["Backgrounds & atmosphere", remixBackdrop, [remixUnderlay]],
   ];
+  const spinCategory=(original,primary,extras,rng=Math.random)=>{
+    let next=primary(original,rng);
+    const pool=[...extras];
+    const count=categoryStrength==="Subtle"?0:categoryStrength==="Wild"?1:pool.length;
+    for(let i=0;i<count&&pool.length;i++){
+      const index=Math.min(pool.length-1,Math.floor(rng()*pool.length));
+      next=pool.splice(index,1)[0](next,rng);
+    }
+    // Keep artist-authored content and core composition intact.
+    return {...next,ratio:original.ratio,marks:original.marks,
+      palette:original.palette,colors:original.colors};
+  };
   const body = {
     "chaos-lab": <>
       <div className="pane-actions">
-        {categorySpins.map(([name,spin])=><button key={name} type="button"
-          className="button secondary" onClick={()=>history.change(x=>spin(x,Math.random))}>
+        <Select label="Category shuffle strength" value={categoryStrength} onChange={setCategoryStrength}>
+          {["Subtle","Wild","Unhinged"].map(level=><option key={level} value={level}>{level}</option>)}
+        </Select>
+        {categorySpins.map(([name,spin,extras])=><button key={name} type="button"
+          className="button secondary" onClick={()=>history.change(x=>spinCategory(x,spin,extras))}>
           <Shuffle size={13}/> {name}
         </button>)}
       </div>

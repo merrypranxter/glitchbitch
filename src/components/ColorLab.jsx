@@ -88,8 +88,8 @@ export default function ColorLab({
     <>
       <details open className="effect-explanation"><summary>Chromatic engine</summary>
         <p className="control-note">Change the interpolation mathematics without changing your palette stops.</p>
-        <Select label="Color space" value={String(Math.round(state.chromaticSpace??0))} onChange={v=>history.change(s=>({...s,chromaticSpace:Number(v)}))}>{["Original sRGB","Linear light","Oklab","OkLCh","CIELAB (D65)","CIELUV (D65)","LCh(ab)","LCh(uv)","Okhsl","Okhsv","HSLuv","HPLuv","IPT","DIN99","JzAzBz","JzCzhz","ICtCp","CAM16","CAM16-UCS","HCT (Hue Chroma Tone)"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
-        <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticSpace:(Math.round(s.chromaticSpace??0)+1+Math.floor(Math.random()*19))%20}))}>Shuffle color space</button>
+        <Select label="Color space" value={String(Math.round(state.chromaticSpace??0))} onChange={v=>history.change(s=>({...s,chromaticSpace:Number(v)}))}>{["Original sRGB","Linear light","Oklab","OkLCh","CIELAB (D65)","CIELUV (D65)","LCh(ab)","LCh(uv)","Okhsl","Okhsv","HSLuv","HPLuv","IPT","DIN99","JzAzBz","JzCzhz","ICtCp","CAM16","CAM16-UCS","HCT (Hue Chroma Tone)","Spectral Pigment (Kubelka–Munk)","Spectral Glaze (Optical Density)"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
+        <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticSpace:(Math.round(s.chromaticSpace??0)+1+Math.floor(Math.random()*21))%22}))}>Shuffle color space</button>
         {[3,6,7,8,9,10,11,15,17,19].includes(Math.round(state.chromaticSpace??0))&&<>
           <Select label="Hue route" value={String(Math.round(state.chromaticHuePath??0))} onChange={v=>history.change(s=>({...s,chromaticHuePath:Number(v)}))}>{["Shortest arc","Longest arc","Increasing hue","Decreasing hue"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
           <Select label="Extra hue revolutions per stop" value={String(Math.round(state.chromaticTurns??0))} onChange={v=>history.change(s=>({...s,chromaticTurns:Number(v)}))}>{[0,1,2,3].map(n=><option key={n} value={String(n)}>{n}</option>)}</Select>
@@ -105,6 +105,12 @@ export default function ColorLab({
           <Select label="Surround" value={String(Math.round(state.chromaticSurround??0))} onChange={v=>history.change(s=>({...s,chromaticSurround:Number(v)}))}>{["Average","Dim","Dark"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
           <Select label="Illuminant adaptation" value={String(Math.round(state.chromaticAdapt??0))} onChange={v=>history.change(s=>({...s,chromaticAdapt:Number(v)}))}><option value="0">Modeled adaptation</option><option value="1">Full adaptation</option></Select>
           <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticAmbient:Math.random()*100,chromaticBackground:Math.random()*100,chromaticSurround:Math.floor(Math.random()*3),chromaticAdapt:Number(Math.random()<.5)}))}>Shuffle viewing conditions</button>
+        </>}
+        {[20,21].includes(Math.round(state.chromaticSpace??0))&&<>
+          <p className="control-note">38-band reconstructed reflectance. Pigment uses absorption/scattering; glaze uses geometric reflectance (dye-like). Simulated mixtures, not measured paint recipes.</p>
+          <Parameter label="Spectral influence" name="chromaticPigmentAmount" history={history}/>
+          {Math.round(state.chromaticSpace??0)===20&&<Parameter label="Tint weighting" name="chromaticPigmentWeight" history={history}/>}
+          <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticSpace:Math.round(s.chromaticSpace??0)===20?21:20,chromaticPigmentAmount:35+Math.random()*65,chromaticPigmentWeight:Math.random()*100}))}>Shuffle pigment chemistry</button>
         </>}
         {Math.round(state.chromaticSpace??0)===19&&<p className="control-note">HCT follows CAM16 hue and chroma while preserving interpolated CIELAB tone. It uses its own sRGB chroma-reduction solver.</p>}
         {(state.chromaticSpace??0)>=8&&(state.chromaticSpace??0)<=11&&<Parameter label="Saturation ceiling" name="chromaticSatCap" history={history}/>}

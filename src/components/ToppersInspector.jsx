@@ -171,5 +171,19 @@ export default function ToppersInspector({history}){
    <Parameter label="Independent twinkle" name="topperKagomeTwinkle" history={history}/>
    <Parameter label="Triangle to hexagon balance" name="topperKagomeBalance" history={history}/>
   </details>
+  <details className="effect-explanation"><summary>Quasicrystal confetti</summary>
+   <div className="pane-actions"><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,remixTopper(x,"topperQuasi",Math.random,density)))}>Remix</button><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,resetTopper(x,"topperQuasi",initial)))}>Reset</button></div>
+   <Parameter label="Quasicrystal presence" name="topperQuasi" history={history}/>
+   <Parameter label="Fragment population" name="topperQuasiDensity" history={history}/>
+   <Parameter label="Fragment scale" name="topperQuasiScale" history={history}/>
+   <Parameter label="Animation speed" name="topperQuasiMotion" history={history}/>
+   <Parameter label="Fragment gaps" name="topperQuasiGap" history={history}/>
+<Select label="Interior texture" value={String(Math.floor(Math.min(99.9,history.state.topperQuasiTexture)*5/100))} onChange={v=>history.change(s=>({...s,topperQuasiTexture:(Number(v)+.5)*20}))}>{["Solid","Nested bands","Stripes","Stipple","Hollow"].map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
+   <Parameter label="Palette phase" name="topperQuasiHue" history={history}/>
+   <Parameter label="Difference interaction" name="topperQuasiBlend" history={history}/>
+   <Parameter label="Breathing" name="topperQuasiPulse" history={history}/>
+   <Parameter label="Twinkle" name="topperQuasiTwinkle" history={history}/>
+   <p className="control-note">Five-direction quasiperiodic grid intersections; not an exact Penrose tiling.</p>
+  </details>
  </section>;
 }

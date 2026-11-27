@@ -53,30 +53,32 @@ export function metamerPair(reflectance,phase=0){
 }
 export function referenceXYZ(R){return D65_CMF.map(row=>dotMeta(row,R));}
 export function makeSpectralObserver(mode=0,adaptation=100){
- const light=spectralIlluminant(mode);
+ const light=Array.isArray(mode)?mode:spectralIlluminant(mode);
  const weighted=D65_CMF.map(row=>row.map((v,i)=>v*light[i]));
  const white=weighted.map(row=>row.reduce((a,b)=>a+b,0));
  const adapt=clampMeta(finiteMeta(adaptation,100)/100);
  const correction=white.map((v,i)=>(1-adapt)/white[1]+adapt*refWhite[i]/v);
  return R=>weighted.map((row,i)=>dotMeta(row,R)*correction[i]);
 }
-export function bakeMetamerPalette(s,width,mapGamut){
+export function bakeMetamerPalette(s,width,mapGamut,observer){
  const stops=s.colors.map(pigmentStop);
  const phase=finiteMeta(s.chromaticMetaPhase,0)/100*Math.PI*2;
  const amount=clampMeta(finiteMeta(s.chromaticMetaAmount,100)/100);
  const bands=Math.round(clampMeta(finiteMeta(s.chromaticMetaBands,3),1,8));
  const pairs=stops.map((p,i)=>metamerPair(p.reflectance,phase+i*1.618));
- const observe=makeSpectralObserver(s.chromaticIlluminant??0,s.chromaticMetaAdapt??100);
+ const observe=observer??makeSpectralObserver(s.chromaticIlluminant??0,s.chromaticMetaAdapt??100);
+ // Linear integration: evaluate each variant once instead of every texel.
+ const observed=pairs.map(pair=>pair.map(observe));
  const out=new Uint8Array(width*4);
  for(let i=0;i<width;i++){
   const pos=i/width,q=pos*stops.length,j=Math.floor(q),k=(j+1)%stops.length,f=q-j,t=f*f*(3-2*f);
   const wave=.5+.5*amount*Math.sin(Math.PI*2*bands*pos+phase);
-  const R=pairs[j][0].map((v,n)=>{
-   const a=pairs[j][1][n]+(v-pairs[j][1][n])*wave;
-   const b=pairs[k][1][n]+(pairs[k][0][n]-pairs[k][1][n])*wave;
+  const xyz=observed[j][0].map((v,n)=>{
+   const a=observed[j][1][n]+(v-observed[j][1][n])*wave;
+   const b=observed[k][1][n]+(observed[k][0][n]-observed[k][1][n])*wave;
    return a+(b-a)*t;
   });
-  const rgb=linToSrgb(mapGamut(xyzToLin(observe(R))));
+  const rgb=linToSrgb(mapGamut(xyzToLin(xyz)));
   for(let n=0;n<3;n++)out[i*4+n]=Math.round(255*clampMeta(finiteMeta(rgb[n],0)));
   out[i*4+3]=255;
  }

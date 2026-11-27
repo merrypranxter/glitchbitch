@@ -2,7 +2,7 @@ import React from "react";
 import {Parameter,Select} from "./Controls";
 import {initial} from "../data.js";
 import {readCategoryLocks,writeCategoryLocks,protectCategorySettings} from "../category-locks.js";
-const keys=["lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"];
+const keys=["lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane","lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"];
 export default function LifeformsInspector({history}){
  const [locks,setLocks]=React.useState(readCategoryLocks);
  const locked=!!locks.Lifeforms;
@@ -33,5 +33,11 @@ export default function LifeformsInspector({history}){
 <Parameter label="Internal detail" name="lifeDetail" history={history}/>
 <Parameter label="Breathing" name="lifePulse" history={history}/>
 <Parameter label="Difference interaction" name="lifeBlend" history={history}/>
+ </details><details className="effect-explanation"><summary>Alien appendages</summary>
+ <Select label="Appendage type" value={String(Math.floor(Math.min(99.9,history.state.lifeAppendageDetail??0)*4/100))} onChange={v=>history.change(s=>({...s,lifeAppendageDetail:(Number(v)+.5)*25}))}>{["Cilia","Flagellum","Undulating tentacles","Medusa tendrils"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
+<Parameter label="Appendage presence" name="lifeAppendage" history={history}/>
+<Parameter label="Appendage length" name="lifeAppendageLength" history={history}/>
+<Parameter label="Wriggle speed" name="lifeAppendageMotion" history={history}/>
+<Parameter label="Membrane pulsation" name="lifeMembrane" history={history}/>
  </details></section>
 }

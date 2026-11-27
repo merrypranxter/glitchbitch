@@ -363,6 +363,11 @@ export const numericRanges = {
   lifeShell: [0, 100],
   lifePores: [0, 100],
   lifeSpecies: [0, 100],
+  lifeAppendage: [0, 100],
+  lifeAppendageLength: [0, 100],
+  lifeAppendageMotion: [0, 100],
+  lifeAppendageDetail: [0, 100],
+  lifeMembrane: [0, 100],
   lifeAmount: [0, 100],
   lifePopulation: [0, 100],
   lifeSize: [0, 100],
@@ -1088,6 +1093,11 @@ export const initial = {
   lifeShell: 45,
   lifePores: 0,
   lifeSpecies: 0,
+  lifeAppendage: 0,
+  lifeAppendageLength: 45,
+  lifeAppendageMotion: 45,
+  lifeAppendageDetail: 0,
+  lifeMembrane: 0,
   lifeAmount: 0,
   lifePopulation: 35,
   lifeSize: 35,
@@ -2509,7 +2519,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.pixel=random()<.3?random()*58:0;
   s.vignette=random()<.5?random()*32:0;
   s.lifeAmount=random()<.35?25+random()*65:0;
-  if(s.lifeAmount>0)for(const k of ["lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"])s[k]=10+random()*80;
+  if(s.lifeAmount>0)for(const k of ["lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane","lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"])s[k]=10+random()*80;
   const ornaments=["phosphor","dither","riso","windowCascade","glitter","broadcast","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal","topperTime","topperHex","topperTri","topperKagome","topperQuasi","topperTruchet","topperPoly"];
   for(const key of ornaments)s[key]=0;
   const available=ornaments.filter(k=>k!=="topperPortal"&&k!=="topperTime");

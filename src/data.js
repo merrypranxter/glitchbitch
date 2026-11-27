@@ -360,6 +360,9 @@ export const numericRanges = {
   lifeForce: [0, 100],
   lifeCollision: [0, 100],
   lifeElasticity: [0, 100],
+  lifeShell: [0, 100],
+  lifePores: [0, 100],
+  lifeSpecies: [0, 100],
   lifeAmount: [0, 100],
   lifePopulation: [0, 100],
   lifeSize: [0, 100],
@@ -1082,6 +1085,9 @@ export const initial = {
   lifeForce: 50,
   lifeCollision: 100,
   lifeElasticity: 90,
+  lifeShell: 45,
+  lifePores: 0,
+  lifeSpecies: 0,
   lifeAmount: 0,
   lifePopulation: 35,
   lifeSize: 35,
@@ -2503,7 +2509,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.pixel=random()<.3?random()*58:0;
   s.vignette=random()<.5?random()*32:0;
   s.lifeAmount=random()<.35?25+random()*65:0;
-  if(s.lifeAmount>0)for(const k of ["lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"])s[k]=10+random()*80;
+  if(s.lifeAmount>0)for(const k of ["lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"])s[k]=10+random()*80;
   const ornaments=["phosphor","dither","riso","windowCascade","glitter","broadcast","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal","topperTime","topperHex","topperTri","topperKagome","topperQuasi","topperTruchet","topperPoly"];
   for(const key of ornaments)s[key]=0;
   const available=ornaments.filter(k=>k!=="topperPortal"&&k!=="topperTime");

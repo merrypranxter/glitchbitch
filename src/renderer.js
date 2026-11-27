@@ -91,6 +91,35 @@ vec3 transmissionShrapnel(vec3 col,vec2 uv){
  return mix(col,ink,mask*topperShrapnel);
 }
 
+uniform float topperJewel,topperJewelDensity,topperJewelScale,topperJewelMotion,topperJewelDetail,topperJewelHue,topperJewelForm,topperJewelBlend;
+vec3 phospheneJewels(vec3 col,vec2 uv){
+ if(topperJewel<.001)return col;
+ vec2 q=uv*mix(4.,18.,topperJewelScale)*vec2(max(res.x/res.y,.4),1.);
+ vec2 cell=floor(q), z=fract(q)-.5;
+ float h=hash(cell+vec2(81.,27.));
+ if(h>mix(.035,.38,topperJewelDensity))return col;
+ float t=time*topperJewelMotion*.35;
+ z-=.07*vec2(sin(t+h*TAU),cos(t*.8+h*TAU));
+ float rad=length(z)/mix(.18,.34,hash(cell+72.));
+ if(rad>1.05)return col;
+ float a=atan(z.y,z.x+.00001), rho=log(max(rad,.035));
+ float n=mix(5.,18.,topperJewelDetail);
+ float form=floor(min(topperJewelForm,.999)*4.);
+ float ring=sin(rad*n*PI-t+h*TAU);
+ float spiral=sin(rho*n*.6+a*3.-t);
+ float web=sin(a*6.+rho*2.+t*.3);
+ float f=ring;
+ if(form>.5)f=spiral;
+ if(form>1.5)f=ring*web;
+ if(form>2.5)f=sin(rho*n*.5+t)*cos(a*5.-t*.3);
+ float line=smoothstep(.12,.85,abs(f));
+ float rim=1.-smoothstep(.015,.055,abs(rad-.88));
+ float mask=(1.-smoothstep(.82,1.,rad))*smoothstep(.025,.12,rad);
+ vec3 ink=palette(h+topperJewelHue+rho*.16+a/TAU+.13*f+t*.05);
+ ink=mix(ink,1.-clamp(col,0.,1.),topperJewelBlend*.65);
+ return mix(col,ink,topperJewel*max(mask*line*.85,rim*.55));
+}
+
 ${geometryGLSL}
 ${motionGLSL}
 ${bioGLSL}
@@ -225,6 +254,7 @@ float luma=dot(col,vec3(.2126,.7152,.0722));col=mix(vec3(luma),col,saturation*2.
 /* SPX_POST */
 col=applyAppearance(col,uv);
 col=transmissionShrapnel(col,uv);
+col=phospheneJewels(col,uv);
 gl_FragColor=vec4(clamp(col,0.,1.),1.);}`;
 
 export function createRenderer(canvas, {exactEffects=false} = {}) {
@@ -1826,6 +1856,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "windowCascade",
         "glitter",
         "broadcast",
+        "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",
         "misregister",
         "saturation",

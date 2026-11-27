@@ -1,4 +1,4 @@
-export const topperKeys=["broadcast","windowCascade","glitter","topperShrapnel"];
+export const topperKeys=["broadcast","windowCascade","glitter","topperShrapnel","topperJewel"];
 export function shuffleToppers(state,rng=Math.random,density="Balanced"){
  const next={...state};
  const count=density==="Sparse"?1:density==="Maximalist"?3:2;
@@ -9,6 +9,7 @@ export function shuffleToppers(state,rng=Math.random,density="Balanced"){
   next[key]=density==="Sparse"?15+30*rng():density==="Maximalist"?55+40*rng():30+45*rng();
  }
  if(next.topperShrapnel>0){for(const key of ["topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend"])next[key]=15+70*rng();}
+ if(next.topperJewel>0){for(const key of ["topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend"])next[key]=rng()*100;}
  return next;
 }
 export const clearToppers=state=>({...state,...Object.fromEntries(topperKeys.map(k=>[k,0]))});

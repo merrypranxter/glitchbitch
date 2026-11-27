@@ -67,7 +67,31 @@ float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7))+seed+seedHigh*7.83)
 float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+1.),f.x),f.y);}
 float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<4;i++){v+=a*noise(p);p=mat2(.8,-.6,.6,.8)*p*2.03+3.4;a*=.5;}return v;}
 mat2 rotate(float a){return mat2(cos(a),-sin(a),sin(a),cos(a));}
-vec3 palette(float t){float q=fract(t)*float(colorCount);int a=int(floor(q));vec3 c=colors[0],d=colors[0];for(int i=0;i<12;i++){if(i==a)c=colors[i];if(i==a+1)d=colors[i];}if(a==colorCount-1)d=colors[0];return mix(c,d,smoothstep(0.,1.,fract(q)));}
+uniform int chromaticSpace;
+vec3 chromaticDecode(vec3 c){return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c));}
+vec3 chromaticEncode(vec3 c){c=clamp(c,0.,1.);return mix(c*12.92,1.055*pow(c,vec3(1./2.4))-.055,step(vec3(.0031308),c));}
+vec3 chromaticLab(vec3 c){
+ vec3 v=pow(max(vec3(dot(c,vec3(.4122214708,.5363325363,.0514459929)),dot(c,vec3(.2119034982,.6806995451,.1073969566)),dot(c,vec3(.0883024619,.2817188376,.6299787005))),0.),vec3(1./3.));
+ return vec3(dot(v,vec3(.2104542553,.7936177850,-.0040720468)),dot(v,vec3(1.9779984951,-2.4285922050,.4505937099)),dot(v,vec3(.0259040371,.7827717662,-.8086757660)));
+}
+vec3 chromaticLinear(vec3 c){
+ vec3 v=vec3(dot(c,vec3(1.,.3963377774,.2158037573)),dot(c,vec3(1.,-.1055613458,-.0638541728)),dot(c,vec3(1.,-.0894841775,-1.2914855480)));v=v*v*v;
+ return vec3(dot(v,vec3(4.0767416621,-3.3077115913,.2309699292)),dot(v,vec3(-1.2684380046,2.6097574011,-.3413193965)),dot(v,vec3(-.0041960863,-.7034186147,1.7076147010)));
+}
+vec3 chromaticMix(vec3 a,vec3 b,float t){
+ if(chromaticSpace==0)return mix(a,b,t);
+ if(t<=0.)return a;if(t>=1.)return b;
+ vec3 x=chromaticDecode(a),y=chromaticDecode(b);
+ if(chromaticSpace==1)return chromaticEncode(mix(x,y,t));
+ vec3 c=mix(chromaticLab(x),chromaticLab(y),t),rgb=chromaticLinear(c);
+ if(min(min(rgb.r,rgb.g),rgb.b)<0.||max(max(rgb.r,rgb.g),rgb.b)>1.){
+ float lo=0.,hi=1.;
+ for(int i=0;i<10;i++){float m=(lo+hi)*.5;vec3 q=chromaticLinear(vec3(c.x,c.yz*m));if(min(min(q.r,q.g),q.b)>=0.&&max(max(q.r,q.g),q.b)<=1.)lo=m;else hi=m;}
+ rgb=chromaticLinear(vec3(c.x,c.yz*lo));
+ }
+ return chromaticEncode(rgb);
+}
+vec3 palette(float t){float q=fract(t)*float(colorCount);int a=int(floor(q));vec3 c=colors[0],d=colors[0];for(int i=0;i<12;i++){if(i==a)c=colors[i];if(i==a+1)d=colors[i];}if(a==colorCount-1)d=colors[0];return chromaticMix(c,d,smoothstep(0.,1.,fract(q)));}
 uniform float topperShrapnel,topperDensity,topperScale,topperMotion,topperHue,topperShape,topperBlend;
 vec3 transmissionShrapnel(vec3 col,vec2 uv){
  if(topperShrapnel<.001)return col;
@@ -2601,6 +2625,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         ["Traveling wave", "Color canon", "Phase vortex"].indexOf(s.colorMode),
       );
       gl.uniform1i(loc("colorCount"), s.colors.length);
+      gl.uniform1i(loc("chromaticSpace"), Math.round(s.chromaticSpace??0));
       // No framebuffer readbacks and no per-frame allocations. The same
       // normalized stamp geometry is used by preview and export renders.
       const geneMarkersEnabled=geneEnabled(compiledState);

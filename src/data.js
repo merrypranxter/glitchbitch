@@ -947,6 +947,7 @@ export const numericRanges = {
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
+  chromaticSpace: [0, 2],
   colorOffset: [0, 100],
   colorRepeat: [0, 100],
   colorSpeed: [0, 100],
@@ -1806,6 +1807,7 @@ export const initial = {
   saturation: 50,
   contrast: 50,
   brightness: 50,
+  chromaticSpace: 0,
   colorOffset: 0,
   colorRepeat: 50,
   colorSpeed: 30,
@@ -2505,6 +2507,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.secondaryEngine=sample(engineInfo.filter(e=>e.id!==s.engine && e.id!==state.secondaryEngine),random).id;
   s.seed=Math.floor(random()*1000000000);
   if(s.seed===state.seed)s.seed=(s.seed+1)%1000000000;
+  s.chromaticSpace=locks.color?(state.chromaticSpace??0):Math.floor(random()*3);
   // Most surprises select a different vault palette; some invent fresh colors.
   // All generated palettes remain user-editable, reversible and recipe-safe.
   if(random()<.22){

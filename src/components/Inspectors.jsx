@@ -726,9 +726,9 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
     for(const key of Object.keys(initial))if(categoryOwns(name,key))next[key]=initial[key];
     return protectCategories(original,next);
   };
-  const spinEcosystem=()=>history.change(x=>shuffleEcosystem(x,Math.random,{
+  const spinEcosystem=()=>history.change(x=>protectCategories(x,shuffleEcosystem(x,Math.random,{
     allowDual,intensity:chaosLevels.indexOf(chaosLevel)/3,
-  }));
+  })));
   const spinFullWeird=()=>history.change(x=>protectCategories(x,fullWeirdShuffle(x,Math.random,{
     level:chaosLevel,preserveColors,preserveText,preserveCore,
     allowDual,allowHeavy,

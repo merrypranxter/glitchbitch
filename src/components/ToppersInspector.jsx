@@ -44,6 +44,9 @@ export default function ToppersInspector({history}){
   </details>
   <details className="effect-explanation"><summary>Phosphene jewels</summary>
    <Parameter label="Jewel presence" name="topperJewel" history={history}/>
+   <Parameter label="Orbital drift" name="topperJewelOrbit" history={history}/>
+   <Parameter label="Orbit speed" name="topperJewelOrbitRate" history={history}/>
+   <Parameter label="Orbit eccentricity" name="topperJewelOrbitShape" history={history}/>
    <Select label="Jewel outline" value={String(Math.floor(Math.min(99.9,history.state.topperJewelOutline)*5/100))} onChange={v=>history.change(s=>({...s,topperJewelOutline:(Number(v)+.5)*100/5}))}>{["Circle","Triangle","Hexagon","Square","Mixed"].map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
    <div className="pane-actions"><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,remixTopper(x,"topperJewel",Math.random,density)))}>Remix</button><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,resetTopper(x,"topperJewel",initial)))}>Reset</button></div>
    <Parameter label="Jewel density" name="topperJewelDensity" history={history}/>
@@ -202,6 +205,9 @@ export default function ToppersInspector({history}){
   <details className="effect-explanation"><summary>Nested polygon debris</summary>
    <div className="pane-actions"><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,remixTopper(x,"topperPoly",Math.random,density)))}>Remix</button><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,resetTopper(x,"topperPoly",initial)))}>Reset</button></div>
    <Parameter label="Polygon presence" name="topperPoly" history={history}/>
+   <Parameter label="Orbital drift" name="topperPolyOrbit" history={history}/>
+   <Parameter label="Orbit speed" name="topperPolyOrbitRate" history={history}/>
+   <Parameter label="Orbit eccentricity" name="topperPolyOrbitShape" history={history}/>
    <Parameter label="Population" name="topperPolyDensity" history={history}/>
    <Parameter label="Scale" name="topperPolyScale" history={history}/>
    <Parameter label="Rotation speed" name="topperPolyMotion" history={history}/>

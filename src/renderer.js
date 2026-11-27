@@ -365,6 +365,35 @@ vec3 quasiConfetti(vec3 col,vec2 uv){
  ink=mix(ink,abs(clamp(col,0.,1.)-ink),topperQuasiBlend);
  return mix(col,ink,mask*pat*topperQuasi);
 }
+uniform float topperTruchet,topperTruchetDensity,topperTruchetScale,topperTruchetMotion,topperTruchetGap,topperTruchetTexture,topperTruchetHue,topperTruchetBlend,topperTruchetPulse,topperTruchetTwinkle,topperTruchetWidth;
+vec3 truchetConfetti(vec3 col,vec2 uv){
+ if(topperTruchet<.001)return col;
+ vec2 q=uv*mix(4.,30.,topperTruchetScale)*vec2(max(res.x/res.y,.4),1.);
+ vec2 cell=floor(q), p=fract(q)-.5;
+ float h=hash(cell+vec2(187.,53.));
+ if(h>mix(.025,.85,topperTruchetDensity))return col;
+ float t=time*topperTruchetMotion*.5;
+ float phase=h*TAU+t*mix(.4,1.8,hash(cell+91.));
+ float size=mix(1.,.15+.85*(.5+.5*sin(phase)),topperTruchetPulse);
+ float life=mix(1.,smoothstep(-.6,.5,sin(phase+2.)),topperTruchetTwinkle);
+ float radius=size*(.5-mix(.005,.18,topperTruchetGap));
+ float mask=(1.-smoothstep(max(0.,radius-.015),radius,max(abs(p.x),abs(p.y))))*life;
+ if(mask<.001)return col;
+ p=p/max(size,.01);
+ if(hash(cell+37.)>.5)p.x=-p.x;
+ vec2 f=p+.5;
+ float arc=min(abs(length(f)-.5),abs(length(f-1.)-.5));
+ float width=mix(.012,.17,topperTruchetWidth);
+ float mode=floor(min(topperTruchetTexture,.999)*5.);
+ float line=1.-smoothstep(width,width+.012,arc);
+ if(mode>.5)line=1.-smoothstep(width*.35,width*.35+.012,abs(arc-width));
+ if(mode>1.5)line=(1.-smoothstep(width,width+.012,arc))*(.3+.7*smoothstep(.1,.6,sin((f.x+f.y)*45.-t*3.)));
+ if(mode>2.5)line=1.-smoothstep(width*.45,width*.45+.012,abs(sin(arc*24.-t))*.15);
+ if(mode>3.5)line=1.-smoothstep(width,width+.012,min(abs(p.x-p.y),abs(p.x+p.y))*.7071);
+ vec3 ink=palette(h+topperTruchetHue+arc*.7+.14*sin(phase));
+ ink=mix(ink,abs(clamp(col,0.,1.)-ink),topperTruchetBlend);
+ return mix(col,ink,mask*line*topperTruchet);
+}
 ${geometryGLSL}
 ${motionGLSL}
 ${bioGLSL}
@@ -533,6 +562,7 @@ col=hexConfetti(col,uv);
 col=triangleConfetti(col,uv);
 col=kagomeConfetti(col,uv);
 col=quasiConfetti(col,uv);
+col=truchetConfetti(col,uv);
 col=spectralTape(col,uv);
 col=phospheneJewels(col,uv);
 gl_FragColor=vec4(clamp(col,0.,1.),1.);}`;
@@ -2146,6 +2176,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "topperTri","topperTriDensity","topperTriScale","topperTriMotion","topperTriGap","topperTriTexture","topperTriHue","topperTriBlend","topperTriPulse","topperTriTwinkle",
         "topperKagome","topperKagomeDensity","topperKagomeScale","topperKagomeMotion","topperKagomeGap","topperKagomeTexture","topperKagomeHue","topperKagomeBlend","topperKagomePulse","topperKagomeTwinkle","topperKagomeBalance",
         "topperQuasi","topperQuasiDensity","topperQuasiScale","topperQuasiMotion","topperQuasiGap","topperQuasiTexture","topperQuasiHue","topperQuasiBlend","topperQuasiPulse","topperQuasiTwinkle",
+        "topperTruchet","topperTruchetDensity","topperTruchetScale","topperTruchetMotion","topperTruchetGap","topperTruchetTexture","topperTruchetHue","topperTruchetBlend","topperTruchetPulse","topperTruchetTwinkle","topperTruchetWidth",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",
         "misregister",

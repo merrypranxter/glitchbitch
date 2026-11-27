@@ -1,3 +1,4 @@
+import {lifePositions} from "./life-physics.js";
 import { appearanceGLSL } from "./appearance.js";
 import {structuralOpticsModes} from "./structural-thread-optics.js";
 import { artworkParityError } from "./export-parity.js";
@@ -437,6 +438,7 @@ vec3 polygonDebris(vec3 col,vec2 uv){
  return col;
 }
 uniform float lifeAmount,lifePopulation,lifeSize,lifeSpeed,lifeVariation,lifeForm,lifeHue,lifeDetail,lifePulse,lifeBlend;
+uniform vec4 lifeBodies[24];
 vec3 lifeforms(vec3 col,vec2 uv){
  if(lifeAmount<.001)return col;
  vec2 aspect=vec2(max(res.x/res.y,.1),1.);
@@ -451,6 +453,7 @@ vec3 lifeforms(vec3 col,vec2 uv){
   vec2 velocity=vec2(mix(.13,.65,h),mix(.13,.65,h2))*mix(.0,1.8,lifeSpeed);
   vec2 start=vec2(hash(id+31.),hash(id+53.))*2.;
   vec2 center=radius+span*(1.-abs(mod(start+time*velocity/span,2.)-1.));
+  center=lifeBodies[i].xy; radius=lifeBodies[i].z;
   vec2 z=(p-center)/max(radius,.001);
   float rad=length(z);
   if(rad>1.05)continue;
@@ -2224,6 +2227,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         Math.max(0,polesModes.indexOf(compiledState.polesMode)));
       gl.uniform1i(loc("semanticGravityMode"),
         Math.max(0,semanticGravityModes.indexOf(compiledState.semanticGravityMode)));
+      if(s.lifeAmount>0)gl.uniform4fv(loc("lifeBodies[0]"),lifePositions(s,timeline.time,width,height));
       gl.uniform1f(loc("time"), timeline.time);
       gl.uniform1f(loc("colorTime"), timeline.colorTime);
       gl.uniform1f(loc("seed"), s.seed % 1000000);

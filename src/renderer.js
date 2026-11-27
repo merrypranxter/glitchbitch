@@ -120,6 +120,35 @@ vec3 phospheneJewels(vec3 col,vec2 uv){
  return mix(col,ink,topperJewel*max(mask*line*.85,rim*.55));
 }
 
+uniform float topperIsland,topperIslandDensity,topperIslandScale,topperIslandMotion,topperIslandForm,topperIslandMapping,topperIslandHue,topperIslandFeather;
+vec3 falseColorIslands(vec3 col,vec2 uv){
+ if(topperIsland<.001)return col;
+ vec2 q=uv*mix(3.,14.,topperIslandScale)*vec2(max(res.x/res.y,.4),1.);
+ vec2 cell=floor(q), z=fract(q)-.5;
+ float h=hash(cell+vec2(127.,39.));
+ if(h>mix(.035,.55,topperIslandDensity))return col;
+ float t=time*topperIslandMotion*.28;
+ z-=.06*vec2(sin(t+h*TAU),cos(t+h*TAU));
+ z=rotate(h*PI)*z;
+ float radius=mix(.19,.36,hash(cell+91.));
+ float form=floor(min(topperIslandForm,.999)*4.);
+ float dist=length(z);
+ if(form>.5)dist=max(abs(z.x),abs(z.y)*1.5);
+ if(form>1.5)dist=abs(z.x)+abs(z.y);
+ if(form>2.5)dist=length(z)*(1.+.16*sin(atan(z.y,z.x+.00001)*5.+t));
+ float mask=1.-smoothstep(radius-mix(.005,.12,topperIslandFeather),radius,dist);
+ vec3 base=clamp(col,0.,1.);
+ float lum=dot(base,vec3(.2126,.7152,.0722));
+ float mode=floor(min(topperIslandMapping,.999)*5.);
+ float phase=topperIslandHue+h*.35+.07*sin(t+h*TAU);
+ vec3 ink=palette(lum+phase);
+ if(mode>.5)ink=.5+.5*cos(TAU*(lum*.85+phase+vec3(0.,.33,.67)));
+ if(mode>1.5)ink=palette((base.r-base.g)*.5+(base.b-lum)*.6+phase);
+ if(mode>2.5)ink=palette(floor(lum*7.)/7.+phase);
+ if(mode>3.5)ink=mix(1.-base,base.brg,.5+.5*sin(TAU*phase));
+ return mix(col,ink,mask*topperIsland);
+}
+
 ${geometryGLSL}
 ${motionGLSL}
 ${bioGLSL}
@@ -254,6 +283,7 @@ float luma=dot(col,vec3(.2126,.7152,.0722));col=mix(vec3(luma),col,saturation*2.
 /* SPX_POST */
 col=applyAppearance(col,uv);
 col=transmissionShrapnel(col,uv);
+col=falseColorIslands(col,uv);
 col=phospheneJewels(col,uv);
 gl_FragColor=vec4(clamp(col,0.,1.),1.);}`;
 
@@ -1856,6 +1886,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "windowCascade",
         "glitter",
         "broadcast",
+        "topperIsland","topperIslandDensity","topperIslandScale","topperIslandMotion","topperIslandForm","topperIslandMapping","topperIslandHue","topperIslandFeather",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",
         "misregister",

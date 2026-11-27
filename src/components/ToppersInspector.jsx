@@ -44,5 +44,16 @@ export default function ToppersInspector({history}){
    <Parameter label="Retinal geometry" name="topperJewelForm" history={history}/>
    <Parameter label="Complement interaction" name="topperJewelBlend" history={history}/>
   </details>
+  <details className="effect-explanation"><summary>False-color islands</summary>
+   <Parameter label="Island presence" name="topperIsland" history={history}/>
+   <Parameter label="Island density" name="topperIslandDensity" history={history}/>
+   <Parameter label="Island scale" name="topperIslandScale" history={history}/>
+   <Parameter label="Island motion" name="topperIslandMotion" history={history}/>
+   <Parameter label="Island shape" name="topperIslandForm" history={history}/>
+   <Parameter label="Color mapping" name="topperIslandMapping" history={history}/>
+   <Parameter label="Color phase" name="topperIslandHue" history={history}/>
+   <Parameter label="Edge feather" name="topperIslandFeather" history={history}/>
+   <p className="control-note">Mapping: palette luminance, spectral-style cosine, opponent channels, quantized palette, complement/channel rotation.</p>
+  </details>
  </section>;
 }

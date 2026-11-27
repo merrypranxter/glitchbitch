@@ -1,3 +1,4 @@
+import {protectCategorySettings} from "./category-locks.js";
 import { PALETTE_VAULT } from "./palette-vault.js";
 import { generateRandomPalette, shuffleColorStops } from "./palette-actions.js";
 import { retroFontIds } from "./retro-fonts.js";
@@ -2572,9 +2573,9 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   // Smart Surprise deliberately participates in the whole new ecology:
   // seeded Painted colonies, actual A/B territory wars and weighted growth.
   // The regular Mutate path above remains conservative and undo-friendly.
-  return mixEcosystemIntoSurprise({...s},random,{
+  return protectCategorySettings(state,mixEcosystemIntoSurprise({...s},random,{
     preserveColors:!!locks.color,original:state
-  });
+  }));
 }
 export const looks = [
   {

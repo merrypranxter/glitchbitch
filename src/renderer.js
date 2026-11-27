@@ -295,6 +295,42 @@ vec3 triangleConfetti(vec3 col,vec2 uv){
  ink=mix(ink,abs(clamp(col,0.,1.)-ink),topperTriBlend);
  return mix(col,ink,mask*pat*topperTri);
 }
+uniform float topperKagome,topperKagomeDensity,topperKagomeScale,topperKagomeMotion,topperKagomeGap,topperKagomeTexture,topperKagomeHue,topperKagomeBlend,topperKagomePulse,topperKagomeTwinkle,topperKagomeBalance;
+vec3 kagomeConfetti(vec3 col,vec2 uv){
+ if(topperKagome<.001)return col;
+ vec2 q=uv*mix(3.,24.,topperKagomeScale)*vec2(max(res.x/res.y,.4),1.);
+ vec2 lattice=vec2(q.x-q.y*.57735027,q.y*1.15470054);
+ vec2 cell=floor(lattice), f=fract(lattice);
+ float flip=step(1.,f.x+f.y);
+ vec3 bary=flip>.5?vec3(1.-f.x,1.-f.y,f.x+f.y-1.):vec3(f.x,f.y,1.-f.x-f.y);
+ float largest=max(bary.x,max(bary.y,bary.z));
+ bool hex=largest>.5;
+ vec2 vertex=cell;
+ if(flip<.5){if(bary.x==largest)vertex+=vec2(1.,0.);else if(bary.y==largest)vertex+=vec2(0.,1.);}
+ else {vertex+=vec2(1.);if(bary.x==largest)vertex-=vec2(1.,0.);else if(bary.y==largest)vertex-=vec2(0.,1.);}
+ vec2 id=hex?vertex*3.:cell*3.+vec2(1.+flip,1.);
+ float h=hash(id+vec2(157.,63.));
+ float weight=hex?min(1.,2.*topperKagomeBalance):min(1.,2.*(1.-topperKagomeBalance));
+ if(h>mix(.025,.75,topperKagomeDensity)*weight)return col;
+ float dist=hex?2.*(1.-largest):6.*(.5-largest);
+ if(!hex)dist=1.-dist;
+ float t=time*topperKagomeMotion*.5;
+ float phase=h*TAU+t*mix(.4,1.8,hash(id+91.));
+ float size=mix(1.,.18+.82*(.5+.5*sin(phase)),topperKagomePulse);
+ float life=mix(1.,smoothstep(-.6,.5,sin(phase+2.)),topperKagomeTwinkle);
+ float radius=size*(1.-mix(.035,.35,topperKagomeGap));
+ float mask=(1.-smoothstep(max(0.,radius-.025),radius,dist))*life;
+ float localDist=dist/max(radius,.001);
+ float mode=floor(min(topperKagomeTexture,.999)*5.);
+ float pat=1.;
+ if(mode>.5)pat=smoothstep(.1,.65,sin(localDist*32.-t));
+ if(mode>1.5)pat=smoothstep(.1,.65,sin((q.x+q.y)*45.+t));
+ if(mode>2.5)pat=step(.5,hash(floor(q*32.)));
+ if(mode>3.5)pat=smoothstep(.65,.85,localDist);
+ vec3 ink=palette(h+topperKagomeHue+localDist*.3+.12*sin(phase));
+ ink=mix(ink,abs(clamp(col,0.,1.)-ink),topperKagomeBlend);
+ return mix(col,ink,mask*pat*topperKagome);
+}
 ${geometryGLSL}
 ${motionGLSL}
 ${bioGLSL}
@@ -461,6 +497,7 @@ col=falseColorIslands(col,uv);
 col=voronoiConfetti(col,uv);
 col=hexConfetti(col,uv);
 col=triangleConfetti(col,uv);
+col=kagomeConfetti(col,uv);
 col=spectralTape(col,uv);
 col=phospheneJewels(col,uv);
 gl_FragColor=vec4(clamp(col,0.,1.),1.);}`;
@@ -2072,6 +2109,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "topperJewelPulse","topperJewelPulseRate","topperJewelTwinkle","topperJewelTwinkleRate","topperJewelSpin","topperJewelSpinRate","topperJewelDirection","topperJewelIndependence",
         "topperJewelOutline","topperHex","topperHexDensity","topperHexScale","topperHexMotion","topperHexGap","topperHexTexture","topperHexHue","topperHexBlend",
         "topperTri","topperTriDensity","topperTriScale","topperTriMotion","topperTriGap","topperTriTexture","topperTriHue","topperTriBlend","topperTriPulse","topperTriTwinkle",
+        "topperKagome","topperKagomeDensity","topperKagomeScale","topperKagomeMotion","topperKagomeGap","topperKagomeTexture","topperKagomeHue","topperKagomeBlend","topperKagomePulse","topperKagomeTwinkle","topperKagomeBalance",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",
         "misregister",

@@ -31,7 +31,7 @@ import {
   Shuffle,
   ArrowLeftRight,
 } from "lucide-react";
-import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, compositionModes, backdropModes, microModes, substanceModes, wiggleModes, randomize } from "../data";
+import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, compositionModes, backdropModes, microModes, substanceModes, wiggleModes, randomize, initial } from "../data";
 import {hexagramPresets,applyHexagramPreset,remixHexagram,disableHexagram} from "../hexagram-terraces.js";
 import {polesModes,polesPresets,applyPolesPreset,shufflePoles,hidePoles} from "../complex-poles.js";
 import {qdModes,qdOrders,qdPresets,applyQdPreset,shuffleQd,hideQd} from "../quasicrystal-dissolution.js";
@@ -718,14 +718,38 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
   const [preserveCore,setPreserveCore]=React.useState(false);
   const [allowDual,setAllowDual]=React.useState(true);
   const [allowHeavy,setAllowHeavy]=React.useState(false);
+  const [categoryLocks,setCategoryLocks]=React.useState({});
+  const categoryPrefixes={
+    "Microscopic shapes":["micro","qd"],
+    "Glass & refraction":["schlieren"],
+    "Materials & textures":["substance","vld","velvet","hcr","crochet"],
+    "Light & optical ornaments":["photon","alchemy"],
+    "Chromatic alchemy":["alchemy","spx"],
+    "Print & signal damage":["injury","ps","kd"],
+    "Biological growth":["bio","micro"],
+    "Backgrounds & atmosphere":["backdrop","underlay"]
+  };
+  const categoryOwns=(name,key)=>categoryPrefixes[name].some(p=>key.startsWith(p));
+  const protectCategories=(original,next)=> {
+    const result={...next};
+    for(const key of Object.keys(original))
+      if(Object.keys(categoryLocks).some(name=>categoryLocks[name]&&categoryOwns(name,key)))
+        result[key]=original[key];
+    return result;
+  };
+  const resetCategory=(original,name)=>{
+    const next={...original};
+    for(const key of Object.keys(initial))if(categoryOwns(name,key))next[key]=initial[key];
+    return protectCategories(original,next);
+  };
   const spinEcosystem=()=>history.change(x=>shuffleEcosystem(x,Math.random,{
     allowDual,intensity:chaosLevels.indexOf(chaosLevel)/3,
   }));
-  const spinFullWeird=()=>history.change(x=>fullWeirdShuffle(x,Math.random,{
+  const spinFullWeird=()=>history.change(x=>protectCategories(x,fullWeirdShuffle(x,Math.random,{
     level:chaosLevel,preserveColors,preserveText,preserveCore,
     allowDual,allowHeavy,
     baseRandomizer:(original,rng)=>randomize(original,{},false,rng)
-  }));
+  })));
   // Category spins use the same activation-aware recipes as individual panels.
   const [categoryStrength,setCategoryStrength]=React.useState("Wild");
   const categorySpins = [
@@ -752,8 +776,8 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
       next=pool.splice(index,1)[0](next,rng);
     }
     // Keep artist-authored content and core composition intact.
-    return {...next,ratio:original.ratio,marks:original.marks,
-      palette:original.palette,colors:original.colors};
+    return protectCategories(original,{...next,ratio:original.ratio,marks:original.marks,
+      palette:original.palette,colors:original.colors});
   };
   const body = {
     "chaos-lab": <>
@@ -761,10 +785,19 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
         <Select label="Category shuffle strength" value={categoryStrength} onChange={setCategoryStrength}>
           {["Subtle","Wild","Unhinged"].map(level=><option key={level} value={level}>{level}</option>)}
         </Select>
-        {categorySpins.map(([name,spin,extras])=><button key={name} type="button"
-          className="button secondary" onClick={()=>history.change(x=>spinCategory(x,spin,extras))}>
-          <Shuffle size={13}/> {name}
-        </button>)}
+        {categorySpins.map(([name,spin,extras])=><div key={name} className="pane-actions">
+          <button type="button" className="button secondary" disabled={!!categoryLocks[name]}
+            onClick={()=>history.change(x=>spinCategory(x,spin,extras))}>
+            <Shuffle size={13}/> {name}
+          </button>
+          <button type="button" className="button secondary" aria-pressed={!!categoryLocks[name]}
+            onClick={()=>setCategoryLocks(old=>({...old,[name]:!old[name]}))}>
+            {categoryLocks[name]?"Unlock":"Lock"}
+          </button>
+          <button type="button" className="button secondary" disabled={!!categoryLocks[name]}
+            onClick={()=>history.change(x=>resetCategory(x,name))}>Reset</button>
+        </div>)}
+        <p className="control-note">Locks protect shared category settings during category spins and Full weird shuffle. Reset restores unlocked category defaults. Main Surprise Me is not affected yet.</p>
       </div>
       <p className="control-note">
         THE BEAUTIFUL RANDOMIZER PROBLEM IS SOLVED. Spin living colonies,

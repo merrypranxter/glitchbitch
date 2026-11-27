@@ -439,6 +439,7 @@ vec3 polygonDebris(vec3 col,vec2 uv){
 }
 uniform float lifeAmount,lifePopulation,lifeSize,lifeSpeed,lifeVariation,lifeForm,lifeHue,lifeDetail,lifePulse,lifeBlend;
 uniform float lifeShell,lifePores,lifeSpecies;
+uniform float lifeAppendage,lifeAppendageLength,lifeAppendageMotion,lifeAppendageDetail,lifeMembrane;
 uniform vec4 lifeBodies[24];
 vec3 lifeforms(vec3 col,vec2 uv){
  if(lifeAmount<.001)return col;
@@ -457,7 +458,7 @@ vec3 lifeforms(vec3 col,vec2 uv){
   center=lifeBodies[i].xy; radius=lifeBodies[i].z;
   vec2 z=(p-center)/max(radius,.001);
   float rad=length(z);
-  if(rad>1.05)continue;
+  if(rad>1.05+lifeAppendage*lifeAppendageLength*1.8)continue;
   float pulse=mix(1.,.55+.45*sin(time*2.+h*TAU),lifePulse);
   z/=max(pulse,.01);rad=length(z);
   float angle=atan(z.y,z.x+.00001)+time*lifeSpeed*(h-.5)*3.;
@@ -465,6 +466,7 @@ vec3 lifeforms(vec3 col,vec2 uv){
   if(form>10.5)form=floor(h*11.);
   if(lifeSpecies>0. && hash(id+71.)<lifeSpecies)form=floor(hash(id+91.)*11.);
   float physicalRad=rad;
+  rad/=1.+lifeMembrane*.12*sin(angle*5.+time*3.+h*TAU);
   if(form>4.5 && form<6.5){
    float sides=form<5.5?3.:6.;
    float sector=TAU/sides;
@@ -493,6 +495,22 @@ vec3 lifeforms(vec3 col,vec2 uv){
   ink=mix(ink,palette(h+lifeHue+.5),smoothstep(.6,.95,pattern)*.55);
   ink=mix(ink,palette(h+lifeHue+.65),shell*lifeShell);
   ink=mix(ink,abs(clamp(col,0.,1.)-ink),lifeBlend);
+  float append=0.;
+  if(lifeAppendage>.001){
+   float aMode=floor(min(lifeAppendageDetail,.999)*4.);
+   float len=lifeAppendageLength*1.6;
+   float t=time*mix(.2,5.,lifeAppendageMotion)+h*TAU;
+   float rr=length(z), aa=atan(z.y,z.x+.00001);
+   float n=mix(12.,36.,lifeDetail);
+   float wave=sin(rr*13.-t+aa*3.);
+   float hairs=abs(sin(aa*n+wave*.7));
+   if(aMode<.5)append=(1.-smoothstep(.12,.3,hairs))*smoothstep(.8,1.,rr)*(1.-smoothstep(1.+len*.45,1.+len*.5+.01,rr));
+   else if(aMode<1.5){float tail=abs(z.y-.22*sin(z.x*9.+t));append=(1.-smoothstep(.025,.075,tail))*smoothstep(.7,.95,-z.x)*(1.-smoothstep(1.+len*.9,1.+len,-z.x));}
+   else if(aMode<2.5){float arms=abs(sin(aa*4.+wave*.55));append=(1.-smoothstep(.08,.22,arms))*smoothstep(.75,1.,rr)*(1.-smoothstep(1.+len*.8,1.+len,rr));}
+   else {float arms=abs(sin(aa*7.+sin(rr*18.-t)*.8));append=(1.-smoothstep(.1,.25,arms))*smoothstep(.8,1.,rr)*(1.-smoothstep(1.+len*.6,1.+len,rr));}
+   append*=lifeAppendage*lifeAppendageLength;
+  }
+  col=mix(col,palette(h+lifeHue+.35+physicalRad*.3),append*lifeAmount);
   col=mix(col,ink,mask*lifeAmount);
  }
  return col;
@@ -2287,6 +2305,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "topperJewelOrbit","topperJewelOrbitRate","topperJewelOrbitShape",
         "topperPolyOrbit","topperPolyOrbitRate","topperPolyOrbitShape",
         "lifeShell","lifePores","lifeSpecies",
+        "lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane",
         "lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",

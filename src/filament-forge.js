@@ -171,6 +171,13 @@ export function remixTextileEcology(state,rng=Math.random){
  filamentEcologyRelief:35+65*unit(),filamentEcologyHue:100*unit()};
 }
 export const textileMetaModes=["Natural scaffold","Diffraction grating","Photonic crystal","Dichroic membrane","Spectral thin film","Prismatic chambers","Iridescent mineral skeleton","Birefringent lattice","Opal Bragg domains","Liquid crystal membrane","Translucent aerogel","Ferrofluid embroidery","Fractal dichroic glass","Anisotropic liquid metal","Bioluminescent gelatin","Opalescent cellular foam","Iridescent crystalline velvet"];
+export const textileEngravingModes=["Unengraved","Fractal scrimshaw","Microperforated lace","Quasicrystalline engraving","Guilloché rosettes","Hyperbolic filigree","Cymatic etching","Voronoi erosion","Holographic circuitry"];
+export const textileEngravingControls=["filamentEngraveMode","filamentEngraveAmount","filamentEngraveScale","filamentEngraveDepth","filamentEngraveWidth","filamentEngraveMotion","filamentEngraveHue"];
+export function remixTextileEngraving(state,rng=Math.random){
+ const unit=()=>{const n=Number(rng());return Number.isFinite(n)?Math.max(0,Math.min(1-Number.EPSILON,n)):0;};
+ const modes=textileEngravingModes.slice(1).filter(x=>x!==state.filamentEngraveMode);
+ return {...state,filamentEngraveMode:modes[Math.floor(unit()*modes.length)],filamentEngraveAmount:70+30*unit(),filamentEngraveScale:15+70*unit(),filamentEngraveDepth:40+60*unit(),filamentEngraveWidth:25+60*unit(),filamentEngraveMotion:10+65*unit(),filamentEngraveHue:100*unit()};
+}
 export const textileAlchemyModes=["Stable material","Manual transmutation","Phase breathing","Crystallization front","Material territories","Reaction wavefronts","Molten intermediary","Counterphase domains"];
 export const textileAlchemyTargets=textileMetaModes.slice(1);
 export const textileAlchemyControls=["filamentAlchMode","filamentAlchTarget","filamentAlchAmount","filamentAlchProgress","filamentAlchSpeed","filamentAlchScale","filamentAlchGlow"];
@@ -2192,6 +2199,10 @@ uniform float filamentChladniPhase,filamentChladniDetune;
 uniform float filamentRetroLead,filamentRetroEcho,filamentRetroParadox;
 uniform float filamentRetroKnots,filamentRetroReversal,filamentRetroCoherence;
 uniform float filamentNap,filamentLuster,filamentBeads,filamentBeadSize,filamentSecondHue;
+#ifdef FILAMENT_ARCH_ENGRAVING
+uniform int filamentEngraveMode;
+uniform float filamentEngraveAmount,filamentEngraveScale,filamentEngraveDepth,filamentEngraveWidth,filamentEngraveMotion,filamentEngraveHue;
+#endif
 #ifdef FILAMENT_ARCH_ALCHEMY
 uniform int filamentAlchMode;
 uniform int filamentAlchTarget;
@@ -4410,6 +4421,60 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
   float arVisible=1.-smoothstep(.35,1.1,aa/max(width,.003)*arScale);
   float arWeight=arSupport*arVisible*filamentArchitectureAmount*amount;
   float arMesh=max(1.-smoothstep(arLine,arLine+arAA,arD),arFill*(1.-filamentArchitectureOpenwork));
+#ifdef FILAMENT_ARCH_ENGRAVING
+  // Scaffold-local procedural grooves, with footprint-based detail suppression.
+  float egFreq=mix(2.,12.,filamentEngraveScale);
+  vec2 egP=vec2(arAlong,arP.y)*egFreq;
+  float egTime=time*filamentEngraveMotion*.65;
+  float egAA=max(.025,aa/max(width,.003)*arScale*egFreq*.65);
+  float egVisibility=1.-smoothstep(.18,.85,egAA);
+  float egWidth=mix(.035,.22,filamentEngraveWidth);
+  float egD=1.;
+  if(filamentEngraveMode==1){
+    egD=abs(sin(egP.x+sin(egP.y*1.8+egTime)*1.6));
+    egD=min(egD,abs(sin(egP.x*2.1+sin(egP.y*3.7-egTime)*1.2))*.8+.08);
+    egD=min(egD,abs(sin(egP.x*4.2+sin(egP.y*7.1)*.8))*.7+.18);
+  }else if(filamentEngraveMode==2){
+    egD=length(fract(egP+vec2(.5*mod(floor(egP.y),2.),0.))-.5);
+  }else if(filamentEngraveMode==3){
+    float egSum=0.;
+    for(int egI=0;egI<5;egI++){
+      float egA=float(egI)*1.25663706;
+      egSum+=cos(dot(egP,vec2(cos(egA),sin(egA)))*2.2+egTime*.4);
+    }
+    egD=abs(egSum*.2);
+  }else if(filamentEngraveMode==4){
+    vec2 egCell=fract(egP*.22)-.5;
+    float egR=length(egCell),egA=atan(egCell.y,egCell.x+.00001);
+    egD=abs(sin(egR*38.+3.*sin(egA*6.+egTime)+1.2*cos(egA*11.-egTime)));
+  }else if(filamentEngraveMode==5){
+    vec2 egDisk=(fract(egP*.25)-.5)*1.65;
+    float egR2=min(dot(egDisk,egDisk),.92);
+    vec2 egHyper=egDisk/max(.08,1.-egR2);
+    egD=min(abs(sin(egHyper.x*5.+egTime)),abs(sin(egHyper.y*5.-egTime)));
+    egD=mix(egD,1.,smoothstep(.55,.9,egR2));
+  }else if(filamentEngraveMode==6){
+    egD=abs(sin(egP.x*2.)*sin(egP.y*3.)+sin(egP.x*3.)*sin(egP.y*2.)+.2*cos(egTime));
+  }else if(filamentEngraveMode==7){
+    vec2 egCell=floor(egP),egLocal=fract(egP);
+    float egFirst=10.,egSecond=10.;
+    for(int egY=-1;egY<=1;egY++)for(int egX=-1;egX<=1;egX++){
+      vec2 egOff=vec2(float(egX),float(egY)),egId=egCell+egOff;
+      vec2 egJ=vec2(hash(egId+vec2(seedPhase,11.)),hash(egId+vec2(17.,seedPhase)));
+      float egDist=length(egOff+.2+.6*egJ-egLocal);
+      egSecond=min(egSecond,max(egFirst,egDist));egFirst=min(egFirst,egDist);
+    }
+    egD=egSecond-egFirst;
+  }else if(filamentEngraveMode==8){
+    vec2 egCell=floor(egP),egLocal=fract(egP)-.5;
+    float egRoute=hash(egCell+vec2(seedPhase,3.));
+    egD=min(egRoute>.5?abs(egLocal.x):abs(egLocal.y),abs(length(egLocal)-.23));
+  }
+  float egStrength=filamentEngraveAmount*egVisibility;
+  float egGroove=(1.-smoothstep(egWidth,egWidth+egAA,egD))*egStrength;
+  float egRim=(1.-smoothstep(egAA,egAA*2.+.035,abs(egD-egWidth-egAA)))*egStrength;
+  if(filamentEngraveMode==2)arMesh*=1.-egGroove*filamentEngraveDepth;
+#endif
   vec3 arInk=palette(fract(pigmentPhase+filamentArchitectureHue*.85+arRand*.18+arP.y*.22));
   float arIridescent=filamentArchitecture==6?1.:0.;
 #ifdef FILAMENT_ARCH_DIMENSION
@@ -4490,6 +4555,12 @@ vec3 filamentField(vec3 background,vec2 uv,vec2 fieldP,float fieldV,
 #ifdef FILAMENT_ARCH_ALCHEMY
   result+=mix(arInk,vec3(.95,.98,1.),.55)*arMesh*arWeight*alBoundary*filamentAlchGlow*mtMix*.42;
 #endif
+#endif
+#ifdef FILAMENT_ARCH_ENGRAVING
+  vec3 egInk=palette(fract(pigmentPhase+filamentEngraveHue+.12*sin(egP.x*.7+egTime)));
+  arInk=mix(arInk,arInk*.25,egGroove*filamentEngraveDepth*.85);
+  arInk=mix(arInk,egInk,egRim*.75);
+  arShine=clamp(arShine+egRim*filamentEngraveDepth*.6-egGroove*.35,0.,1.);
 #endif
   result=mix(result,result*.55+arInk*(.7+.3*arShine),clamp(arMesh*arWeight*.78,0.,.85));
   result+=mix(arInk,vec3(.92,.97,1.),.50)*arMesh*arWeight*clamp(arShine,0.,1.)*.32;

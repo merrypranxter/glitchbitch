@@ -82,7 +82,7 @@ import { filamentSpecies, filamentSpeciesFamilies, remixXenoVascular,
   filamentScarPresets,applyFilamentScarPreset,remixFilamentScars,
   filamentRegenModes,filamentRegenFamilies,filamentRegenDescriptions,
   filamentRegenPresets,applyFilamentRegenPreset,remixFilamentRegeneration,
-  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,microloomModes,remixMicroloom,textilePhysicsModes,remixTextilePhysics,textileChromaModes,remixTextileChroma,textileEcologyModes,remixTextileEcology,textileArchitectureModes,remixTextileArchitecture,textileDimensionModes,textileDimensionTargets,remixTextileDimension,textileMetaModes,remixTextileMeta,textileAlchemyModes,textileAlchemyTargets,remixTextileAlchemy,filamentStitchModes,filamentStitchFamilies,
+  remixFilamentMaterials,fiberConstructionModes,remixFiberConstruction,microloomModes,remixMicroloom,textilePhysicsModes,remixTextilePhysics,textileChromaModes,remixTextileChroma,textileEcologyModes,remixTextileEcology,textileArchitectureModes,remixTextileArchitecture,textileDimensionModes,textileDimensionTargets,remixTextileDimension,textileMetaModes,remixTextileMeta,textileEngravingModes,remixTextileEngraving,textileAlchemyModes,textileAlchemyTargets,remixTextileAlchemy,filamentStitchModes,filamentStitchFamilies,
   filamentStitchDescriptions,remixFilamentStitchMotion,remixRitualStitches,
   filamentStitchPresets,applyFilamentStitchPreset,stopFilamentStitching,
   feralJacquardPresets,applyFeralJacquardPreset,remixFeralJacquard,
@@ -2319,6 +2319,18 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
           <Parameter label="Polish / spectral sharpness" name="filamentMetaPolish" history={history}/>
           {s.filamentArchitecture==="Bare architecture"&&<p className="control-note" role="status">Choose a Parasitic Architecture law to see optical metamaterials.</p>}
           <button type="button" className="button secondary" disabled={!s.filamentAmount} onClick={()=>history.change(x=>remixTextileMeta(x))}><Dices size={13}/> Shuffle metamaterials only</button>
+        </details>
+        <details data-effect-detail="filament-engraving"><summary>Mathematical surface engraving · microcarving</summary>
+          <p className="control-note">Etch mathematical grooves, reflective rims and perforations into an existing architectural scaffold. Compatible with material alchemy.</p>
+          <Select label="Engraving law" value={s.filamentEngraveMode} onChange={v=>history.change(x=>({...x,filamentEngraveMode:v}))}>{textileEngravingModes.map(v=><option key={v} value={v}>{v}</option>)}</Select>
+          <Parameter label="Engraving presence" name="filamentEngraveAmount" history={history}/>
+          <Parameter label="Pattern scale" name="filamentEngraveScale" history={history}/>
+          <Parameter label="Cut depth" name="filamentEngraveDepth" history={history}/>
+          <Parameter label="Groove width" name="filamentEngraveWidth" history={history}/>
+          <Parameter label="Engraving motion" name="filamentEngraveMotion" history={history}/>
+          <Parameter label="Engraved rim hue" name="filamentEngraveHue" history={history}/>
+          {(s.filamentArchitecture==="Bare architecture"||!s.filamentArchitectureAmount)&&<p className="control-note" role="status">Choose a visible Parasitic Architecture law to see engraving.</p>}
+          <button type="button" className="button secondary" disabled={!s.filamentAmount} onClick={()=>history.change(x=>remixTextileEngraving(x))}><Dices size={13}/> Shuffle engraving only</button>
         </details>
         <details data-effect-detail="filament-material-alchemy"><summary>Material alchemy · phase transitions</summary>
           <p className="control-note">Blend optical properties, opacity, highlights and emission between two materials without changing scaffold geometry. Requires a visible architecture and optical material.</p>

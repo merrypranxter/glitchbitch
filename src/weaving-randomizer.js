@@ -13,6 +13,7 @@ const visible=s=>({...s,filamentAmount:Math.max(65,s.filamentAmount||0)});
 export const weavingRemixGroups=[
  {id:"weave",label:"Weave geometry & scale",note:"Pattern, thickness, density and geometry-specific controls; keeps the thread wardrobe."},
  {id:"dress",label:"Dress the threads",note:"Fiber materials, beads, nap, sheen and thread jewelry together."},
+ {id:"surface-engraving",label:"Surface engraving only",note:"Etch existing scaffold without changing architecture or material."},
  {id:"material-alchemy",label:"Material alchemy only",note:"Change material transition law and destination; requires a visible optical scaffold."},
  {id:"metamaterials",label:"Optical metamaterials only",note:"Change light behavior on the architecture; requires a visible scaffold."},
  {id:"dimension",label:"Dimensional metamorphosis only",note:"Change transition laws and destination geometry; requires a visible scaffold."},
@@ -57,6 +58,7 @@ export function remixWeavingSystem(state,id,rng=Math.random){
  switch(id){
  case "weave":return weave(state,rng);
  case "dress":return {...F.remixJewelryInterior(F.remixJewelryFinish(F.remixThreadCouture(state,rng),rng),rng),filamentBeadSize:range(15,95,rng),filamentSecondHue:range(0,100,rng)};
+ case "surface-engraving":return F.remixTextileEngraving(state,rng);
  case "material-alchemy":return F.remixTextileAlchemy(state,rng);
  case "metamaterials":return F.remixTextileMeta(state,rng);
  case "dimension":return F.remixTextileDimension(state,rng);
@@ -101,6 +103,8 @@ export function shuffleWeavingWorld(state,rng=Math.random,{intensity="Wild",allo
  else s={...s,filamentDimMode:"Static architecture"};
  if(s.filamentArchitecture!=="Bare architecture"&&roll(p*.85,rng))s=F.remixTextileMeta(s,rng);
  else s={...s,filamentMeta:"Natural scaffold"};
+ if(s.filamentArchitecture!=="Bare architecture"&&roll(p*.85,rng))s=F.remixTextileEngraving(s,rng);
+ else s={...s,filamentEngraveMode:"Unengraved"};
  if(s.filamentMeta!=="Natural scaffold"&&roll(p*.65,rng))s=F.remixTextileAlchemy(s,rng);
  else s={...s,filamentAlchMode:"Stable material"};
  if(roll(p*.62,rng))s=F.remixTextileEcology(s,rng);

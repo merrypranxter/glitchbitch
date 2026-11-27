@@ -947,7 +947,12 @@ export const numericRanges = {
   saturation: [0, 100],
   contrast: [0, 100],
   brightness: [0, 100],
-  chromaticSpace: [0, 21],
+  chromaticSpace: [0, 22],
+  chromaticIlluminant: [0, 5],
+  chromaticMetaAmount: [0, 100],
+  chromaticMetaBands: [1, 8],
+  chromaticMetaPhase: [0, 100],
+  chromaticMetaAdapt: [0, 100],
   chromaticPigmentAmount: [0, 100],
   chromaticPigmentWeight: [0, 100],
   chromaticAmbient: [0, 100],
@@ -1818,6 +1823,11 @@ export const initial = {
   contrast: 50,
   brightness: 50,
   chromaticSpace: 0,
+  chromaticIlluminant: 0,
+  chromaticMetaAmount: 100,
+  chromaticMetaBands: 3,
+  chromaticMetaPhase: 0,
+  chromaticMetaAdapt: 100,
   chromaticPigmentAmount: 100,
   chromaticPigmentWeight: 100,
   chromaticAmbient: 59.5,
@@ -2527,7 +2537,12 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.secondaryEngine=sample(engineInfo.filter(e=>e.id!==s.engine && e.id!==state.secondaryEngine),random).id;
   s.seed=Math.floor(random()*1000000000);
   if(s.seed===state.seed)s.seed=(s.seed+1)%1000000000;
-  s.chromaticSpace=locks.color?(state.chromaticSpace??0):Math.floor(random()*22);
+  s.chromaticSpace=locks.color?(state.chromaticSpace??0):Math.floor(random()*23);
+  s.chromaticIlluminant=locks.color?(state.chromaticIlluminant??0):1+Math.floor(random()*5);
+  s.chromaticMetaAmount=locks.color?(state.chromaticMetaAmount??100):60+random()*40;
+  s.chromaticMetaBands=locks.color?(state.chromaticMetaBands??3):1+Math.floor(random()*8);
+  s.chromaticMetaPhase=locks.color?(state.chromaticMetaPhase??0):random()*100;
+  s.chromaticMetaAdapt=locks.color?(state.chromaticMetaAdapt??100):40+random()*60;
   s.chromaticPigmentAmount=locks.color?(state.chromaticPigmentAmount??100):55+random()*45;
   s.chromaticPigmentWeight=locks.color?(state.chromaticPigmentWeight??100):random()*100;
   s.chromaticAmbient=locks.color?(state.chromaticAmbient??59.5):20+random()*75;

@@ -157,5 +157,19 @@ export default function ToppersInspector({history}){
    <Parameter label="Independent breathing" name="topperTriPulse" history={history}/>
    <Parameter label="Independent twinkle" name="topperTriTwinkle" history={history}/>
   </details>
+  <details className="effect-explanation"><summary>Kagome confetti</summary>
+   <div className="pane-actions"><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,remixTopper(x,"topperKagome",Math.random,density)))}>Remix</button><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,resetTopper(x,"topperKagome",initial)))}>Reset</button></div>
+   <Parameter label="Kagome presence" name="topperKagome" history={history}/>
+   <Parameter label="Cell population" name="topperKagomeDensity" history={history}/>
+   <Parameter label="Cell scale" name="topperKagomeScale" history={history}/>
+   <Parameter label="Animation speed" name="topperKagomeMotion" history={history}/>
+   <Parameter label="Cell gaps" name="topperKagomeGap" history={history}/>
+<Select label="Interior texture" value={String(Math.floor(Math.min(99.9,history.state.topperKagomeTexture)*5/100))} onChange={v=>history.change(s=>({...s,topperKagomeTexture:(Number(v)+.5)*20}))}>{["Solid","Nested polygons","Stripes","Stipple","Hollow"].map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
+   <Parameter label="Palette phase" name="topperKagomeHue" history={history}/>
+   <Parameter label="Difference interaction" name="topperKagomeBlend" history={history}/>
+   <Parameter label="Independent breathing" name="topperKagomePulse" history={history}/>
+   <Parameter label="Independent twinkle" name="topperKagomeTwinkle" history={history}/>
+   <Parameter label="Triangle to hexagon balance" name="topperKagomeBalance" history={history}/>
+  </details>
  </section>;
 }

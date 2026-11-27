@@ -1,5 +1,6 @@
 import {bakeChromaticPalette,LUT_WIDTH,mapChromaticGamut} from "./chromatic-lut.js";
 import {bakeMetamerAtlas,metamerAtlasY,metamerAtlasKey,metamerMotionMode} from "./chromatic-time.js";
+import {geographyAtlasState,geographyUniforms,geographyGLSL} from "./chromatic-geography.js";
 import {lifePositions} from "./life-physics.js";
 import { appearanceGLSL } from "./appearance.js";
 import {structuralOpticsModes} from "./structural-thread-optics.js";
@@ -72,6 +73,7 @@ mat2 rotate(float a){return mat2(cos(a),-sin(a),sin(a),cos(a));}
 uniform int chromaticSpace,chromaticHuePath,chromaticTurns;
 uniform sampler2D chromaticLUT;
 uniform float chromaticAtlasY;
+${geographyGLSL}
 uniform int chromaticGamut;
 vec3 chromaticDecode(vec3 c){return mix(c/12.92,pow((c+.055)/1.055,vec3(2.4)),step(vec3(.04045),c));}
 vec3 chromaticEncode(vec3 c){c=clamp(c,0.,1.);return mix(c*12.92,1.055*pow(c,vec3(1./2.4))-.055,step(vec3(.0031308),c));}
@@ -137,7 +139,7 @@ vec3 chromaticMix(vec3 a,vec3 b,float t){
  }
  return chromaticEncode(rgb);
 }
-vec3 palette(float t){if(chromaticSpace>=8)return texture2D(chromaticLUT,vec2(fract(t+.5/2048.),chromaticAtlasY)).rgb;float q=fract(t)*float(colorCount);int a=int(floor(q));vec3 c=colors[0],d=colors[0];for(int i=0;i<12;i++){if(i==a)c=colors[i];if(i==a+1)d=colors[i];}if(a==colorCount-1)d=colors[0];return chromaticMix(c,d,smoothstep(0.,1.,fract(q)));}
+vec3 palette(float t){if(chromaticSpace>=8)return texture2D(chromaticLUT,vec2(fract(t+.5/2048.),chromaticFragmentRow)).rgb;float q=fract(t)*float(colorCount);int a=int(floor(q));vec3 c=colors[0],d=colors[0];for(int i=0;i<12;i++){if(i==a)c=colors[i];if(i==a+1)d=colors[i];}if(a==colorCount-1)d=colors[0];return chromaticMix(c,d,smoothstep(0.,1.,fract(q)));}
 uniform float topperShrapnel,topperDensity,topperScale,topperMotion,topperHue,topperShape,topperBlend;
 vec3 transmissionShrapnel(vec3 col,vec2 uv){
  if(topperShrapnel<.001)return col;
@@ -810,7 +812,7 @@ vec3 realityCutouts(vec3 col,vec2 uv,vec2 p,float source){
  return mix(col,ink,mask*topperPortal);
 }
 
-void main(){vec2 uv=gl_FragCoord.xy/res;vec2 aspect=vec2(res.x/res.y,1.);vec2 sampleUV=uv;
+void main(){vec2 uv=gl_FragCoord.xy/res;chromaticFragmentRow=chromaticGeographyRow(uv);vec2 aspect=vec2(res.x/res.y,1.);vec2 sampleUV=uv;
 if(pixel>.001){float cells=mix(600.,24.,pow(pixel,.65));sampleUV=(floor(uv*vec2(cells*aspect.x,cells))+.5)/vec2(cells*aspect.x,cells);}
 vec2 p=(sampleUV-.5)*aspect*(2.+scale*5.);p=rotate(rotation)*p;
 p=animateCoordinates(p);
@@ -2850,11 +2852,17 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       gl.uniform1i(loc("bioAvailable"), hasBiology ? 1 : 0);
       gl.activeTexture(gl.TEXTURE0);
       gl.activeTexture(gl.TEXTURE7);gl.bindTexture(gl.TEXTURE_2D,chromaticTexture);gl.uniform1i(loc("chromaticLUT"),7);
+      const geo=geographyUniforms(s,timeline.colorTime);
+      gl.uniform1i(loc("chromaticGeoMode"),geo.mode);
       if(s.chromaticSpace>=8){
-       const ck=JSON.stringify([s.colors,s.chromaticSpace,s.chromaticHuePath,s.chromaticTurns,s.chromaticSatCap,s.chromaticGamut,s.chromaticAmbient,s.chromaticBackground,s.chromaticSurround,s.chromaticAdapt,s.chromaticPigmentAmount,s.chromaticPigmentWeight,s.chromaticIlluminant,s.chromaticMetaAmount,s.chromaticMetaBands,s.chromaticMetaPhase,s.chromaticMetaAdapt,...metamerAtlasKey(s)]);
+       const atlasState=geographyAtlasState(s);
+       gl.uniform1i(loc("chromaticGeoAtlasMode"),geo.atlasMode);
+       gl.uniform4f(loc("chromaticGeoConfig"),...geo.config);
+       gl.uniform2f(loc("chromaticGeoClock"),...geo.clock);
+       const ck=JSON.stringify([s.colors,s.chromaticSpace,s.chromaticHuePath,s.chromaticTurns,s.chromaticSatCap,s.chromaticGamut,s.chromaticAmbient,s.chromaticBackground,s.chromaticSurround,s.chromaticAdapt,s.chromaticPigmentAmount,s.chromaticPigmentWeight,s.chromaticIlluminant,s.chromaticMetaAmount,s.chromaticMetaBands,s.chromaticMetaPhase,s.chromaticMetaAdapt,...metamerAtlasKey(atlasState)]);
        if(ck!==chromaticKey){
-        const atlas=metamerMotionMode(s)?bakeMetamerAtlas(s,LUT_WIDTH,rgb=>mapChromaticGamut(rgb,s.chromaticGamut)):{height:1,pixels:bakeChromaticPalette(s)};
-        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,metamerMotionMode(s)===2?gl.REPEAT:gl.CLAMP_TO_EDGE);
+        const atlas=metamerMotionMode(atlasState)?bakeMetamerAtlas(atlasState,LUT_WIDTH,rgb=>mapChromaticGamut(rgb,s.chromaticGamut)):{height:1,pixels:bakeChromaticPalette(s)};
+        gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,metamerMotionMode(atlasState)===2?gl.REPEAT:gl.CLAMP_TO_EDGE);
         gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,LUT_WIDTH,atlas.height,0,gl.RGBA,gl.UNSIGNED_BYTE,atlas.pixels);
         chromaticKey=ck;
        }

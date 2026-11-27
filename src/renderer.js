@@ -265,6 +265,36 @@ vec3 hexConfetti(vec3 col,vec2 uv){
  ink=mix(ink,abs(clamp(col,0.,1.)-ink),topperHexBlend);
  return mix(col,ink,mask*pat*topperHex);
 }
+uniform float topperTri,topperTriDensity,topperTriScale,topperTriMotion,topperTriGap,topperTriTexture,topperTriHue,topperTriBlend,topperTriPulse,topperTriTwinkle;
+vec3 triangleConfetti(vec3 col,vec2 uv){
+ if(topperTri<.001)return col;
+ vec2 q=uv*mix(4.,28.,topperTriScale)*vec2(max(res.x/res.y,.4),1.);
+ vec2 lattice=vec2(q.x-q.y*.57735027,q.y*1.15470054);
+ vec2 cell=floor(lattice), f=fract(lattice);
+ float flip=step(1.,f.x+f.y);
+ vec3 bary=flip>.5?vec3(1.-f.x,1.-f.y,f.x+f.y-1.):vec3(f.x,f.y,1.-f.x-f.y);
+ float h=hash(cell+vec2(137.,53.)+flip*vec2(19.,71.));
+ if(h>mix(.025,.65,topperTriDensity))return col;
+ float t=time*topperTriMotion*.5;
+ float rate=mix(.45,1.7,hash(cell+flip*17.+91.));
+ float phase=h*TAU+t*rate;
+ float pulse=mix(1.,.15+.85*(.5+.5*sin(phase)),topperTriPulse);
+ float life=mix(1.,smoothstep(-.6,.5,sin(phase+2.)),topperTriTwinkle);
+ float edge=min(bary.x,min(bary.y,bary.z));
+ float gap=mix(.012,.15,topperTriGap);
+ float threshold=(1.-pulse)/3.+gap*pulse;
+ float mask=smoothstep(threshold,threshold+.012,edge)*life;
+ float localEdge=(edge-threshold)/max(.001,1./3.-threshold);
+ float mode=floor(min(topperTriTexture,.999)*5.);
+ float pat=1.;
+ if(mode>.5)pat=smoothstep(.05,.65,sin(localEdge*32.-t));
+ if(mode>1.5)pat=smoothstep(.1,.65,sin((bary.x-bary.y)*45.+t));
+ if(mode>2.5)pat=step(.5,hash(floor(bary.xy*32.)+cell));
+ if(mode>3.5)pat=1.-smoothstep(.12,.25,localEdge);
+ vec3 ink=palette(h+topperTriHue+localEdge*.3+.12*sin(phase));
+ ink=mix(ink,abs(clamp(col,0.,1.)-ink),topperTriBlend);
+ return mix(col,ink,mask*pat*topperTri);
+}
 ${geometryGLSL}
 ${motionGLSL}
 ${bioGLSL}
@@ -430,6 +460,7 @@ col=transmissionShrapnel(col,uv);
 col=falseColorIslands(col,uv);
 col=voronoiConfetti(col,uv);
 col=hexConfetti(col,uv);
+col=triangleConfetti(col,uv);
 col=spectralTape(col,uv);
 col=phospheneJewels(col,uv);
 gl_FragColor=vec4(clamp(col,0.,1.),1.);}`;
@@ -2040,6 +2071,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "topperIslandPulse","topperIslandPulseRate","topperIslandTwinkle","topperIslandTwinkleRate","topperIslandSpin","topperIslandSpinRate","topperIslandSpinDirection","topperIslandIndependence",
         "topperJewelPulse","topperJewelPulseRate","topperJewelTwinkle","topperJewelTwinkleRate","topperJewelSpin","topperJewelSpinRate","topperJewelDirection","topperJewelIndependence",
         "topperJewelOutline","topperHex","topperHexDensity","topperHexScale","topperHexMotion","topperHexGap","topperHexTexture","topperHexHue","topperHexBlend",
+        "topperTri","topperTriDensity","topperTriScale","topperTriMotion","topperTriGap","topperTriTexture","topperTriHue","topperTriBlend","topperTriPulse","topperTriTwinkle",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",
         "misregister",

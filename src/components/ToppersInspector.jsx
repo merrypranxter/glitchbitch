@@ -144,5 +144,18 @@ export default function ToppersInspector({history}){
    <Parameter label="Palette phase" name="topperHexHue" history={history}/>
    <Parameter label="Difference interaction" name="topperHexBlend" history={history}/>
   </details>
+  <details className="effect-explanation"><summary>Triangular confetti</summary>
+   <div className="pane-actions"><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,remixTopper(x,"topperTri",Math.random,density)))}>Remix</button><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,resetTopper(x,"topperTri",initial)))}>Reset</button></div>
+   <Parameter label="Triangle presence" name="topperTri" history={history}/>
+   <Parameter label="Cell population" name="topperTriDensity" history={history}/>
+   <Parameter label="Cell scale" name="topperTriScale" history={history}/>
+   <Parameter label="Animation speed" name="topperTriMotion" history={history}/>
+   <Parameter label="Cell gaps" name="topperTriGap" history={history}/>
+<Select label="Interior texture" value={String(Math.floor(Math.min(99.9,history.state.topperTriTexture)*5/100))} onChange={v=>history.change(s=>({...s,topperTriTexture:(Number(v)+.5)*20}))}>{["Solid","Nested triangles","Stripes","Stipple","Hollow"].map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
+   <Parameter label="Palette phase" name="topperTriHue" history={history}/>
+   <Parameter label="Difference interaction" name="topperTriBlend" history={history}/>
+   <Parameter label="Independent breathing" name="topperTriPulse" history={history}/>
+   <Parameter label="Independent twinkle" name="topperTriTwinkle" history={history}/>
+  </details>
  </section>;
 }

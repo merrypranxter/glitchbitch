@@ -440,6 +440,7 @@ vec3 polygonDebris(vec3 col,vec2 uv){
 uniform float lifeAmount,lifePopulation,lifeSize,lifeSpeed,lifeVariation,lifeForm,lifeHue,lifeDetail,lifePulse,lifeBlend;
 uniform float lifeShell,lifePores,lifeSpecies;
 uniform float lifeAppendage,lifeAppendageLength,lifeAppendageMotion,lifeAppendageDetail,lifeMembrane;
+uniform float lifeEvolution;
 uniform vec4 lifeBodies[24];
 uniform float lifeOptics,lifeOpticMode,lifeOpticPower,lifeOpticDispersion;
 float composed(vec2 p);
@@ -450,9 +451,9 @@ vec3 lifeforms(vec3 col,vec2 uv,vec2 fieldP,float source){
  vec2 p=uv*aspect;
  float count=1.+floor(lifePopulation*23.);
  for(int i=0;i<24;i++){
-  if(float(i)>=count)break;
+  if(lifeBodies[i].w<.5)break;
   vec2 id=vec2(float(i)+317.,83.);
-  float h=hash(id), h2=hash(id+17.);
+  float h=mix(hash(id),lifeBodies[i].w-1.,lifeEvolution), h2=hash(id+17.);
   float radius=mix(.008,.085,lifeSize)*mix(1.,mix(.55,1.4,h),lifeVariation)*min(aspect.x,1.);
   vec2 span=max(aspect-2.*radius,vec2(.001));
   vec2 velocity=vec2(mix(.13,.65,h),mix(.13,.65,h2))*mix(.0,1.8,lifeSpeed);
@@ -2335,6 +2336,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "lifeShell","lifePores","lifeSpecies",
         "lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane",
         "lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion",
+        "lifeEvolution",
         "lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",

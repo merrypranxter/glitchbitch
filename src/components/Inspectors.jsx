@@ -31,7 +31,7 @@ import {
   Shuffle,
   ArrowLeftRight,
 } from "lucide-react";
-import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, compositionModes, backdropModes, microModes, substanceModes, wiggleModes, randomize, initial } from "../data";
+import { engineInfo, engines, touchModes, makeMark, motionModes, tunnelModes, compositionModes, backdropModes, microModes, substanceModes, wiggleModes, randomize, initial, numericRanges } from "../data";
 import {hexagramPresets,applyHexagramPreset,remixHexagram,disableHexagram} from "../hexagram-terraces.js";
 import {polesModes,polesPresets,applyPolesPreset,shufflePoles,hidePoles} from "../complex-poles.js";
 import {qdModes,qdOrders,qdPresets,applyQdPreset,shuffleQd,hideQd} from "../quasicrystal-dissolution.js";
@@ -720,6 +720,13 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
   const [allowHeavy,setAllowHeavy]=React.useState(false);
   const [categoryLocks,setCategoryLocks]=React.useState({});
   const categoryPrefixes={
+    "Digital corruption":["split","glitch","block","pixel"],
+    "Analog & CRT":["scan","grain","vignette","phosphor","broadcast"],
+    "Temporal feedback":["afterimage","datamosh","memoryDrift","memoryDecay"],
+    "MySpace nostalgia":["windowCascade","glitter"],
+    "Spectral foil":["filmAmount","filmThickness","opalAmount","prismAmount","foilRelief","foilMotion"],
+    "Print textures":["dither","riso","misregister"],
+    "View motion & depth":["wiggle","stereo"],
     "Microscopic shapes":["micro","qd"],
     "Glass & refraction":["schlieren"],
     "Materials & textures":["substance","vld","velvet","hcr","crochet"],
@@ -752,7 +759,23 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
   })));
   // Category spins use the same activation-aware recipes as individual panels.
   const [categoryStrength,setCategoryStrength]=React.useState("Wild");
+  const spinLegacy=(keys)=>(x,r)=>{
+    const next={...x};
+    for(const key of keys){
+      const [lo,hi]=numericRanges[key];
+      next[key]=lo+(hi-lo)*(.22+.58*r());
+    }
+    return next;
+  };
   const categorySpins = [
+    ["Digital corruption",spinLegacy(["split","glitch","block","pixel"]),[]],
+    ["Analog & CRT",spinLegacy(["scan","grain","vignette","phosphor","broadcast"]),[]],
+    ["Temporal feedback",spinLegacy(["afterimage","datamosh","memoryDrift","memoryDecay"]),[]],
+    ["MySpace nostalgia",spinLegacy(["windowCascade","glitter"]),[]],
+    ["Spectral foil",spinLegacy(["filmAmount","filmThickness","opalAmount","prismAmount","foilRelief","foilMotion"]),[]],
+    ["Print textures",spinLegacy(["dither","riso","misregister"]),[]],
+    ["View motion & depth",(x,r)=>({...spinLegacy(["wiggleAmount","wiggleDepth","wiggleSpeed","wiggleLayers"])(x,r),wiggleMode:wiggleModes.filter(m=>m!=="Off")[Math.floor(r()*wiggleModes.filter(m=>m!=="Off").length)]}),[
+      (x,r)=>({...spinLegacy(["stereoAmount","stereoDepth","stereoParallax","stereoMorph","stereoGlow","stereoWiggle"])(x,r),stereoShape:["Gyroid Cathedral","Metaball Choir","Opal Knot","Crystal Lattice","Ribbon Wormhole"][Math.floor(r()*5)],stereoQuality:Math.min(40,x.stereoQuality||40)})]],
     ["Microscopic shapes", remixMicro, [shuffleQd]],
     ["Glass & refraction", shuffleMathematicalGlass, [
       (x,r)=>shuffleMathematicalGlass(x,r,"interior"),

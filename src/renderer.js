@@ -177,6 +177,40 @@ vec3 voronoiConfetti(vec3 col,vec2 uv){
  return mix(col,ink,mask*pattern*topperVoronoi);
 }
 
+uniform float topperTape,topperTapeDensity,topperTapeScale,topperTapeMotion,topperTapeWidth,topperTapeDispersion,topperTapeHue,topperTapePalette;
+// Asymmetric Gaussian CIE matching approximation, adapted from Chroma Soup.
+float tapeLobe(float l,float a,float m,float sl,float sr){
+ float x=(l-m)/(l<m?sl:sr);return a*exp(-.5*x*x);
+}
+vec3 tapeSpectrum(float l){
+ float x=tapeLobe(l,1.056,599.8,37.9,31.)+tapeLobe(l,.362,442.,16.,26.7)-tapeLobe(l,.065,501.1,20.4,26.2);
+ float y=tapeLobe(l,.821,568.8,46.9,40.5)+tapeLobe(l,.286,530.9,16.3,31.1);
+ float z=tapeLobe(l,1.217,437.,11.8,36.)+tapeLobe(l,.681,459.,26.,13.8);
+ vec3 rgb=vec3(3.2406*x-1.5372*y-.4986*z,-.9689*x+1.8758*y+.0415*z,.0557*x-.204*y+1.057*z);
+ rgb-=min(0.,min(rgb.r,min(rgb.g,rgb.b)));
+ return pow(clamp(rgb/max(.00001,max(rgb.r,max(rgb.g,rgb.b))),0.,1.),vec3(.6));
+}
+vec3 spectralTape(vec3 col,vec2 uv){
+ if(topperTape<.001)return col;
+ vec2 q=uv*mix(3.,15.,topperTapeScale)*vec2(max(res.x/res.y,.4),1.);
+ vec2 cell=floor(q), p=fract(q)-.5;
+ float h=hash(cell+vec2(167.,59.));
+ if(h>mix(.035,.4,topperTapeDensity))return col;
+ float t=time*topperTapeMotion*.3;
+ p=rotate((h-.5)*PI+.12*sin(t+h*TAU))*p;
+ float w=mix(.025,.13,topperTapeWidth);
+ float dist=max(abs(p.x)-.34,abs(p.y)-w);
+ float mask=1.-smoothstep(-.008,.012,dist);
+ if(mask<.001)return col;
+ float phase=h+topperTapeHue+p.x*mix(.6,4.,topperTapeDispersion)+.2*sin(p.y*35.+t+h*TAU);
+ float wave=400.+300.*(.5+.5*sin(TAU*phase));
+ vec3 ink=mix(tapeSpectrum(wave),palette(phase),topperTapePalette);
+ float grooves=.75+.25*sin(p.x*140.+p.y*65.);
+ float rim=1.-smoothstep(.005,.025,abs(abs(p.y)-w));
+ ink=ink*grooves+rim*.25;
+ return mix(col,mix(col*ink*1.4,ink,.65),mask*topperTape);
+}
+
 ${geometryGLSL}
 ${motionGLSL}
 ${bioGLSL}
@@ -313,6 +347,7 @@ col=applyAppearance(col,uv);
 col=transmissionShrapnel(col,uv);
 col=falseColorIslands(col,uv);
 col=voronoiConfetti(col,uv);
+col=spectralTape(col,uv);
 col=phospheneJewels(col,uv);
 gl_FragColor=vec4(clamp(col,0.,1.),1.);}`;
 
@@ -1917,6 +1952,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "broadcast",
         "topperIsland","topperIslandDensity","topperIslandScale","topperIslandMotion","topperIslandForm","topperIslandMapping","topperIslandHue","topperIslandFeather",
         "topperVoronoi","topperVoronoiDensity","topperVoronoiScale","topperVoronoiMotion","topperVoronoiGap","topperVoronoiTexture","topperVoronoiHue","topperVoronoiBlend",
+        "topperTape","topperTapeDensity","topperTapeScale","topperTapeMotion","topperTapeWidth","topperTapeDispersion","topperTapeHue","topperTapePalette",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",
         "misregister",

@@ -1076,9 +1076,11 @@ export const effectSearchTerms = {
     "Reseed",
     "Hide photons"
   ],
-  "signal": [
+  "chromatic-split": [
     "Chromatic split",
-    "split",
+    "split"
+  ],
+  "signal": [
     "Signal drift",
     "glitch",
     "Block corruption",

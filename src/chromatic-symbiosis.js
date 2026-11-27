@@ -28,8 +28,8 @@ export function structuralSignal(mode,v,gradient,p,frequency,sensitivity,drift,f
  const contour=.5+.5*Math.sin(TAU_SYM*frequency*v+w);
  if(mode===1)return contour;
  if(mode===2)return strength;
- if(mode===3)return mag>1e-8?.5+.5*Math.cos(Math.atan2(gradient[1],gradient[0])*frequency+w):.5;
- if(mode===4)return .5+.5*Math.cos(angle*Math.max(1,Math.floor(folds))*frequency+w);
+ if(mode===3)return mag>1e-8?.5+.5*Math.cos(Math.atan2(gradient[1],gradient[0])*Math.round(frequency)+w):.5;
+ if(mode===4)return .5+.5*Math.cos(angle*Math.max(1,Math.floor(folds))*Math.round(frequency)+w);
  return contour*strength;
 }
 export function structuralRow(s,colorTime,baseRow,v,gradient,p,folds=1){
@@ -39,9 +39,9 @@ export function structuralRow(s,colorTime,baseRow,v,gradient,p,folds=1){
  const signal=structuralSignal(mode,v,gradient,p,frequency,sensitivity,clock[1],folds);
  const edge=.025+.475*softness,q=clampSym((signal-.5+edge)/(2*edge),0,1),local=q*q*(3-2*q);
  if(atlasMode===2){
-  const target=fracSym(clock[0]+local+.5/META_ATLAS_ROWS);
-  const delta=fracSym(target-baseRow+.5)-.5;
-  return fracSym(baseRow+amount*delta);
+  // Offset along the circular atlas, never take a shortest-arc branch
+  // that can jump discontinuously when the target crosses the antipode.
+  return fracSym(baseRow+amount*local);
  }
  const target=(.5+(.5-.5*Math.cos(TAU_SYM*(clock[0]+.5*local)))*(META_ATLAS_ROWS-1))/META_ATLAS_ROWS;
  return baseRow+(target-baseRow)*amount;
@@ -65,10 +65,10 @@ float chromaticStructuralRow(float row,float val,vec2 p){
  float response=1.-exp(-mag*(2.+58.*sense));
  float signal=contour;
  if(chromaticSymMode==2)signal=response;
- else if(chromaticSymMode==3)signal=mag>1e-8?.5+.5*cos(atan(grad.y,grad.x)*freq+w):.5;
+ else if(chromaticSymMode==3)signal=mag>1e-8?.5+.5*cos(atan(grad.y,grad.x)*floor(freq+.5)+w):.5;
  else if(chromaticSymMode==4){
   float az=length(p)>1e-6?atan(p.y,p.x):0.;
-  signal=.5+.5*cos(az*max(1.,floor(symmetry))*freq+w);
+  signal=.5+.5*cos(az*max(1.,floor(symmetry))*floor(freq+.5)+w);
  }
  else if(chromaticSymMode==5)signal=contour*response;
  // WebGL1 without OES_standard_derivatives keeps a visible contour fallback.
@@ -79,9 +79,7 @@ float chromaticStructuralRow(float row,float val,vec2 p){
  float local=smoothstep(.5-edge,.5+edge,signal);
  float amount=chromaticSymConfig.x;
  if(chromaticSymAtlasMode==2){
-  float target=fract(chromaticSymClock.x+local+.5/16.);
-  float delta=fract(target-row+.5)-.5;
-  return fract(row+amount*delta);
+  return fract(row+amount*local);
  }
  float u=.5-.5*cos(TAU*(chromaticSymClock.x+.5*local));
  return mix(row,(.5+u*15.)/16.,amount);

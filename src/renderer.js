@@ -943,7 +943,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       gl.uniform2f(uniform("resolution"),w,h);
       gl.uniform1f(uniform("time"),timeline.time+timeline.colorTime*.17);
       gl.uniform1f(uniform("seed"),s.seed);
-      for(const k of ["afterimage","datamosh","memoryDrift","memoryDecay"])
+      for(const k of ["afterimage","datamosh","memoryDrift","memoryDecay","topperTime","topperTimeDensity","topperTimeScale","topperTimeMotion","topperTimeHold","topperTimeSlip","topperTimeForm","topperTimeChroma"])
         gl.uniform1f(uniform(k),s[k]/100);
       gl.uniform1f(uniform("hasMemory"),memory.valid?1:0);
       gl.drawArrays(gl.TRIANGLES,0,6);
@@ -1889,7 +1889,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
       // Visible words composite outside WebGL. Only Semantic Gravity
       // opt-in uploads their glyph mask to the geometric thread shader.
       const hasLettering = false;
-      const hasMemoryEffects = (s.afterimage > 0 || s.datamosh > 0) && !memoryDisabled;
+      const hasMemoryEffects = (s.afterimage > 0 || s.datamosh > 0 || s.topperTime > 0) && !memoryDisabled;
       let drawWithMemory = false;
       let drawWithSchlieren = s.schlierenAmount>0 && !schlierenUnavailable;
       if (hasMemoryEffects) {

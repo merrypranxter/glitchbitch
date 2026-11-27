@@ -185,5 +185,19 @@ export default function ToppersInspector({history}){
    <Parameter label="Twinkle" name="topperQuasiTwinkle" history={history}/>
    <p className="control-note">Five-direction quasiperiodic grid intersections; not an exact Penrose tiling.</p>
   </details>
+  <details className="effect-explanation"><summary>Truchet fragments</summary>
+   <div className="pane-actions"><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,remixTopper(x,"topperTruchet",Math.random,density)))}>Remix</button><button type="button" className="button secondary" disabled={locked} onClick={()=>history.change(x=>protectCategorySettings(x,resetTopper(x,"topperTruchet",initial)))}>Reset</button></div>
+   <Parameter label="Truchet presence" name="topperTruchet" history={history}/>
+   <Parameter label="Tile population" name="topperTruchetDensity" history={history}/>
+   <Parameter label="Tile scale" name="topperTruchetScale" history={history}/>
+   <Parameter label="Animation speed" name="topperTruchetMotion" history={history}/>
+   <Parameter label="Tile gaps" name="topperTruchetGap" history={history}/>
+<Select label="Interior texture" value={String(Math.floor(Math.min(99.9,history.state.topperTruchetTexture)*5/100))} onChange={v=>history.change(s=>({...s,topperTruchetTexture:(Number(v)+.5)*20}))}>{["Classic arcs","Double ribbons","Striped ribbons","Nested arcs","Crossed diagonals"].map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
+   <Parameter label="Palette phase" name="topperTruchetHue" history={history}/>
+   <Parameter label="Difference interaction" name="topperTruchetBlend" history={history}/>
+   <Parameter label="Independent breathing" name="topperTruchetPulse" history={history}/>
+   <Parameter label="Independent twinkle" name="topperTruchetTwinkle" history={history}/>
+   <Parameter label="Ribbon width" name="topperTruchetWidth" history={history}/>
+  </details>
  </section>;
 }

@@ -441,7 +441,10 @@ uniform float lifeAmount,lifePopulation,lifeSize,lifeSpeed,lifeVariation,lifeFor
 uniform float lifeShell,lifePores,lifeSpecies;
 uniform float lifeAppendage,lifeAppendageLength,lifeAppendageMotion,lifeAppendageDetail,lifeMembrane;
 uniform vec4 lifeBodies[24];
-vec3 lifeforms(vec3 col,vec2 uv){
+uniform float lifeOptics,lifeOpticMode,lifeOpticPower,lifeOpticDispersion;
+float composed(vec2 p);
+float phaseOf(float v,vec2 uv,float source);
+vec3 lifeforms(vec3 col,vec2 uv,vec2 fieldP,float source){
  if(lifeAmount<.001)return col;
  vec2 aspect=vec2(max(res.x/res.y,.1),1.);
  vec2 p=uv*aspect;
@@ -495,6 +498,31 @@ vec3 lifeforms(vec3 col,vec2 uv){
   ink=mix(ink,palette(h+lifeHue+.5),smoothstep(.6,.95,pattern)*.55);
   ink=mix(ink,palette(h+lifeHue+.65),shell*lifeShell);
   ink=mix(ink,abs(clamp(col,0.,1.)-ink),lifeBlend);
+  if(lifeOptics>.001 && mask>.001){
+   float mode=floor(min(lifeOpticMode,.999)*7.);
+   vec2 delta=z*radius*pulse*(2.+scale*5.);
+   delta=rotate(rotation)*delta;
+   vec3 optical=col;
+   float power=lifeOpticPower;
+   if(mode<.5 || (mode>1.5 && mode<2.5) || (mode>4.5 && mode<6.5)){
+    vec2 offset=-delta*power*.85;
+    if(mode>4.5 && mode<5.5)offset=delta*sin(physicalRad*22.-time*3.)*power*.35;
+    if(mode>5.5)offset=delta*power*.25;
+    vec2 q=fieldP+offset;
+    optical=palette(phaseOf(composed(q),uv,source));
+    if(mode>1.5 && mode<2.5 || mode>5.5){
+     vec2 splitDir=normalize(delta+vec2(.00001))*lifeOpticDispersion*radius*.8;
+     optical.r=palette(phaseOf(composed(q+splitDir),uv,source)).r;
+     optical.b=palette(phaseOf(composed(q-splitDir),uv,source)).b;
+    }
+   }else if(mode<1.5){
+    float film=physicalRad*mix(2.,18.,power)+time*.3+h;
+    optical=mix(col,palette(film),.35+.55*shell);
+   }else if(mode<3.5){
+    optical=palette(dot(clamp(col,0.,1.),vec3(.2126,.7152,.0722))*mix(1.,5.,power)+h+lifeHue);
+   }else if(mode<4.5)optical=mix(col,1.-clamp(col,0.,1.),power);
+   ink=mix(ink,optical,lifeOptics);
+  }
   float append=0.;
   if(lifeAppendage>.001){
    float aMode=floor(min(lifeAppendageDetail,.999)*4.);
@@ -685,7 +713,7 @@ col=kagomeConfetti(col,uv);
 col=quasiConfetti(col,uv);
 col=truchetConfetti(col,uv);
 col=polygonDebris(col,uv);
-col=lifeforms(col,uv);
+col=lifeforms(col,uv,p,source);
 col=spectralTape(col,uv);
 col=phospheneJewels(col,uv);
 gl_FragColor=vec4(clamp(col,0.,1.),1.);}`;
@@ -2306,6 +2334,7 @@ export function createRenderer(canvas, {exactEffects=false} = {}) {
         "topperPolyOrbit","topperPolyOrbitRate","topperPolyOrbitShape",
         "lifeShell","lifePores","lifeSpecies",
         "lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane",
+        "lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion",
         "lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend",
         "topperJewel","topperJewelDensity","topperJewelScale","topperJewelMotion","topperJewelDetail","topperJewelHue","topperJewelForm","topperJewelBlend",
         "topperShrapnel","topperDensity","topperScale","topperMotion","topperHue","topperShape","topperBlend",

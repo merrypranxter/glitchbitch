@@ -2,7 +2,7 @@ import React from "react";
 import {Parameter,Select} from "./Controls";
 import {initial} from "../data.js";
 import {readCategoryLocks,writeCategoryLocks,protectCategorySettings} from "../category-locks.js";
-const keys=["lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane","lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"];
+const keys=["lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion","lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane","lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"];
 export default function LifeformsInspector({history}){
  const [locks,setLocks]=React.useState(readCategoryLocks);
  const locked=!!locks.Lifeforms;
@@ -39,5 +39,10 @@ export default function LifeformsInspector({history}){
 <Parameter label="Appendage length" name="lifeAppendageLength" history={history}/>
 <Parameter label="Wriggle speed" name="lifeAppendageMotion" history={history}/>
 <Parameter label="Membrane pulsation" name="lifeMembrane" history={history}/>
+ </details><details className="effect-explanation"><summary>Optical parasites</summary>
+ <Select label="Optical mode" value={String(Math.floor(Math.min(99.9,history.state.lifeOpticMode??0)*7/100))} onChange={v=>history.change(s=>({...s,lifeOpticMode:(Number(v)+.5)*100/7}))}>{["Magnifying lens","Iridescent film","Prismatic dispersion","False color","Inverted reality","Ripple glass","Chromatic aberration"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
+ <Parameter label="Optical presence" name="lifeOptics" history={history}/>
+ <Parameter label="Optical power" name="lifeOpticPower" history={history}/>
+ <Parameter label="Spectral separation" name="lifeOpticDispersion" history={history}/>
  </details></section>
 }

@@ -726,8 +726,25 @@ export function EffectsInspector({ history, onTool, tool, scope = "effects" }) {
     allowDual,allowHeavy,
     baseRandomizer:(original,rng)=>randomize(original,{},false,rng)
   }));
+  // Category spins use the same activation-aware recipes as individual panels.
+  const categorySpins = [
+    ["Microscopic shapes", remixMicro],
+    ["Glass & refraction", shuffleMathematicalGlass],
+    ["Materials & textures", remixSubstance],
+    ["Light & optical ornaments", remixPhotonZoo],
+    ["Chromatic alchemy", shuffleAlchemy],
+    ["Print & signal damage", shuffleInjury],
+    ["Biological growth", remixBioRot],
+    ["Backgrounds & atmosphere", remixBackdrop],
+  ];
   const body = {
     "chaos-lab": <>
+      <div className="pane-actions">
+        {categorySpins.map(([name,spin])=><button key={name} type="button"
+          className="button secondary" onClick={()=>history.change(x=>spin(x,Math.random))}>
+          <Shuffle size={13}/> {name}
+        </button>)}
+      </div>
       <p className="control-note">
         THE BEAUTIFUL RANDOMIZER PROBLEM IS SOLVED. Spin living colonies,
         rival atmosphere species and all the other weird modules together

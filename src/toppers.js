@@ -15,7 +15,7 @@ export const topperParameters={
     "topperJewelDetail",
     "topperJewelHue",
     "topperJewelForm",
-    "topperJewelBlend"
+    "topperJewelBlend","topperJewelPulse","topperJewelPulseRate","topperJewelTwinkle","topperJewelTwinkleRate","topperJewelSpin","topperJewelSpinRate","topperJewelDirection","topperJewelIndependence"
   ],
   "topperIsland": [
     "topperIslandDensity",

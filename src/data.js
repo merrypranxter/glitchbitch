@@ -949,6 +949,10 @@ export const numericRanges = {
   brightness: [0, 100],
   chromaticSpace: [0, 22],
   chromaticIlluminant: [0, 5],
+  chromaticMetaMotion: [0, 2],
+  chromaticMetaTarget: [0, 5],
+  chromaticMetaPeriod: [2, 30],
+  chromaticMetaTimePhase: [0, 100],
   chromaticMetaAmount: [0, 100],
   chromaticMetaBands: [1, 8],
   chromaticMetaPhase: [0, 100],
@@ -1824,6 +1828,10 @@ export const initial = {
   brightness: 50,
   chromaticSpace: 0,
   chromaticIlluminant: 0,
+  chromaticMetaMotion: 0,
+  chromaticMetaTarget: 5,
+  chromaticMetaPeriod: 8,
+  chromaticMetaTimePhase: 0,
   chromaticMetaAmount: 100,
   chromaticMetaBands: 3,
   chromaticMetaPhase: 0,
@@ -2539,6 +2547,10 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   if(s.seed===state.seed)s.seed=(s.seed+1)%1000000000;
   s.chromaticSpace=locks.color?(state.chromaticSpace??0):Math.floor(random()*23);
   s.chromaticIlluminant=locks.color?(state.chromaticIlluminant??0):1+Math.floor(random()*5);
+  s.chromaticMetaMotion=locks.color?(state.chromaticMetaMotion??0):(random()<.25?0:1+Math.floor(random()*2));
+  s.chromaticMetaTarget=locks.color?(state.chromaticMetaTarget??5):(s.chromaticIlluminant+1+Math.floor(random()*5))%6;
+  s.chromaticMetaPeriod=locks.color?(state.chromaticMetaPeriod??8):3+Math.floor(random()*13);
+  s.chromaticMetaTimePhase=locks.color?(state.chromaticMetaTimePhase??0):random()*100;
   s.chromaticMetaAmount=locks.color?(state.chromaticMetaAmount??100):60+random()*40;
   s.chromaticMetaBands=locks.color?(state.chromaticMetaBands??3):1+Math.floor(random()*8);
   s.chromaticMetaPhase=locks.color?(state.chromaticMetaPhase??0):random()*100;

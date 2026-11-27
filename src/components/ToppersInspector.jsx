@@ -34,5 +34,15 @@ export default function ToppersInspector({history}){
    <Parameter label="Fragment geometry" name="topperShape" history={history}/>
    <Parameter label="Color interaction" name="topperBlend" history={history}/>
   </details>
+  <details className="effect-explanation"><summary>Phosphene jewels</summary>
+   <Parameter label="Jewel presence" name="topperJewel" history={history}/>
+   <Parameter label="Jewel density" name="topperJewelDensity" history={history}/>
+   <Parameter label="Jewel scale" name="topperJewelScale" history={history}/>
+   <Parameter label="Retinal drift" name="topperJewelMotion" history={history}/>
+   <Parameter label="Interference detail" name="topperJewelDetail" history={history}/>
+   <Parameter label="Palette phase" name="topperJewelHue" history={history}/>
+   <Parameter label="Retinal geometry" name="topperJewelForm" history={history}/>
+   <Parameter label="Complement interaction" name="topperJewelBlend" history={history}/>
+  </details>
  </section>;
 }

@@ -1,4 +1,4 @@
-import {Okhsl,Okhsv,HSLuv,HPLuv,srgbToLin,linToSrgb,gamutMap} from "./colorspaces.js";
+import {Okhsl,Okhsv,HSLuv,HPLuv,IPT,DIN99,srgbToLin,linToSrgb,gamutMap} from "./colorspaces.js";
 export const LUT_WIDTH=2048;
 export function mapChromaticGamut(rgb,mode=0){
  if(mode===1)return rgb.map(x=>Math.max(0,Math.min(1,x)));
@@ -7,13 +7,19 @@ export function mapChromaticGamut(rgb,mode=0){
  return gamutMap(rgb);
 }
 export function bakeChromaticPalette(s){
- const space=[Okhsl,Okhsv,HSLuv,HPLuv][Math.round(s.chromaticSpace)-8];
+ const space=[Okhsl,Okhsv,HSLuv,HPLuv,IPT,DIN99][Math.round(s.chromaticSpace)-8];
  const colors=s.colors.map(h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255));
  const coords=colors.map(c=>space.fromLin(srgbToLin(c)));
  const out=new Uint8Array(LUT_WIDTH*4);
  const cap=(s.chromaticSatCap??100)/100*(s.chromaticSpace>=10?100:1);
  for(let i=0;i<LUT_WIDTH;i++){
   const q=i/LUT_WIDTH*colors.length,j=Math.floor(q),k=(j+1)%colors.length,f=q-j,t=f*f*(3-2*f);
+  if(s.chromaticSpace>=12){
+   const c=coords[j].map((v,n)=>v+(coords[k][n]-v)*t);
+   const rgb=linToSrgb(mapChromaticGamut(space.toLin(c),s.chromaticGamut));
+   for(let n=0;n<3;n++)out[i*4+n]=Math.round(255*Math.max(0,Math.min(1,Number.isFinite(rgb[n])?rgb[n]:0)));
+   out[i*4+3]=255;continue;
+  }
   let [ha,sa,la]=coords[j],[hb,sb,lb]=coords[k];
   if(!Number.isFinite(ha)||sa<1e-5)ha=hb;
   if(!Number.isFinite(hb)||sb<1e-5)hb=ha;

@@ -95,6 +95,10 @@ export default function ColorLab({
           <Select label="Extra hue revolutions per stop" value={String(Math.round(state.chromaticTurns??0))} onChange={v=>history.change(s=>({...s,chromaticTurns:Number(v)}))}>{[0,1,2,3].map(n=><option key={n} value={String(n)}>{n}</option>)}</Select>
           <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticHuePath:Math.floor(Math.random()*4),chromaticTurns:Math.floor(Math.random()*4)}))}>Shuffle hue route</button>
         </>}
+        {(state.chromaticSpace??0)>=2&&<>
+          <Select label="Gamut mapping" value={String(Math.round(state.chromaticGamut??0))} onChange={v=>history.change(s=>({...s,chromaticGamut:Number(v)}))}>{["Perceptual reduction (default)","Hard RGB clipping","RGB range compression","Reflective gamut folding"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
+          <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticGamut:(Math.round(s.chromaticGamut??0)+1+Math.floor(Math.random()*3))%4}))}>Shuffle gamut mapping</button>
+        </>}
         {(state.chromaticSpace??0)>=8&&<Parameter label="Saturation ceiling" name="chromaticSatCap" history={history}/>}
       </details>
       <Section

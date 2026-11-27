@@ -1,0 +1,2 @@
+# Upcoming: Toppers and color exploration
+After randomization overhaul: audit shaderslop_designs, shader_files_2 and shaderfiles3 for localized accents and false-color/retinal mathematics. Dedicated Toppers tab with broadcast bars, error windows, signal confetti, reality cutouts, retinal stickers, mathematical debris, spectral tape, texture islands and temporal shrapnel. Sparse through maximalist randomization, overlapping categories, shared preview/export rendering. Preserve existing controls. Audit actual shader sources before implementation.

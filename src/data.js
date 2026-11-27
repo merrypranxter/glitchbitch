@@ -287,6 +287,15 @@ export const numericRanges = {
   topperJewelSpinRate: [0, 100],
   topperJewelDirection: [0, 100],
   topperJewelIndependence: [0, 100],
+  topperJewelOutline: [0, 100],
+  topperHex: [0, 100],
+  topperHexDensity: [0, 100],
+  topperHexScale: [0, 100],
+  topperHexMotion: [0, 100],
+  topperHexGap: [0, 100],
+  topperHexTexture: [0, 100],
+  topperHexHue: [0, 100],
+  topperHexBlend: [0, 100],
   topperJewel: [0, 100],
   topperJewelDensity: [0, 100],
   topperJewelScale: [0, 100],
@@ -926,6 +935,15 @@ export const initial = {
   topperJewelSpinRate: 35,
   topperJewelDirection: 85,
   topperJewelIndependence: 100,
+  topperJewelOutline: 0,
+  topperHex: 0,
+  topperHexDensity: 30,
+  topperHexScale: 45,
+  topperHexMotion: 35,
+  topperHexGap: 25,
+  topperHexTexture: 20,
+  topperHexHue: 50,
+  topperHexBlend: 25,
   topperJewel: 0,
   topperJewelDensity: 25,
   topperJewelScale: 40,
@@ -2336,7 +2354,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.block=random()<.42?random()*65:0;
   s.pixel=random()<.3?random()*58:0;
   s.vignette=random()<.5?random()*32:0;
-  const ornaments=["phosphor","dither","riso","windowCascade","glitter","broadcast","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal","topperTime"];
+  const ornaments=["phosphor","dither","riso","windowCascade","glitter","broadcast","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal","topperTime","topperHex"];
   for(const key of ornaments)s[key]=0;
   const available=ornaments.filter(k=>k!=="topperPortal"&&k!=="topperTime");
   const count=1+Math.floor(random()*3);

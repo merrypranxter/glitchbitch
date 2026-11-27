@@ -55,5 +55,16 @@ export default function ToppersInspector({history}){
    <Parameter label="Edge feather" name="topperIslandFeather" history={history}/>
    <p className="control-note">Mapping: palette luminance, spectral-style cosine, opponent channels, quantized palette, complement/channel rotation.</p>
   </details>
+  <details className="effect-explanation"><summary>Voronoi confetti</summary>
+   <Parameter label="Confetti presence" name="topperVoronoi" history={history}/>
+   <Parameter label="Cell population" name="topperVoronoiDensity" history={history}/>
+   <Parameter label="Cell scale" name="topperVoronoiScale" history={history}/>
+   <Parameter label="Cell motion" name="topperVoronoiMotion" history={history}/>
+   <Parameter label="Fragment gaps" name="topperVoronoiGap" history={history}/>
+   <Parameter label="Interior texture" name="topperVoronoiTexture" history={history}/>
+   <Parameter label="Palette phase" name="topperVoronoiHue" history={history}/>
+   <Parameter label="Difference interaction" name="topperVoronoiBlend" history={history}/>
+   <p className="control-note">Interior textures: solid, diagonal stripes, radial rings, stippled cells.</p>
+  </details>
  </section>;
 }

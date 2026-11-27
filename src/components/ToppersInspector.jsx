@@ -66,5 +66,15 @@ export default function ToppersInspector({history}){
    <Parameter label="Difference interaction" name="topperVoronoiBlend" history={history}/>
    <p className="control-note">Interior textures: solid, diagonal stripes, radial rings, stippled cells.</p>
   </details>
+  <details className="effect-explanation"><summary>Spectral tape</summary>
+   <Parameter label="Tape presence" name="topperTape" history={history}/>
+   <Parameter label="Tape population" name="topperTapeDensity" history={history}/>
+   <Parameter label="Tape scale" name="topperTapeScale" history={history}/>
+   <Parameter label="Optical motion" name="topperTapeMotion" history={history}/>
+   <Parameter label="Strip width" name="topperTapeWidth" history={history}/>
+   <Parameter label="Spectral dispersion" name="topperTapeDispersion" history={history}/>
+   <Parameter label="Wavelength phase" name="topperTapeHue" history={history}/>
+   <Parameter label="Palette mixing" name="topperTapePalette" history={history}/>
+  </details>
  </section>;
 }

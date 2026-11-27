@@ -1,5 +1,6 @@
-export const topperKeys=["broadcast","windowCascade","glitter","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal","topperTime"];
+export const topperKeys=["broadcast","windowCascade","glitter","topperShrapnel","topperJewel","topperIsland","topperVoronoi","topperTape","topperPortal","topperTime","topperHex"];
 export const topperParameters={
+ "topperHex":["topperHexDensity","topperHexScale","topperHexMotion","topperHexGap","topperHexTexture","topperHexHue","topperHexBlend"],
   "topperShrapnel": [
     "topperDensity",
     "topperScale",
@@ -15,7 +16,7 @@ export const topperParameters={
     "topperJewelDetail",
     "topperJewelHue",
     "topperJewelForm",
-    "topperJewelBlend","topperJewelPulse","topperJewelPulseRate","topperJewelTwinkle","topperJewelTwinkleRate","topperJewelSpin","topperJewelSpinRate","topperJewelDirection","topperJewelIndependence"
+    "topperJewelBlend","topperJewelOutline","topperJewelPulse","topperJewelPulseRate","topperJewelTwinkle","topperJewelTwinkleRate","topperJewelSpin","topperJewelSpinRate","topperJewelDirection","topperJewelIndependence"
   ],
   "topperIsland": [
     "topperIslandDensity",

@@ -2,7 +2,7 @@ import React from "react";
 import {Parameter,Select} from "./Controls";
 import {initial} from "../data.js";
 import {readCategoryLocks,writeCategoryLocks,protectCategorySettings} from "../category-locks.js";
-const keys=["lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"];
+const keys=["lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"];
 export default function LifeformsInspector({history}){
  const [locks,setLocks]=React.useState(readCategoryLocks);
  const locked=!!locks.Lifeforms;
@@ -25,7 +25,10 @@ export default function LifeformsInspector({history}){
 <Parameter label="Bounce speed" name="lifeSpeed" history={history}/>
 <Parameter label="Size variation" name="lifeVariation" history={history}/>
  </details><details open className="effect-explanation"><summary>Appearance</summary>
- <Select label="Internal structure" value={String(Math.floor(Math.min(99.9,history.state.lifeForm)*4/100))} onChange={v=>history.change(s=>({...s,lifeForm:(Number(v)+.5)*25}))}>{["Retinal rings","Radial spokes","Diatomic ripples","Logarithmic spiral"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
+<Parameter label="Shell rim" name="lifeShell" history={history}/>
+<Parameter label="Shell perforation" name="lifePores" history={history}/>
+<Parameter label="Species diversity" name="lifeSpecies" history={history}/>
+ <Select label="Internal structure" value={String(Math.floor(Math.min(99.9,history.state.lifeForm)*12/100))} onChange={v=>history.change(s=>({...s,lifeForm:(Number(v)+.5)*100/12}))}>{["Retinal rings","Radial spokes","Diatomic ripples","Logarithmic spiral","Radiolarian cage","Triangular diatom","Hexagonal diatom","Silica lattice","Seven-point rosette","Fractal star","Segmented capsule","Mixed species"].map((n,i)=><option key={n} value={String(i)}>{n}</option>)}</Select>
 <Parameter label="Palette phase" name="lifeHue" history={history}/>
 <Parameter label="Internal detail" name="lifeDetail" history={history}/>
 <Parameter label="Breathing" name="lifePulse" history={history}/>

@@ -948,6 +948,7 @@ export const numericRanges = {
   contrast: [0, 100],
   brightness: [0, 100],
   chromaticSpace: [0, 11],
+  chromaticGamut: [0, 3],
   chromaticSatCap: [0, 100],
   chromaticHuePath: [0, 3],
   chromaticTurns: [0, 3],
@@ -1811,6 +1812,7 @@ export const initial = {
   contrast: 50,
   brightness: 50,
   chromaticSpace: 0,
+  chromaticGamut: 0,
   chromaticSatCap: 100,
   chromaticHuePath: 0,
   chromaticTurns: 0,
@@ -2514,6 +2516,7 @@ export function randomize(state, locks={}, mutate=false, random=Math.random) {
   s.seed=Math.floor(random()*1000000000);
   if(s.seed===state.seed)s.seed=(s.seed+1)%1000000000;
   s.chromaticSpace=locks.color?(state.chromaticSpace??0):Math.floor(random()*12);
+  s.chromaticGamut=locks.color?(state.chromaticGamut??0):(random()<.6?0:1+Math.floor(random()*3));
   s.chromaticSatCap=locks.color?(state.chromaticSatCap??100):70+random()*30;
   s.chromaticHuePath=locks.color?(state.chromaticHuePath??0):Math.floor(random()*4);
   s.chromaticTurns=locks.color?(state.chromaticTurns??0):(random()<.2?1+Math.floor(random()*3):0);

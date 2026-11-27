@@ -1,5 +1,11 @@
 import {Okhsl,Okhsv,HSLuv,HPLuv,srgbToLin,linToSrgb,gamutMap} from "./colorspaces.js";
 export const LUT_WIDTH=2048;
+export function mapChromaticGamut(rgb,mode=0){
+ if(mode===1)return rgb.map(x=>Math.max(0,Math.min(1,x)));
+ if(mode===2){const lo=Math.min(0,...rgb),hi=Math.max(1,Math.max(...rgb)-lo);return rgb.map(x=>(x-lo)/hi);}
+ if(mode===3)return rgb.map(x=>1-Math.abs(((x%2)+2)%2-1));
+ return gamutMap(rgb);
+}
 export function bakeChromaticPalette(s){
  const space=[Okhsl,Okhsv,HSLuv,HPLuv][Math.round(s.chromaticSpace)-8];
  const colors=s.colors.map(h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255));
@@ -18,7 +24,7 @@ export function bakeChromaticPalette(s){
   if(s.chromaticHuePath===3)delta=-(((ha-hb)%360+360)%360);
   if(sa<1e-5&&sb<1e-5)delta=0;else delta+=(delta<0?-1:1)*360*(s.chromaticTurns??0);
   const h=((ha+t*delta)%360+360)%360;
-  const rgb=linToSrgb(gamutMap(space.toLin([h,Math.min(cap,sa+(sb-sa)*t),la+(lb-la)*t])));
+  const rgb=linToSrgb(mapChromaticGamut(space.toLin([h,Math.min(cap,sa+(sb-sa)*t),la+(lb-la)*t]),s.chromaticGamut));
   for(let c=0;c<3;c++)out[i*4+c]=Math.round(255*Math.max(0,Math.min(1,Number.isFinite(rgb[c])?rgb[c]:0)));
   out[i*4+3]=255;
  }

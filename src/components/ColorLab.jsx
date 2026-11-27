@@ -26,6 +26,7 @@ import {spxModes,spxPresets,applySpxPreset,shuffleSpx,hideSpx}
 import { readFavorites, FAVORITES_KEY } from "../effects-navigation.js";
 import { sectionMeta } from "../ui-index.js";
 import { illuminantNames } from "../spectral-metamer.js";
+import { metamerMotionNames } from "../chromatic-time.js";
 
 export function Swatches({ colors }) {
   return (
@@ -313,6 +314,16 @@ export default function ColorLab({
           <Parameter label="Metamer bands" name="chromaticMetaBands" history={history}/>
           <Parameter label="Spectral phase" name="chromaticMetaPhase" history={history}/>
           <Parameter label="White balance" name="chromaticMetaAdapt" history={history}/>
+          <details className="effect-explanation"><summary>Chromatic Time Travel · animated illumination</summary>
+            <Select label="Illumination motion" value={String(Math.round(state.chromaticMetaMotion??0))} onChange={v=>history.change(s=>({...s,chromaticMetaMotion:Number(v)}))}>{metamerMotionNames.map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>
+            {Math.round(state.chromaticMetaMotion??0)>0&&<>
+              {Math.round(state.chromaticMetaMotion??0)===1&&<Select label="Second sun" value={String(Math.round(state.chromaticMetaTarget??5))} onChange={v=>history.change(s=>({...s,chromaticMetaTarget:Number(v)}))}>{illuminantNames.map((name,i)=><option key={name} value={String(i)}>{name}</option>)}</Select>}
+              <Parameter label="Illumination cycle (color-clock seconds)" name="chromaticMetaPeriod" history={history}/>
+              <Parameter label="Illumination time phase" name="chromaticMetaTimePhase" history={history}/>
+              <p className="control-note">Lighting repeats after this many color-clock seconds. Color tempo changes real-time duration; Freeze color pauses it. Whole-art export looping still depends on other motion.</p>
+            </>}
+            <button className="button secondary" onClick={()=>history.change(s=>{const from=Math.floor(Math.random()*6);return {...s,chromaticIlluminant:from,chromaticMetaTarget:(from+1+Math.floor(Math.random()*5))%6,chromaticMetaMotion:1+Math.floor(Math.random()*2),chromaticMetaPeriod:3+Math.floor(Math.random()*13),chromaticMetaTimePhase:Math.random()*100};})}>Shuffle time travel</button>
+          </details>
           <button className="button secondary" onClick={()=>history.change(s=>({...s,chromaticIlluminant:1+Math.floor(Math.random()*5),chromaticMetaAmount:65+Math.random()*35,chromaticMetaBands:1+Math.floor(Math.random()*8),chromaticMetaPhase:Math.random()*100,chromaticMetaAdapt:35+Math.random()*65}))}>Shuffle hidden spectra</button>
         </>}
         {Math.round(state.chromaticSpace??0)===19&&<p className="control-note">HCT follows CAM16 hue and chroma while preserving interpolated CIELAB tone. It uses its own sRGB chroma-reduction solver.</p>}

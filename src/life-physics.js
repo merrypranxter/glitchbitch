@@ -4,18 +4,19 @@ const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function make(s,w){
  let seed=(Number(s.seed)||0)>>>0;
  const rng=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
+ let nextId=0;
  const count=1+Math.floor(clamp(s.lifePopulation/100,0,1)*23), bodies=[];
  for(let i=0;i<count;i++){
   const h=rng(),r=(.008+.077*s.lifeSize/100)*(1+(s.lifeVariation/100)*(.55+.85*h-1))*Math.min(w,1);
   const angle=rng()*Math.PI*2, speed=(.13+.52*rng())*1.8*s.lifeSpeed/100;
-  bodies.push({r,base:r,age:0,gene:rng(),cycle:2+rng()*5,x:r+rng()*(w-2*r),y:r+rng()*(1-2*r),vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed});
+  bodies.push({id:nextId++,r,base:r,age:0,gene:rng(),cycle:2+rng()*5,x:r+rng()*(w-2*r),y:r+rng()*(1-2*r),vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed});
  }
- return {bodies,step:0,rng, trails:[], impacts:[]};
+ return {bodies,step:0,rng, nextId, trails:[], impacts:[]};
 }
 function advance(sim,w,collision,e,mode,strength,speed,evolution,birth,mutation,mortality){
  const b=sim.bodies;
  const t=sim.step*DT;
- const snapshot=b.map(p=>({...p}));
+ const snapshot=(mode===3||mode===4||mode===7||mode===8)?b.map(p=>({...p})):null;
  for(let i=0;i<b.length;i++){
   const p=b[i],m=mode===8?i%8:mode;
   let ax=0,ay=0,dx=w*.5-p.x,dy=.5-p.y;
@@ -52,29 +53,30 @@ function advance(sim,w,collision,e,mode,strength,speed,evolution,birth,mutation,
   const rng=sim.rng;
   for(let i=b.length-1;i>=0;i--){
    const p=b[i];p.age+=DT*evolution;
-   p.r=p.base*clamp(.65+p.age*.35, .65,1.35);
+   p.r=Math.min(p.base*clamp(.65+p.age*.35, .65,1.35),w*.49,.49);
    const period=p.cycle/(.15+birth*2);
    if(mortality>0 && p.age>p.cycle*3/(.1+mortality*2) && b.length>1){b.splice(i,1);continue;}
    if(birth>0 && p.age>period && b.length<24){
     const angle=rng()*Math.PI*2,nx=Math.cos(angle),ny=Math.sin(angle);
     const base=clamp(p.base*.82*(1+(rng()-.5)*mutation*.5),.004,.12*Math.min(w,1));
     p.age=0;p.base=Math.max(.004,p.base*.82);p.r=p.base*.65;
-    const child={...p,base,r:base*.65,age:0,cycle:2+rng()*5,gene:(p.gene+(rng()-.5)*mutation+1)%1};
+    const child={...p,id:sim.nextId++,base,r:base*.65,age:0,cycle:2+rng()*5,gene:(p.gene+(rng()-.5)*mutation+1)%1};
     child.x=clamp(p.x+nx*(p.r+child.r),child.r,w-child.r);child.y=clamp(p.y+ny*(p.r+child.r),child.r,1-child.r);
     child.vx+=nx*.2*speed;child.vy+=ny*.2*speed;p.vx-=nx*.2*speed;p.vy-=ny*.2*speed;
     b.push(child);
    }
   }
  }
+ for(const p of b){p.x=clamp(p.x,p.r,w-p.r);p.y=clamp(p.y,p.r,1-p.r);}
  sim.step++;
- if(sim.step%12===0){sim.trails.push(b.slice(0,8).map(p=>[p.x,p.y,p.gene]));if(sim.trails.length>9)sim.trails.shift();}
+ if(sim.step%12===0){sim.trails.push(b.slice(0,8).map(p=>[p.x,p.y,p.id]));if(sim.trails.length>9)sim.trails.shift();}
 }
 export function lifePositions(s,time,width,height){
  const w=Math.max(width/height,.1), collision=clamp((s.lifeCollision??100)/100,0,1),e=clamp((s.lifeElasticity??90)/100,0,1);
  const mode=Math.floor(clamp((s.lifeBehavior??0)/100,0,.99999)*9),strength=clamp((s.lifeForce??50)/100,0,1),speed=clamp(s.lifeSpeed/100,0,1);
  const [evolution,birth,mutation,mortality]=[s.lifeEvolution??0,s.lifeBirthRate??50,s.lifeMutation??30,s.lifeMortality??20].map(v=>clamp(v/100,0,1));
  const key=JSON.stringify([s.seed,s.lifePopulation,s.lifeSize,s.lifeSpeed,s.lifeVariation,w,collision,e,mode,strength,evolution,birth,mutation,mortality]);
- const target=Math.max(0,Math.floor((Number(time)||0)/DT));
+ const seconds=Number(time);const target=Math.max(0,Math.floor((Number.isFinite(seconds)?seconds:0)/DT));
  let sim=cache.get(key);
  if(!sim||sim.step>target){sim=make(s,w);cache.set(key,sim);if(cache.size>4)cache.delete(cache.keys().next().value);}
  while(sim.step<target)advance(sim,w,collision,e,mode,strength,speed,evolution,birth,mutation,mortality);
@@ -82,7 +84,7 @@ export function lifePositions(s,time,width,height){
  sim.bodies.forEach((p,i)=>out.set([p.x,p.y,p.r,1+p.gene],i*4));
  const trails=new Float32Array(8*8*4);
  // Match bodies by their stable object identity rather than shifting array indices.
- for(let j=1;j<sim.trails.length;j++)for(let i=0;i<Math.min(sim.trails[j].length,sim.trails[j-1].length);i++){const a=sim.trails[j-1][i],b=sim.trails[j][i];if(a[2]===b[2])trails.set([a[0],a[1],b[0],b[1]],((j-1)*8+i)*4);}
+ for(let j=1;j<sim.trails.length;j++)for(let i=0;i<sim.trails[j].length;i++){const b=sim.trails[j][i],a=sim.trails[j-1].find(v=>v[2]===b[2]);if(a)trails.set([a[0],a[1],b[0],b[1]],((j-1)*8+i)*4);}
  const impacts=new Float32Array(32);sim.impacts.forEach((v,i)=>impacts.set([v[0],v[1],Math.max(0,target*DT-v[2]),v[3]],i*4));out.impacts=impacts;
  out.trails=trails;out.trailCount=Math.max(0,sim.trails.length-1);
  return out;

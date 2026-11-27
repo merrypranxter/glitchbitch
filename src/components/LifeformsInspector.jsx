@@ -3,7 +3,7 @@ import {lifeGroups,shuffleLife,lifeRecipes} from "../life-recipes.js";
 import {Parameter,Select} from "./Controls";
 import {initial} from "../data.js";
 import {readCategoryLocks,writeCategoryLocks,protectCategorySettings} from "../category-locks.js";
-const keys=["lifeNetwork","lifeNetworkMode","lifeNetworkReach","lifeNetworkWidth","lifeAlchemy","lifeAlchemyMode","lifeAlchemySize","lifeAlchemyDuration","lifeImpact","lifeImpactMode","lifeImpactReach","lifeImpactPower","lifeTrail","lifeTrailLength","lifeTrailWidth","lifeTrailStyle","lifeEvolution","lifeBirthRate","lifeMutation","lifeMortality","lifeOptics","lifeOpticMode","lifeOpticPower","lifeOpticDispersion","lifeAppendage","lifeAppendageLength","lifeAppendageMotion","lifeAppendageDetail","lifeMembrane","lifeShell","lifePores","lifeSpecies","lifeBehavior","lifeForce","lifeCollision","lifeElasticity","lifeAmount","lifePopulation","lifeSize","lifeSpeed","lifeVariation","lifeForm","lifeHue","lifeDetail","lifePulse","lifeBlend"];
+const keys=Object.values(lifeGroups).flat();
 export default function LifeformsInspector({history}){
  const [locks,setLocks]=React.useState(readCategoryLocks);
  const locked=!!locks.Lifeforms;

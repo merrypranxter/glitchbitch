@@ -444,7 +444,7 @@ uniform float lifeEvolution;
 uniform vec4 lifeBodies[24];
 uniform float lifeNetwork,lifeNetworkMode,lifeNetworkReach,lifeNetworkWidth;
 vec3 lifeNetworkArt(vec3 col,vec2 uv){
- if(lifeNetwork<.001||lifeAmount<.001)return col;
+ if(lifeNetwork<.001||lifeAmount<.001||lifeNetworkReach<.001)return col;
  vec2 p=uv*vec2(max(res.x/res.y,.1),1.);
  float reach=mix(.06,.4,lifeNetworkReach),width=mix(.0007,.006,lifeNetworkWidth);
  float mode=floor(min(lifeNetworkMode,.999)*5.);
@@ -561,15 +561,10 @@ vec3 lifeforms(vec3 col,vec2 uv,vec2 fieldP,float source){
   if(lifeBodies[i].w<.5)break;
   vec2 id=vec2(float(i)+317.,83.);
   float h=mix(hash(id),lifeBodies[i].w-1.,lifeEvolution), h2=hash(id+17.);
-  float radius=mix(.008,.085,lifeSize)*mix(1.,mix(.55,1.4,h),lifeVariation)*min(aspect.x,1.);
-  vec2 span=max(aspect-2.*radius,vec2(.001));
-  vec2 velocity=vec2(mix(.13,.65,h),mix(.13,.65,h2))*mix(.0,1.8,lifeSpeed);
-  vec2 start=vec2(hash(id+31.),hash(id+53.))*2.;
-  vec2 center=radius+span*(1.-abs(mod(start+time*velocity/span,2.)-1.));
-  center=lifeBodies[i].xy; radius=lifeBodies[i].z;
+  vec2 center=lifeBodies[i].xy; float radius=lifeBodies[i].z;
   vec2 z=(p-center)/max(radius,.001);
   float rad=length(z);
-  if(rad>1.05+lifeAppendage*lifeAppendageLength*1.8)continue;
+  if(rad>1.15+lifeAppendage*lifeAppendageLength*1.8)continue;
   float pulse=mix(1.,.55+.45*sin(time*2.+h*TAU),lifePulse);
   z/=max(pulse,.01);rad=length(z);
   float angle=atan(z.y,z.x+.00001)+time*lifeSpeed*(h-.5)*3.;

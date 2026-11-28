@@ -39,8 +39,11 @@ test("Confirm New Canvas restores original starter and clears history, not saved
   await newButton(page).click();
   const dialog=page.getByRole("dialog");
   await expect(dialog.getByRole("button",{name:"Yes, new canvas"})).toBeVisible();
-  // No accidental reset until this second deliberate tap.
-  await expect(seedInput(page)).toHaveValue("333333");
+  // No accidental reset until this second deliberate tap. On phones the seed
+  // field lives in the (now closed) ⋯ sheet, so read the autosaved draft.
+  if(await seedInput(page).count()) await expect(seedInput(page)).toHaveValue("333333");
+  else await expect.poll(()=>page.evaluate(()=>
+    JSON.parse(localStorage.getItem("glitch-draft")||"null")?.state?.seed)).toBe(333333);
   await dialog.getByRole("button",{name:"Yes, new canvas"}).click();
   await expect(dialog).toHaveCount(0);
   await reveal(page);

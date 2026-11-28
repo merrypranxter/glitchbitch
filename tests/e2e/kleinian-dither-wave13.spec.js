@@ -1,5 +1,6 @@
 import {test,expect} from "@playwright/test";
 import {initial} from "../../src/data.js";
+import {reveal,conceal} from "./phone-more.js";
 const workbench=page=>page.locator(".effects-workbench");
 test("Kleinian Dither is discoverable, toggleable, preset-ready and undoable on the real UI",async({page,isMobile})=>{
   await page.goto("/",{waitUntil:"domcontentloaded"});
@@ -25,7 +26,9 @@ test("Kleinian Dither is discoverable, toggleable, preset-ready and undoable on 
 });
 test("Kleinian Dither is absent from the original starter and recoverable by NEW CANVAS",async({page,isMobile})=>{
   await page.goto("/",{waitUntil:"domcontentloaded"});
+  await reveal(page);
   await expect(page.getByRole("spinbutton",{name:"Seed"})).toHaveValue(String(initial.seed));
+  await conceal(page);
   if(isMobile)
     await page.locator(".mobile-controls").getByRole("button",{name:"Effects",exact:true}).click();
   const room=workbench(page);
@@ -34,6 +37,7 @@ test("Kleinian Dither is absent from the original starter and recoverable by NEW
   const section=room.locator('[data-section="kleinian-dither"]');
   await section.getByRole("combobox",{name:"Inversion print species"}).selectOption("Parallax Dither Cathedral");
   await expect(section.getByRole("slider",{name:"Kleinian print presence"})).not.toHaveValue("0");
+  await reveal(page);
   await page.getByRole("button",{name:"New Canvas (confirmation required)"}).click();
   const modal=page.getByRole("dialog",{name:"Start a NEW CANVAS?"});
   await expect(modal).toBeVisible();

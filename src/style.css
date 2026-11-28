@@ -2953,7 +2953,7 @@ footer > span:last-child svg {
   .studio-page{display:flex;flex-direction:column;height:100dvh;overflow:hidden;overscroll-behavior:none}
   .studio-page>header{flex:none}
   .studio-page>.studio-main{height:auto!important;min-height:0!important;flex:1 1 auto;display:flex;flex-direction:column;overflow:hidden}
-  .studio-page>.studio-main>.workspace{order:0;flex:0 0 min(var(--canvas-pane-ratio,58%),calc(100% - 175px));height:auto!important;min-height:0!important;max-height:none;padding:5px 11px 0;overflow:hidden}
+  .studio-page>.studio-main>.workspace{order:0;flex:0 0 min(var(--canvas-pane-ratio,50%),calc(100% - 150px));height:auto!important;min-height:0!important;max-height:none;padding:6px 8px 0;overflow:hidden}
   .studio-page .workspace-heading{margin:0 0 4px;gap:7px;min-height:25px}
   .studio-page .workspace-heading .eyebrow{display:none}
   .studio-page .art-title{font-size:15px;line-height:20px;letter-spacing:-.3px}
@@ -2974,10 +2974,11 @@ footer > span:last-child svg {
   .studio-splitter .splitter-grip{display:flex;align-items:center;gap:3px}
   .studio-splitter .splitter-grip i{width:11px;height:3px;background:var(--lime);opacity:.85;border-radius:5px}
   .studio-splitter .splitter-label{font-size:8px;letter-spacing:1.3px}
-  .studio-page>.studio-main>.mobile-controls{order:2;flex:none;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;padding:3px;margin:3px 10px 5px;width:auto}
-  .studio-page .mobile-controls button{min-width:0;padding:7px 2px;min-height:38px;gap:3px;display:flex;flex-direction:column;font-size:10px}
-  .studio-page .mobile-controls button svg{width:16px;height:16px}
-  .studio-page>.studio-main>.inspector{order:3;display:none;flex:1 1 auto;min-height:0!important;max-height:none;height:0!important;margin:0 10px 6px;overflow:hidden;border:1px solid #36363f;background:#18181b}
+  /* Categories: ONE row docked at the bottom like an iOS tab bar (Studio 6). */
+  .studio-page>.studio-main>.mobile-controls{order:3;flex:none;display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:1px;padding:3px 3px 3px;margin:0;width:auto}
+  .studio-page .mobile-controls button{min-width:0;padding:6px 0 5px;min-height:46px;gap:3px;display:flex;flex-direction:column;font-size:9.5px}
+  .studio-page .mobile-controls button svg{width:18px;height:18px}
+  .studio-page>.studio-main>.inspector{order:2;display:none;flex:1 1 auto;min-height:0!important;max-height:none;height:0!important;margin:0 6px 4px;overflow:hidden;border:1px solid #36363f;background:#18181b}
   .studio-page>.studio-main>.inspector.mobile-open{display:flex;flex-direction:column}
   .studio-page .inspector-tabs{display:none}
   .studio-page .inspector-scroll{flex:1 1 auto;min-height:0;max-height:none;overflow-y:auto;overflow-x:hidden;padding:8px 13px 35px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y}
@@ -3376,7 +3377,7 @@ main { grid-template-columns: 264px minmax(320px, 1fr) 300px; }
   }
   .studio-page > .studio-main { min-width: 0; }
   .studio-page > .studio-main > .studio-splitter {
-    flex-basis: 28px;
+    flex-basis: 22px;
     -webkit-user-select: none;
   }
   .studio-page .mobile-controls button { min-height: 44px; font-size: 11px; }
@@ -3435,11 +3436,6 @@ main { grid-template-columns: 264px minmax(320px, 1fr) 300px; }
 @media (max-width: 420px) {
   .studio-page .transport .time b { display: none; }
   .studio-page .quality-control > span { display: none; }
-}
-@media (max-width: 390px) {
-  .studio-page > header .brand { font-size: 14px; }
-  .studio-page > header .brand-mark,
-  .studio-page > header .brand small { display: none; }
 }
 @media (max-width: 360px) {
   .studio-page .transport { padding-inline: 2px; gap: 2px; }
@@ -3527,7 +3523,6 @@ main { grid-template-columns: 264px minmax(320px, 1fr) 300px; }
 .ecosystem-dock{display:grid;gap:8px;padding:12px;border-bottom:1px solid var(--border, #394041)}
 .ecosystem-dock>.button{width:100%;justify-content:center;min-height:44px}
 .ecosystem-dock details summary{cursor:pointer;padding:7px 0}
-@media(max-width:600px){.studio-page .mobile-controls button{font-size:9px;white-space:nowrap}}
 
 .ecosystem-dock .ecosystem-targeted{width:100%;justify-content:center;min-height:44px;margin-top:8px}
 .ecosystem-dock>details{border-top:1px solid var(--border,#394041);padding:2px 0}
@@ -3538,5 +3533,426 @@ main { grid-template-columns: 264px minmax(320px, 1fr) 300px; }
 .ecosystem-census{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:10px 0}.ecosystem-census>div{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--border,#394041);border-radius:6px;font-size:11px}.ecosystem-census strong{font-variant-numeric:tabular-nums;color:#b9ed92}
 
 .weaving-workspace{min-width:0;display:flex;flex-direction:column}.weaving-dock{flex:none}.weaving-math{min-width:0;padding:0 8px 10px}.right-panel .inspector-tabs{overflow-x:auto}.right-panel .inspector-tabs button{flex:1 0 auto;gap:4px}
-@media(max-width:900px){.studio-page>.studio-main>.mobile-controls{grid-template-columns:repeat(8,minmax(0,1fr))}.studio-page .mobile-controls button{font-size:9px;min-height:44px}}
-@media(max-width:480px){.studio-page>.studio-main>.mobile-controls{grid-template-columns:repeat(4,minmax(0,1fr))}.studio-page .mobile-controls button{flex-direction:row;justify-content:center;min-height:36px;font-size:10px;gap:4px}}
+
+/* ==========================================================================
+   STUDIO 6 — iPhone: ROOM TO WORK
+   Phone stack, top to bottom:
+     app bar (brand · Studio/Saved · Find · Save · Export · ⋯ More)
+     artwork  ← zoomable / pannable, floating zoom pill
+     play row (play · undo · redo · time · Mutate · Weird · Surprise me)
+     slim divider
+     editor   ← the thing you actually work in
+     ONE row of ten category tabs (docked at the bottom, thumb-reachable)
+   Title, seed, shape, quality, Lookbook, New Canvas, Load recipe, Help and
+   the palette lock are tucked into the ⋯ More sheet. Nothing was removed.
+   ========================================================================== */
+
+/* ---- Preview zoom & pan (every screen size) ------------------------------ */
+.art-stage {
+  touch-action: none;            /* no accidental page pinch on iPhone */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.art-surface { transform-origin: 50% 50%; }
+.art-stage.is-panning,
+.art-surface.pan-mode canvas { cursor: grab; }
+.art-stage.is-panning:active,
+.art-stage.is-panning:active .art-surface.pan-mode canvas { cursor: grabbing; }
+/* Handles keep their finger size at any zoom; colony halos still match the art. */
+.art-surface .force-handle,
+.art-surface .habitat-handle { scale: calc(1 / var(--view-zoom, 1)); }
+.art-surface .habitat-handle::after {
+  width: calc(var(--habitat-halo, 64px) * var(--view-zoom, 1));
+  height: calc(var(--habitat-halo, 64px) * var(--view-zoom, 1));
+}
+.view-controls,
+.view-focus {
+  position: absolute;
+  z-index: 7;
+  border: 1px solid #ffffff2e;
+  background: #101016c7;
+  color: #ededf3;
+  box-shadow: 0 6px 18px #0008;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+.view-controls {
+  right: 8px;
+  bottom: 8px;
+  display: grid;
+  grid-template-areas: "pan out fit in";
+  align-items: center;
+  gap: 1px;
+  padding: 3px;
+  border-radius: 999px;
+}
+.view-controls .view-pan { grid-area: pan; }
+.view-controls .zoom-out { grid-area: out; }
+.view-controls .zoom-readout { grid-area: fit; }
+.view-controls .zoom-in { grid-area: in; }
+.view-controls button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border-radius: 999px;
+  color: inherit;
+  font: 700 10.5px/1 var(--mono);
+  letter-spacing: 0.4px;
+  touch-action: manipulation;
+}
+.view-controls button:hover:not(:disabled) { background: #ffffff16; }
+.view-controls button.on {
+  background: var(--lime);
+  color: #1d2212;
+  box-shadow: 0 0 12px #d6ff6288;
+}
+.view-controls .zoom-readout { min-width: 46px; }
+/* The pill reshapes to live in the empty margin beside the art:
+   short stage → a row; medium → a 2×2 map-style square (+ over −);
+   tall (the usual portrait phone) → a column on the right edge. */
+.art-stage { container: art-stage / size; }
+@container art-stage (min-height: 130px) {
+  .view-controls { grid-template-areas: "in fit" "out pan"; border-radius: 20px; }
+  .view-controls .zoom-readout { min-width: 0; padding: 0 4px; font-size: 9.5px; }
+}
+@container art-stage (min-height: 240px) {
+  .view-controls { grid-template-areas: "in" "fit" "out" "pan"; border-radius: 999px; }
+}
+.view-focus {
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  touch-action: manipulation;
+}
+.view-focus[aria-pressed="true"] {
+  background: var(--lime);
+  border-color: var(--lime);
+  color: #1d2212;
+}
+.view-mode-badge {
+  position: absolute;
+  z-index: 7;
+  top: 8px;
+  left: 8px;
+  max-width: calc(100% - 64px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: var(--lime);
+  color: #1d2212;
+  font: 700 9px/1 var(--mono);
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  box-shadow: 0 4px 14px #0007;
+}
+/* Keep the GPU warning clear of the zoom pill. */
+.art-stage > .render-parity-warning { bottom: 52px; }
+
+/* ---- More sheet (phones) -------------------------------------------------- */
+dialog.sheet {
+  position: fixed;
+  inset: auto 0 0 0;
+  width: min(560px, 100%);
+  max-width: 100%;
+  max-height: min(72dvh, 760px);  /* art stays visible above */
+  margin: 0 auto;
+  padding: 0;
+  border: 1px solid #3a3a44;
+  border-bottom: 0;
+  border-radius: 18px 18px 0 0;
+  background: #1a1a1e;
+  color: #ededf0;
+  box-shadow: 0 -18px 50px #000b;
+  overflow: hidden;
+}
+dialog.sheet::backdrop { background: #0505086b; }
+dialog.sheet[open] { animation: sheet-up 0.22s cubic-bezier(0.2, 0.9, 0.25, 1); }
+@keyframes sheet-up {
+  from { transform: translateY(48px); opacity: 0.35; }
+  to { transform: none; opacity: 1; }
+}
+.sheet-body { display: flex; flex-direction: column; max-height: inherit; }
+.sheet-grabber {
+  flex: none;
+  width: 42px;
+  height: 5px;
+  margin: 8px auto 0;
+  border-radius: 9px;
+  background: #4a4a55;
+}
+.sheet-heading {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 8px 10px 18px;
+  border-bottom: 1px solid #2c2c33;
+}
+.sheet-heading h2 {
+  margin: 4px 0 0;
+  font: 700 21px/1.15 "Space Grotesk", sans-serif;
+  letter-spacing: -0.5px;
+}
+.sheet-heading p { margin: 4px 0 0; font-size: 12px; line-height: 1.45; color: #9a9aa8; }
+.sheet-heading .icon-button { min-width: 44px; min-height: 44px; }
+.sheet-scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 2px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+}
+.sheet-section { padding: 13px 0 14px; }
+.sheet-section + .sheet-section { border-top: 1px solid #2c2c33; }
+.sheet-section h3 {
+  margin: 0 0 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--lime);
+}
+.sheet-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.sheet-action {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid #3a3a44;
+  border-radius: 11px;
+  background: #222227;
+  color: #e6e6ee;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: left;
+  touch-action: manipulation;
+}
+.sheet-action svg { flex: none; color: var(--lime); }
+.sheet-action.on { border-color: var(--lime); background: #d6ff6214; color: var(--lime); }
+.sheet-action.new-canvas-action { border-color: #6d596e; background: #322332; color: #f7d8f0; }
+.sheet-action.new-canvas-action svg { color: #ffa7e0; }
+.sheet-select { cursor: pointer; }
+.sheet-select > span { flex: none; }
+.sheet-select select {
+  margin-left: auto;
+  min-width: 0;
+  max-width: 62%;
+  padding: 4px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--lime);
+  font-size: 16px;          /* ≥16px so Safari never zooms the page */
+  font-weight: 600;
+  text-align: right;
+}
+.sheet-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; margin-bottom: 10px; }
+.sheet-field > span,
+.sheet-field > label { font-size: 11px; letter-spacing: 0.3px; color: #a0a0ad; }
+.sheet-field input,
+.sheet-field select {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 11px;
+  border: 1px solid #3d3d45;
+  border-radius: 9px;
+  background: #232327;
+  font-size: 16px;
+}
+.sheet-field .art-title {
+  font: 500 18px/1.2 "Space Grotesk", sans-serif;
+  letter-spacing: -0.3px;
+  border: 1px solid #3d3d45;
+  padding: 10px 11px;
+  background: #232327;
+  border-radius: 9px;
+}
+.sheet-row { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 10px; }
+.sheet-inline { display: flex; gap: 6px; min-width: 0; }
+.sheet-inline input { flex: 1; min-width: 0; font-family: var(--mono); appearance: textfield; -moz-appearance: textfield; }
+.sheet-inline input::-webkit-inner-spin-button { display: none; }
+.sheet-inline .icon-button { flex: none; min-width: 46px; min-height: 46px; border: 1px solid #3d3d45; border-radius: 9px; }
+.sheet-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin: 6px 0 0;
+  font: 11px/1.5 var(--mono);
+  color: #9a9aa8;
+}
+.sheet-note { margin: 10px 0 0; font-size: 12px; line-height: 1.55; color: #8f8f9c; }
+.sheet-note b { color: #dadae2; }
+@media (prefers-reduced-motion: reduce) { dialog.sheet[open] { animation: none; } }
+
+/* ---- Phone studio layout -------------------------------------------------- */
+.mobile-controls .tab-long,
+.mobile-controls .tab-short { display: none; }
+@media (max-width: 980px) {
+  /* App bar: ~50px instead of 68–72px, on every page. */
+  .app > header { height: 50px; padding: 0 6px 0 10px; gap: 6px; }
+  .app > header button.brand { font-size: 17px; gap: 5px; letter-spacing: -0.8px; }
+  .app > header .brand-mark { display: block; width: 28px; height: 28px; }
+  .app > header .brand small { display: none; }
+  .app > header nav { padding: 2px; gap: 2px; border-radius: 8px; }
+  .app > header nav button { min-height: 38px; padding: 0 8px; font-size: 11px; white-space: nowrap; }
+  .app > header nav button span { display: inline; margin-left: 5px; }
+  .app > header .header-actions { gap: 2px; }
+  .app > header :is(.find-button, .bookmark, .export-button, .more-button) {
+    width: 40px;
+    min-width: 40px;
+    min-height: 42px;
+    padding: 0;
+    justify-content: center;
+  }
+  .app > header .bookmark { color: #d7d7e0; }
+  .app > header .more-button { color: #ededf2; }
+  .app > header .export-button > span,
+  .app > header .export-button > svg:last-child { display: none; }
+
+  /* The safe-area gap now lives inside the tab bar, so its color reaches
+     the bottom edge on Face ID iPhones. */
+  .studio-page { padding-bottom: 0; }
+  .studio-page.focus-mode { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  .studio-page .art-stage { border-radius: 10px; }
+
+  /* Play row: one strip, no second "workspace-bottom" strip. */
+  .studio-page .transport {
+    margin-top: 6px;
+    padding: 3px;
+    gap: 2px;
+    min-height: 0;
+    border-radius: 11px;
+  }
+  .studio-page .transport :is(.icon-button, .play) {
+    min-width: 40px;
+    min-height: 42px;
+    height: 42px;
+  }
+  .studio-page .transport .play { min-width: 46px; border-radius: 8px; }
+  .studio-page .transport .time {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-right: 0;
+    padding-left: 4px;
+    overflow: hidden;
+  }
+  .studio-page .transport .time b { display: inline; font-size: 12px; }
+  .studio-page .transport > .mobile-chaos {
+    display: flex;
+    align-items: center;
+    flex: none;
+    gap: 3px;
+    margin-left: auto;
+  }
+  .studio-page .transport .mobile-chaos button {
+    min-width: 40px;
+    min-height: 42px;
+    padding: 0 9px;
+    gap: 5px;
+    border-radius: 8px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  .studio-page .transport .mobile-chaos .chaos-surprise { padding: 0 11px; font-weight: 700; }
+  .studio-page .transport .chaos-label { display: none; }
+
+  /* Divider: slim grabber instead of a 28px bar. */
+  .studio-page > .studio-main > .studio-splitter {
+    gap: 7px;
+    border: 0;
+    background: transparent;
+    color: #6f6f7d;
+  }
+  .studio-page > .studio-main > .studio-splitter::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: #2f2f37;
+    z-index: -1;
+  }
+  .studio-page > .studio-main > .studio-splitter { position: relative; z-index: 0; }
+  .studio-splitter .splitter-grip { padding: 3px 7px; border-radius: 99px; background: #222228; border: 1px solid #3b3b44; }
+  .studio-splitter .splitter-grip i { width: 12px; }
+  .studio-splitter .splitter-label { font-size: 7px; letter-spacing: 1.4px; padding: 2px 6px; border-radius: 99px; background: #18181b; }
+
+  /* Editor card. */
+  .studio-page > .studio-main > .inspector { border-radius: 11px; }
+  .studio-page .inspector-scroll { padding: 8px 12px 28px; }
+
+  /* Tab bar: all ten categories in ONE row, docked at the bottom. */
+  .studio-page > .studio-main > .mobile-controls {
+    padding: 3px 3px max(3px, env(safe-area-inset-bottom, 0px));
+    border: 0;
+    border-top: 1px solid #2c2c33;
+    border-radius: 0;
+    background: #141416;
+  }
+  .studio-page .mobile-controls button {
+    min-height: 46px;
+    justify-content: center;
+    gap: 3px;
+    border-radius: 9px;
+    color: #9d9daa;
+    font-size: 9.5px;
+    line-height: 1;
+    letter-spacing: -0.1px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .studio-page .mobile-controls button.active {
+    color: var(--lime);
+    background: #d6ff6216;
+    box-shadow: inset 0 2px 0 var(--lime);
+  }
+  .studio-page .mobile-controls .tab-short { display: block; }
+
+  .view-controls button { min-width: 38px; height: 38px; }
+  .view-focus { width: 40px; height: 40px; }
+}
+/* Roomier phones (Plus / Pro Max) get labels back on Mutate & Weird. */
+@media (min-width: 425px) and (max-width: 980px) {
+  .studio-page .transport .chaos-label { display: inline; }
+}
+/* Landscape phones / small tablets: full category names fit in the one row. */
+@media (min-width: 700px) and (max-width: 980px) {
+  .studio-page .mobile-controls .tab-short { display: none; }
+  .studio-page .mobile-controls .tab-long { display: block; }
+  .studio-page .mobile-controls button { font-size: 11px; }
+  .app > header .export-button { width: auto; padding: 0 12px; gap: 7px; }
+  .app > header .export-button > span { display: inline; }
+}
+/* Small phones: hide the running clock (it's in ⋯ More) and the wordmark. */
+@media (max-width: 400px) {
+  .studio-page .transport .time { display: none; }
+  .studio-page .transport > .mobile-chaos { flex: 1 1 auto; justify-content: flex-end; }
+}
+@media (max-width: 560px) {
+  .app > header button.brand > span { display: none; }
+}
+@media (max-width: 350px) {
+  .app > header nav button { padding: 0 7px; font-size: 10px; }
+  .app > header .brand-mark { width: 24px; height: 24px; }
+  .studio-page .transport :is(.icon-button, .play) { min-width: 36px; }
+  .studio-page .transport .mobile-chaos button { min-width: 36px; padding: 0 7px; }
+  .studio-page .transport .mobile-chaos .chaos-surprise { padding: 0 8px; font-size: 11px; }
+  .studio-page .mobile-controls button { font-size: 8.5px; }
+}

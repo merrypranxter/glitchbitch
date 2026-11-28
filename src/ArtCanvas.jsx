@@ -1,4 +1,5 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
+import { Move, ZoomIn, ZoomOut, Maximize, Minimize } from "lucide-react";
 import { createRenderer, previewDimensions } from "./renderer";
 import { retroFontRevision } from "./retro-fonts";
 import LiveTextOverlay from "./LiveTextOverlay.jsx";
@@ -6,6 +7,10 @@ import {hasSemanticLettering} from "./semantic-gravity.js";
 import { TouchSession } from "./gestures";
 import { HabitatSession, habitatTools } from "./habitat-painter.js";
 import { ratios, touchModes } from "./data";
+import {
+  FIT_VIEW, MIN_ZOOM, MAX_ZOOM, clampView, zoomAt, pinchView, panBy, stepZoom,
+  isFit, zoomLabel, renderScaleForZoom,
+} from "./view-zoom.js";
 
 export default function ArtCanvas({
   history,
@@ -19,11 +24,26 @@ export default function ArtCanvas({
   showHandles,
   selected,
   onSelect,
+  focus = false,
+  onFocusToggle = null,
 }) {
   const stageRef = useRef(null),
     session = useRef(null),
     runtime = useRef({ playing, quality, tool }),
     [size, setSize] = useState({ width: 1, height: 1 });
+  // Preview-only zoom/pan (a CSS transform; exports and recipes never see it).
+  const [view, setView] = useState(FIT_VIEW),
+    [panMode, setPanMode] = useState(false);
+  const viewRef = useRef(FIT_VIEW),
+    sizeRef = useRef(size),
+    panModeRef = useRef(false),
+    viewGesture = useRef(null),
+    lastTap = useRef(null),
+    viewFrame = useRef(0),
+    renderZoomRef = useRef(1),
+    renderZoomTimer = useRef(0);
+  sizeRef.current = size;
+  panModeRef.current = panMode;
   const [error, setError] = useState(""),
     [fallbackNotice, setFallbackNotice] = useState(""),
     [recovering, setRecovering] = useState(false),
@@ -47,10 +67,27 @@ export default function ArtCanvas({
       const b = entry.contentRect,
         w = Math.max(1, Math.min(b.width, b.height * ratio));
       setSize({ width: w, height: w / ratio });
+      // Dragging the divider or rotating the phone keeps the zoomed view on
+      // the artwork instead of stranding it off the edge.
+      const kept = clampView(viewRef.current, {
+        stageW: b.width, stageH: b.height, surfaceW: w, surfaceH: w / ratio,
+      });
+      viewRef.current = kept;
+      setView(kept);
     });
     observer.observe(element);
     return () => observer.disconnect();
   }, [ratio]);
+  // A new aspect ratio is a different picture: start that one at Fit.
+  useEffect(() => {
+    viewRef.current = FIT_VIEW;
+    setView(FIT_VIEW);
+    renderZoomRef.current = 1;
+  }, [ratio]);
+  useEffect(() => () => {
+    cancelAnimationFrame(viewFrame.current);
+    clearTimeout(renderZoomTimer.current);
+  }, []);
   useEffect(() => {
     const canvas = canvasRef.current;
     let renderer,
@@ -114,8 +151,11 @@ export default function ArtCanvas({
         ((!state.freezeGeometry && state.speed > 0) ||
           (!state.freezeColor && state.colorSpeed > 0) ||
           textDrivenFilaments);
-      const cssW = canvas.clientWidth,
-        cssH = canvas.clientHeight;
+      // While zoomed in, render more backing pixels so the close-up is not a
+      // blurry stretch. The quality budget in previewDimensions still caps it.
+      const renderZoom = renderZoomRef.current;
+      const cssW = canvas.clientWidth * renderZoom,
+        cssH = canvas.clientHeight * renderZoom;
       const dims = previewDimensions(cssW, cssH, rt.quality, previewScale);
       const fontRevision=retroFontRevision();
       const sizeKey=dims.width+"x"+dims.height;
@@ -275,7 +315,138 @@ export default function ArtCanvas({
       : s.draft.marks[s.target]?.id || null);
   }
   const textDrag = useRef(null);
+  // ---- Preview zoom & pan ------------------------------------------------
+  function stageBounds() {
+    const stage = stageRef.current;
+    if (!stage) return null;
+    return {
+      stageW: stage.clientWidth, stageH: stage.clientHeight,
+      surfaceW: sizeRef.current.width, surfaceH: sizeRef.current.height,
+    };
+  }
+  function applyView(next) {
+    viewRef.current = next;
+    // One React update per frame keeps a fast pinch smooth on iPhone.
+    if (!viewFrame.current)
+      viewFrame.current = requestAnimationFrame(() => {
+        viewFrame.current = 0;
+        setView(viewRef.current);
+      });
+    // Re-render at a sharper resolution only once the gesture settles, so the
+    // GPU is not reallocating buffers on every finger movement.
+    clearTimeout(renderZoomTimer.current);
+    renderZoomTimer.current = setTimeout(() => {
+      renderZoomRef.current = renderScaleForZoom(viewRef.current.zoom);
+    }, 180);
+  }
+  const zoomStep = (dir) =>
+    applyView(zoomAt(viewRef.current, stepZoom(viewRef.current.zoom, dir), { x: 0, y: 0 }, stageBounds()));
+  const zoomFit = () => applyView(FIT_VIEW);
+  function stagePoint(e) {
+    const r = stageRef.current.getBoundingClientRect();
+    return { x: e.clientX - r.left - r.width / 2, y: e.clientY - r.top - r.height / 2 };
+  }
+  function gestureBase(g) {
+    const pts = [...g.pointers.values()];
+    if (pts.length >= 2) {
+      const [a, b] = pts;
+      return { mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+        dist: Math.max(10, Math.hypot(a.x - b.x, a.y - b.y)), view: viewRef.current };
+    }
+    return { mid: pts[0], dist: 0, view: viewRef.current };
+  }
+  // Pan/zoom gestures start on the stage: anywhere in Pan & zoom mode, or on
+  // the dark margin around the artwork at any time. Painting is untouched.
+  function viewDown(e) {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (session.current || textDrag.current) return;
+    if (e.target.closest(".view-controls, .view-focus, .render-error, .fullscreen-exit")) return;
+    e.preventDefault();
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
+    const p = stagePoint(e);
+    if (!viewGesture.current)
+      viewGesture.current = { pointers: new Map(), moved: 0, startedAt: performance.now(), origin: p };
+    const g = viewGesture.current;
+    if (g.pointers.size >= 2) return;
+    g.pointers.set(e.pointerId, p);
+    if (g.pointers.size === 2) g.moved = Infinity; // a pinch is never a tap
+    g.base = gestureBase(g);
+  }
+  function viewMove(e) {
+    const g = viewGesture.current;
+    if (!g || !g.pointers.has(e.pointerId)) return;
+    const p = stagePoint(e);
+    g.pointers.set(e.pointerId, p);
+    const bounds = stageBounds();
+    if (g.pointers.size >= 2) {
+      const [a, b] = [...g.pointers.values()];
+      applyView(pinchView(g.base.view, g.base.mid, g.base.dist,
+        { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, Math.hypot(a.x - b.x, a.y - b.y), bounds));
+    } else {
+      g.moved = Math.max(g.moved, Math.hypot(p.x - g.origin.x, p.y - g.origin.y));
+      applyView(panBy(g.base.view, p.x - g.base.mid.x, p.y - g.base.mid.y, bounds));
+    }
+  }
+  function viewUp(e) {
+    const g = viewGesture.current;
+    if (!g || !g.pointers.has(e.pointerId)) return;
+    g.pointers.delete(e.pointerId);
+    if (g.pointers.size) {
+      g.base = gestureBase(g); // lifting one finger of a pinch keeps panning smoothly
+      return;
+    }
+    viewGesture.current = null;
+    if (e.type !== "pointerup" || g.moved > 8 || performance.now() - g.startedAt > 320) return;
+    // Double-tap: zoom in right there; double-tap again to fit everything.
+    const p = stagePoint(e), now = performance.now(), prev = lastTap.current;
+    if (prev && now - prev.t < 340 && Math.hypot(p.x - prev.x, p.y - prev.y) < 32) {
+      lastTap.current = null;
+      applyView(viewRef.current.zoom < 1.5
+        ? zoomAt(viewRef.current, 2.5, p, stageBounds())
+        : FIT_VIEW);
+    } else lastTap.current = { t: now, x: p.x, y: p.y };
+  }
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    // Mouse wheel / trackpad pinch zooms around the cursor; two-finger
+    // trackpad swipes pan. Non-passive so the page itself never zooms.
+    function wheel(e) {
+      e.preventDefault();
+      const r = stage.getBoundingClientRect();
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? r.height : 1;
+      if (!e.ctrlKey && Math.abs(e.deltaX) > 0.5) {
+        applyView(panBy(viewRef.current, -e.deltaX * unit, -e.deltaY * unit, stageBounds()));
+        return;
+      }
+      const focal = { x: e.clientX - r.left - r.width / 2, y: e.clientY - r.top - r.height / 2 };
+      const factor = Math.exp(-e.deltaY * unit * (e.ctrlKey ? 0.01 : 0.0015));
+      applyView(zoomAt(viewRef.current, viewRef.current.zoom * factor, focal, stageBounds()));
+    }
+    // Keyboard: + / − zoom, 0 fits. Ignored while typing or inside dialogs.
+    function key(e) {
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+      const t = e.target;
+      if (t?.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t?.tagName)) return;
+      if (document.querySelector("dialog[open]")) return;
+      if (e.key === "+" || e.key === "=") zoomStep(1);
+      else if (e.key === "-" || e.key === "_") zoomStep(-1);
+      else if (e.key === "0") zoomFit();
+      else return;
+      e.preventDefault();
+    }
+    stage.addEventListener("wheel", wheel, { passive: false });
+    window.addEventListener("keydown", key);
+    return () => {
+      stage.removeEventListener("wheel", wheel);
+      window.removeEventListener("keydown", key);
+    };
+  }, []);
   function down(e) {
+    // Pan & zoom mode (or a pinch that began on the margin) owns the stage.
+    if (panModeRef.current || viewGesture.current) return;
+    // Keep paint strokes from also starting a stage pan.
+    e.stopPropagation();
     if (e.button !== 0) return;
     if(history.state.letteringDrag && history.state.lettering.trim() &&
        !habitatTools.includes(runtime.current.tool)){
@@ -356,11 +527,31 @@ export default function ArtCanvas({
   }
   const handles = showHandles || (tool !== "Paint" && !habitatTools.includes(tool));
   const colonyHandles=showHandles||habitatTools.includes(tool);
+  // Panning re-renders this component up to once per frame; the type layer
+  // only needs to re-render when the artwork or its size actually changes.
+  const textOverlay = useMemo(
+    () => <LiveTextOverlay state={history.state} width={size.width} height={size.height} playing={playing} timelineRef={timelineRef} />,
+    [history.state, size.width, size.height, playing, timelineRef],
+  );
+  const fitted = isFit(view);
   return (
-    <div className="art-stage" ref={stageRef}>
+    <div
+      className={"art-stage" + (panMode ? " is-panning" : "")}
+      ref={stageRef}
+      onPointerDown={viewDown}
+      onPointerMove={viewMove}
+      onPointerUp={viewUp}
+      onPointerCancel={viewUp}
+      onLostPointerCapture={viewUp}
+    >
       <div
-        className="art-surface"
-        style={{ width: size.width, height: size.height }}
+        className={"art-surface" + (panMode ? " pan-mode" : "")}
+        style={{
+          width: size.width,
+          height: size.height,
+          transform: fitted ? undefined : `translate3d(${view.x}px, ${view.y}px, 0) scale(${view.zoom})`,
+          "--view-zoom": view.zoom,
+        }}
         onPointerDown={down}
         onPointerMove={move}
         onPointerUp={up}
@@ -373,7 +564,7 @@ export default function ArtCanvas({
           ref={canvasRef}
           aria-label="Animated artwork. Plant living colonies using the habitat touch tools, or drag with the normal brush to warp the artwork."
         />
-        <LiveTextOverlay state={history.state} width={size.width} height={size.height} playing={playing} timelineRef={timelineRef} />
+        {textOverlay}
         {handles &&
           history.state.marks.map((m, i) => (
             <button
@@ -460,30 +651,92 @@ export default function ArtCanvas({
           <i />
           {playing ? "LIVE GENERATIVE ART" : "A MOMENT, HELD STILL"}
         </div>
-        {fallbackNotice && !error && !recovering && (
-          <div className="render-parity-warning" role="status">
-            <strong>Preview simplified by this GPU:</strong> {fallbackNotice}.
-            Exact MP4/GIF export will not silently omit these effects.
-            Try reducing heavy layers or use a stronger device.
-          </div>
-        )}
-        {(error || recovering) && (
-          <div className="render-error" role="alert">
-            <strong>
-              {recovering
-                ? "Restoring your artwork…"
-                : "The renderer needs a hand."}
-            </strong>
-            <p>
-              {error || "Rebuilding graphics while preserving your recipe."}
-            </p>
-            {error && (
-              <button className="button" onClick={() => setRetry((x) => x + 1)}>
-                Retry renderer
-              </button>
-            )}
-          </div>
-        )}
+      </div>
+      {/* Status overlays sit on the stage, not the zoomed artwork, so they
+          stay readable at any zoom level. */}
+      {fallbackNotice && !error && !recovering && (
+        <div className="render-parity-warning" role="status">
+          <strong>Preview simplified by this GPU:</strong> {fallbackNotice}.
+          Exact MP4/GIF export will not silently omit these effects.
+          Try reducing heavy layers or use a stronger device.
+        </div>
+      )}
+      {(error || recovering) && (
+        <div className="render-error" role="alert">
+          <strong>
+            {recovering
+              ? "Restoring your artwork…"
+              : "The renderer needs a hand."}
+          </strong>
+          <p>
+            {error || "Rebuilding graphics while preserving your recipe."}
+          </p>
+          {error && (
+            <button className="button" onClick={() => setRetry((x) => x + 1)}>
+              Retry renderer
+            </button>
+          )}
+        </div>
+      )}
+      {panMode && (
+        <div className="view-mode-badge" role="status">
+          <Move size={12} /> PAN &amp; ZOOM · drag to move · pinch to zoom
+        </div>
+      )}
+      {onFocusToggle && (
+        <button
+          type="button"
+          className="view-focus"
+          aria-pressed={focus}
+          title={focus ? "Show the controls again" : "Big art: hide the controls"}
+          aria-label={focus ? "Show the controls again" : "Big art: hide the controls"}
+          onClick={onFocusToggle}
+        >
+          {focus ? <Minimize size={16} /> : <Maximize size={16} />}
+        </button>
+      )}
+      <div className="view-controls" role="toolbar" aria-label="Zoom and pan the preview">
+        <button
+          type="button"
+          className={"view-pan" + (panMode ? " on" : "")}
+          aria-pressed={panMode}
+          title={panMode
+            ? "Pan & zoom is ON: drag moves around, pinch zooms. Tap to paint again."
+            : "Pan & zoom: drag to move around, pinch to zoom (pauses painting)"}
+          aria-label="Pan and zoom mode"
+          onClick={() => setPanMode((x) => !x)}
+        >
+          <Move size={16} />
+        </button>
+        <button
+          type="button"
+          className="zoom-out"
+          title="Zoom out"
+          aria-label="Zoom out"
+          disabled={view.zoom <= MIN_ZOOM + 1e-3}
+          onClick={() => zoomStep(-1)}
+        >
+          <ZoomOut size={16} />
+        </button>
+        <button
+          type="button"
+          className="zoom-readout"
+          title="Fit the whole artwork"
+          aria-label={`Zoom ${zoomLabel(view.zoom)}. Fit the whole artwork`}
+          onClick={zoomFit}
+        >
+          {fitted ? "FIT" : zoomLabel(view.zoom)}
+        </button>
+        <button
+          type="button"
+          className="zoom-in"
+          title="Zoom in"
+          aria-label="Zoom in"
+          disabled={view.zoom >= MAX_ZOOM - 1e-3}
+          onClick={() => zoomStep(1)}
+        >
+          <ZoomIn size={16} />
+        </button>
       </div>
       <button
         className="fullscreen-exit"

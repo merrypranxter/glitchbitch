@@ -42,6 +42,7 @@ The production output is `dist/`. Serve it with a static web server. WebGL and h
 - Each stroke or pinch is one undo transaction. Escape, pointer cancellation, app blur, context loss, and canvas resize cancel the active gesture.
 - The 32 most recent sources are retained. Declarative source IDs, normalized positions, radii, angles, modes, and strengths are saved in the recipe. Coordinates use bottom-left UV; radius is in normalized artwork-height units.
 - Toolbar controls provide a keyboard/mouse alternative to gestures. On phones, artwork stays above collapsible control panels.
+- **Zoom the preview** with the floating pill on the artwork (+ / FIT / −), a mouse wheel or trackpad pinch, double-tap, or +/−/0 on a keyboard. Pinching the dark margin around the artwork always zooms. Turn on the four-arrow **Pan & zoom** button to drag around and pinch anywhere on the art; painting pauses while it is on. Zoom is preview-only: recipes, PNG, MP4 and GIF are unaffected.
 
 Space plays/pauses; Ctrl/Cmd+Z undoes; Shift+Ctrl/Cmd+Z redoes; F enters fullscreen; H toggles Focus mode; ? opens the guide; / or Ctrl/Cmd+K opens **Find a control** (type “scanlines”, “outline”, “kaleidoscope”… and jump straight there). Native text controls retain their normal keyboard behavior. Reduced-motion preferences pause playback initially.
 
@@ -144,6 +145,21 @@ On phone/tablet widths (≤980px) the canvas remains pinned in the upper pane wh
 
 Short mobile viewports keep at least approximately 175px reserved for the editor region while resizing; the mobile split resets on double-click and exposes Up/Down/Home/End keyboard movement. Core inspector sections (Math engine, Palette Vault, Effects signal, manual Text, Layers primary field and Touch) start open, with additional sections collapsed to reduce scrolling. This work was statically checked for mobile layout contract; actual AI Studio/iPhone preview still requires visual verification.
 
+
+## Studio 6 — iPhone: room to work
+The phone/tablet studio (≤980px) was rebuilt so the editor actually has room. On an iPhone 13 in Safari, the editor grew from ~88px to ~226px tall and the artwork from 167px to 243px at the default split; on an iPhone SE the editor went from ~43px to ~171px. Nothing was removed — things were tucked away:
+
+| Where | What lives there on phones |
+| --- | --- |
+| **App bar** (50px, was 68–72px) | Studio / Saved works, Find a control, **Save to vault**, Export, **⋯ More** |
+| **Artwork** | Floating zoom pill (+, FIT, −, Pan & zoom) that sits in the empty side margin; Big-art button top-right |
+| **Play row** (one strip, was two) | Play, Undo, Redo, clock (≥400px wide), Mutate, Weird, **Surprise me** |
+| **Divider** | Slim grabber; drag, arrow keys, double-tap to reset. Art pane range is now 20%–86% |
+| **Editor** | The selected category |
+| **Tab bar** (bottom, ONE row, was three) | All ten categories with distinct icons; short labels on narrow phones (FX, Eco, Weave, Life), full names from 700px |
+| **⋯ More sheet** | Lookbook, New Canvas (still confirmed), Load recipe, Palette lock · Title, Seed + Reseed, Shape (aspect ratio), engine and preview size · Restart clocks, Big art (focus), Fullscreen, Preview quality + fps, both clocks · How to play, Find a control |
+
+Desktop keeps every control where it was. Each moved control renders in exactly one place at a time (no duplicate inputs). Your saved divider position is kept; new players start at 50/50. Zoom is a CSS transform of the preview only; while zoomed, the preview renders extra backing pixels up to your chosen quality budget (Sharp looks crispest). `tests/iphone-room-to-work.test.mjs` guards that every tucked-away control stays reachable.
 
 ## Wave 4E — Tunnel Vision's line is a mathematical branch cut (fixed)
 The Tunnel Vision scalar field included an unwrapped polar `atan(y,x)`. Because the principal polar angle jumps at the negative-X axis, it drew a straight horizontal seam through the colorful spiral. The shared **Phase Vortex** color mode had the same underlying cut; Fractal Melt and the Orbital Archipelagos mask contained related non-integral angular terms. All four are now expressed using **integer-periodic sine/cosine harmonics** that join smoothly at ±π. Tunnel Vision has six standalone 360° structures under **Math → Tunnel Morphology**: Infinite Spiral, Conch Cathedral, Braided Wormhole, Moiré Throat, Living Iris and Liquid Vortex. Six sliders adjust twist, depth, ridge count, pulse, aperture and variation; **Reshape Tunnel Only** changes the pattern without changing the seed or palette. New controls participate in Surprise Me and Mutate and are saved/restored in old/new recipes. Eight wordless animated looks increase the Lookbook to **92**. The changes use the existing renderer, 192 palettes, touch controls, and PNG/MP4/GIF export engine; nothing calls Netlify. Numerical polar-boundary tests and simulated WebGL renderer tests cover both original and overlay/secondary engine paths. Real iPhone/GPU compilation remains to be checked.

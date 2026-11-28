@@ -712,7 +712,8 @@ test("mobile studio keeps one canvas above resize divider and independent scroll
   assert.match(text,/export function TextInspector/);
   assert.equal(text.split('className="text-input"').length-1,1,"One words box drives every text layer");
   assert.match(style,/\.studio-page \.inspector-scroll\{flex:1 1 auto;min-height:0;max-height:none;overflow-y:auto/);
-  assert.match(style,/flex:0 0 min\(var\(--canvas-pane-ratio,58%\),calc\(100% - 175px\)\)/);
+  // Studio 6: slimmer chrome, so the editor only needs ~150px reserved.
+  assert.match(style,/flex:0 0 min\(var\(--canvas-pane-ratio,50%\),calc\(100% - 150px\)\)/);
   assert.match(controls,/aria-expanded=\{expanded\}/);
   assert.match(controls,/section-disclosure/);
 });

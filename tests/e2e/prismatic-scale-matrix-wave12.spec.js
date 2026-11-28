@@ -1,5 +1,6 @@
 import {test,expect} from "@playwright/test";
 import {initial} from "../../src/data.js";
+import {reveal,conceal} from "./phone-more.js";
 
 async function openScales(page,isMobile){
   await page.goto("/",{waitUntil:"domcontentloaded"});
@@ -51,13 +52,16 @@ test("Wave 12 Materials navigation, Favorites, Find and original NEW CANVAS rema
     await room.getByRole("button",{name:/^Favorites ·/}).click();
     await expect(room.locator(".effect-card-open")
       .filter({hasText:"Prismatic Scale Matrix"})).toBeVisible();
+    await reveal(page);
     await page.getByRole("button",{name:"New Canvas (confirmation required)"}).click();
     const dialog=page.getByRole("dialog");
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button",{name:"Yes, new canvas"}).click();
     await expect(dialog).toHaveCount(0);
+    await reveal(page);
     await expect(page.getByRole("spinbutton",{name:"Seed"}))
       .toHaveValue(String(initial.seed));
+    await conceal(page);
     await room.getByRole("button",{name:/^Active ·/}).click();
     await expect(room.locator(".effect-card-open")
       .filter({hasText:"Prismatic Scale Matrix"})).toHaveCount(0);

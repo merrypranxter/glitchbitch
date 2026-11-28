@@ -34,8 +34,14 @@ import {
   LoaderCircle,
   X,
   Search,
+  Ellipsis,
+  Sprout,
+  Cherry,
+  Microscope,
+  Gauge,
 } from "lucide-react";
 import ArtCanvas from "./ArtCanvas";
+import BottomSheet from "./components/BottomSheet";
 import ColorLab from "./components/ColorLab";
 import {
   MathInspector,
@@ -71,6 +77,39 @@ const formatTime = (t) => {
   const seconds = Math.max(0, Math.floor(t));
   return `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 };
+// Same breakpoint as the phone studio CSS. Below it, the screen is too small
+// for three columns, so rarely-needed controls move into the ⋯ More sheet.
+const PHONE_QUERY = "(max-width: 980px)";
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(
+    () => typeof matchMedia === "function" && matchMedia(query).matches,
+  );
+  useEffect(() => {
+    if (typeof matchMedia !== "function") return;
+    const list = matchMedia(query),
+      update = () => setMatches(list.matches);
+    update();
+    if (list.addEventListener) list.addEventListener("change", update);
+    else list.addListener(update); // iOS Safari < 14
+    return () => {
+      if (list.removeEventListener) list.removeEventListener("change", update);
+      else list.removeListener(update);
+    };
+  }, [query]);
+  return matches;
+}
+// Each category keeps its full name for buttons, search and screen readers;
+// the phone tab bar shows these shorter labels so all ten fit in ONE row.
+const shortTabLabels = {
+  Effects: "FX",
+  Ecosystem: "Eco",
+  Weaving: "Weave",
+  Toppers: "Toppers",
+  Lifeforms: "Life",
+};
+const PANE_DEFAULT = 0.5,
+  PANE_MIN = 0.2,
+  PANE_MAX = 0.86;
 function App() {
   const [draft] = useState(loadDraft),
     history = useHistory(draft.state),
@@ -87,7 +126,9 @@ function App() {
     [page, setPage] = useState("Studio"),
     [mobilePanel, setMobilePanel] = useState("Math"),
     [focus, setFocus] = useState(false),
-    [modal, setModal] = useState(null);
+    [modal, setModal] = useState(null),
+    [moreOpen, setMoreOpen] = useState(false);
+  const isPhone = useMediaQuery(PHONE_QUERY);
   // Avoid two simultaneous WebGL renderers on memory-limited iPhones.
   const [exportRendererBusy,setExportRendererBusy] = useState(false);
   const [exportStill,setExportStill] = useState(null);
@@ -101,15 +142,18 @@ function App() {
     [notice, setNotice] = useState(null);
   const [canvasPaneRatio,setCanvasPaneRatio] = useState(()=>{
     try {
-      const n=Number(localStorage.getItem("glitch-studio-pane-v1"));
-      return n>=.30&&n<=.78?n:.58;
-    }catch{return .58;}
+      const stored=localStorage.getItem("glitch-studio-pane-v1");
+      const n=Number(stored);
+      // Your saved divider position is kept; new players start at half/half.
+      return stored!==null&&n>=PANE_MIN&&n<=PANE_MAX?n:PANE_DEFAULT;
+    }catch{return PANE_DEFAULT;}
   });
   const studioMainRef=useRef(null),dragDividerRef=useRef(null);
   const clampPane=n=>{
     const height=studioMainRef.current?.getBoundingClientRect().height||0;
-    const upper=height>0 ? Math.min(.78,Math.max(.30,1-175/height)) : .78;
-    return Math.max(.30,Math.min(upper,n));
+    // Always leave ~150px for the divider, tab bar and a usable editor.
+    const upper=height>0 ? Math.min(PANE_MAX,Math.max(PANE_MIN,1-150/height)) : PANE_MAX;
+    return Math.max(PANE_MIN,Math.min(upper,n));
   };
   function resizeDividerDown(e) {
     if(e.pointerType==="mouse" && e.button!==0)return;
@@ -133,8 +177,8 @@ function App() {
     let next=null;
     if(e.key==="ArrowDown")next=canvasPaneRatio+.04;
     if(e.key==="ArrowUp")next=canvasPaneRatio-.04;
-    if(e.key==="Home")next=.30;
-    if(e.key==="End")next=.78;
+    if(e.key==="Home")next=PANE_MIN;
+    if(e.key==="End")next=PANE_MAX;
     if(next!==null){
       e.preventDefault();
       setCanvasPaneRatio(clampPane(next));
@@ -168,7 +212,13 @@ function App() {
     playing,
     page,
     modal,
+    moreOpen,
   };
+  // Rotating an iPad / widening the window back to three columns puts every
+  // control back in view, so the phone sheet has nothing left to show.
+  useEffect(() => {
+    if (!isPhone) setMoreOpen(false);
+  }, [isPhone]);
   const toast = useCallback((message, action) => {
     clearTimeout(noticeTimer.current);
     setNotice({ message, action });
@@ -231,7 +281,7 @@ function App() {
           target.isContentEditable ||
           ["TEXTAREA", "SELECT"].includes(target.tagName) ||
           (target.tagName === "INPUT" && target.type !== "range");
-      if (latest.current.modal) return;
+      if (latest.current.modal || latest.current.moreOpen) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setModal("find");
@@ -453,6 +503,105 @@ function App() {
     state.blend > 0
       ? `${engines[state.engine]} × ${engines[state.secondaryEngine]}`
       : engines[state.engine];
+  function reseed() {
+    history.change((s) => ({
+      ...s,
+      seed: Math.floor(Math.random() * 999999999),
+    }));
+  }
+  function restartClocks() {
+    timelineRef.current = { time: 0, colorTime: 0, textTime: 0 };
+    setTimeline({ time: 0, colorTime: 0, textTime: 0 });
+  }
+  // Close the More sheet first, then run the action it offered.
+  const fromSheet = (run) => () => {
+    setMoreOpen(false);
+    run();
+  };
+  // These render in exactly ONE place at a time: the workspace header on
+  // wide screens, the More sheet on phones. Same handlers, same labels.
+  const titleField = (
+    <input
+      className="art-title"
+      aria-label="Artwork title"
+      value={title}
+      maxLength="100"
+      onChange={(e) => setTitle(e.target.value)}
+    />
+  );
+  const seedField = (
+    <input
+      id="seed"
+      type="number"
+      inputMode="numeric"
+      aria-label="Seed"
+      min="0"
+      max="999999999"
+      value={state.seed}
+      onFocus={history.begin}
+      onChange={(e) => {
+        if (Number.isFinite(+e.target.value))
+          history.preview((s) => ({
+            ...s,
+            seed: Math.floor(
+              Math.max(0, Math.min(999999999, +e.target.value)),
+            ),
+          }));
+      }}
+      onBlur={history.end}
+    />
+  );
+  const reseedButton = (
+    <button className="icon-button" title="Reseed" onClick={reseed}>
+      <Shuffle size={14} />
+    </button>
+  );
+  const ratioField = (
+    <select
+      aria-label="Artwork aspect ratio"
+      value={state.ratio}
+      onChange={(e) =>
+        history.change((s) => ({ ...s, ratio: e.target.value }))
+      }
+    >
+      {ratios.map((r) => (
+        <option key={r.id}>{r.id}</option>
+      ))}
+    </select>
+  );
+  const qualityField = (
+    <select
+      aria-label="Preview quality"
+      value={quality}
+      onChange={(e) => setQuality(e.target.value)}
+    >
+      {["Auto", "Eco", "Balanced", "Sharp"].map((x) => (
+        <option key={x}>{x}</option>
+      ))}
+    </select>
+  );
+  const fpsReadout = (
+    <span title="Measured animation frame cadence, not GPU timing">
+      {status.fps != null ? `${status.fps} fps` : "—"}
+    </span>
+  );
+  // Wide screens: in the play bar. Phones: up top beside Export, so the play
+  // bar under the artwork has room for Mutate / Weird / Surprise me.
+  const saveButton = (
+    <button
+      className={"icon-button bookmark " + (saving ? "lime" : "")}
+      title="Save artwork"
+      aria-label="Save artwork to your vault"
+      disabled={saving}
+      onClick={saveWork}
+    >
+      {saving ? (
+        <LoaderCircle size={17} className="spin" />
+      ) : (
+        <Bookmark size={17} />
+      )}
+    </button>
+  );
   return (
     <div className={"app " + (focus ? "focus-mode " : "") + (page==="Studio" ? "studio-page" : "")}>
       <header>
@@ -489,20 +638,25 @@ function App() {
             <span>Find a control</span>
             <kbd>/</kbd>
           </button>
-          <button
-            className="icon-button help-button"
-            title="How to play"
-            onClick={() => setModal("help")}
-          >
-            <HelpCircle size={17} />
-          </button>
-          <button
-            className="button secondary load-button"
-            onClick={() => fileRef.current.click()}
-          >
-            <Upload size={14} />
-            <span>Load recipe</span>
-          </button>
+          {!isPhone && (
+            <button
+              className="icon-button help-button"
+              title="How to play"
+              onClick={() => setModal("help")}
+            >
+              <HelpCircle size={17} />
+            </button>
+          )}
+          {!isPhone && (
+            <button
+              className="button secondary load-button"
+              onClick={() => fileRef.current.click()}
+            >
+              <Upload size={14} />
+              <span>Load recipe</span>
+            </button>
+          )}
+          {isPhone && page === "Studio" && saveButton}
           <button
             className="button primary export-button"
             onClick={() => setModal("export")}
@@ -511,6 +665,18 @@ function App() {
             <span>Export</span>
             <ArrowUpRight size={14} />
           </button>
+          {isPhone && (
+            <button
+              className="icon-button more-button"
+              title="More: title, seed, shape, Lookbook, New Canvas, load recipe, quality, help"
+              aria-label="More options"
+              aria-haspopup="dialog"
+              aria-expanded={moreOpen}
+              onClick={() => setMoreOpen(true)}
+            >
+              <Ellipsis size={22} />
+            </button>
+          )}
         </div>
       </header>
       {page === "Studio" ? (
@@ -557,82 +723,43 @@ function App() {
             </div>
           </aside>
           <div className="workspace">
-            <div className="workspace-heading">
-              <div className="art-heading">
-                <span className="eyebrow">
-                  THE PLAYGROUND{" "}
-                  <span>/ {engineInfo[state.engine].family.toUpperCase()}</span>
+            {/* Phones: title, seed and shape live in the ⋯ More sheet so the
+                artwork gets this space. Wide screens keep them right here. */}
+            {!isPhone && (
+              <div className="workspace-heading">
+                <div className="art-heading">
+                  <span className="eyebrow">
+                    THE PLAYGROUND{" "}
+                    <span>/ {engineInfo[state.engine].family.toUpperCase()}</span>
+                  </span>
+                  {titleField}
+                </div>
+                <div className="seed">
+                  <label htmlFor="seed">SEED</label>
+                  {seedField}
+                  {reseedButton}
+                </div>
+              </div>
+            )}
+            {!isPhone && (
+              <div className="canvas-context">
+                <span>
+                  <i className="live-dot" />
+                  {active}
                 </span>
-                <input
-                  className="art-title"
-                  aria-label="Artwork title"
-                  value={title}
-                  maxLength="100"
-                  onChange={(e) => setTitle(e.target.value)}
-                />
+                <div>
+                  {ratioField}
+                  <button
+                    className="icon-button"
+                    title={focus ? "Show controls" : "Focus mode"}
+                    aria-pressed={focus}
+                    onClick={() => setFocus((x) => !x)}
+                  >
+                    {focus ? <Minimize size={14} /> : <Maximize size={14} />}
+                  </button>
+                </div>
               </div>
-              <div className="seed">
-                <label htmlFor="seed">SEED</label>
-                <input
-                  id="seed"
-                  type="number"
-                  aria-label="Seed"
-                  min="0"
-                  max="999999999"
-                  value={state.seed}
-                  onFocus={history.begin}
-                  onChange={(e) => {
-                    if (Number.isFinite(+e.target.value))
-                      history.preview((s) => ({
-                        ...s,
-                        seed: Math.floor(
-                          Math.max(0, Math.min(999999999, +e.target.value)),
-                        ),
-                      }));
-                  }}
-                  onBlur={history.end}
-                />
-                <button
-                  className="icon-button"
-                  title="Reseed"
-                  onClick={() =>
-                    history.change((s) => ({
-                      ...s,
-                      seed: Math.floor(Math.random() * 999999999),
-                    }))
-                  }
-                >
-                  <Shuffle size={14} />
-                </button>
-              </div>
-            </div>
-            <div className="canvas-context">
-              <span>
-                <i className="live-dot" />
-                {active}
-              </span>
-              <div>
-                <select
-                  aria-label="Artwork aspect ratio"
-                  value={state.ratio}
-                  onChange={(e) =>
-                    history.change((s) => ({ ...s, ratio: e.target.value }))
-                  }
-                >
-                  {ratios.map((r) => (
-                    <option key={r.id}>{r.id}</option>
-                  ))}
-                </select>
-                <button
-                  className="icon-button"
-                  title={focus ? "Show controls" : "Focus mode"}
-                  aria-pressed={focus}
-                  onClick={() => setFocus((x) => !x)}
-                >
-                  {focus ? <Minimize size={14} /> : <Maximize size={14} />}
-                </button>
-              </div>
-            </div>
+            )}
             {exportRendererBusy ? (
               <div className="art-stage" aria-label="Live GPU preview temporarily parked during accurate export">
                 <div className="art-surface"
@@ -651,6 +778,8 @@ function App() {
                 onTime={setTimeline}
                 showHandles={handles}
                 onSelect={setSelected}
+                focus={focus}
+                onFocusToggle={isPhone ? () => setFocus((x) => !x) : null}
               />
             )}
             <div className="transport">
@@ -691,87 +820,77 @@ function App() {
                 <span>{playing ? "PLAYING" : "PAUSED"}</span>
                 <b>{formatTime(timeline.time)}</b>
               </div>
-              <button
-                className="icon-button restart"
-                title="Restart animation clocks"
-                onClick={() => {
-                  timelineRef.current = { time: 0, colorTime: 0, textTime: 0 };
-                  setTimeline({ time: 0, colorTime: 0, textTime: 0 });
-                }}
-              >
-                <RotateCcw size={14} />
-              </button>
-              <div className="quality-control">
-                <select
-                  aria-label="Preview quality"
-                  value={quality}
-                  onChange={(e) => setQuality(e.target.value)}
+              {!isPhone && (
+                <button
+                  className="icon-button restart"
+                  title="Restart animation clocks"
+                  onClick={restartClocks}
                 >
-                  {["Auto", "Eco", "Balanced", "Sharp"].map((x) => (
-                    <option key={x}>{x}</option>
-                  ))}
-                </select>
-                <span title="Measured animation frame cadence, not GPU timing">
-                  {status.fps != null ? `${status.fps} fps` : "—"}
-                </span>
-              </div>
-              <button
-                className={"icon-button bookmark " + (saving ? "lime" : "")}
-                title="Save artwork"
-                disabled={saving}
-                onClick={saveWork}
-              >
-                {saving ? (
-                  <LoaderCircle size={17} className="spin" />
-                ) : (
-                  <Bookmark size={17} />
-                )}
-              </button>
-              <button
-                className="icon-button"
-                title="Fullscreen artwork"
-                onClick={fullscreen}
-              >
-                <Maximize size={16} />
-              </button>
+                  <RotateCcw size={14} />
+                </button>
+              )}
+              {!isPhone && (
+                <div className="quality-control">
+                  {qualityField}
+                  {fpsReadout}
+                </div>
+              )}
+              {!isPhone && saveButton}
+              {!isPhone && (
+                <button
+                  className="icon-button"
+                  title="Fullscreen artwork"
+                  onClick={fullscreen}
+                >
+                  <Maximize size={16} />
+                </button>
+              )}
+              {/* Phones: the chaos buttons ride in this same row instead of
+                  needing a second strip under the artwork. */}
+              {isPhone && (
+                <div className="mobile-chaos">
+                  <button title="Mutate design" aria-label="Mutate design" onClick={() => surprise(true)}>
+                    <Shuffle size={15} />
+                    <span className="chaos-label">Mutate</span>
+                  </button>
+                  <button title="Full weird shuffle, preserve your words" aria-label="Weird shuffle" onClick={freakshow}>
+                    <Dices size={15} />
+                    <span className="chaos-label">Weird</span>
+                  </button>
+                  <button className="chaos-surprise" onClick={() => surprise()}>
+                    <Sparkles size={14} />
+                    Surprise me
+                  </button>
+                </div>
+              )}
             </div>
-            <div className="workspace-bottom">
-              <button onClick={() => setModal("lookbook")}>
-                <BookOpen size={14} />
+            {!isPhone && (
+              <div className="workspace-bottom">
+                <button onClick={() => setModal("lookbook")}>
+                  <BookOpen size={14} />
+                  <span>
+                    Lookbook <ArrowUpRight size={12} />
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className="new-canvas-button"
+                  title="New Canvas — restore the original starter after confirmation"
+                  aria-label="New Canvas (confirmation required)"
+                  onClick={() => setModal("new-canvas")}
+                >
+                  <FilePlus2 size={14} />
+                  <span>New Canvas</span>
+                </button>
                 <span>
-                  Lookbook <ArrowUpRight size={12} />
+                  {status.width && `${status.width} × ${status.height}`}
                 </span>
-              </button>
-              <button
-                type="button"
-                className="new-canvas-button"
-                title="New Canvas — restore the original starter after confirmation"
-                aria-label="New Canvas (confirmation required)"
-                onClick={() => setModal("new-canvas")}
-              >
-                <FilePlus2 size={14} />
-                <span>New Canvas</span>
-              </button>
-              <span>
-                {status.width && `${status.width} × ${status.height}`}
-              </span>
-              <div className="mobile-chaos">
-                <button title="Mutate design" onClick={() => surprise(true)}>
-                  <Shuffle size={14} />
-                </button>
-                <button title="Full weird shuffle, preserve your words" onClick={freakshow}>
-                  <Dices size={14} /> Weird
-                </button>
-                <button onClick={() => surprise()}>
-                  <Sparkles size={13} />
-                  Surprise me
-                </button>
               </div>
-            </div>
+            )}
           </div>
           <div className="studio-splitter" role="separator" aria-orientation="horizontal"
-            aria-label="Resize artwork and controls" aria-valuemin={30}
-            aria-valuemax={78} aria-valuenow={Math.round(canvasPaneRatio*100)}
+            aria-label="Resize artwork and controls" aria-valuemin={Math.round(PANE_MIN*100)}
+            aria-valuemax={Math.round(PANE_MAX*100)} aria-valuenow={Math.round(canvasPaneRatio*100)}
             tabIndex={0}
             onPointerDown={resizeDividerDown}
             onPointerMove={resizeDividerMove}
@@ -780,23 +899,25 @@ function App() {
             onLostPointerCapture={resizeDividerEnd}
             onKeyDown={resizeDividerKey}
             onDoubleClick={()=>{
-              setCanvasPaneRatio(.58);
-              try{localStorage.setItem("glitch-studio-pane-v1",".58");}catch{}
+              setCanvasPaneRatio(PANE_DEFAULT);
+              try{localStorage.setItem("glitch-studio-pane-v1",String(PANE_DEFAULT));}catch{}
             }}
             title="Drag to resize artwork and editor. Double-tap to reset."
           >
             <span className="splitter-grip"><i/><i/><i/></span>
             <span className="splitter-label">DRAG TO RESIZE</span>
           </div>
+          {/* ONE row of all ten categories (was three rows on iPhone). Full
+              names stay as the accessible name and tooltip. */}
           <div className="mobile-controls" aria-label="Studio controls">
             {[
               ["Math", SlidersHorizontal],
               ["Color", Palette],
               ["Effects", Sparkles],
-                ["Ecosystem", Asterisk],
-                ["Weaving", Grid3X3],
-                ["Toppers", Sparkles],
-                ["Lifeforms", Sparkles],
+              ["Ecosystem", Sprout],
+              ["Weaving", Grid3X3],
+              ["Toppers", Cherry],
+              ["Lifeforms", Microscope],
               ["Text", Type],
               ["Touch", Hand],
               ["Layers", Layers],
@@ -804,11 +925,14 @@ function App() {
               <button
                 key={t}
                 className={mobilePanel === t ? "active" : ""}
+                aria-label={t}
+                title={t}
                 aria-expanded={mobilePanel === t}
                 onClick={() => showMobile(t)}
               >
-                <Icon size={16} />
-                {t}
+                <Icon size={17} />
+                <span className="tab-long" aria-hidden="true">{t}</span>
+                <span className="tab-short" aria-hidden="true">{shortTabLabels[t] || t}</span>
               </button>
             ))}
           </div>
@@ -823,10 +947,10 @@ function App() {
             <div className="inspector-tabs">
               {[
                 ["Effects", Sparkles],
-                ["Ecosystem", Asterisk],
+                ["Ecosystem", Sprout],
                 ["Weaving", Grid3X3],
-                ["Toppers", Sparkles],
-                ["Lifeforms", Sparkles],
+                ["Toppers", Cherry],
+                ["Lifeforms", Microscope],
                 ["Text", Type],
                 ["Touch", Hand],
                 ["Layers", Layers],
@@ -921,6 +1045,120 @@ function App() {
         ref={fileRef}
         onChange={importRecipe}
       />
+      {moreOpen && isPhone && (
+        <BottomSheet
+          title="More"
+          subtitle="Everything that used to crowd your screen. Nothing removed — just tucked in here."
+          onClose={() => setMoreOpen(false)}
+          className="more-sheet"
+        >
+          <section className="sheet-section" aria-label="Make">
+            <h3>Make</h3>
+            <div className="sheet-grid">
+              <button className="sheet-action" onClick={fromSheet(() => setModal("lookbook"))}>
+                <BookOpen size={17} /> Lookbook
+              </button>
+              <button
+                className="sheet-action new-canvas-action"
+                title="New Canvas — restore the original starter after confirmation"
+                aria-label="New Canvas (confirmation required)"
+                onClick={fromSheet(() => setModal("new-canvas"))}
+              >
+                <FilePlus2 size={17} /> New Canvas
+              </button>
+              <button className="sheet-action" onClick={fromSheet(() => fileRef.current.click())}>
+                <Upload size={17} /> Load recipe
+              </button>
+              <button
+                className={"sheet-action" + (locks.color ? " on" : "")}
+                aria-pressed={locks.color}
+                title={locks.color ? "Palette locked: Surprise me keeps your colors" : "Lock palette so Surprise me keeps your colors"}
+                onClick={() => setLocks((l) => ({ ...l, color: !l.color }))}
+              >
+                {locks.color ? <LockKeyhole size={17} /> : <Unlock size={17} />}
+                Palette lock: {locks.color ? "ON" : "off"}
+              </button>
+            </div>
+            <p className="sheet-note">
+              Palette lock makes Surprise me keep your colors. Mutate, Weird and
+              Surprise me are in the row under your artwork.
+            </p>
+          </section>
+          <section className="sheet-section" aria-label="This artwork">
+            <h3>This artwork</h3>
+            <label className="sheet-field">
+              <span>Title</span>
+              {titleField}
+            </label>
+            <div className="sheet-row">
+              <div className="sheet-field sheet-seed">
+                <label htmlFor="seed">Seed</label>
+                <div className="sheet-inline">
+                  {seedField}
+                  {reseedButton}
+                </div>
+              </div>
+              <label className="sheet-field">
+                <span>Shape</span>
+                {ratioField}
+              </label>
+            </div>
+            <p className="sheet-meta">
+              <i className="live-dot" />
+              <span>{active}</span>
+              <span>· {engineInfo[state.engine].family}</span>
+              {status.width ? <span>· preview {status.width} × {status.height}</span> : null}
+            </p>
+          </section>
+          <section className="sheet-section" aria-label="View and playback">
+            <h3>View &amp; playback</h3>
+            <div className="sheet-grid">
+              <button className="sheet-action" title="Restart animation clocks" onClick={restartClocks}>
+                <RotateCcw size={17} /> Restart clocks
+              </button>
+              <button
+                className={"sheet-action" + (focus ? " on" : "")}
+                aria-pressed={focus}
+                onClick={fromSheet(() => setFocus((x) => !x))}
+              >
+                {focus ? <Minimize size={17} /> : <Maximize size={17} />}
+                {focus ? "Show controls" : "Big art (focus)"}
+              </button>
+              <button className="sheet-action" title="Fullscreen artwork" onClick={fromSheet(fullscreen)}>
+                <Maximize size={17} /> Fullscreen
+              </button>
+              <label className="sheet-action sheet-select">
+                <Gauge size={17} />
+                <span>Quality</span>
+                {qualityField}
+              </label>
+            </div>
+            <p className="sheet-meta">
+              <i className={playing ? "live-dot" : "paused-dot"} />
+              <span>{playing ? "Playing" : "Paused"}</span>
+              <span>· shape clock {formatTime(timeline.time)}</span>
+              <span>· color clock {formatTime(timeline.colorTime)}</span>
+              <span>· {fpsReadout}</span>
+            </p>
+            <p className="sheet-note">
+              Zoom lives on the artwork: tap <b>+</b>/<b>−</b>, double-tap, or turn on
+              the four-arrow <b>Pan &amp; zoom</b> button to drag around and pinch.
+              Higher quality looks sharper when zoomed in.
+            </p>
+          </section>
+          <section className="sheet-section" aria-label="Help">
+            <h3>Help</h3>
+            <div className="sheet-grid">
+              <button className="sheet-action" onClick={fromSheet(() => setModal("help"))}>
+                <HelpCircle size={17} /> How to play
+              </button>
+              <button className="sheet-action" onClick={fromSheet(() => setModal("find"))}>
+                <Search size={17} /> Find a control
+              </button>
+            </div>
+          </section>
+        </BottomSheet>
+      )}
       {modal === "new-canvas" && (
         <Modal
           title="Start a NEW CANVAS?"

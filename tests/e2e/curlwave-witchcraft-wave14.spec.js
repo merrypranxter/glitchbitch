@@ -1,5 +1,6 @@
 import {test,expect} from "@playwright/test";
 import {initial} from "../../src/data.js";
+import {reveal,conceal} from "./phone-more.js";
 const workbench=page=>page.locator(".effects-workbench");
 test("Curlwave can wake up, flow, shuffle, hide and undo from the redesigned Materials lab",async({page,isMobile})=>{
   await page.goto("/",{waitUntil:"domcontentloaded"});
@@ -37,11 +38,13 @@ test("Confirmed NEW CANVAS clears new currents without deleting user colors and 
   await lab.getByRole("combobox",{name:"Living curl species"})
     .selectOption("Oil-Slick Vortex Velvet");
   await expect(lab.getByRole("slider",{name:"Curlwave presence"})).not.toHaveValue("0");
+  await reveal(page);
   await page.getByRole("button",{name:"New Canvas (confirmation required)"}).click();
   const dialog=page.getByRole("dialog",{name:"Start a NEW CANVAS?"});
   await expect(dialog).toBeVisible();
   await dialog.getByRole("button",{name:"Cancel — keep my art"}).click();
   await expect(lab.getByRole("slider",{name:"Curlwave presence"})).not.toHaveValue("0");
+  await reveal(page);
   await page.getByRole("button",{name:"New Canvas (confirmation required)"}).click();
   await page.getByRole("dialog",{name:"Start a NEW CANVAS?"})
     .getByRole("button",{name:"Yes, new canvas"}).click();
@@ -49,6 +52,7 @@ test("Confirmed NEW CANVAS clears new currents without deleting user colors and 
     const draft=JSON.parse(localStorage.getItem("glitch-draft")||"null");
     return draft?.state?.vcAmount;
   })).toBe(0);
+  await reveal(page);
   await expect(page.getByRole("spinbutton",{name:"Seed"})).toHaveValue(String(initial.seed));
   await expect(page.getByTitle("Undo",{exact:true})).toBeDisabled();
 });

@@ -1217,7 +1217,9 @@ function App() {
               <p>
                 Drag to paint local forces. In Touch, choose Warp, Vortex,
                 Repel, or Chroma. Use two fingers to resize, turn, and move a
-                source. Move and Erase let you edit it later.
+                source. Move and Erase let you edit it later. To get a closer
+                look, use + / − on the artwork, double-tap, or turn on the
+                four-arrow Pan &amp; zoom button to drag and pinch.
               </p>
             </div>
             <div>
@@ -1269,6 +1271,12 @@ function App() {
             </span>
             <span>
               <kbd>/</kbd>Find a control
+            </span>
+            <span>
+              <kbd>+ −</kbd>Zoom preview
+            </span>
+            <span>
+              <kbd>0</kbd>Fit artwork
             </span>
           </div>
           <p className="modal-footnote">

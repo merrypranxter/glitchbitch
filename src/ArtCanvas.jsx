@@ -435,10 +435,17 @@ export default function ArtCanvas({
       else return;
       e.preventDefault();
     }
+    // iOS Safari also fires its own gesture events for pinches; block them on
+    // the stage so a pinch zooms the artwork, never the whole web page.
+    const noPageZoom = (e) => e.preventDefault();
     stage.addEventListener("wheel", wheel, { passive: false });
+    stage.addEventListener("gesturestart", noPageZoom);
+    stage.addEventListener("gesturechange", noPageZoom);
     window.addEventListener("keydown", key);
     return () => {
       stage.removeEventListener("wheel", wheel);
+      stage.removeEventListener("gesturestart", noPageZoom);
+      stage.removeEventListener("gesturechange", noPageZoom);
       window.removeEventListener("keydown", key);
     };
   }, []);
